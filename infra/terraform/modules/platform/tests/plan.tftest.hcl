@@ -143,7 +143,7 @@ run "production" {
     error_message = "the Ops Center allow-list must block everyone else."
   }
   assert {
-    condition     = jsondecode(aws_ecs_task_definition.app["api"].container_definitions)[0].environment[index(jsondecode(aws_ecs_task_definition.app["api"].container_definitions)[0].environment[*].name, "PAYMENTS_PROVIDER")].value == "stripe"
+    condition     = output.api_environment["PAYMENTS_PROVIDER"] == "stripe"
     error_message = "production API must use Stripe."
   }
 }

@@ -17,6 +17,7 @@ const NAV: (NavItem & { permission: string })[] = [
   { href: '/reviews', label: 'Reviews', permission: 'reviews.moderate' },
   { href: '/coupons', label: 'Coupons', permission: 'promotions.manage' },
   { href: '/users', label: 'Customers & staff', permission: 'users.read' },
+  { href: '/ai', label: 'AI operations', permission: 'admin.access' },
   { href: '/audit', label: 'Audit log', permission: 'audit.read' },
   { href: '/security', label: 'My security', permission: 'admin.access' },
 ];

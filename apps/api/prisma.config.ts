@@ -18,5 +18,5 @@ export default defineConfig({
   // Prisma cannot describe. Its hand-written migration owns the structure; Prisma still
   // generates the client model but leaves the table out of drift checks (ADR-0009).
   experimental: { externalTables: true },
-  tables: { external: ['product_search_docs'] },
+  tables: { external: ['public.product_search_docs'] },
 });

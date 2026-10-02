@@ -106,6 +106,10 @@ module "platform" {
     ALLOW_TEST_PAYMENTS = "true"
   }
   mobile_app_links = var.mobile_app_links
+
+  # Until production exists, the main domain sends visitors to the staging demo. Remove this
+  # line before creating production (it takes these names over).
+  redirect_hosts = [var.domain_name, "www.${var.domain_name}"]
 }
 
 output "platform" {

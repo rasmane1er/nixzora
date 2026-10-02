@@ -1,7 +1,7 @@
 # One certificate for every host of this environment (load balancer, in the app region).
 resource "aws_acm_certificate" "app" {
   domain_name               = local.hosts.storefront
-  subject_alternative_names = [local.hosts.api, local.hosts.admin, "www.${local.hosts.storefront}"]
+  subject_alternative_names = concat([local.hosts.api, local.hosts.admin, "www.${local.hosts.storefront}"], var.redirect_hosts)
   validation_method         = "DNS"
   tags                      = local.tags
   lifecycle {
@@ -23,7 +23,7 @@ resource "aws_acm_certificate" "media" {
 locals {
   # Keys come from configuration (known at plan time); values from the certificates.
   certificate_names = {
-    app   = [local.hosts.storefront, local.hosts.api, local.hosts.admin, "www.${local.hosts.storefront}"]
+    app   = concat([local.hosts.storefront, local.hosts.api, local.hosts.admin, "www.${local.hosts.storefront}"], var.redirect_hosts)
     media = [local.hosts.media]
   }
   validation_options = concat(

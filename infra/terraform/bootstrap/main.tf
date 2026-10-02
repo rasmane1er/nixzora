@@ -28,6 +28,17 @@ variable "github_repository" {
   type        = string
 }
 
+variable "github_repository_ids" {
+  description = <<-EOT
+    Numeric GitHub owner and repository ids. GitHub's OIDC tokens identify a repository as
+    "repo:owner@OWNER_ID/name@REPO_ID:…"; ids never change hands, so a renamed or re-registered
+    account with the same name cannot deploy. Find them with:
+    curl -s https://api.github.com/repos/OWNER/REPO | jq '.owner.id, .id'
+  EOT
+  type        = object({ owner_id = string, repo_id = string })
+  default     = null
+}
+
 provider "aws" {
   region = var.aws_region
   default_tags {
@@ -108,6 +119,17 @@ resource "aws_iam_openid_connect_provider" "github" {
   client_id_list = ["sts.amazonaws.com"]
 }
 
+locals {
+  github_owner = split("/", var.github_repository)[0]
+  github_name  = split("/", var.github_repository)[1]
+  github_subjects = concat(
+    [var.github_repository],
+    var.github_repository_ids == null ? [] : [
+      "${local.github_owner}@${var.github_repository_ids.owner_id}/${local.github_name}@${var.github_repository_ids.repo_id}",
+    ],
+  )
+}
+
 data "aws_iam_policy_document" "github_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -120,14 +142,14 @@ data "aws_iam_policy_document" "github_assume" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
-    # Only the main branch and the protected environments of this repository.
+    # Only the main branch and the protected environments of this repository, in both the
+    # name-based and the immutable-id subject formats GitHub issues.
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${var.github_repository}:ref:refs/heads/main",
-        "repo:${var.github_repository}:environment:staging",
-        "repo:${var.github_repository}:environment:production",
+        for pair in setproduct(local.github_subjects, ["ref:refs/heads/main", "environment:staging", "environment:production"]) :
+        "repo:${pair[0]}:${pair[1]}"
       ]
     }
   }

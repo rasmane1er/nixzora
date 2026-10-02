@@ -1,5 +1,7 @@
 import type {
   Address,
+  AssistantChatResponse,
+  AssistantMessage,
   AuthTokens,
   Cart,
   CategoryNode,
@@ -178,6 +180,15 @@ export function createApiClient(options: ClientOptions) {
         request<ProductDetail>('GET', `/catalog/products/${enc(slug)}`, { auth: 'none' }),
       lookup: (code: string) =>
         request<ProductLookup>('GET', '/catalog/lookup', { query: { code }, auth: 'none' }),
+    },
+
+    assistant: {
+      /** The AI shopping assistant: products and prices in the answer come from the catalog. */
+      chat: (messages: AssistantMessage[]) =>
+        request<AssistantChatResponse>('POST', '/assistant/chat', {
+          body: { messages },
+          auth: 'none',
+        }),
     },
 
     cart: {

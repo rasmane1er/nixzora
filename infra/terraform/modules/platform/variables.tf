@@ -150,3 +150,9 @@ variable "mobile_app_links" {
     error_message = "Android fingerprints are SHA-256 in AA:BB:... form (32 bytes)."
   }
 }
+
+variable "redirect_hosts" {
+  description = "Extra names that redirect (302) to this environment's storefront, e.g. the bare domain before production exists."
+  type        = list(string)
+  default     = []
+}

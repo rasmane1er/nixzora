@@ -46,9 +46,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="scan"
-        options={{ title: 'Scan', tabBarIcon: icon('barcode-outline', 'barcode') }}
+        name="assistant"
+        options={{
+          title: 'Ask',
+          headerShown: false,
+          tabBarIcon: icon('sparkles-outline', 'sparkles'),
+          tabBarAccessibilityLabel: 'Shopping assistant',
+        }}
       />
+      {/* Scanning opens from Search and the home screen; it keeps its route, not a tab. */}
+      <Tabs.Screen name="scan" options={{ title: 'Scan', href: null }} />
       <Tabs.Screen
         name="cart"
         options={{

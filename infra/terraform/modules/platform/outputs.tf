@@ -38,3 +38,8 @@ output "media_bucket" {
 output "alarm_topic_arn" {
   value = aws_sns_topic.alarms.arn
 }
+
+output "api_environment" {
+  description = "Plain (non-secret) environment variables of the API task, for tests and troubleshooting."
+  value       = local.api_environment
+}

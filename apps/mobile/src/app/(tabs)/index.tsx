@@ -38,12 +38,22 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={[styles.hero, { backgroundColor: brand.ink }]}>
-        <Text variant="label" style={{ color: brand.signal }}>
-          Computers & electronics
+        <Text variant="label" style={{ color: '#6FD1C7' }}>
+          AI shopping assistant
         </Text>
         <Text variant="title" style={{ color: brand.paper }}>
-          Find the right machine, faster.
+          What do you need today?
         </Text>
+        <PressableLink
+          href="/assistant"
+          accessibilityRole="button"
+          accessibilityLabel="Ask the shopping assistant"
+          style={styles.askBox}
+        >
+          <Text variant="small" style={{ color: '#B8C2D3' }}>
+            “Headphones for flights under $250”
+          </Text>
+        </PressableLink>
         <Text variant="small" style={{ color: '#C9CED6' }}>
           Free shipping over $99 · 30-day returns
         </Text>
@@ -111,6 +121,14 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  askBox: {
+    backgroundColor: '#18243A',
+    borderWidth: 1,
+    borderColor: '#2C3B57',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

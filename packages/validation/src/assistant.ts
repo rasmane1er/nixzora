@@ -70,3 +70,49 @@ export const AssistantChatResponseSchema = z.object({
   model: z.string(),
 });
 export type AssistantChatResponse = z.infer<typeof AssistantChatResponseSchema>;
+
+/** Ops Center: AI usage over a period (p6-09). Costs are estimates in US dollars. */
+export const AiUsageReportSchema = z.object({
+  days: z.number().int(),
+  config: z.object({
+    assistantDriver: z.string(),
+    assistantModel: z.string(),
+    embeddingsDriver: z.string(),
+    embeddingsModel: z.string(),
+    dailyBudgetUsd: z.number(),
+  }),
+  today: z.object({ spentUsd: z.number(), budgetUsedPercent: z.number() }),
+  totals: z.object({
+    requests: z.number().int(),
+    costUsd: z.number(),
+    errors: z.number().int(),
+    /** Share of assistant answers whose model text passed the grounding check. */
+    groundedPercent: z.number().nullable(),
+    p95LatencyMs: z.number().int().nullable(),
+  }),
+  daily: z.array(
+    z.object({
+      day: z.string(),
+      requests: z.number().int(),
+      costUsd: z.number(),
+      errors: z.number().int(),
+      avgLatencyMs: z.number().int().nullable(),
+    }),
+  ),
+  byFeature: z.array(
+    z.object({
+      feature: z.string(),
+      driver: z.string(),
+      model: z.string(),
+      requests: z.number().int(),
+      inputTokens: z.number().int(),
+      outputTokens: z.number().int(),
+      costUsd: z.number(),
+      avgLatencyMs: z.number().int().nullable(),
+    }),
+  ),
+  recentErrors: z.array(
+    z.object({ at: z.string(), feature: z.string(), model: z.string(), error: z.string() }),
+  ),
+});
+export type AiUsageReport = z.infer<typeof AiUsageReportSchema>;

@@ -184,3 +184,35 @@ resource "aws_lb_listener_rule" "www" {
     }
   }
 }
+
+# Temporary names (e.g. nixzora.com before production exists) → this storefront. 302, so
+# browsers and search engines do not remember it once production takes the name over.
+resource "aws_lb_listener_rule" "redirect_hosts" {
+  count        = length(var.redirect_hosts) > 0 ? 1 : 0
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 40
+  action {
+    type = "redirect"
+    redirect {
+      host        = local.hosts.storefront
+      status_code = "HTTP_302"
+    }
+  }
+  condition {
+    host_header {
+      values = var.redirect_hosts
+    }
+  }
+}
+
+resource "aws_route53_record" "redirect_hosts" {
+  for_each = toset(var.redirect_hosts)
+  zone_id  = var.hosted_zone_id
+  name     = each.value
+  type     = "A"
+  alias {
+    name                   = aws_lb.main.dns_name
+    zone_id                = aws_lb.main.zone_id
+    evaluate_target_health = true
+  }
+}

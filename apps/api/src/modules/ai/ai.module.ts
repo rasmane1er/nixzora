@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
+import { AiAdminController } from './ai-admin.controller';
 import { AiUsageService } from './ai-usage.service';
 import { EMBEDDINGS, LocalEmbeddings, VoyageEmbeddings } from './embeddings';
 
 /** Model providers, chosen by configuration (ADR-0009). */
 @Module({
+  controllers: [AiAdminController],
   providers: [
     AiUsageService,
     {
