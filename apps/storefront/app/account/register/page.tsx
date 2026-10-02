@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthCard, Submit } from '@/components/AuthCard';
+import { SocialSignIn } from '@/components/SocialSignIn';
 import { param, type SearchParams } from '@/lib/params';
+import { socialProviders } from '../social-actions';
 import { register } from '../actions';
 
 export const metadata: Metadata = { title: 'Create an account', robots: { index: false } };
@@ -9,8 +11,10 @@ export const metadata: Metadata = { title: 'Create an account', robots: { index:
 export default async function RegisterPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const next = param(params, 'next') ?? '/account';
+  const providers = await socialProviders();
   return (
     <AuthCard title="Create an account" error={param(params, 'error')}>
+      <SocialSignIn providers={providers} next={next} intent="signup" />
       <form action={register} className="form">
         <input type="hidden" name="next" value={next} />
         <label>

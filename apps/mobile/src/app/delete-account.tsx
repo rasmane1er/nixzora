@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { signOut } from '@/lib/account-actions';
 import { api } from '@/lib/api';
+import { useSession } from '@/lib/session';
 
 /** In-app account deletion, as the App Store and Google Play require. */
 export default function DeleteAccountScreen() {
+  const { user } = useSession();
+  // Accounts that only sign in with Google or Apple have no password: they type DELETE.
+  const usesPassword = user?.hasPassword ?? true;
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +19,7 @@ export default function DeleteAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      await api.account.delete(password);
+      await api.account.delete(usesPassword ? { password } : { confirm: 'DELETE' });
       // The API already ended every session and removed this phone's push registration.
       await signOut({ serverEnded: true });
       router.dismissAll();
@@ -40,20 +44,30 @@ export default function DeleteAccountScreen() {
         Past orders are kept without your sign-in for tax and refund records, as the law requires.
         This cannot be undone.
       </Text>
-      <Field
-        label="Enter your password to confirm"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoComplete="current-password"
-        textContentType="password"
-      />
+      {usesPassword ? (
+        <Field
+          label="Enter your password to confirm"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete="current-password"
+          textContentType="password"
+        />
+      ) : (
+        <Field
+          label="Type DELETE to confirm"
+          value={password}
+          onChangeText={setPassword}
+          autoCapitalize="characters"
+          autoCorrect={false}
+        />
+      )}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <Button
         title="Delete my account"
         tone="danger"
         loading={busy}
-        disabled={!password}
+        disabled={usesPassword ? !password : password.trim() !== 'DELETE'}
         onPress={() => void confirm()}
       />
       <Button title="Keep my account" tone="ghost" disabled={busy} onPress={() => router.back()} />

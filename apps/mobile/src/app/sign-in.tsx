@@ -1,6 +1,7 @@
 import { errorMessage } from '@nixzora/api-client';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
+import { SocialSignIn } from '@/components/SocialSignIn';
 import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { completeSignIn } from '@/lib/account-actions';
 import { api } from '@/lib/api';
@@ -75,6 +76,13 @@ export default function SignInScreen() {
       ) : (
         <>
           <Text variant="title">Welcome back</Text>
+          <SocialSignIn
+            onResult={async (result) => {
+              if ('mfaRequired' in result) return setMfaToken(result.mfaToken);
+              await completeSignIn(result);
+              done();
+            }}
+          />
           <Field
             label="Email"
             value={email}

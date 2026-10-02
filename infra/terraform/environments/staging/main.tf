@@ -97,14 +97,14 @@ module "platform" {
     storefront = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
     admin      = { cpu = 256, memory = 512, desired_count = 1, max_count = 1 }
   }
-  app_config = {
+  app_config = merge({
     TAX_RATES_BPS     = "MD:600"
     SHIPPING_PROVIDER = "none"
     # Public demo: test payments (no card, no money). Switch to "stripe" with test keys
     # (sk_test_…) in the app secret for a real Stripe checkout.
     PAYMENTS_PROVIDER   = "fake"
     ALLOW_TEST_PAYMENTS = "true"
-  }
+  }, var.sign_in_client_ids)
   mobile_app_links = var.mobile_app_links
 
   # Until production exists, the main domain sends visitors to the staging demo. Remove this
@@ -114,4 +114,16 @@ module "platform" {
 
 output "platform" {
   value = module.platform
+}
+
+variable "sign_in_client_ids" {
+  description = "Public client ids for Sign in with Google / Apple: GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, APPLE_SERVICES_ID. Empty hides the buttons."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition = alltrue([for key in keys(var.sign_in_client_ids) : contains(
+      ["GOOGLE_WEB_CLIENT_ID", "GOOGLE_IOS_CLIENT_ID", "GOOGLE_ANDROID_CLIENT_ID", "APPLE_SERVICES_ID", "APPLE_BUNDLE_IDS"], key
+    )])
+    error_message = "Only Google / Apple sign-in client id settings belong here."
+  }
 }

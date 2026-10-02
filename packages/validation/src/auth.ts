@@ -51,9 +51,45 @@ export const ResetPasswordRequestSchema = z.object({
   newPassword: PasswordSchema,
 });
 
-/** Closing an account needs the password again, so a borrowed unlocked phone cannot do it. */
-export const DeleteAccountRequestSchema = z.object({
-  password: z.string().min(1).max(128),
+/**
+ * Closing an account needs the password again, so a borrowed unlocked phone cannot do it.
+ * Accounts that only sign in with Google or Apple have no password: they type DELETE instead.
+ */
+export const DeleteAccountRequestSchema = z
+  .object({
+    password: z.string().min(1).max(128).optional(),
+    confirm: z.literal('DELETE').optional(),
+  })
+  .refine((body) => body.password !== undefined || body.confirm !== undefined, {
+    message: 'Enter your password, or type DELETE to confirm',
+  });
+
+// ── Sign in with Google / Apple ──
+
+export const SocialProviderSchema = z.enum(['google', 'apple']);
+
+export const SocialSignInRequestSchema = z.object({
+  provider: SocialProviderSchema,
+  /** The ID token (JWT) from Google Identity Services or Sign in with Apple. */
+  idToken: z.string().min(20).max(8_000),
+  /** The nonce the app put in the sign-in request; checked against the token. */
+  nonce: z.string().min(16).max(200).optional(),
+  /** Apple shares the name only on the very first sign-in, outside the token. */
+  firstName: z.string().trim().max(100).optional(),
+  lastName: z.string().trim().max(100).optional(),
+  deviceName: DeviceNameSchema,
+});
+
+/** Public client ids the apps need to show each button; null when a provider is not set up. */
+export const SocialProvidersResponseSchema = z.object({
+  google: z
+    .object({
+      webClientId: z.string().nullable(),
+      iosClientId: z.string().nullable(),
+      androidClientId: z.string().nullable(),
+    })
+    .nullable(),
+  apple: z.object({ servicesId: z.string().nullable() }).nullable(),
 });
 
 export const ChangePasswordRequestSchema = z.object({
@@ -99,6 +135,10 @@ export const MeResponseSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   mfaEnabled: z.boolean(),
+  /** False for accounts that only sign in with Google or Apple. */
+  hasPassword: z.boolean(),
+  /** Google / Apple accounts linked for sign-in. */
+  linkedProviders: z.array(z.enum(['google', 'apple'])),
   roles: z.array(z.string()),
   permissions: z.array(z.string()),
 });
@@ -136,6 +176,9 @@ export type MfaChallengeRequest = z.infer<typeof MfaChallengeRequestSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type MfaRequired = z.infer<typeof MfaRequiredSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type SocialProvider = z.infer<typeof SocialProviderSchema>;
+export type SocialSignInRequest = z.infer<typeof SocialSignInRequestSchema>;
+export type SocialProvidersResponse = z.infer<typeof SocialProvidersResponseSchema>;
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
 export type MfaSetupResponse = z.infer<typeof MfaSetupResponseSchema>;

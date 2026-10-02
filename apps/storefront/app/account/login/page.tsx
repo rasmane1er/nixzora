@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthCard, Submit } from '@/components/AuthCard';
+import { SocialSignIn } from '@/components/SocialSignIn';
 import { param, type SearchParams } from '@/lib/params';
+import { socialProviders } from '../social-actions';
 import { signIn } from '../actions';
 
 export const metadata: Metadata = { title: 'Sign in', robots: { index: false } };
@@ -9,6 +11,7 @@ export const metadata: Metadata = { title: 'Sign in', robots: { index: false } }
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const next = param(params, 'next') ?? '/account';
+  const providers = await socialProviders();
   return (
     <AuthCard
       title="Sign in"
@@ -18,6 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         param(params, 'reset') ? 'Password changed. Sign in with your new password.' : undefined
       }
     >
+      <SocialSignIn providers={providers} next={next} intent="signin" />
       <form action={signIn} className="form">
         <input type="hidden" name="next" value={next} />
         <label>

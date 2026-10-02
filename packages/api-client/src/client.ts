@@ -7,6 +7,8 @@ import type {
   CategoryNode,
   CheckoutResponse,
   LoginResponse,
+  SocialProvidersResponse,
+  SocialSignInRequest,
   MeResponse,
   OrderSummary,
   OrderView,
@@ -164,6 +166,12 @@ export function createApiClient(options: ClientOptions) {
         request<AuthTokens>('POST', '/auth/refresh', { body: { refreshToken }, auth: 'none' }),
       logout: (accessToken: string) =>
         request<void>('POST', '/auth/logout', { token: accessToken }),
+      /** Which sign-in buttons to show, with the public client ids the app needs. */
+      socialProviders: () =>
+        request<SocialProvidersResponse>('GET', '/auth/social/providers', { auth: 'none' }),
+      /** Sign in (or sign up) with a Google or Apple ID token. */
+      social: (body: SocialSignInRequest) =>
+        request<LoginResponse>('POST', '/auth/social', { body, auth: 'none' }),
       forgotPassword: (email: string) =>
         request<void>('POST', '/auth/password/forgot', { body: { email }, auth: 'none' }),
       me: () => request<MeResponse>('GET', '/auth/me'),
@@ -244,7 +252,9 @@ export function createApiClient(options: ClientOptions) {
 
     account: {
       /** Permanently closes the account (password required). */
-      delete: (password: string) => request<void>('DELETE', '/me', { body: { password } }),
+      /** Accounts with a password confirm with it; Google/Apple-only accounts send "DELETE". */
+      delete: (confirmation: { password: string } | { confirm: 'DELETE' }) =>
+        request<void>('DELETE', '/me', { body: confirmation }),
       addresses: () => request<SavedAddress[]>('GET', '/me/addresses'),
       wishlist: () => request<ProductCard[]>('GET', '/me/wishlist'),
       wishlistIds: () => request<string[]>('GET', '/me/wishlist/ids'),

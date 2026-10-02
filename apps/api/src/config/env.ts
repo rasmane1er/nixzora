@@ -62,6 +62,25 @@ export const EnvSchema = z
     LOGIN_MAX_FAILURES: z.coerce.number().int().min(3).max(50).default(10),
     LOGIN_LOCKOUT_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
 
+    // ── Sign in with Google / Apple (public client identifiers, not secrets) ──
+    /** OAuth client id of the "Web application" client: the storefront's Google button. */
+    GOOGLE_WEB_CLIENT_ID: z.string().optional(),
+    /** OAuth client ids of the iOS and Android clients: the mobile app. */
+    GOOGLE_IOS_CLIENT_ID: z.string().optional(),
+    GOOGLE_ANDROID_CLIENT_ID: z.string().optional(),
+    /** Services ID registered for Sign in with Apple on the web, e.g. "com.nixzora.shop.web". */
+    APPLE_SERVICES_ID: z.string().optional(),
+    /** iOS bundle ids allowed to sign in natively (comma-separated). */
+    APPLE_BUNDLE_IDS: z
+      .string()
+      .default('com.nixzora.shop,com.nixzora.shop.preview,com.nixzora.shop.dev')
+      .transform((value) =>
+        value
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean),
+      ),
+
     // ── Media storage ──
     /** Public base URL of this API, used for locally served media and upload links. */
     API_PUBLIC_URL: z.url().default('http://localhost:4000'),

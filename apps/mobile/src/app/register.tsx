@@ -3,6 +3,7 @@ import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Banner, Button, Field, Row, Screen, Text } from '@/components/ui';
+import { SocialSignIn } from '@/components/SocialSignIn';
 import { completeSignIn } from '@/lib/account-actions';
 import { api } from '@/lib/api';
 import { fonts } from '@/lib/theme';
@@ -42,6 +43,16 @@ export default function RegisterScreen() {
   return (
     <Screen>
       <Text variant="title">Create your account</Text>
+      <SocialSignIn
+        intent="signup"
+        onResult={async (result) => {
+          // An existing account with two-step verification: finish on the sign-in screen.
+          if ('mfaRequired' in result) return router.replace('/sign-in');
+          await completeSignIn(result);
+          if (router.canGoBack()) router.back();
+          else router.replace('/account');
+        }}
+      />
       <Text muted>Track orders, save products and check out faster.</Text>
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>

@@ -58,7 +58,7 @@ export class AccountController {
     @Body(new ZodValidationPipe(DeleteAccountRequestSchema)) body: DeleteAccountRequest,
     @ReqMeta() meta: RequestMeta,
   ): Promise<void> {
-    return this.auth.deleteAccount(user, body.password, meta);
+    return this.auth.deleteAccount(user, body, meta);
   }
 
   @Get('sessions')

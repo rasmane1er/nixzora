@@ -874,6 +874,38 @@ table.plain th {
   max-width: 440px;
   margin: 40px auto;
 }
+/* Sign in with Google / Apple: the providers draw their own buttons. */
+.social {
+  gap: 10px;
+}
+.social__google {
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+}
+.social__apple {
+  height: 44px;
+  cursor: pointer;
+}
+.social__apple[aria-disabled='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
 .address {
   font-style: normal;
   line-height: 1.6;

@@ -6,6 +6,7 @@ import { LoginThrottleService } from './services/login-throttle.service';
 import { MfaService } from './services/mfa.service';
 import { PasswordService } from './services/password.service';
 import { SessionService } from './services/session.service';
+import { SocialIdentityService } from './services/social-identity.service';
 import { TokenService } from './services/token.service';
 
 @Module({
@@ -16,6 +17,7 @@ import { TokenService } from './services/token.service';
     MfaService,
     PasswordService,
     SessionService,
+    SocialIdentityService,
     TokenService,
   ],
   exports: [TokenService, SessionService],

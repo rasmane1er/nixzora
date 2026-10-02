@@ -9,3 +9,11 @@ image_repositories = {
 image_tag   = "replace-with-a-pushed-git-sha"
 alarm_email = "you@example.com"
 # ops_allowed_cidrs = ["203.0.113.10/32"]
+
+# Sign in with Google / Apple (public ids; leave out to hide the buttons). See docs/runbooks/sign-in-with-google-apple.md.
+# sign_in_client_ids = {
+#   GOOGLE_WEB_CLIENT_ID     = "1234-abc.apps.googleusercontent.com"
+#   GOOGLE_IOS_CLIENT_ID     = "1234-def.apps.googleusercontent.com"
+#   GOOGLE_ANDROID_CLIENT_ID = "1234-ghi.apps.googleusercontent.com"
+#   APPLE_SERVICES_ID        = "com.nixzora.shop.web"
+# }

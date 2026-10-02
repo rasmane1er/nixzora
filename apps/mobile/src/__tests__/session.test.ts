@@ -17,6 +17,8 @@ const me = {
   firstName: 'Ada',
   lastName: null,
   mfaEnabled: false,
+  hasPassword: true,
+  linkedProviders: [],
   roles: ['customer'],
   permissions: [],
 };

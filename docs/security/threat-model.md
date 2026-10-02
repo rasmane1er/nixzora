@@ -149,6 +149,17 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | All shoppers sharing one rate-limit bucket behind the web apps | The storefront and Ops Center relay the shopper IP with an internal key (Terraform-generated); the API trusts one proxy hop (the ALB)               | ✔      |
 | Evaluation drift: a change silently degrades recommendations   | 16-case evaluation set in CI with a 90% bar and zero tolerance for ungrounded picks                                                                 | ✔      |
 
+## Sign in with Google / Apple
+
+| Threat                                                       | Mitigation                                                                                                                         | Status |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Forged or foreign ID token (made for another app)            | Signature checked against Google's / Apple's published keys; issuer and audience must be ours; tokens over an hour old are refused | ✔      |
+| Token replay (a token captured elsewhere is presented to us) | One-time nonce in an HttpOnly cookie (web) or generated per attempt (app) must match the token's nonce                             | ✔      |
+| Account takeover by linking an unverified email              | Linking to an existing account by email only when the provider says the email is verified; otherwise refused                       | ✔      |
+| Social sign-in bypassing two-step verification               | Accounts with MFA get the same code challenge after Google / Apple                                                                 | ✔      |
+| Provider secrets leaked                                      | None exist: no code exchange, only public client ids                                                                               | ✔      |
+| Account with no password cannot be closed                    | Google/Apple-only accounts confirm deletion by typing DELETE; linked identities are erased                                         | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).

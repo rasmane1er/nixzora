@@ -14,8 +14,15 @@ import {
   type LoginResponse,
   type MeResponse,
   type RegisterRequest,
+  type SocialProvider,
+  type SocialSignInRequest,
 } from '@nixzora/validation';
-import { type Session, type VerificationPurpose } from '../../../generated/prisma/client';
+import {
+  type IdentityProvider,
+  type Session,
+  type User,
+  type VerificationPurpose,
+} from '../../../generated/prisma/client';
 import { type Env } from '../../../config/env';
 import { randomToken, sha256 } from '../../../common/crypto';
 import { type RequestMeta } from '../../../common/request-meta';
@@ -27,6 +34,7 @@ import { LoginThrottleService } from './login-throttle.service';
 import { MfaService } from './mfa.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
+import { label, SocialIdentityService } from './social-identity.service';
 import { TokenService } from './token.service';
 
 const INVALID_CREDENTIALS = 'Email or password is incorrect.';
@@ -46,6 +54,7 @@ export class AuthService {
     private readonly throttle: LoginThrottleService,
     private readonly audit: AuditService,
     private readonly mail: MailService,
+    private readonly social: SocialIdentityService,
     config: ConfigService<Env, true>,
   ) {
     this.webAppUrl = config.get('WEB_APP_URL', { infer: true });
@@ -161,6 +170,111 @@ export class AuthService {
     return this.issueTokens(issued.session, issued.refreshToken);
   }
 
+  /**
+   * Sign in with Google or Apple. Finds the account linked to that provider account; otherwise
+   * links the account with the same (provider-verified) email; otherwise creates one. Accounts
+   * with two-step verification still get the code challenge.
+   */
+  async socialSignIn(input: SocialSignInRequest, meta: RequestMeta): Promise<LoginResponse> {
+    const identity = await this.social.verify(input.provider, input.idToken, input.nonce);
+    const provider = toProvider(input.provider);
+
+    const linked = await this.prisma.userIdentity.findUnique({
+      where: { provider_subject: { provider, subject: identity.subject } },
+      include: { user: true },
+    });
+    let user: User | null = linked?.user ?? null;
+    let created = false;
+
+    if (!user) {
+      const existing = await this.prisma.user.findUnique({ where: { email: identity.email } });
+      if (existing) {
+        // Linking to an existing account by email is only safe when the provider has verified
+        // the address; otherwise anyone could claim an account by typing its email at Google.
+        if (!identity.emailVerified) {
+          throw new UnauthorizedException(
+            `Your ${label(input.provider)} email is not verified. Sign in with your password instead.`,
+          );
+        }
+        user = existing;
+      } else {
+        user = await this.prisma.user.create({
+          data: {
+            email: identity.email,
+            emailVerifiedAt: identity.emailVerified ? new Date() : null,
+            firstName: input.firstName || null,
+            lastName: input.lastName || null,
+            roles: { create: [{ role: { connect: { key: 'customer' } } }] },
+          },
+        });
+        created = true;
+      }
+    }
+
+    if (user.status !== 'ACTIVE') {
+      await this.audit.record({
+        action: 'auth.login.failed',
+        actorId: user.id,
+        meta,
+        metadata: { provider: input.provider, reason: 'inactive' },
+      });
+      throw new UnauthorizedException('This account cannot sign in. Contact support.');
+    }
+
+    if (linked) {
+      await this.prisma.userIdentity.update({
+        where: { id: linked.id },
+        data: { lastUsedAt: new Date() },
+      });
+    } else {
+      await this.prisma.userIdentity.create({
+        data: { userId: user.id, provider, subject: identity.subject, email: identity.email },
+      });
+      if (identity.emailVerified && !user.emailVerifiedAt) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerifiedAt: new Date() },
+        });
+      }
+      await this.audit.record({
+        action: created ? 'auth.register' : 'auth.identity.linked',
+        actorId: user.id,
+        entityType: 'user',
+        entityId: user.id,
+        meta,
+        metadata: { provider: input.provider },
+      });
+      if (created && !identity.emailVerified) await this.sendEmailVerification(user.id, user.email);
+    }
+
+    if (user.mfaEnabled) {
+      await this.audit.record({ action: 'auth.login.mfa_challenge', actorId: user.id, meta });
+      return {
+        mfaRequired: true,
+        mfaToken: await this.tokens.signMfaChallenge({
+          sub: user.id,
+          deviceName: input.deviceName,
+        }),
+      };
+    }
+
+    const issued = await this.sessions.create({
+      userId: user.id,
+      meta,
+      deviceName: input.deviceName,
+      mfaVerified: false,
+    });
+    await this.audit.record({
+      action: 'auth.login.succeeded',
+      actorId: user.id,
+      entityType: 'session',
+      entityId: issued.session.id,
+      meta,
+      metadata: { provider: input.provider },
+    });
+    return this.issueTokens(issued.session, issued.refreshToken, 'fed');
+  }
+
   async completeMfaChallenge(
     mfaToken: string,
     code: string,
@@ -214,7 +328,10 @@ export class AuthService {
   }
 
   async me(userId: string, auth: AuthUser): Promise<MeResponse> {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: { identities: { select: { provider: true } } },
+    });
     return {
       id: user.id,
       email: user.email,
@@ -222,6 +339,8 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       mfaEnabled: user.mfaEnabled,
+      hasPassword: user.passwordHash !== null,
+      linkedProviders: [...new Set(user.identities.map(({ provider }) => fromProvider(provider)))],
       roles: auth.roles,
       permissions: auth.permissions,
     };
@@ -337,13 +456,22 @@ export class AuthService {
    * people sign up). Personal data is erased or anonymised; orders stay for tax and refund records
    * but no longer point to a person who can sign in. Staff accounts are closed by an admin.
    */
-  async deleteAccount(user: AuthUser, password: string, meta: RequestMeta): Promise<void> {
+  async deleteAccount(
+    user: AuthUser,
+    confirmation: { password?: string; confirm?: 'DELETE' },
+    meta: RequestMeta,
+  ): Promise<void> {
     const record = await this.prisma.user.findUniqueOrThrow({
       where: { id: user.id },
       include: { roles: { select: { role: { select: { key: true } } } } },
     });
-    if (!(await this.passwords.verify(record.passwordHash, password))) {
-      throw new BadRequestException('Your password is incorrect.');
+    if (record.passwordHash) {
+      // Accounts with a password must enter it; typing DELETE is not enough.
+      if (!(await this.passwords.verify(record.passwordHash, confirmation.password ?? ''))) {
+        throw new BadRequestException('Your password is incorrect.');
+      }
+    } else if (confirmation.confirm !== 'DELETE') {
+      throw new BadRequestException('Type DELETE to confirm.');
     }
     if (record.roles.some(({ role }) => role.key !== 'customer')) {
       throw new ConflictException('Staff accounts are closed by an administrator.');
@@ -355,6 +483,7 @@ export class AuthService {
       this.prisma.pushDevice.deleteMany({ where: { userId: user.id } }),
       this.prisma.verificationToken.deleteMany({ where: { userId: user.id } }),
       this.prisma.mfaRecoveryCode.deleteMany({ where: { userId: user.id } }),
+      this.prisma.userIdentity.deleteMany({ where: { userId: user.id } }),
       this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -383,8 +512,13 @@ export class AuthService {
 
   // ───────────── Helpers ─────────────
 
-  private async issueTokens(session: Session, refreshToken: string): Promise<AuthTokens> {
-    const amr = session.mfaVerifiedAt ? ['pwd', 'otp'] : ['pwd'];
+  /** `method` is the first factor: "pwd" (password) or "fed" (Google / Apple). */
+  private async issueTokens(
+    session: Session,
+    refreshToken: string,
+    method: 'pwd' | 'fed' = 'pwd',
+  ): Promise<AuthTokens> {
+    const amr = session.mfaVerifiedAt ? [method, 'otp'] : [method];
     return {
       accessToken: await this.tokens.signAccessToken({ sub: session.userId, sid: session.id, amr }),
       accessTokenExpiresIn: this.tokens.accessTtlSeconds,
@@ -435,4 +569,12 @@ export class AuthService {
     if (count !== 1) throw invalid;
     return record;
   }
+}
+
+function toProvider(provider: SocialProvider): IdentityProvider {
+  return provider === 'google' ? 'GOOGLE' : 'APPLE';
+}
+
+function fromProvider(provider: IdentityProvider): SocialProvider {
+  return provider === 'GOOGLE' ? 'google' : 'apple';
 }

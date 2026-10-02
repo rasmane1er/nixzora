@@ -31,6 +31,11 @@ const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
 const linkDomain = process.env.APP_LINK_DOMAIN;
 /** Apple Pay merchant id registered in the Apple Developer account. */
 const merchantId = process.env.APPLE_MERCHANT_ID ?? 'merchant.com.nixzora.shop';
+/**
+ * Google sign-in on iOS returns to the app through the iOS OAuth client's reversed id, e.g.
+ * "com.googleusercontent.apps.1234-abcd" (public, from Google Cloud → Credentials).
+ */
+const googleIosScheme = process.env.GOOGLE_IOS_URL_SCHEME;
 const LINK_PATHS = ['/p/', '/c/', '/orders/', '/search', '/cart'];
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -41,11 +46,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  scheme: variant === 'production' ? 'nixzora' : `nixzora-${variant}`,
+  // Extra schemes for Google sign-in: Android returns to "<package>:/oauthredirect", iOS to the
+  // iOS client's reversed id.
+  scheme: [
+    variant === 'production' ? 'nixzora' : `nixzora-${variant}`,
+    BUNDLE_ID[variant],
+    ...(googleIosScheme ? [googleIosScheme] : []),
+  ],
   userInterfaceStyle: 'automatic',
   runtimeVersion: { policy: 'appVersion' },
   ios: {
     bundleIdentifier: BUNDLE_ID[variant],
+    usesAppleSignIn: true,
     // iOS 18+ home-screen appearances: default, dark and tinted.
     icon: {
       light: './assets/icon.png',
@@ -107,6 +119,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-image',
     'expo-web-browser',
+    'expo-apple-authentication',
     ['expo-secure-store', { faceIDPermission: 'Use Face ID to unlock your NIXZORA account.' }],
     [
       'expo-local-authentication',

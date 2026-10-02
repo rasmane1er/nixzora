@@ -22,6 +22,10 @@ import {
   RegisterRequestSchema,
   type ResetPasswordRequest,
   ResetPasswordRequestSchema,
+  type SocialProvidersResponse,
+  SocialProvidersResponseSchema,
+  type SocialSignInRequest,
+  SocialSignInRequestSchema,
   type TokenRequest,
   TokenRequestSchema,
 } from '@nixzora/validation';
@@ -31,6 +35,7 @@ import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from './auth-user';
 import { CurrentUser, Public } from './guards/decorators';
 import { AuthService } from './services/auth.service';
+import { SocialIdentityService } from './services/social-identity.service';
 
 // Tighter per-IP limits on endpoints attackers target (on top of the global limit).
 const STRICT = { default: { limit: 5, ttl: 60_000 } };
@@ -39,7 +44,10 @@ const SIGN_IN = { default: { limit: 10, ttl: 60_000 } };
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly social: SocialIdentityService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -68,6 +76,30 @@ export class AuthController {
     @ReqMeta() meta: RequestMeta,
   ): Promise<LoginResponse> {
     return this.auth.login(body, meta);
+  }
+
+  @Public()
+  @Get('social/providers')
+  @ApiZodResponse(SocialProvidersResponseSchema, 200, 'Which sign-in buttons to show.')
+  socialProviders(): SocialProvidersResponse {
+    return this.social.providers();
+  }
+
+  @Public()
+  @Post('social')
+  @HttpCode(HttpStatus.OK)
+  @Throttle(SIGN_IN)
+  @ApiZodBody(SocialSignInRequestSchema)
+  @ApiZodResponse(
+    LoginResponseSchema,
+    200,
+    'Signs in (or signs up) with a Google or Apple ID token. MFA challenge when two-step is on.',
+  )
+  socialSignIn(
+    @Body(new ZodValidationPipe(SocialSignInRequestSchema)) body: SocialSignInRequest,
+    @ReqMeta() meta: RequestMeta,
+  ): Promise<LoginResponse> {
+    return this.auth.socialSignIn(body, meta);
   }
 
   @Public()

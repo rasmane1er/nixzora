@@ -52,8 +52,33 @@ model User {
   wishlist           WishlistItem[]
   notes              CustomerNote[]
   pushDevices        PushDevice[]
+  identities         UserIdentity[]
 
   @@map("users")
+}
+
+enum IdentityProvider {
+  GOOGLE
+  APPLE
+}
+
+/// A Google or Apple account linked to a user (sign in with Google / Apple).
+model UserIdentity {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  provider   IdentityProvider
+  /// The provider's stable user id (the ID token's "sub").
+  subject    String
+  /// Email the provider reported when the account was linked (Apple may give a relay address).
+  email      String?
+  createdAt  DateTime         @default(now()) @map("created_at")
+  lastUsedAt DateTime         @default(now()) @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+  @@map("user_identities")
 }
 
 model Session {
