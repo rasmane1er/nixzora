@@ -1,0 +1,25 @@
+{
+  "name": "@nixzora/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NIXZORA design system: brand tokens, logo and small shared React components (source package, compiled by each Next.js app)",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@nixzora/eslint-config": "workspace:*",
+    "@nixzora/tsconfig": "workspace:*",
+    "@types/react": "19.3.0",
+    "eslint": "9.39.5",
+    "react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}

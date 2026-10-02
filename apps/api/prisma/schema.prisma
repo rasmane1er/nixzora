@@ -1,0 +1,674 @@
+// NIXZORA domain model — Phase 0 draft.
+// Covers identity, catalog, inventory, orders and payments (Phases 1–3)
+// plus the audit log and transactional outbox used by every module.
+// Reviews, shipments, promotions and sellers arrive in later migrations.
+//
+// Conventions
+// - Primary keys are UUIDv7 (time-ordered) unless noted.
+// - Tables and columns are snake_case in PostgreSQL.
+// - Money is always integer minor units (`*_cents`) plus a currency code.
+// - Each module owns its tables; other modules go through its service.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────── Identity ───────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  email           String     @unique
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  passwordHash    String?    @map("password_hash")
+  firstName       String?    @map("first_name")
+  lastName        String?    @map("last_name")
+  phone           String?
+  status          UserStatus @default(ACTIVE)
+  mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
+  /// TOTP secret, encrypted at the application layer (AES-256-GCM).
+  mfaSecretEnc    String?    @map("mfa_secret_enc")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  sessions           Session[]
+  roles              UserRole[]
+  addresses          Address[]
+  orders             Order[]
+  verificationTokens VerificationToken[]
+  mfaRecoveryCodes   MfaRecoveryCode[]
+  reviews            Review[]
+  wishlist           WishlistItem[]
+  notes              CustomerNote[]
+  pushDevices        PushDevice[]
+
+  @@map("users")
+}
+
+model Session {
+  id                       String    @id @default(uuid(7)) @db.Uuid
+  userId                   String    @map("user_id") @db.Uuid
+  /// SHA-256 of the current refresh token; rotated on every refresh.
+  refreshTokenHash         String    @unique @map("refresh_token_hash")
+  /// SHA-256 of the token it replaced. Presenting it again means the token was stolen.
+  previousRefreshTokenHash String?   @unique @map("previous_refresh_token_hash")
+  /// Set when this session passed a second factor (TOTP or recovery code).
+  mfaVerifiedAt            DateTime? @map("mfa_verified_at")
+  userAgent                String?   @map("user_agent")
+  ipAddress                String?   @map("ip_address")
+  deviceName               String?   @map("device_name")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  lastUsedAt               DateTime  @default(now()) @map("last_used_at")
+  expiresAt                DateTime  @map("expires_at")
+  revokedAt                DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+/// Single-use, expiring tokens sent by email. Only the SHA-256 hash is stored.
+model VerificationToken {
+  id        String              @id @default(uuid(7)) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  purpose   VerificationPurpose
+  tokenHash String              @unique @map("token_hash")
+  expiresAt DateTime            @map("expires_at")
+  usedAt    DateTime?           @map("used_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("verification_tokens")
+}
+
+/// One-time MFA recovery codes. Only the SHA-256 hash is stored.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mfa_recovery_codes")
+}
+
+model Role {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  key         String           @unique
+  name        String
+  description String?
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  /// e.g. "catalog.product.write", "orders.refund"
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Uuid
+  roleId    String   @map("role_id") @db.Uuid
+  grantedAt DateTime @default(now()) @map("granted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Address {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  label             String?
+  fullName          String   @map("full_name")
+  line1             String
+  line2             String?
+  city              String
+  region            String
+  postalCode        String   @map("postal_code")
+  /// ISO 3166-1 alpha-2
+  country           String   @db.Char(2)
+  phone             String?
+  isDefaultShipping Boolean  @default(false) @map("is_default_shipping")
+  isDefaultBilling  Boolean  @default(false) @map("is_default_billing")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─────────────────────────── Catalog ───────────────────────────
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Category {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  parentId    String?    @map("parent_id") @db.Uuid
+  slug        String     @unique
+  name        String
+  description String?
+  position    Int        @default(0)
+  isActive    Boolean    @default(true) @map("is_active")
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Brand {
+  id       String    @id @default(uuid(7)) @db.Uuid
+  slug     String    @unique
+  name     String
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  slug        String        @unique
+  title       String
+  description String
+  status      ProductStatus @default(DRAFT)
+  categoryId  String        @map("category_id") @db.Uuid
+  brandId     String?       @map("brand_id") @db.Uuid
+  /// Normalized specs, e.g. {"ram_gb": 32, "storage_gb": 1024, "battery_hours": 18}
+  attributes  Json          @default("{}")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  category Category         @relation(fields: [categoryId], references: [id])
+  brand    Brand?           @relation(fields: [brandId], references: [id])
+  variants ProductVariant[]
+  images   ProductImage[]
+  reviews  Review[]
+  wishlist WishlistItem[]
+  searchDoc ProductSearchDoc?
+
+  @@index([categoryId, status])
+  @@map("products")
+}
+
+model ProductImage {
+  id         String @id @default(uuid(7)) @db.Uuid
+  productId  String @map("product_id") @db.Uuid
+  /// S3 object key, served through CloudFront
+  storageKey String @map("storage_key")
+  alt        String
+  position   Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductVariant {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  productId      String   @map("product_id") @db.Uuid
+  sku            String   @unique
+  /// GTIN printed on the box (EAN-13, UPC-A, EAN-8 or GTIN-14), used by the app's scanner.
+  barcode        String?  @unique
+  title          String
+  /// e.g. {"memory": "32GB", "color": "Graphite"}
+  options        Json     @default("{}")
+  priceCents     Int      @map("price_cents")
+  compareAtCents Int?     @map("compare_at_cents")
+  currency       String   @default("USD") @db.Char(3)
+  weightGrams    Int?     @map("weight_grams")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory  InventoryItem?
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ─────────────────────────── Inventory ───────────────────────────
+
+model InventoryItem {
+  variantId String   @id @map("variant_id") @db.Uuid
+  onHand    Int      @default(0) @map("on_hand")
+  /// Units held by unpaid checkouts; available = on_hand - reserved
+  reserved  Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  variant      ProductVariant         @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  reservations InventoryReservation[]
+
+  @@map("inventory_items")
+}
+
+model InventoryReservation {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  orderId   String?  @map("order_id") @db.Uuid
+  quantity  Int
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  inventory InventoryItem @relation(fields: [variantId], references: [variantId], onDelete: Cascade)
+
+  @@index([variantId])
+  @@index([expiresAt])
+  @@map("inventory_reservations")
+}
+
+// ─────────────────────────── Orders ───────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  FULFILLING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+model Order {
+  id              String      @id @default(uuid(7)) @db.Uuid
+  /// Customer-facing number, e.g. NX-10482
+  number          String      @unique
+  userId          String?     @map("user_id") @db.Uuid
+  email           String
+  status          OrderStatus @default(PENDING_PAYMENT)
+  currency        String      @default("USD") @db.Char(3)
+  subtotalCents   Int         @map("subtotal_cents")
+  shippingCents   Int         @default(0) @map("shipping_cents")
+  taxCents        Int         @default(0) @map("tax_cents")
+  discountCents   Int         @default(0) @map("discount_cents")
+  couponCode      String?     @map("coupon_code")
+  /// Total refunded so far (partial refunds and returns).
+  refundedCents   Int         @default(0) @map("refunded_cents")
+  /// Postage paid for the label, and where to print it.
+  labelUrl        String?     @map("label_url")
+  postageCents    Int?        @map("postage_cents")
+  totalCents      Int         @map("total_cents")
+  /// Address snapshots: orders never change when an address book entry does.
+  shippingAddress Json        @map("shipping_address")
+  billingAddress  Json?       @map("billing_address")
+  trackingCarrier String?     @map("tracking_carrier")
+  trackingNumber  String?     @map("tracking_number")
+  cancelReason    String?     @map("cancel_reason")
+  placedAt        DateTime?   @map("placed_at")
+  fulfillingAt    DateTime?   @map("fulfilling_at")
+  shippedAt       DateTime?   @map("shipped_at")
+  deliveredAt     DateTime?   @map("delivered_at")
+  cancelledAt     DateTime?   @map("cancelled_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  payments Payment[]
+  returns  ReturnRequest[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  variantId      String? @map("variant_id") @db.Uuid
+  /// Snapshots of what was bought, at the price paid
+  productTitle   String  @map("product_title")
+  variantTitle   String  @map("variant_title")
+  sku            String
+  unitPriceCents Int     @map("unit_price_cents")
+  quantity       Int
+  totalCents     Int     @map("total_cents")
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ─────────────────────────── Payments ───────────────────────────
+
+enum PaymentProvider {
+  STRIPE
+  /// Development and tests only: payments confirmed without a card.
+  FAKE
+}
+
+enum PaymentStatus {
+  REQUIRES_ACTION
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+model Payment {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  orderId           String          @map("order_id") @db.Uuid
+  provider          PaymentProvider
+  /// e.g. Stripe PaymentIntent id (pi_...). No card data is ever stored.
+  providerPaymentId String          @unique @map("provider_payment_id")
+  status            PaymentStatus
+  amountCents       Int             @map("amount_cents")
+  currency          String          @db.Char(3)
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  refunds Refund[]
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+model Refund {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  paymentId        String   @map("payment_id") @db.Uuid
+  providerRefundId String   @unique @map("provider_refund_id")
+  amountCents      Int      @map("amount_cents")
+  reason           String?
+  status           String
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+/// Webhook idempotency: an event id is processed at most once.
+model ProcessedWebhookEvent {
+  id         String          @id
+  provider   PaymentProvider
+  receivedAt DateTime        @default(now()) @map("received_at")
+
+  @@map("processed_webhook_events")
+}
+
+// ─────────────────────────── Platform ───────────────────────────
+
+enum ActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+/// Append-only. UPDATE and DELETE are blocked by a database trigger.
+model AuditLog {
+  id         BigInt    @id @default(autoincrement())
+  actorType  ActorType @map("actor_type")
+  actorId    String?   @map("actor_id") @db.Uuid
+  /// e.g. "auth.login.succeeded", "orders.refund.created"
+  action     String
+  entityType String?   @map("entity_type")
+  entityId   String?   @map("entity_id")
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+/// Transactional outbox: written in the same transaction as the change,
+/// then published by a worker (BullMQ now, Kafka in Phase 8).
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id")
+  type          String
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at")
+  publishedAt   DateTime? @map("published_at")
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+// ───────────── Phase 4: customers, reviews, promotions, returns ─────────────
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// One review per customer per product. Visible only after moderation.
+model Review {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  productId        String       @map("product_id") @db.Uuid
+  userId           String       @map("user_id") @db.Uuid
+  /// 1 to 5 stars
+  rating           Int
+  title            String
+  body             String
+  status           ReviewStatus @default(PENDING)
+  /// The author has a paid order containing this product.
+  verifiedPurchase Boolean      @default(false) @map("verified_purchase")
+  moderatedById    String?      @map("moderated_by_id") @db.Uuid
+  moderatedAt      DateTime?    @map("moderated_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId, status])
+  @@index([status, createdAt])
+  @@map("reviews")
+}
+
+model WishlistItem {
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@map("wishlist_items")
+}
+
+enum CouponType {
+  /// value is in basis points (1500 = 15% off)
+  PERCENT
+  /// value is in cents (1000 = $10 off)
+  FIXED
+}
+
+model Coupon {
+  id               String     @id @default(uuid(7)) @db.Uuid
+  /// Upper-case, e.g. WELCOME10
+  code             String     @unique
+  description      String?
+  type             CouponType
+  value            Int
+  minSubtotalCents Int        @default(0) @map("min_subtotal_cents")
+  maxRedemptions   Int?       @map("max_redemptions")
+  redemptionCount  Int        @default(0) @map("redemption_count")
+  startsAt         DateTime?  @map("starts_at")
+  endsAt           DateTime?  @map("ends_at")
+  isActive         Boolean    @default(true) @map("is_active")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
+
+/// Private notes staff keep about a customer (support history).
+model CustomerNote {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  /// Staff author; kept as plain values so notes survive staff account changes.
+  authorId    String?  @map("author_id") @db.Uuid
+  authorEmail String   @map("author_email")
+  body        String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("customer_notes")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  REFUNDED
+}
+
+model ReturnRequest {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  orderId      String       @map("order_id") @db.Uuid
+  status       ReturnStatus @default(REQUESTED)
+  reason       String
+  /// [{ "orderItemId": "...", "quantity": 1 }]
+  items        Json
+  customerNote String?      @map("customer_note")
+  staffNote    String?      @map("staff_note")
+  refundCents  Int?         @map("refund_cents")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  resolvedAt   DateTime?    @map("resolved_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status, createdAt])
+  @@map("return_requests")
+}
+
+// ─────────────────────────── Mobile ───────────────────────────
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+/// An installed copy of the mobile app that may receive push notifications.
+model PushDevice {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  /// Expo push token, e.g. ExponentPushToken[...]. One device belongs to one account at a time.
+  token      String         @unique
+  platform   DevicePlatform
+  createdAt  DateTime       @default(now()) @map("created_at")
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_devices")
+}
+
+// ─────────────────────────── Intelligence (Phase 6, ADR-0009) ───────────────────────────
+
+/// One searchable document per product: weighted text for full-text search and an embedding
+/// for semantic search. Written by the search indexer with raw SQL (vector casts).
+model ProductSearchDoc {
+  productId      String                      @id @map("product_id") @db.Uuid
+  titleText      String                      @map("title_text")
+  facetsText     String                      @map("facets_text")
+  bodyText       String                      @map("body_text")
+  contentHash    String                      @map("content_hash")
+  embeddingModel String                      @map("embedding_model")
+  embedding      Unsupported("vector(512)")?
+  /// Generated column: weighted tsvector of the three text parts (see the migration).
+  document       Unsupported("tsvector")?
+  updatedAt      DateTime                    @default(now()) @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_search_docs")
+}
+
+/// Every model call (paid or local), for the AI operations panel and the daily spend cap.
+model AiRequest {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  /// e.g. "assistant", "embeddings", "enrichment"
+  feature      String
+  driver       String
+  model        String
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  /// Estimated cost in millionths of a US dollar.
+  costMicros   Int      @default(0) @map("cost_micros")
+  latencyMs    Int      @map("latency_ms")
+  /// Assistant answers: every product it named was in the retrieved set.
+  grounded     Boolean?
+  error        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([feature, createdAt])
+  @@map("ai_requests")
+}

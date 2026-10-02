@@ -1,0 +1,56 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+.turbo/
+
+# generated
+apps/api/src/generated/
+next-env.d.ts
+
+# env and secrets — never commit real values
+.env
+.env.*
+!.env.example
+
+# uploaded files in local development
+apps/api/storage/
+dump.rdb
+
+# logs and coverage
+*.log
+coverage/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# browser test output
+playwright-report/
+test-results/
+
+# update bundles delivered from Claude sessions
+_updates/
+
+# Terraform / OpenTofu
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/*.tfvars
+infra/**/backend.hcl
+!infra/**/*.example
+infra/**/.terraform.lock.hcl
+
+# Local transfer archives
+*.zip
+
+# Compiled test output (api-client)
+dist-test/

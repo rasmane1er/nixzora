@@ -1,0 +1,3 @@
+# Copy to backend.hcl (git-ignored) with the bucket from the bootstrap output.
+bucket = "nixzora-terraform-state-123456789012"
+region = "us-east-1"

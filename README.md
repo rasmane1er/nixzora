@@ -1,0 +1,159 @@
+# NIXZORA
+
+**AI-native commerce platform.** Shoppers describe what they need; NIXZORA finds it, explains it and builds the cart.
+
+This repository is a monorepo for the web storefront, the iOS and Android app, the API, the Ops Center and the shared packages they use. It is built in public, phase by phase.
+
+|                     |                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------- |
+| **Status**          | Phase 5 · Mobile app: iOS and Android app built, store test builds ready to ship |
+| **Launch vertical** | Computers and electronics                                                        |
+| **Next release**    | v1.0 · AI shopping assistant (May 2027)                                          |
+
+## Stack
+
+| Layer          | Technology                                                                        |
+| -------------- | --------------------------------------------------------------------------------- |
+| Web storefront | Next.js 16, React 19, TypeScript                                                  |
+| Mobile app     | Expo SDK 57 (React Native 0.86), Expo Router, TanStack Query, Stripe PaymentSheet |
+| API            | NestJS 11 modular monolith, REST + OpenAPI                                        |
+| Data           | PostgreSQL 16 with Prisma 7, Redis 7                                              |
+| Shared code    | Zod schemas (`@nixzora/validation`), shared types (`@nixzora/types`)              |
+| Tooling        | pnpm workspaces, Turborepo, ESLint, Prettier, Jest, GitHub Actions                |
+| Later phases   | OpenSearch, BullMQ → Kafka, EKS                                                   |
+
+Why it is shaped this way: [ADR-0001 Modular monolith first](docs/adr/0001-modular-monolith-first.md).
+
+## Repository layout
+
+```
+nixzora/
+├─ apps/
+│  ├─ api/            NestJS API: identity, catalog, inventory, media, admin, audit log, health
+│  ├─ storefront/     Next.js store: browse, search, cart, checkout, orders, account (port 3000)
+│  ├─ admin/          Next.js Ops Center for staff (port 3001)
+│  └─ mobile/         Expo app for iOS and Android: shop, scan, pay, track (see its README)
+├─ packages/
+│  ├─ ui/             Design system: brand tokens, logo, price (used by both web apps)
+│  ├─ api-client/     Typed API client with token refresh (used by the mobile app)
+│  ├─ validation/     Zod schemas shared by API and clients
+│  ├─ types/          Shared TypeScript types
+│  ├─ tsconfig/       Base TypeScript configs
+│  └─ eslint-config/  Shared lint rules
+├─ docs/
+│  ├─ adr/            Architecture decision records
+│  ├─ architecture/   ERD and diagrams
+│  └─ security/       Threat model
+├─ infra/terraform/   AWS infrastructure (bootstrap, platform module, staging/production)
+├─ scripts/deploy/    Release scripts used by the Deploy workflow
+├─ docker-compose.yml PostgreSQL + Redis for local development
+└─ .github/           CI and Dependabot
+```
+
+## Getting started
+
+Requirements: Node.js 22.12 or newer, pnpm 10 (`corepack enable`), Docker Desktop.
+
+```bash
+# 1. Install dependencies
+corepack enable
+pnpm install
+
+# 2. Configure environment (local development values only)
+cp .env.example .env
+cp .env.example apps/api/.env
+
+# 3. Start PostgreSQL and Redis
+pnpm db:up
+
+# 4. Create the database tables (also seeds roles and permissions)
+pnpm --filter @nixzora/api prisma:deploy
+
+# 4b. Load demo catalog data: 14 categories, 10 fictional brands, 20 products
+pnpm --filter @nixzora/api db:seed
+
+# 4c. Create your first staff admin (prints a one-time temporary password)
+pnpm --filter @nixzora/api admin:create you@example.com
+
+# 5. Optional: stable signing keys so sign-ins survive API restarts.
+#    Paste the three printed lines into apps/api/.env
+pnpm --filter @nixzora/api keys:generate
+
+# 6. Run the API, storefront and Ops Center together
+pnpm dev
+```
+
+Then open:
+
+- Storefront: http://localhost:3000 — browse the demo catalog and buy something. Payments run in test mode (no card) until you add Stripe test keys; receipts are printed in the API log.
+- Ops Center: http://localhost:3001 — sign in with the admin you created; it walks you through two-step verification first.
+- API health: http://localhost:4000/api/v1/health
+- API docs (Swagger): http://localhost:4000/docs
+
+## Common commands
+
+| Command                                          | What it does                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| `pnpm dev`                                       | Run every app in watch mode                                               |
+| `pnpm build`                                     | Build all packages and apps                                               |
+| `pnpm lint` / `pnpm typecheck`                   | Static checks across the monorepo                                         |
+| `pnpm test`                                      | Unit tests                                                                |
+| `pnpm test:e2e`                                  | API end-to-end tests (needs `pnpm db:up`)                                 |
+| `pnpm --filter @nixzora/storefront test:browser` | Browser test: a guest buys a product (needs `pnpm build` and seeded data) |
+| `pnpm --filter @nixzora/mobile dev`              | Start the mobile app (Expo dev server; open it in a development build)    |
+| `pnpm db:migrate`                                | Create and apply a new migration after editing `schema.prisma`            |
+| `pnpm db:studio`                                 | Browse the database in Prisma Studio                                      |
+| `pnpm obs:up`                                    | Start Jaeger for traces (http://localhost:16686)                          |
+| `pnpm format`                                    | Format the codebase with Prettier                                         |
+
+## What works today
+
+- **Accounts**: sign-up, sign-in, email verification, forgot/reset/change password.
+- **Sessions**: 15-minute EdDSA access tokens, rotating refresh tokens with theft detection, per-device sign-out.
+- **Two-step verification**: authenticator apps (TOTP) plus 10 recovery codes; required for staff.
+- **Roles and permissions**: customer, support, catalog manager, admin.
+- **Audit log**: every security event, append-only, readable by admins at `GET /api/v1/admin/audit-logs`.
+- **Protection**: per-IP rate limits, per-account lockout, security headers, strict config validation.
+- **Catalog**: categories (tree), brands, products with variants, specs and images; public browse and search API (PostgreSQL full-text search with filters and sorting).
+- **Inventory**: on-hand and reserved stock, checkout holds that can never oversell (row locks), expiring holds, audited adjustments.
+- **Media**: one-time signed upload links, file-type checks on content, local disk in development and S3 in production.
+- **Ops Center** (`apps/admin`): dashboard, products, categories and brands, inventory, users and roles, audit log, two-step setup and device sign-out. Tokens stay in HttpOnly cookies on the server.
+- **Storefront**: home, departments, search with filters, product pages (with structured data for search engines), sitemap.
+- **Cart**: guest carts in Redis, merged into the account cart at sign-in; prices always recomputed on the server.
+- **Checkout**: US addresses, flat shipping (free over $99), state sales tax, stock held for 15 minutes, Stripe Payment Element (or test mode), signed and idempotent webhooks.
+- **Orders**: confirmation and tracking pages, signed links for guests, order history and address book for customers, receipt/shipped/cancelled emails via the outbox, fulfillment (pack, ship with tracking, deliver, cancel with refund) in the Ops Center.
+- **Operations**: partial refunds, customer returns (request → approve → receive → refund and restock), support notes on customers, review moderation, coupons, shipping labels (EasyPost, or printable test labels locally) and delivery tracking webhooks.
+- **Shoppers**: product reviews with ratings and verified-purchase badges, wishlists, discount codes (try `WELCOME10` on orders over $50).
+- **Deployment**: Docker images for each app, Terraform for AWS (ECS Fargate, RDS, ElastiCache, S3 + CloudFront, WAF, Secrets Manager, backups, alarms, SES), and a GitHub Actions pipeline with migrations, rolling deploys, automatic rollback and production approval.
+- **Mobile app** (`apps/mobile`): browse, search, product pages, cart with promo codes, checkout with Stripe PaymentSheet (cards, Apple Pay, Google Pay), order history with a delivery timeline, saved products, barcode and QR scanning, push notifications for order updates, Face ID / fingerprint unlock, universal links, and a catalog that stays browsable offline.
+- **Observability**: OpenTelemetry traces (optional Jaeger), JSON logs with trace ids.
+
+Try it in Swagger at http://localhost:4000/docs, or see [Authentication flows](docs/architecture/auth-flows.md). In development, emails (verification and reset links) are printed in the API log.
+
+## Documentation
+
+- [Authentication flows and endpoints](docs/architecture/auth-flows.md)
+- [Checkout and payment flow](docs/architecture/checkout-flow.md)
+- [Mobile app architecture](docs/architecture/mobile.md) and [mobile release runbook](docs/runbooks/mobile-release.md)
+- [Deployment architecture](docs/architecture/deployment.md) and runbooks: [first deploy](docs/runbooks/first-deploy.md) · [deploy and roll back](docs/runbooks/deploy-and-rollback.md) · [restore the database](docs/runbooks/restore-database.md) · [incident response](docs/runbooks/incident-response.md) · [rotate secrets](docs/runbooks/rotate-secrets.md)
+- [Data model (ERD)](docs/architecture/erd.md)
+- [Threat model](docs/security/threat-model.md)
+- Decisions: [0001 Modular monolith](docs/adr/0001-modular-monolith-first.md) · [0002 Authentication](docs/adr/0002-authentication.md) · [0003 Payments](docs/adr/0003-payments-provider-interface.md) · [0004 Toolchain and data](docs/adr/0004-toolchain-and-data-access.md) · [0005 Media and search](docs/adr/0005-media-storage-and-search.md) · [0006 Cart and checkout](docs/adr/0006-cart-and-checkout.md) · [0007 AWS hosting](docs/adr/0007-aws-hosting.md) · [0008 Mobile app](docs/adr/0008-mobile-app.md)
+
+## Roadmap
+
+| Phase                      | Dates                | Outcome                                         |
+| -------------------------- | -------------------- | ----------------------------------------------- |
+| P0 Blueprint and setup     | Oct 5 – 18, 2026     | Monorepo, ERD, ADRs, CI, end-to-end hello world |
+| P1 Platform foundation     | Oct 19 – Nov 15      | Auth, MFA, sessions, RBAC, audit log            |
+| P2 Catalog and admin core  | Nov 16 – Dec 13      | Catalog, inventory, Ops Center basics           |
+| P3 Storefront and checkout | Jan 4 – Feb 14, 2027 | **v0.1** first purchase                         |
+| P4 Operations and launch   | Feb 15 – Mar 14      | **v0.5** public demo on AWS                     |
+| P5 Mobile app              | Mar 15 – Apr 18      | iOS and Android test builds                     |
+| P6 Intelligence layer      | Apr 19 – May 30      | **v1.0** AI shopping assistant                  |
+| P7 Marketplace             | May 31 – Jul 11      | **v1.5** third-party sellers                    |
+| P8 Scale and hardening     | Jul 12 – Aug 22      | **v2.0** event-driven, load-tested              |
+
+## Security
+
+See [SECURITY.md](SECURITY.md). Never commit `.env` files or real credentials.

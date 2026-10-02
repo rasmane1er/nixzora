@@ -1,0 +1,21 @@
+# Keep build contexts small and free of secrets.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!.env.example
+**/storage
+**/test-results
+**/playwright-report
+apps/api/src/generated
+.git
+_updates
+infra/**/.terraform
+infra/**/*.tfstate*
+**/dist-web
+**/dist-test
+**/.expo

@@ -1,0 +1,11 @@
+# Copy to staging.tfvars (git-ignored).
+domain_name    = "nixzora-demo.com"
+hosted_zone_id = "Z0123456789ABCDEFGHIJ"
+image_repositories = {
+  api        = "123456789012.dkr.ecr.us-east-1.amazonaws.com/nixzora/api"
+  storefront = "123456789012.dkr.ecr.us-east-1.amazonaws.com/nixzora/storefront"
+  admin      = "123456789012.dkr.ecr.us-east-1.amazonaws.com/nixzora/admin"
+}
+image_tag   = "replace-with-a-pushed-git-sha"
+alarm_email = "you@example.com"
+# ops_allowed_cidrs = ["203.0.113.10/32"]

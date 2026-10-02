@@ -1,0 +1,10 @@
+{
+  "extends": "@nixzora/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "baseUrl": "."
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,45 @@
+name: Deploy environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Protection rules (required reviewers for production) live on the GitHub environment.
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.STOREFRONT_URL }}
+    env:
+      CLUSTER: nixzora-${{ inputs.environment }}
+      PREFIX: nixzora-${{ inputs.environment }}
+      REGISTRY: ${{ vars.ECR_REGISTRY }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Run database migrations
+        run: scripts/deploy/migrate.sh
+
+      - name: Roll out services
+        run: scripts/deploy/roll-out.sh api storefront admin
+
+      - name: Smoke test
+        run: scripts/deploy/smoke-test.sh "${{ vars.STOREFRONT_URL }}" "${{ vars.API_URL }}"

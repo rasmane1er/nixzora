@@ -1,0 +1,249 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { errorMessage } from '@nixzora/api-client';
+import type { OrderView } from '@nixzora/validation';
+import { useQuery } from '@tanstack/react-query';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
+import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { OrderStatusPill } from '@/components/OrderStatusPill';
+import { Totals } from '@/components/Totals';
+import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
+import { api } from '@/lib/api';
+import { WEB_URL } from '@/lib/config';
+import { dateTime, money, shortDate, statusLabel } from '@/lib/format';
+import { enablePush, type PushStatus } from '@/lib/push';
+import { keys } from '@/lib/query';
+import { useSession } from '@/lib/session';
+import { brand, fonts, space, usePalette } from '@/lib/theme';
+
+/** The usual path of an order, so the timeline can show what comes next. */
+const PATH = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED'] as const;
+
+function Timeline({ order }: { order: OrderView }) {
+  const p = usePalette();
+  const reached = new Map(order.timeline.map((step) => [step.status, step.at]));
+  const steps: string[] =
+    order.status === 'CANCELLED' || order.status.endsWith('REFUNDED')
+      ? order.timeline.map((step) => step.status)
+      : [...PATH];
+  return (
+    <View style={{ gap: 0 }}>
+      {steps.map((status, index) => {
+        const at = reached.get(status as OrderView['status']);
+        const done = !!at;
+        return (
+          <Row key={status} style={{ alignItems: 'flex-start', gap: space.md }}>
+            <View style={{ alignItems: 'center', width: 16 }}>
+              <View
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  marginTop: 5,
+                  backgroundColor: done ? brand.signal : 'transparent',
+                  borderWidth: 2,
+                  borderColor: done ? brand.signal : p.line,
+                }}
+              />
+              {index < steps.length - 1 ? (
+                <View
+                  style={{ width: 2, height: 28, backgroundColor: done ? brand.signal : p.line }}
+                />
+              ) : null}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: done ? fonts.bodyMedium : fonts.body }} muted={!done}>
+                {statusLabel(status)}
+              </Text>
+              {at ? (
+                <Text variant="small" muted>
+                  {dateTime(at)}
+                </Text>
+              ) : null}
+            </View>
+          </Row>
+        );
+      })}
+    </View>
+  );
+}
+
+export default function OrderScreen() {
+  const { number, token, placed } = useLocalSearchParams<{
+    number: string;
+    token?: string;
+    placed?: string;
+  }>();
+  const { status } = useSession();
+  const [push, setPush] = useState<PushStatus | null>(null);
+  const order = useQuery({
+    queryKey: keys.order(number),
+    queryFn: () => api.orders.get(number, token),
+    enabled: !!token || status === 'signedIn',
+    // Right after paying, the payment webhook may still be on its way: check again shortly.
+    refetchInterval: (query) =>
+      query.state.data?.status === 'PENDING_PAYMENT' && query.state.dataUpdateCount < 15
+        ? 2000
+        : false,
+  });
+
+  if (!token && status !== 'signedIn') {
+    return (
+      <Screen>
+        <EmptyState
+          title="Sign in to see this order"
+          action={<Button title="Sign in" onPress={() => router.push('/sign-in')} />}
+        />
+      </Screen>
+    );
+  }
+  if (order.isLoading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (!order.data) {
+    return (
+      <Screen>
+        <EmptyState
+          title="We could not open this order"
+          body={order.error ? errorMessage(order.error) : undefined}
+        />
+      </Screen>
+    );
+  }
+
+  const o = order.data;
+  const a = o.shippingAddress;
+  const totals = {
+    currency: o.currency,
+    subtotalCents: o.subtotalCents,
+    discountCents: o.discountCents,
+    shippingCents: o.shippingCents,
+    taxCents: o.taxCents,
+    totalCents: o.totalCents,
+    freeShippingRemainingCents: 0,
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: o.number }} />
+      <Screen
+        refreshControl={
+          <RefreshControl refreshing={order.isRefetching} onRefresh={() => void order.refetch()} />
+        }
+      >
+        {placed ? (
+          <Banner tone="ok">
+            Thank you! Order {o.number} is placed. A receipt is on its way to {o.email}.
+          </Banner>
+        ) : null}
+        {placed && status === 'signedIn' && push !== 'on' && push !== 'unsupported' ? (
+          <Card>
+            <Text variant="heading">Know when it ships</Text>
+            <Text muted>Get a notification when your order ships and when it arrives.</Text>
+            {push === 'blocked' ? (
+              <Text variant="small" tone="error">
+                Notifications are off for NIXZORA. Turn them on in your phone’s Settings.
+              </Text>
+            ) : (
+              <Button
+                title="Turn on order updates"
+                tone="secondary"
+                onPress={() =>
+                  void enablePush(true)
+                    .then(setPush)
+                    .catch(() => setPush('off'))
+                }
+              />
+            )}
+          </Card>
+        ) : null}
+
+        <Row style={{ justifyContent: 'space-between' }}>
+          <View style={{ gap: 4 }}>
+            <Text variant="label" muted>
+              Placed {shortDate(o.placedAt ?? o.createdAt)}
+            </Text>
+            <OrderStatusPill status={o.status} />
+          </View>
+          <Text variant="title">{money(o.totalCents, o.currency)}</Text>
+        </Row>
+
+        {o.status === 'PENDING_PAYMENT' ? (
+          <Banner tone="warn">
+            We are confirming your payment. This usually takes a few seconds.
+          </Banner>
+        ) : null}
+
+        <Card>
+          <Timeline order={o} />
+          {o.tracking ? (
+            <View style={{ gap: space.sm, marginTop: space.sm }}>
+              <Divider />
+              <Text variant="small" muted>
+                {o.tracking.carrier} · <Text variant="mono">{o.tracking.number}</Text>
+              </Text>
+              {o.tracking.url ? (
+                <Button
+                  title="Track package"
+                  tone="ghost"
+                  icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
+                  onPress={() => void WebBrowser.openBrowserAsync(o.tracking!.url!)}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </Card>
+
+        <Card>
+          <Text variant="heading">Items</Text>
+          {o.items.map((item) => (
+            <Row
+              key={item.id}
+              style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text>{item.productTitle}</Text>
+                <Text variant="small" muted>
+                  {item.variantTitle} · Qty {item.quantity}
+                </Text>
+              </View>
+              <Text style={{ fontFamily: fonts.bodyMedium }}>
+                {money(item.totalCents, o.currency)}
+              </Text>
+            </Row>
+          ))}
+          <Divider />
+          <Totals totals={totals} />
+          {o.refundedCents ? (
+            <Text variant="small" tone="ok">
+              Refunded {money(o.refundedCents, o.currency)}
+            </Text>
+          ) : null}
+        </Card>
+
+        <Card>
+          <Text variant="heading">Shipping to</Text>
+          <Text>
+            {a.fullName}
+            {'\n'}
+            {a.line1}
+            {a.line2 ? `\n${a.line2}` : ''}
+            {'\n'}
+            {a.city}, {a.region} {a.postalCode}
+          </Text>
+        </Card>
+
+        {o.returnableUntil ? (
+          <Button
+            title={`Return an item (until ${shortDate(o.returnableUntil)})`}
+            tone="ghost"
+            onPress={() =>
+              void WebBrowser.openBrowserAsync(
+                `${WEB_URL}/orders/${o.number}${token ? `?token=${encodeURIComponent(token)}` : ''}`,
+              )
+            }
+          />
+        ) : null}
+      </Screen>
+    </>
+  );
+}

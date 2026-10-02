@@ -1,0 +1,45 @@
+# Local development services. Start with: pnpm db:up
+services:
+  postgres:
+    image: pgvector/pgvector:pg16 # PostgreSQL 16 + pgvector (ADR-0009)
+    container_name: nixzora-postgres
+    environment:
+      POSTGRES_USER: nixzora
+      POSTGRES_PASSWORD: nixzora_dev_password
+      POSTGRES_DB: nixzora
+    ports:
+      - '5433:5432' # 5433 on your Mac, so a local PostgreSQL on 5432 can keep running
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nixzora -d nixzora']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: nixzora-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional tracing UI. Start with: pnpm obs:up  →  http://localhost:16686
+  jaeger:
+    image: jaegertracing/jaeger:latest # dev-only tool; pin a version before using in CI
+    container_name: nixzora-jaeger
+    profiles: ['observability']
+    ports:
+      - '16686:16686' # Jaeger UI
+      - '4318:4318' # OTLP over HTTP (the API sends traces here)
+
+volumes:
+  postgres-data:
+  redis-data:
