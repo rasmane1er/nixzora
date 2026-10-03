@@ -69,3 +69,15 @@ adding `expo-apple-authentication`.
 
 App Store rule 4.8: an iOS app that offers Google sign-in must also offer Sign in with Apple, which
 is why both ship together.
+
+## What is set up (staging)
+
+| Setting                       | Value                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------- |
+| Google Cloud project          | `nexora-66e0b` (consent screen "NIXZORA", published)                               |
+| `GOOGLE_WEB_CLIENT_ID`        | `609981749805-vhsh4a48shs56tetot1oqqufgcsdg73b.apps.googleusercontent.com`         |
+| `GOOGLE_IOS_CLIENT_ID`        | `609981749805-783ngqagd0q5kn06st0h3cqkna4atsi5.apps.googleusercontent.com`         |
+| `GOOGLE_IOS_URL_SCHEME` (EAS) | `com.googleusercontent.apps.609981749805-783ngqagd0q5kn06st0h3cqkna4atsi5`         |
+| `GOOGLE_ANDROID_CLIENT_ID`    | not yet: needs the SHA-1 of the Play app-signing key                               |
+| Apple team                    | `7HD2Z858BV`; App ID `com.nixzora.shop` with Sign in with Apple                    |
+| `APPLE_SERVICES_ID`           | `com.nixzora.shop.web` (domains staging.nixzora.com, nixzora.com, www.nixzora.com) |

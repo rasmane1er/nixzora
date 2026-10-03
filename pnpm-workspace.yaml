@@ -25,3 +25,6 @@ auditConfig:
     # node-forge (no fixed version yet), pulled in only by the Expo CLI for local dev-server
     # certificates. It is never bundled into the app or used by the API or web servers.
     - GHSA-86w9-cpqp-85rv
+    # braces (no fixed version yet), reached only through the Expo CLI's file watcher
+    # (@expo/metro-file-map > micromatch) at build time; it never parses untrusted input.
+    - GHSA-vfj7-8cjw-p6xm
