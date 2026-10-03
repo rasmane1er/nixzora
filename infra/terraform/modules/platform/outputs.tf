@@ -47,3 +47,11 @@ output "api_environment" {
   description = "Plain (non-secret) environment variables of the API task, for tests and troubleshooting."
   value       = local.api_environment
 }
+
+output "secret_names" {
+  description = "Names (not values) of the secrets each task receives, for tests: only the AI service may hold the model provider keys."
+  value = {
+    api = [for s in local.api_secrets : s.name]
+    ai  = local.ai_enabled ? [for s in concat(local.base_secrets, local.ai_secrets) : s.name] : []
+  }
+}

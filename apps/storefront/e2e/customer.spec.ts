@@ -8,7 +8,7 @@ test('a customer uses a coupon, buys, and writes a review', async ({ page }) => 
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { name: 'Hi, Grace' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Grace' })).toBeVisible();
 
   // A product over $50 so WELCOME10 applies.
   await page.goto('/search?q=monitor&inStock=true&sort=price_desc');
@@ -44,7 +44,7 @@ test('a customer uses a coupon, buys, and writes a review', async ({ page }) => 
 
   // The order is in the account, and the product is in the wishlist.
   await page.goto('/account');
-  await expect(page.locator('table.plain tbody tr')).toHaveCount(1);
+  await expect(page.locator('.order-card')).toHaveCount(1);
   await page.goto('/account/wishlist');
   await expect(page.locator('.product-card')).toHaveCount(1);
 

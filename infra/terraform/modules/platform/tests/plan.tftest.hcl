@@ -136,7 +136,7 @@ run "staging" {
     error_message = "the API must reach the AI service by its private name."
   }
   assert {
-    condition     = !strcontains(aws_ecs_task_definition.app["api"].container_definitions, "ANTHROPIC_API_KEY") && strcontains(aws_ecs_task_definition.ai[0].container_definitions, "ANTHROPIC_API_KEY")
+    condition     = !contains(output.secret_names.api, "ANTHROPIC_API_KEY") && contains(output.secret_names.ai, "ANTHROPIC_API_KEY")
     error_message = "only the AI service may hold the model provider keys."
   }
 }
