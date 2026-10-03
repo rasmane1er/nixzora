@@ -9,9 +9,11 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_db_parameter_group" "main" {
   name   = "${local.prefix}-pg16"
   family = "postgres16"
+  # A static parameter: AWS records it as "pending-reboot", so say so to avoid a permanent diff.
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
   parameter {
     name  = "log_min_duration_statement"
