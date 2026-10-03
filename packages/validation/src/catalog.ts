@@ -154,6 +154,15 @@ export const UploadRequestSchema = z.object({
     .max(10 * 1024 * 1024, { message: 'Images can be up to 10 MB.' }),
 });
 
+/** Photos per product: enough for every angle, detail and in-use shot. */
+export const MAX_PRODUCT_IMAGES = 15;
+
+/** The product's photos in their new order; the first is the main photo. */
+export const ProductImageOrderSchema = z.object({
+  imageIds: z.array(z.uuid()).min(1).max(MAX_PRODUCT_IMAGES),
+});
+export type ProductImageOrder = z.infer<typeof ProductImageOrderSchema>;
+
 export const ProductImageAttachSchema = z.object({
   storageKey: z.string().regex(/^products\/[a-z0-9/-]+\.(jpg|png|webp|avif)$/),
   alt: z.string().trim().min(1).max(200),

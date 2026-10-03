@@ -13,6 +13,7 @@ import {
   type ProductCopySuggestion,
   type ProductDetail,
   type ProductImageAttach,
+  type ProductImageOrder,
   type SellerProductCreate,
   type SellerProductListQuery,
   type SellerProductRow,
@@ -203,6 +204,15 @@ export class SellerListingsService {
       await this.setStatus(productId, 'PENDING_REVIEW', actor, 'catalog.listing.resubmitted');
     }
     return this.query.productById(productId);
+  }
+
+  async reorderImages(
+    productId: string,
+    input: ProductImageOrder,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    await this.owned(productId, actor, { write: true });
+    return this.catalog.reorderImages(productId, input, this.as(actor));
   }
 
   async removeImage(

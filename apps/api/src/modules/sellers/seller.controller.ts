@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   Res,
 } from '@nestjs/common';
@@ -22,6 +23,8 @@ import {
   PayoutOnboardingLinkSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductImageOrder,
+  ProductImageOrderSchema,
   type SellerApplication,
   SellerApplicationSchema,
   type SellerAnalyticsQuery,
@@ -296,6 +299,17 @@ export class SellerController {
     @Actor() actor: ActorContext,
   ) {
     return this.listings.attachImage(id, body, actor);
+  }
+
+  /** Reordering approved photos is not new content, so a live listing stays live. */
+  @Put('products/:id/images/order')
+  @ApiZodBody(ProductImageOrderSchema)
+  reorderImages(
+    @Param('id', uuid) id: string,
+    @Body(new ZodValidationPipe(ProductImageOrderSchema)) body: ProductImageOrder,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.listings.reorderImages(id, body, actor);
   }
 
   @Delete('products/:id/images/:imageId')

@@ -5,9 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -16,6 +20,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
@@ -29,7 +34,7 @@ import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 import { visitorId } from '@/lib/visitor';
-import { fonts, radius, space, usePalette } from '@/lib/theme';
+import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
 function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' | 'ok' } {
   if (!variant.isActive || variant.available <= 0) return { text: 'Sold out', tone: 'error' };
@@ -37,12 +42,34 @@ function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' 
   return { text: 'In stock · ships in 1–2 business days', tone: 'ok' };
 }
 
+/**
+ * Product photos: swipe through them, tap a thumbnail to jump, or tap a photo to see it full
+ * screen (swipe there too). A counter shows where you are, however many photos there are.
+ */
 function Gallery({ product }: { product: ProductDetail }) {
   const p = usePalette();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
+  const [full, setFull] = useState<number | null>(null);
+  const pager = useRef<ScrollView>(null);
+  const thumbs = useRef<ScrollView>(null);
   const size = Math.min(width, 640);
-  if (!product.images.length) {
+  const photos = product.images;
+
+  const show = (to: number, animated = true) => {
+    pager.current?.scrollTo({ x: to * size, animated });
+    setIndex(to);
+  };
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const at = Math.round(event.nativeEvent.contentOffset.x / size);
+    if (at !== index && at >= 0 && at < photos.length) {
+      setIndex(at);
+      thumbs.current?.scrollTo({ x: Math.max(0, at * 72 - width / 2 + 36), animated: true });
+    }
+  };
+
+  if (!photos.length) {
     return (
       <View style={[styles.noPhoto, { height: size * 0.75, backgroundColor: p.card }]}>
         <Text variant="label" muted>
@@ -53,35 +80,131 @@ function Gallery({ product }: { product: ProductDetail }) {
   }
   return (
     <View>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(event) =>
-          setIndex(Math.round(event.nativeEvent.contentOffset.x / size))
-        }
-      >
-        {product.images.map((image) => (
-          <Image
-            key={image.id}
-            source={{ uri: image.url }}
-            alt={image.alt || product.title}
-            style={{ width: size, height: size * 0.8, backgroundColor: p.card }}
-            contentFit="contain"
-            cachePolicy="disk"
-          />
-        ))}
-      </ScrollView>
-      {product.images.length > 1 ? (
-        <Row style={{ justifyContent: 'center', marginTop: space.sm }}>
-          {product.images.map((image, i) => (
-            <View
+      <View>
+        <ScrollView
+          ref={pager}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={32}
+          accessibilityLabel={`Product photos, ${photos.length} in total`}
+        >
+          {photos.map((image, i) => (
+            <Pressable
               key={image.id}
-              style={[styles.dot, { backgroundColor: i === index ? p.fg : p.line }]}
-            />
+              onPress={() => setFull(i)}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={`Photo ${i + 1} of ${photos.length}: ${image.alt || product.title}. Opens full screen.`}
+            >
+              <Image
+                source={{ uri: image.url }}
+                alt={image.alt || product.title}
+                style={{ width: size, height: size * 0.8, backgroundColor: p.card }}
+                contentFit="contain"
+                cachePolicy="disk"
+              />
+            </Pressable>
           ))}
-        </Row>
+        </ScrollView>
+        {photos.length > 1 ? (
+          <View style={styles.counter} pointerEvents="none">
+            <Text variant="mono" style={{ color: '#fff', fontSize: 12 }}>
+              {index + 1} / {photos.length}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      {photos.length > 1 ? (
+        <ScrollView
+          ref={thumbs}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            gap: space.sm,
+            paddingHorizontal: space.lg,
+            paddingTop: space.sm,
+          }}
+        >
+          {photos.map((image, i) => (
+            <Pressable
+              key={image.id}
+              onPress={() => show(i)}
+              accessibilityRole="button"
+              accessibilityLabel={`Show photo ${i + 1}`}
+              accessibilityState={{ selected: i === index }}
+              style={[
+                styles.thumb,
+                {
+                  borderColor: i === index ? brand.signal : 'transparent',
+                  opacity: i === index ? 1 : 0.7,
+                },
+              ]}
+            >
+              <Image
+                source={{ uri: image.url }}
+                style={{ width: 56, height: 56, borderRadius: 8, backgroundColor: p.card }}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            </Pressable>
+          ))}
+        </ScrollView>
       ) : null}
+
+      <Modal
+        visible={full !== null}
+        animationType="fade"
+        onRequestClose={() => setFull(null)}
+        supportedOrientations={['portrait', 'landscape']}
+      >
+        <View style={{ flex: 1, backgroundColor: '#0a0a0c' }}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: (full ?? 0) * width, y: 0 }}
+            onMomentumScrollEnd={(event) => {
+              const at = Math.round(event.nativeEvent.contentOffset.x / width);
+              setFull(at);
+              show(at, false);
+            }}
+          >
+            {photos.map((image) => (
+              <Image
+                key={image.id}
+                source={{ uri: image.url }}
+                alt={image.alt || product.title}
+                style={{ width, height }}
+                contentFit="contain"
+                cachePolicy="disk"
+              />
+            ))}
+          </ScrollView>
+          <Pressable
+            onPress={() => setFull(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Close photos"
+            hitSlop={10}
+            style={[styles.close, { top: insets.top + space.sm }]}
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </Pressable>
+          {photos.length > 1 && full !== null ? (
+            <View
+              style={[
+                styles.counter,
+                { bottom: insets.bottom + space.lg, right: undefined, alignSelf: 'center' },
+              ]}
+            >
+              <Text variant="mono" style={{ color: '#fff', fontSize: 12 }}>
+                {full + 1} / {photos.length}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -218,6 +341,28 @@ export default function ProductScreen() {
             ) : null}
             <Text variant="title">{item.title}</Text>
             <Stars average={item.rating.average} count={item.rating.count} />
+            <Text variant="small" muted>
+              Sold by{' '}
+              {item.seller ? (
+                <Text
+                  variant="small"
+                  style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
+                  accessibilityRole="link"
+                  onPress={() =>
+                    void WebBrowser.openBrowserAsync(`${WEB_URL}/s/${item.seller!.handle}`)
+                  }
+                >
+                  {item.seller.displayName}
+                </Text>
+              ) : (
+                <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
+                  NIXZORA
+                </Text>
+              )}
+              {item.seller?.rating.count && item.seller.rating.average !== null
+                ? ` · ★ ${item.seller.rating.average.toFixed(1)} seller rating (${item.seller.rating.count})`
+                : ''}
+            </Text>
           </View>
 
           {variant ? (
@@ -359,6 +504,25 @@ export default function ProductScreen() {
 
 const styles = StyleSheet.create({
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
-  dot: { width: 7, height: 7, borderRadius: 4 },
+  counter: {
+    position: 'absolute',
+    right: space.md,
+    bottom: space.md,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  thumb: { borderWidth: 2, borderRadius: 10, padding: 1 },
+  close: {
+    position: 'absolute',
+    right: space.md,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
   option: { borderWidth: 1, borderRadius: radius, paddingHorizontal: 14, paddingVertical: 10 },
 });

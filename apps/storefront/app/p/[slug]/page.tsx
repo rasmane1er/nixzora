@@ -17,6 +17,7 @@ import { api, ApiError, catalog } from '@/lib/api';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
 import { AddToCart } from './AddToCart';
+import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { ViewTracker } from './ViewTracker';
 import { WishButton } from './WishButton';
@@ -116,7 +117,6 @@ export default async function ProductPage({ params }: Props) {
       .then((res) => res.insights)
       .catch(() => null),
   ]);
-  const [main, ...rest] = product.images;
   const specs = Object.entries(product.attributes);
 
   // Structured data so search engines can show price and availability.
@@ -167,31 +167,10 @@ export default async function ProductPage({ params }: Props) {
       </ol>
 
       <div className="pdp">
-        <div className="gallery">
-          <div className="gallery__main product-card__img">
-            {main ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={main.url} alt={main.alt} width={800} height={600} />
-            ) : (
-              <span aria-hidden="true">{product.category.name}</span>
-            )}
-          </div>
-          {rest.length ? (
-            <div className="gallery__thumbs">
-              {rest.slice(0, 5).map((image) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={image.id}
-                  src={image.url}
-                  alt={image.alt}
-                  loading="lazy"
-                  width={160}
-                  height={160}
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <Gallery
+          photos={product.images.map(({ id, url, alt }) => ({ id, url, alt }))}
+          fallback={product.category.name}
+        />
 
         <div className="buybox">
           <div className="stack" style={{ gap: 8 }}>

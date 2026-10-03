@@ -11,7 +11,9 @@ import {
   type CategoryUpdate,
   type ProductCreate,
   type ProductDetail,
+  MAX_PRODUCT_IMAGES,
   type ProductImageAttach,
+  type ProductImageOrder,
   type ProductUpdate,
   slugify,
   type VariantCreate,
@@ -298,18 +300,67 @@ export class CatalogAdminService {
     if (!(await this.storage.exists(input.storageKey))) {
       throw new BadRequestException('Upload the file first, then attach it.');
     }
-    const position =
-      input.position ?? (await this.prisma.productImage.count({ where: { productId } }));
-    const image = await this.prisma.productImage.create({
-      data: { productId, storageKey: input.storageKey, alt: input.alt, position },
+    const image = await this.prisma.$transaction(async (tx) => {
+      // Locks the product row so parallel uploads can't pass the limit or share a position.
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId}::uuid FOR UPDATE`;
+      const existing = await tx.productImage.aggregate({
+        where: { productId },
+        _count: { _all: true },
+        _max: { position: true },
+      });
+      if (existing._count._all >= MAX_PRODUCT_IMAGES) {
+        throw new ConflictException(`A product can have up to ${MAX_PRODUCT_IMAGES} photos.`);
+      }
+      const position = input.position ?? (existing._max.position ?? -1) + 1;
+      const created = await tx.productImage.create({
+        data: { productId, storageKey: input.storageKey, alt: input.alt, position },
+      });
+      // Search and cards show the main photo, so they need to hear about it.
+      await this.outbox(tx, 'catalog.product.updated', productId, { imageAdded: created.id });
+      return created;
     });
     await this.record('catalog.image.attached', 'product', productId, actor, { imageId: image.id });
     return this.query.productById(productId);
   }
 
+  /** Puts the photos in the given order; every photo of the product must be listed once. */
+  async reorderImages(
+    productId: string,
+    input: ProductImageOrder,
+    actor: Actor,
+  ): Promise<ProductDetail> {
+    await this.requireProduct(productId);
+    const images = await this.prisma.productImage.findMany({
+      where: { productId },
+      select: { id: true },
+    });
+    const ids = new Set(images.map((image) => image.id));
+    if (
+      input.imageIds.length !== ids.size ||
+      new Set(input.imageIds).size !== ids.size ||
+      !input.imageIds.every((id) => ids.has(id))
+    ) {
+      throw new BadRequestException('List every photo of this product exactly once.');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      for (const [position, id] of input.imageIds.entries()) {
+        await tx.productImage.update({ where: { id }, data: { position } });
+      }
+      await this.outbox(tx, 'catalog.product.updated', productId, { imagesReordered: true });
+    });
+    await this.record('catalog.image.reordered', 'product', productId, actor, {
+      order: input.imageIds,
+    });
+    return this.query.productById(productId);
+  }
+
   async removeImage(productId: string, imageId: string, actor: Actor): Promise<ProductDetail> {
-    const { count } = await this.prisma.productImage.deleteMany({
-      where: { id: imageId, productId },
+    const count = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.productImage.deleteMany({ where: { id: imageId, productId } });
+      if (count) {
+        await this.outbox(tx, 'catalog.product.updated', productId, { imageRemoved: imageId });
+      }
+      return count;
     });
     if (!count) throw new NotFoundException('Image not found.');
     await this.record('catalog.image.removed', 'product', productId, actor, { imageId });

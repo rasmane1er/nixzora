@@ -7,6 +7,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { OrderStatusPill } from '@/components/OrderStatusPill';
+import { RateSeller } from '@/components/RateSeller';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -211,6 +212,13 @@ export default function OrderScreen() {
                     icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
                     onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
                   />
+                ) : null}
+                {part.seller && part.ratableUntil ? (
+                  <RateSeller number={o.number} token={token} shipment={part} />
+                ) : part.rating ? (
+                  <Text variant="small" muted>
+                    You rated this seller {part.rating.value} out of 5.
+                  </Text>
                 ) : null}
               </View>
             ))

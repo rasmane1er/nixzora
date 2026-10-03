@@ -352,6 +352,68 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
 
       await http().get('/api/v1/media/products/2026/01/..%2F..%2Fetc%2Fpasswd').expect(404);
     });
+
+    it('takes up to 15 photos per product and lets staff choose their order', async () => {
+      const product = await prisma.product.findUniqueOrThrow({
+        where: { slug: `zephyr-book-${run}` },
+      });
+      const addPhoto = async (alt: string, status = 201) => {
+        const ticket = UploadTicketSchema.parse(
+          (
+            await http()
+              .post('/api/v1/admin/uploads')
+              .set(bearer(staffToken))
+              .send({ contentType: 'image/png', sizeBytes: PNG.length })
+              .expect(201)
+          ).body,
+        );
+        const url = new URL(ticket.uploadUrl);
+        await http()
+          .put(url.pathname + url.search)
+          .set('Content-Type', 'image/png')
+          .send(PNG)
+          .expect(201);
+        return http()
+          .post(`/api/v1/admin/products/${product.id}/images`)
+          .set(bearer(staffToken))
+          .send({ storageKey: ticket.storageKey, alt })
+          .expect(status);
+      };
+      await addPhoto('Side view');
+      const detail = ProductDetailSchema.parse((await addPhoto('Keyboard close-up')).body);
+      expect(detail.images.map((i) => i.alt)).toEqual([
+        'Zephyr Book, front view',
+        'Side view',
+        'Keyboard close-up',
+      ]);
+
+      const [front, side, keys] = detail.images.map((i) => i.id);
+      const reordered = await http()
+        .put(`/api/v1/admin/products/${product.id}/images/order`)
+        .set(bearer(staffToken))
+        .send({ imageIds: [keys, front, side] })
+        .expect(200);
+      expect(reordered.body.images.map((i: { alt: string }) => i.alt)).toEqual([
+        'Keyboard close-up',
+        'Zephyr Book, front view',
+        'Side view',
+      ]);
+      // Every photo, once: a partial or repeated list is refused.
+      await http()
+        .put(`/api/v1/admin/products/${product.id}/images/order`)
+        .set(bearer(staffToken))
+        .send({ imageIds: [keys, front] })
+        .expect(400);
+      await http()
+        .put(`/api/v1/admin/products/${product.id}/images/order`)
+        .set(bearer(staffToken))
+        .send({ imageIds: [keys, keys, side] })
+        .expect(400);
+
+      for (let n = 4; n <= 15; n++) await addPhoto(`Photo ${n}`);
+      const full = await addPhoto('One too many', 409);
+      expect(full.body.message).toContain('up to 15 photos');
+    });
   });
 
   describe('staff tools', () => {

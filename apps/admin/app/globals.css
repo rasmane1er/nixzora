@@ -566,6 +566,39 @@ input[type='checkbox'] {
   font-size: 12px;
   gap: 6px;
 }
+.photo-order {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.photo-order[aria-busy='true'] {
+  opacity: 0.6;
+}
+.photo-order li {
+  display: grid;
+  gap: 6px;
+}
+.photo-order figure {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.photo-order img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.photo-order__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .tree {
   list-style: none;
   padding-left: 0;

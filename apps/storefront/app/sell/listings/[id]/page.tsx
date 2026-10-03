@@ -10,13 +10,13 @@ import { categoryOptions, LISTING_STATUS_LABEL, requireSeller, specsText } from 
 import {
   addVariant,
   adjustStock,
-  removePhoto,
   submitListing,
   updateListing,
   updateVariant,
   withdrawListing,
 } from '../../actions';
 import { DescriptionAssistant } from './DescriptionAssistant';
+import { PhotoOrder } from './PhotoOrder';
 import { PhotoUpload } from './PhotoUpload';
 
 export const metadata: Metadata = { title: 'Edit listing', robots: { index: false } };
@@ -154,25 +154,15 @@ export default async function ListingPage({
         <section className="card stack">
           <h2>Photos</h2>
           {product.images.length ? (
-            <div className="seller-photos">
-              {product.images.map((image) => (
-                <figure key={image.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.url} alt={image.alt} width={120} height={120} />
-                  <form action={removePhoto}>
-                    <input type="hidden" name="id" value={product.id} />
-                    <input type="hidden" name="imageId" value={image.id} />
-                    <button className="btn btn--link" type="submit">
-                      Remove
-                    </button>
-                  </form>
-                </figure>
-              ))}
-            </div>
+            <PhotoOrder productId={product.id} photos={product.images} />
           ) : (
             <p className="muted">Listings need at least one photo before review.</p>
           )}
-          <PhotoUpload productId={product.id} defaultAlt={product.title} />
+          <PhotoUpload
+            productId={product.id}
+            defaultAlt={product.title}
+            existing={product.images.length}
+          />
         </section>
       </div>
 

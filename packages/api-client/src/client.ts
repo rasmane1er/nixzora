@@ -1,4 +1,5 @@
 import type {
+  SellerRatingCreate,
   Address,
   AssistantChatResponse,
   AssistantMessage,
@@ -272,6 +273,13 @@ export function createApiClient(options: ClientOptions) {
         request<ReturnView>('POST', `/orders/${enc(number)}/returns`, { body, query: { token } }),
       returns: (number: string, token?: string) =>
         request<ReturnView[]>('GET', `/orders/${enc(number)}/returns`, { query: { token } }),
+      /** Rate a delivered seller parcel 1–5 (or change it); returns the updated order. */
+      rateSeller: (number: string, body: SellerRatingCreate, token?: string) =>
+        request<OrderView>('POST', `/orders/${enc(number)}/seller-ratings`, {
+          body,
+          query: { token },
+          auth: token ? 'none' : 'auto',
+        }),
     },
 
     account: {

@@ -240,16 +240,6 @@ export async function withdrawListing(form: FormData): Promise<void> {
   );
 }
 
-export async function removePhoto(form: FormData): Promise<void> {
-  const productId = id(form);
-  const imageId = id(form, 'imageId');
-  await perform(
-    `/sell/listings/${productId}`,
-    () => api(`/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
-    'Photo removed.',
-  );
-}
-
 // ───── Bulk listings (CSV) ─────
 
 export async function importListings(
@@ -343,6 +333,33 @@ export async function attachPhoto(
       method: 'POST',
       body: { storageKey, alt },
     });
+    revalidatePath(`/sell/listings/${productId}`);
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function reorderPhotos(productId: string, imageIds: string[]): Promise<Result<null>> {
+  if (!UUID.test(productId) || !imageIds.every((i) => UUID.test(i))) {
+    return { ok: false, error: 'Unknown listing.' };
+  }
+  try {
+    await api(`/seller/products/${productId}/images/order`, {
+      method: 'PUT',
+      body: { imageIds },
+    });
+    revalidatePath(`/sell/listings/${productId}`);
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function deletePhoto(productId: string, imageId: string): Promise<Result<null>> {
+  if (!UUID.test(productId) || !UUID.test(imageId)) return { ok: false, error: 'Unknown photo.' };
+  try {
+    await api(`/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' });
     revalidatePath(`/sell/listings/${productId}`);
     return { ok: true, data: null };
   } catch (error) {

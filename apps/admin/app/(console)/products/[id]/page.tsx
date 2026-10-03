@@ -3,13 +3,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/SubmitButton';
-import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
+import { Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { catalogOptions } from '@/lib/catalog';
 import { centsInput, dateTime, money, pairsText, param, type SearchParams } from '@/lib/format';
-import { addVariant, adjustStock, removeImage, updateProduct, updateVariant } from '../actions';
+import { addVariant, adjustStock, updateProduct, updateVariant } from '../actions';
 import { CopySuggestion } from './CopySuggestion';
+import { ImageOrder } from './ImageOrder';
 import { ImageUpload } from './ImageUpload';
 
 export const metadata: Metadata = { title: 'Edit product' };
@@ -143,26 +144,15 @@ export default async function ProductPage({
                 No images yet. The first image is the one shoppers see in lists.
               </p>
             ) : (
-              <div className="thumbs" style={{ marginBottom: 16 }}>
-                {product.images.map((image) => (
-                  <figure key={image.id} className="thumb" style={{ margin: 0 }}>
-                    {/* Product images come from our own media host; plain <img> keeps the admin simple. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image.url} alt={image.alt} loading="lazy" />
-                    <figcaption className="thumb__foot">
-                      <span className="muted">#{image.position + 1}</span>
-                      <ActionButton
-                        action={removeImage}
-                        label="Remove"
-                        tone="danger"
-                        fields={{ productId: product.id, imageId: image.id }}
-                      />
-                    </figcaption>
-                  </figure>
-                ))}
+              <div style={{ marginBottom: 16 }}>
+                <ImageOrder productId={product.id} photos={product.images} />
               </div>
             )}
-            <ImageUpload productId={product.id} defaultAlt={product.title} />
+            <ImageUpload
+              productId={product.id}
+              defaultAlt={product.title}
+              existing={product.images.length}
+            />
           </section>
 
           <section className="card">

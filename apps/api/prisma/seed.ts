@@ -731,17 +731,25 @@ async function main(): Promise<void> {
       update: data,
     });
 
-    // Demo illustration bundled with the storefront (public/demo-products). Added only when the
-    // product has no photo, so images uploaded in the Ops Center are never replaced.
-    if (!(await prisma.productImage.count({ where: { productId: row.id } }))) {
-      await prisma.productImage.create({
-        data: {
-          productId: row.id,
-          storageKey: `demo/${product.slug}.webp`,
-          alt: product.title,
-          position: 0,
-        },
-      });
+    // Demo illustrations bundled with the storefront (public/demo-products): the main view and
+    // three more (close-up, angled, on a desk) for the gallery. Added only while the product has
+    // demo photos alone, so images uploaded in the Ops Center are never replaced or mixed in.
+    const photos = await prisma.productImage.findMany({ where: { productId: row.id } });
+    if (photos.every((photo) => photo.storageKey.startsWith('demo/'))) {
+      const views = [
+        ['', product.title],
+        ['-2', `${product.title}, close-up`],
+        ['-3', `${product.title}, angled view`],
+        ['-4', `${product.title} on a desk`],
+      ] as const;
+      for (const [position, [suffix, alt]] of views.entries()) {
+        const storageKey = `demo/${product.slug}${suffix}.webp`;
+        if (!photos.some((photo) => photo.storageKey === storageKey)) {
+          await prisma.productImage.create({
+            data: { productId: row.id, storageKey, alt, position },
+          });
+        }
+      }
     }
 
     for (const variant of product.variants) {

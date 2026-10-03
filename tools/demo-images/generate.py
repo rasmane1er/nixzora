@@ -376,8 +376,39 @@ PRODUCTS = {
     "brightline-studio-headphones": headphones("#8c2f2f", "#2b2d33", "#17181c", "#f2c14e"),
 }
 
+# Extra views of every product, so the storefront gallery has several photos to swipe through:
+# a close-up, an angled view and the product on a dark desk.
+VIEWS = {
+    "2": "Close-up",
+    "3": "Angled",
+    "4": "On a desk",
+}
+
+
+def view(svg: str, kind: str) -> str:
+    head, rest = svg.split("</defs>", 1)
+    scene = rest.rsplit("</svg>", 1)[0]
+    if kind == "2":
+        return svg.replace(f'viewBox="0 0 {W} {H}"', f'viewBox="{W * 0.2:g} {H * 0.18:g} {W * 0.6:g} {H * 0.6:g}"', 1)
+    if kind == "3":
+        _, bg, body = scene.split("\n", 2)
+        turn = f"rotate(-7 {W / 2:g} {H / 2:g}) translate({W / 2:g} {H / 2:g}) scale(0.9) translate({-W / 2:g} {-H / 2:g})"
+        return f'{head}</defs>\n{bg}\n<g transform="{turn}">{body}</g></svg>'
+    backdrop = f"""<radialGradient id="spot" cx="0.5" cy="0.45" r="0.7">
+  <stop offset="0" stop-color="#3a3f4b"/><stop offset="1" stop-color="#14161b"/>
+</radialGradient>
+<linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#6b4f38"/><stop offset="1" stop-color="#3e2d20"/>
+</linearGradient>"""
+    bg, body = scene.split("\n", 2)[1], scene.split("\n", 2)[2]
+    dark = f'<rect width="{W}" height="{H}" fill="url(#spot)"/><rect y="{H * 0.74:g}" width="{W}" height="{H * 0.26:g}" fill="url(#desk)"/>'
+    return f"{head}{backdrop}</defs>\n{dark}\n{body}</svg>" if bg.startswith("<rect") else svg
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     for slug, svg in PRODUCTS.items():
         (OUT / f"{slug}.svg").write_text(svg)
-    print(f"wrote {len(PRODUCTS)} SVGs to {OUT}")
+        for kind in VIEWS:
+            (OUT / f"{slug}-{kind}.svg").write_text(view(svg, kind))
+    print(f"wrote {len(PRODUCTS) * (1 + len(VIEWS))} SVGs to {OUT}")

@@ -145,16 +145,6 @@ export async function adjustStock(form: FormData): Promise<void> {
   );
 }
 
-export async function removeImage(form: FormData): Promise<void> {
-  const productId = uuidField(form, 'productId');
-  const imageId = uuidField(form, 'imageId');
-  await perform(
-    `/products/${productId}`,
-    () => api(`/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
-    'Image removed.',
-  );
-}
-
 // ───── Image upload (called from the browser component) ─────
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -215,5 +205,29 @@ export async function suggestCopy(productId: string): Promise<CopyDraft> {
     });
   } catch (error) {
     return { error: errorMessage(error) };
+  }
+}
+
+export async function reorderImages(productId: string, imageIds: string[]): Promise<Result<null>> {
+  if (!UUID.test(productId) || !imageIds.every((i) => UUID.test(i))) {
+    return { ok: false, error: 'Unknown product.' };
+  }
+  try {
+    await api(`/admin/products/${productId}/images/order`, { method: 'PUT', body: { imageIds } });
+    revalidatePath(`/products/${productId}`);
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function deleteImage(productId: string, imageId: string): Promise<Result<null>> {
+  if (!UUID.test(productId) || !UUID.test(imageId)) return { ok: false, error: 'Unknown image.' };
+  try {
+    await api(`/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' });
+    revalidatePath(`/products/${productId}`);
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
   }
 }

@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -30,6 +31,8 @@ import {
   ProductDetailSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductImageOrder,
+  ProductImageOrderSchema,
   type ProductUpdate,
   ProductUpdateSchema,
   type VariantCreate,
@@ -176,6 +179,16 @@ export class CatalogAdminController {
     @Actor() actor: ActorContext,
   ): Promise<ProductDetail> {
     return this.admin.attachImage(id, body, actor);
+  }
+
+  @Put('products/:id/images/order')
+  @ApiZodBody(ProductImageOrderSchema)
+  reorderImages(
+    @Param('id', uuid) id: string,
+    @Body(new ZodValidationPipe(ProductImageOrderSchema)) body: ProductImageOrder,
+    @Actor() actor: ActorContext,
+  ): Promise<ProductDetail> {
+    return this.admin.reorderImages(id, body, actor);
   }
 
   @Delete('products/:id/images/:imageId')
