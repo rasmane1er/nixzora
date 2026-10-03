@@ -9,6 +9,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import {
   assemble,
   checkStep,
@@ -53,7 +54,7 @@ export async function saveStep(form: FormData): Promise<void> {
   const data = { ...((draft?.data ?? {}) as DraftData) };
   const values = readStep(step, form);
   data[step] = values;
-  const check = checkStep(step, values);
+  const check = checkStep(step, values, await getT('sellApply'));
   const errors = { ...(data.errors ?? {}) };
   delete errors[step];
   let completed = (draft?.completed ?? []).filter((k) => k !== step) as StepKey[];
@@ -82,7 +83,7 @@ export async function submitApplication(form: FormData): Promise<void> {
   const draft = await loadDraft();
   const data = { ...((draft?.data ?? {}) as DraftData) };
   data.review = readStep('review', form);
-  const check = checkStep('review', data.review);
+  const check = checkStep('review', data.review, await getT('sellApply'));
   if (!check.ok) {
     data.errors = { ...(data.errors ?? {}), review: check.errors };
     await saveDraft('review', (draft?.completed ?? []) as StepKey[], data);

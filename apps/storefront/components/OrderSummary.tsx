@@ -1,24 +1,20 @@
+import { INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
 import { type OrderView } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 
-export const STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: 'Awaiting payment',
-  PAID: 'Confirmed',
-  FULFILLING: 'Packing',
-  SHIPPED: 'Shipped',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-  PARTIALLY_REFUNDED: 'Partly refunded',
-  REFUNDED: 'Refunded',
-};
-
-export function StatusPill({ status }: { status: string }) {
-  return (
-    <span className={`pill pill--${status.toLowerCase()}`}>{STATUS_LABEL[status] ?? status}</span>
-  );
+/** An order status in the visitor's language (as sent when NIXZORA doesn't know it). */
+export async function statusLabel(status: string): Promise<string> {
+  const t = await getT('order');
+  const key = `status_${status}` as MessageKey<'order'>;
+  const label = t(key);
+  return label === key ? status : label;
 }
 
-export function OrderTotals({
+export async function StatusPill({ status }: { status: string }) {
+  return <span className={`pill pill--${status.toLowerCase()}`}>{await statusLabel(status)}</span>;
+}
+
+export async function OrderTotals({
   order,
 }: {
   order: Pick<
@@ -33,26 +29,30 @@ export function OrderTotals({
     | 'currency'
   >;
 }) {
-  const m = (cents: number) => formatMoney(cents, order.currency);
+  const t = await getT('order');
+  const f = await getFormat();
+  const m = (cents: number) => f.money(cents, order.currency);
   return (
     <dl>
-      <dt>Subtotal</dt>
+      <dt>{t('subtotal')}</dt>
       <dd>{m(order.subtotalCents)}</dd>
       {order.discountCents ? (
         <>
-          <dt>Discount{order.couponCode ? ` (${order.couponCode})` : ''}</dt>
+          <dt>
+            {order.couponCode ? t('discountWithCode', { code: order.couponCode }) : t('discount')}
+          </dt>
           <dd className="discount">−{m(order.discountCents)}</dd>
         </>
       ) : null}
-      <dt>Shipping</dt>
-      <dd>{order.shippingCents ? m(order.shippingCents) : 'Free'}</dd>
-      <dt>Tax</dt>
+      <dt>{t('shipping')}</dt>
+      <dd>{order.shippingCents ? m(order.shippingCents) : t('free')}</dd>
+      <dt>{t('tax')}</dt>
       <dd>{m(order.taxCents)}</dd>
-      <dt className="total">Total</dt>
+      <dt className="total">{t('total')}</dt>
       <dd className="total">{m(order.totalCents)}</dd>
       {order.refundedCents ? (
         <>
-          <dt>Refunded</dt>
+          <dt>{t('refunded')}</dt>
           <dd className="discount">−{m(order.refundedCents)}</dd>
         </>
       ) : null}
@@ -60,7 +60,8 @@ export function OrderTotals({
   );
 }
 
-export function OrderItems({ order }: { order: OrderView }) {
+export async function OrderItems({ order }: { order: OrderView }) {
+  const f = await getFormat();
   return (
     <ul className="mini-lines">
       {order.items.map((item) => (
@@ -69,7 +70,7 @@ export function OrderItems({ order }: { order: OrderView }) {
             {item.quantity} × {item.productTitle}
             <span className="muted"> · {item.variantTitle}</span>
           </span>
-          <span>{formatMoney(item.totalCents, order.currency)}</span>
+          <span>{f.money(item.totalCents, order.currency)}</span>
         </li>
       ))}
     </ul>
@@ -78,22 +79,24 @@ export function OrderItems({ order }: { order: OrderView }) {
 
 const STEPS = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED'] as const;
 
-export function OrderTimeline({ order }: { order: OrderView }) {
+export async function OrderTimeline({ order }: { order: OrderView }) {
+  const t = await getT('order');
+  const tag = INTL_LOCALE[await getLocale()];
   const at = new Map(order.timeline.map((entry) => [entry.status, entry.at]));
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat('en-US', {
+    new Intl.DateTimeFormat(tag, {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
     }).format(new Date(iso));
   return (
-    <ol className="timeline" aria-label="Order progress">
+    <ol className="timeline" aria-label={t('orderProgress')}>
       {STEPS.map((step) => {
         const when = at.get(step);
         return (
           <li key={step} data-done={Boolean(when)}>
-            <strong>{STATUS_LABEL[step]}</strong>
+            <strong>{t(`status_${step}`)}</strong>
             <span className="muted">{when ? fmt(when) : '—'}</span>
           </li>
         );

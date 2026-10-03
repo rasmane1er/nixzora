@@ -3,21 +3,29 @@ import type { Metadata } from 'next';
 import { ProductCard } from '@/components/ProductCard';
 import { AccountHeader } from '@/components/AccountHeader';
 import { accountApi } from '@/lib/account';
+import { getT } from '@/lib/i18n';
 import { removeWish } from './actions';
 
-export const metadata: Metadata = { title: 'Wishlist', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('accountActivity');
+  return { title: t('wishlistMetaTitle'), robots: { index: false } };
+}
 
 export default async function WishlistPage() {
-  const items = await accountApi<Card[]>('/me/wishlist', '/account/wishlist');
+  const [items, t, tc] = await Promise.all([
+    accountApi<Card[]>('/me/wishlist', '/account/wishlist'),
+    getT('accountActivity'),
+    getT('common'),
+  ]);
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <AccountHeader
-        title="Your wishlist"
-        description={`${items.length} saved ${items.length === 1 ? 'item' : 'items'}.`}
+        title={t('wishlistTitle')}
+        description={t('wishlistCount', { count: items.length })}
       />
       {items.length === 0 ? (
         <div className="empty card">
-          <p>Nothing saved yet. Tap “Save” on any product to keep it here.</p>
+          <p>{t('wishlistEmpty')}</p>
         </div>
       ) : (
         <div className="grid">
@@ -27,7 +35,7 @@ export default async function WishlistPage() {
               <form action={removeWish}>
                 <input type="hidden" name="productId" value={product.id} />
                 <button className="btn btn--link" type="submit">
-                  Remove
+                  {tc('remove')}
                 </button>
               </form>
             </div>

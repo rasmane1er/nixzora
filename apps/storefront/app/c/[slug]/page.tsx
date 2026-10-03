@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { filtersFrom, ProductListing, toApiQuery } from '@/components/ProductListing';
 import { catalog } from '@/lib/api';
 import { findCategory } from '@/lib/categories';
+import { departmentName, getT } from '@/lib/i18n';
 import { type SearchParams } from '@/lib/params';
 
 type Props = { params: Promise<{ slug: string }>; searchParams: SearchParams };
@@ -17,11 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const found = await load(slug);
   if (!found) return {};
+  const t = await getT('catalog');
+  const name = await departmentName(found.node);
   return {
-    title: found.node.name,
-    description:
-      found.node.description ??
-      `Shop ${found.node.name.toLowerCase()} at NIXZORA: clear specs, fair prices, free shipping over $99.`,
+    title: name,
+    description: found.node.description ?? t('categoryDescription', { name: name.toLowerCase() }),
     alternates: { canonical: `/c/${slug}` },
   };
 }
@@ -37,30 +38,33 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       .catch(() => null),
     catalog.brands().catch(() => []),
   ]);
+  const t = await getT('catalog');
+  const trailNames = await Promise.all(found.trail.map((node) => departmentName(node)));
+  const childNames = await Promise.all(found.node.children.map((child) => departmentName(child)));
 
   return (
     <div className="wrap section">
       <ol className="breadcrumb">
         <li>
-          <Link href="/">Home</Link>
+          <Link href="/">{t('home')}</Link>
         </li>
-        {found.trail.map((node) => (
+        {found.trail.map((node, i) => (
           <li key={node.id}>
-            <Link href={`/c/${node.slug}`}>{node.name}</Link>
+            <Link href={`/c/${node.slug}`}>{trailNames[i]}</Link>
           </li>
         ))}
       </ol>
       <div className="section-head">
         <div className="stack" style={{ gap: 6 }}>
-          <h1>{found.node.name}</h1>
+          <h1>{trailNames[trailNames.length - 1]}</h1>
           {found.node.description ? <p className="muted">{found.node.description}</p> : null}
         </div>
       </div>
       {found.node.children.length ? (
-        <nav className="hero__chips" style={{ marginBottom: 20 }} aria-label="Subcategories">
-          {found.node.children.map((child) => (
+        <nav className="hero__chips" style={{ marginBottom: 20 }} aria-label={t('subcategories')}>
+          {found.node.children.map((child, i) => (
             <Link key={child.id} className="btn btn--secondary btn--sm" href={`/c/${child.slug}`}>
-              {child.name}
+              {childNames[i]}
             </Link>
           ))}
         </nav>

@@ -52,6 +52,8 @@ export type AccountProfile = {
   phone: string | null;
   avatarUrl: string | null;
   memberSince: string;
+  /** "en", "fr" or "es". */
+  language: string;
 };
 
 /** One line of an order in the order history, with what is needed to act on it. */
@@ -216,3 +218,7 @@ export type SupportRequestView = {
   createdAt: string;
   answeredAt: string | null;
 };
+
+/** PUT /me/language */
+export const LanguageUpdateSchema = z.object({ language: z.enum(['en', 'fr', 'es']) });
+export type LanguageUpdate = z.infer<typeof LanguageUpdateSchema>;

@@ -72,7 +72,13 @@ export class AccountHubService {
       phone: user.phone,
       avatarUrl: user.avatarKey ? this.storage.publicUrl(user.avatarKey) : null,
       memberSince: user.createdAt.toISOString(),
+      language: user.language,
     };
+  }
+
+  async setLanguage(userId: string, language: string): Promise<AccountProfile> {
+    await this.prisma.user.update({ where: { id: userId }, data: { language } });
+    return this.profile(userId);
   }
 
   /** Profile photo: a fresh upload link (images up to 5 MB). */

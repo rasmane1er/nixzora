@@ -1,27 +1,38 @@
-import { formatMoney, Price } from '@nixzora/ui';
+import { INTL_LOCALE, rich } from '@nixzora/i18n';
+import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { currentCart } from '@/lib/api';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { applyCoupon, removeCoupon, updateLine } from './actions';
 
-export const metadata: Metadata = { title: 'Your cart', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('cart');
+  return { title: t('title'), robots: { index: false } };
+}
 
 export default async function CartPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const cart = await currentCart();
   const error = param(params, 'error');
+  const tc = await getT('cart');
+  const to = await getT('order');
+  const tCommon = await getT('common');
+  const tp = await getT('product');
+  const f = await getFormat();
+  const locale = await getLocale();
 
   if (!cart || cart.lines.length === 0) {
     return (
       <div className="wrap section">
-        <h1>Your cart</h1>
+        <h1>{tc('title')}</h1>
         {error ? <p className="banner banner--error">{error}</p> : null}
         <div className="empty card" style={{ marginTop: 20 }}>
-          <p>Your cart is empty.</p>
+          <p>{tc('empty')}</p>
           <p style={{ marginTop: 12 }}>
             <Link className="btn btn--primary" href="/search">
-              Browse products
+              {tc('browseProducts')}
             </Link>
           </p>
         </div>
@@ -35,9 +46,9 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
 
   return (
     <div className="wrap section">
-      <h1>Your cart</h1>
+      <h1>{tc('title')}</h1>
       <p className="muted" style={{ margin: '6px 0 20px' }}>
-        {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'}
+        {tCommon('cartItems', { count: cart.itemCount })}
       </p>
       {error ? (
         <p className="banner banner--error" role="alert" style={{ marginBottom: 16 }}>
@@ -46,7 +57,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
       ) : null}
 
       <div className="cart">
-        <section aria-label="Items">
+        <section aria-label={tc('items')}>
           {cart.lines.map((line) => (
             <article key={line.variantId} className="cart-line">
               <div className="cart-line__img">
@@ -61,19 +72,19 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                 </Link>
                 <div className="muted">{line.variantTitle}</div>
                 {line.problem === 'UNAVAILABLE' ? (
-                  <p className="field-error">No longer available — remove it to check out.</p>
+                  <p className="field-error">{tc('unavailable')}</p>
                 ) : line.problem === 'INSUFFICIENT_STOCK' ? (
-                  <p className="field-error">Only {line.available} left — lower the quantity.</p>
+                  <p className="field-error">{tc('lowStock', { count: line.available })}</p>
                 ) : null}
                 <div className="cart-line__actions">
                   <form action={updateLine} className="cart-line__actions" style={{ margin: 0 }}>
                     <input type="hidden" name="variantId" value={line.variantId} />
                     <label className="check" style={{ gap: 6 }}>
-                      Qty
+                      {tc('qty')}
                       <select
                         name="quantity"
                         defaultValue={line.quantity}
-                        aria-label={`Quantity of ${line.productTitle}`}
+                        aria-label={tc('quantityOf', { title: line.productTitle })}
                       >
                         {Array.from(
                           {
@@ -91,23 +102,32 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                       </select>
                     </label>
                     <button className="btn btn--secondary btn--sm" type="submit">
-                      Update
+                      {tc('update')}
                     </button>
                   </form>
                   <form action={updateLine} style={{ margin: 0 }}>
                     <input type="hidden" name="variantId" value={line.variantId} />
                     <input type="hidden" name="quantity" value="0" />
                     <button className="btn btn--link" type="submit">
-                      Remove
+                      {tCommon('remove')}
                     </button>
                   </form>
                 </div>
               </div>
               <div className="num">
-                <strong>{formatMoney(line.lineTotalCents)}</strong>
+                <strong>{f.money(line.lineTotalCents)}</strong>
                 {line.quantity > 1 ? (
                   <div className="muted" style={{ fontSize: 13 }}>
-                    <Price cents={line.unitPriceCents} /> each
+                    {rich(tc('eachPrice'), {
+                      price: () => (
+                        <Price
+                          key="price"
+                          cents={line.unitPriceCents}
+                          locale={INTL_LOCALE[locale]}
+                          wasLabel={tp('was')}
+                        />
+                      ),
+                    })}
                   </div>
                 ) : null}
               </div>
@@ -115,24 +135,24 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           ))}
         </section>
 
-        <aside className="card summary" aria-label="Order summary">
-          <h2>Summary</h2>
+        <aside className="card summary" aria-label={to('orderSummary')}>
+          <h2>{to('summary')}</h2>
           <dl>
-            <dt>Subtotal</dt>
-            <dd>{formatMoney(t.subtotalCents)}</dd>
+            <dt>{to('subtotal')}</dt>
+            <dd>{f.money(t.subtotalCents)}</dd>
             {t.discountCents ? (
               <>
-                <dt>Discount ({cart.coupon?.code})</dt>
-                <dd className="discount">−{formatMoney(t.discountCents)}</dd>
+                <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
+                <dd className="discount">−{f.money(t.discountCents)}</dd>
               </>
             ) : null}
-            <dt>Shipping</dt>
-            <dd>{t.shippingCents ? formatMoney(t.shippingCents) : 'Free'}</dd>
-            <dt>Tax</dt>
-            <dd className="muted">At checkout</dd>
-            <dt className="total">Estimated total</dt>
+            <dt>{to('shipping')}</dt>
+            <dd>{t.shippingCents ? f.money(t.shippingCents) : to('free')}</dd>
+            <dt>{to('tax')}</dt>
+            <dd className="muted">{tc('atCheckout')}</dd>
+            <dt className="total">{tc('estimatedTotal')}</dt>
             <dd className="total">
-              {formatMoney(t.subtotalCents - t.discountCents + t.shippingCents)}
+              {f.money(t.subtotalCents - t.discountCents + t.shippingCents)}
             </dd>
           </dl>
           {cart.coupon ? (
@@ -146,20 +166,20 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                 ) : null}
               </span>
               <button className="btn btn--link" type="submit">
-                Remove
+                {tCommon('remove')}
               </button>
             </form>
           ) : (
             <form action={applyCoupon} className="coupon">
               <input
                 name="code"
-                placeholder="Discount code"
-                aria-label="Discount code"
+                placeholder={tc('discountCode')}
+                aria-label={tc('discountCode')}
                 maxLength={32}
                 required
               />
               <button className="btn btn--secondary btn--sm" type="submit">
-                Apply
+                {tc('apply')}
               </button>
             </form>
           )}
@@ -168,26 +188,24 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               <progress
                 value={t.subtotalCents}
                 max={threshold}
-                aria-label="Progress to free shipping"
+                aria-label={tc('freeShippingProgress')}
               />
-              <span>Add {formatMoney(t.freeShippingRemainingCents)} for free shipping.</span>
+              <span>
+                {tc('addForFreeShipping', { amount: f.money(t.freeShippingRemainingCents) })}
+              </span>
             </div>
           ) : (
-            <p className="free-ship">You’ve got free shipping.</p>
+            <p className="free-ship">{tc('gotFreeShipping')}</p>
           )}
           {blocked || cart.coupon?.problem ? (
-            <p className="banner banner--info">
-              {blocked
-                ? 'Fix the highlighted items to continue.'
-                : 'Remove the code that no longer applies to continue.'}
-            </p>
+            <p className="banner banner--info">{blocked ? tc('fixItems') : tc('removeCode')}</p>
           ) : (
             <Link className="btn btn--primary btn--block" href="/checkout">
-              Check out
+              {tc('checkOut')}
             </Link>
           )}
           <Link href="/search" className="muted" style={{ textAlign: 'center', fontSize: 14 }}>
-            Continue shopping
+            {tc('continueShopping')}
           </Link>
         </aside>
       </div>

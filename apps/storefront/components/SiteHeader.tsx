@@ -2,6 +2,7 @@ import { Logo } from '@nixzora/ui';
 import Link from 'next/link';
 import { type SellerMeResponse } from '@nixzora/validation';
 import { api, catalog, currentCart } from '@/lib/api';
+import { departmentName, getT } from '@/lib/i18n';
 import { isSignedIn } from '@/lib/session';
 
 export async function SiteHeader() {
@@ -11,6 +12,9 @@ export async function SiteHeader() {
     isSignedIn(),
   ]);
   const count = cart?.itemCount ?? 0;
+  const t = await getT('common');
+  const l = await getT('layout');
+  const names = await Promise.all(categories.map((category) => departmentName(category)));
   // Sellers get their dashboard; everyone else is invited to sell.
   const hasStore = signedIn
     ? await api<SellerMeResponse>('/seller/me')
@@ -21,43 +25,43 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <div className="wrap site-header__row">
-        <Link href="/" className="logo" aria-label="NIXZORA home">
+        <Link href="/" className="logo" aria-label={l('home')}>
           <Logo size={34} />
         </Link>
         <form action="/search" className="site-search" role="search">
           <input
             type="search"
             name="q"
-            placeholder="Search laptops, monitors, headphones…"
-            aria-label="Search products"
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('searchLabel')}
           />
           <button className="btn btn--primary" type="submit">
-            Search
+            {t('search')}
           </button>
         </form>
-        <nav className="site-header__links" aria-label="Account and cart">
+        <nav className="site-header__links" aria-label={l('accountAndCart')}>
           <Link href="/assistant" className="hide-sm">
-            Assistant
+            {t('assistant')}
           </Link>
           <Link href={signedIn ? '/account' : '/account/login'}>
-            {signedIn ? 'Account' : 'Sign in'}
+            {signedIn ? t('account') : t('signIn')}
           </Link>
           <Link href="/sell" className="hide-sm">
-            {hasStore ? 'Seller dashboard' : 'Sell'}
+            {hasStore ? t('sellerDashboard') : t('sell')}
           </Link>
           <Link href="/cart" className="cart-link">
-            Cart
-            <span className="cart-count" aria-label={`${count} items`}>
+            {t('cart')}
+            <span className="cart-count" aria-label={t('cartItems', { count })}>
               {count}
             </span>
           </Link>
         </nav>
       </div>
       {categories.length ? (
-        <nav className="wrap cat-nav" aria-label="Departments">
-          {categories.map((category) => (
+        <nav className="wrap cat-nav" aria-label={l('departments')}>
+          {categories.map((category, i) => (
             <Link key={category.id} href={`/c/${category.slug}`}>
-              {category.name}
+              {names[i]}
             </Link>
           ))}
         </nav>

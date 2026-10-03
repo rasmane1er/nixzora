@@ -1,19 +1,22 @@
 import { type PagedResult, type SellerOrderView } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api } from '@/lib/api';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, query, type SearchParams } from '@/lib/params';
-import { requireSeller, SELLER_ORDER_LABEL } from '@/lib/sell';
+import { requireSeller } from '@/lib/sell';
 
-export const metadata: Metadata = { title: 'Orders', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaOrders'), robots: { index: false } };
+}
 
 const FILTERS = [
-  ['PAID', 'To ship'],
-  ['SHIPPED', 'Shipped'],
-  ['DELIVERED', 'Delivered'],
-  [undefined, 'All'],
+  ['PAID', 'filterToShip'],
+  ['SHIPPED', 'filterShipped'],
+  ['DELIVERED', 'filterDelivered'],
+  [undefined, 'filterAll'],
 ] as const;
 
 export default async function SellerOrdersPage({ searchParams }: { searchParams: SearchParams }) {
@@ -24,32 +27,28 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
   const result = await api<PagedResult<SellerOrderView>>(
     `/seller/orders${query({ status, page })}`,
   );
-  const date = (iso: string | null) =>
-    iso ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso)) : '—';
+  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const date = (iso: string | null) => (iso ? f.date(iso) : '—');
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <SellerNav seller={seller} current="/sell/orders" />
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
-      <nav className="seller-filters" aria-label="Filter orders">
+      <nav className="seller-filters" aria-label={t('filterOrdersLabel')}>
         {FILTERS.map(([value, label]) => (
           <Link
             key={label}
             href={`/sell/orders${value ? query({ status: value }) : '?all=1'}`}
             aria-current={status === value ? 'page' : undefined}
           >
-            {label}
+            {t(label)}
           </Link>
         ))}
       </nav>
 
       {result.items.length === 0 ? (
         <div className="empty card">
-          <p>
-            {status === 'PAID'
-              ? 'Nothing to ship right now. New orders appear here and arrive by email.'
-              : 'No orders here yet.'}
-          </p>
+          <p>{status === 'PAID' ? t('nothingToShip') : t('noOrdersHere')}</p>
         </div>
       ) : (
         <section className="card">
@@ -57,10 +56,10 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
             <table className="plain">
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Items</th>
-                  <th>Status</th>
-                  <th className="num">You earn</th>
+                  <th>{t('colOrder')}</th>
+                  <th>{t('colItems')}</th>
+                  <th>{t('colStatus')}</th>
+                  <th className="num">{t('colYouEarn')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,10 +80,10 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
                     </td>
                     <td>
                       <span className={`pill pill--seller-order-${order.status.toLowerCase()}`}>
-                        {SELLER_ORDER_LABEL[order.status]}
+                        {t(`order_${order.status}`)}
                       </span>
                     </td>
-                    <td className="num">{formatMoney(order.netCents, order.currency)}</td>
+                    <td className="num">{f.money(order.netCents, order.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -93,15 +92,15 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
         </section>
       )}
       {result.totalPages > 1 ? (
-        <nav className="pager" aria-label="Pages">
+        <nav className="pager" aria-label={t('pagesLabel')}>
           {page > 1 ? (
-            <Link href={`/sell/orders${query({ status, page: page - 1 })}`}>← Previous</Link>
+            <Link href={`/sell/orders${query({ status, page: page - 1 })}`}>{t('previous')}</Link>
           ) : null}
           <span className="muted">
-            Page {result.page} of {result.totalPages}
+            {t('pageOf', { page: result.page, total: result.totalPages })}
           </span>
           {page < result.totalPages ? (
-            <Link href={`/sell/orders${query({ status, page: page + 1 })}`}>Next →</Link>
+            <Link href={`/sell/orders${query({ status, page: page + 1 })}`}>{t('next')}</Link>
           ) : null}
         </nav>
       ) : null}

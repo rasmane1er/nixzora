@@ -6,6 +6,7 @@ import {
   AssistantChatRequestSchema,
 } from '@nixzora/validation';
 import { api, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 
 export type AskResult =
   { ok: true; response: AssistantChatResponse } | { ok: false; error: string };
@@ -13,7 +14,7 @@ export type AskResult =
 /** Sends the conversation to the shopping assistant. Products and prices come from the API. */
 export async function askAssistant(messages: AssistantMessage[]): Promise<AskResult> {
   const parsed = AssistantChatRequestSchema.safeParse({ messages: messages.slice(-12) });
-  if (!parsed.success) return { ok: false, error: 'Write a little more about what you need.' };
+  if (!parsed.success) return { ok: false, error: (await getT('assistant'))('writeMore') };
   try {
     const response = await api<AssistantChatResponse>('/assistant/chat', {
       method: 'POST',

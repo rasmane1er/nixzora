@@ -24,6 +24,8 @@ export const RegisterRequestSchema = z.object({
   firstName: z.string().trim().min(1).max(100).optional(),
   lastName: z.string().trim().min(1).max(100).optional(),
   deviceName: DeviceNameSchema,
+  /** The language for emails and every app: "en", "fr" or "es". */
+  language: z.enum(['en', 'fr', 'es']).optional(),
 });
 
 export const LoginRequestSchema = z.object({

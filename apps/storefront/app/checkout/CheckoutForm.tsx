@@ -1,7 +1,9 @@
 'use client';
 
+import { rich } from '@nixzora/i18n';
 import { type SavedAddress, US_STATES } from '@nixzora/validation';
 import { useActionState, useState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { type CheckoutState, placeOrder } from './actions';
 
 type Defaults = Partial<
@@ -32,6 +34,7 @@ export function CheckoutForm({
   signedIn: boolean;
   addresses: SavedAddress[];
 }) {
+  const t = useT('checkout');
   const [state, action, pending] = useActionState<CheckoutState, FormData>(placeOrder, {});
   const initial = addresses[0] ? fromSaved(addresses[0]) : {};
   const [defaults, setDefaults] = useState<Defaults>({ email, ...initial });
@@ -61,8 +64,8 @@ export function CheckoutForm({
       ) : null}
 
       <section className="card form">
-        <h2>Contact</h2>
-        {field('email', 'Email for your receipt', {
+        <h2>{t('contact')}</h2>
+        {field('email', t('emailForReceipt'), {
           type: 'email',
           autoComplete: 'email',
           required: true,
@@ -70,17 +73,22 @@ export function CheckoutForm({
         })}
         {!signedIn ? (
           <p className="hint">
-            Checking out as a guest. <a href="/account/login?next=/checkout">Sign in</a> to use
-            saved addresses.
+            {rich(t('guestNotice'), {
+              link: (chunk) => (
+                <a key="link" href="/account/login?next=/checkout">
+                  {chunk}
+                </a>
+              ),
+            })}
           </p>
         ) : null}
       </section>
 
       <section className="card form">
-        <h2>Shipping address</h2>
+        <h2>{t('shippingAddress')}</h2>
         {addresses.length > 1 ? (
           <label>
-            Saved addresses
+            {t('savedAddresses')}
             <select
               onChange={(e) => {
                 const chosen = addresses.find((a) => a.id === e.target.value);
@@ -100,13 +108,13 @@ export function CheckoutForm({
             </select>
           </label>
         ) : null}
-        {field('fullName', 'Full name', { autoComplete: 'name', required: true })}
-        {field('line1', 'Address', { autoComplete: 'address-line1', required: true })}
-        {field('line2', 'Apartment, suite (optional)', { autoComplete: 'address-line2' })}
+        {field('fullName', t('fullName'), { autoComplete: 'name', required: true })}
+        {field('line1', t('address'), { autoComplete: 'address-line1', required: true })}
+        {field('line2', t('line2'), { autoComplete: 'address-line2' })}
         <div className="form-row">
-          {field('city', 'City', { autoComplete: 'address-level2', required: true })}
+          {field('city', t('city'), { autoComplete: 'address-level2', required: true })}
           <label>
-            State
+            {t('state')}
             <select
               name="region"
               defaultValue={v.region ?? ''}
@@ -115,7 +123,7 @@ export function CheckoutForm({
               aria-invalid={Boolean(err.region)}
             >
               <option value="" disabled>
-                Choose…
+                {t('choose')}
               </option>
               {US_STATES.map((s) => (
                 <option key={s} value={s}>
@@ -125,28 +133,28 @@ export function CheckoutForm({
             </select>
             {err.region ? <span className="field-error">{err.region}</span> : null}
           </label>
-          {field('postalCode', 'ZIP code', {
+          {field('postalCode', t('zip'), {
             autoComplete: 'postal-code',
             inputMode: 'numeric',
             required: true,
             pattern: '\\d{5}(-\\d{4})?',
           })}
         </div>
-        {field('phone', 'Phone (optional, for delivery questions)', {
+        {field('phone', t('phone'), {
           type: 'tel',
           autoComplete: 'tel',
         })}
         {signedIn ? (
           <label className="check">
             <input type="checkbox" name="saveAddress" defaultChecked={addresses.length === 0} />{' '}
-            Save this address to my account
+            {t('saveAddress')}
           </label>
         ) : null}
-        <p className="hint">We ship within the United States.</p>
+        <p className="hint">{t('shipWithinUs')}</p>
       </section>
 
       <button className="btn btn--primary btn--block" type="submit" disabled={pending}>
-        {pending ? 'Placing your order…' : 'Continue to payment'}
+        {pending ? t('placingOrder') : t('continueToPayment')}
       </button>
     </form>
   );

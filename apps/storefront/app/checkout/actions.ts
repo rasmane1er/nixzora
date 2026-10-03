@@ -3,6 +3,7 @@
 import { type CheckoutResponse, US_STATES } from '@nixzora/validation';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { accessToken, guestCartId } from '@/lib/session';
 
 export type CheckoutState = {
@@ -26,9 +27,10 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
   const values = Object.fromEntries(FIELDS.map((f) => [f, String(form.get(f) ?? '').trim()]));
   const signedIn = Boolean(await accessToken());
   const cartId = await guestCartId();
+  const t = await getT('checkout');
 
   if (!(US_STATES as readonly string[]).includes(values.region ?? '')) {
-    return { values, fieldErrors: { region: 'Choose a state.' } };
+    return { values, fieldErrors: { region: t('chooseState') } };
   }
 
   let checkout: CheckoutResponse;
@@ -63,7 +65,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
       for (const issue of error.issues) {
         fieldErrors[issue.field.replace('shippingAddress.', '')] = issue.message;
       }
-      return { values, fieldErrors, error: 'Check the highlighted fields.' };
+      return { values, fieldErrors, error: t('checkHighlighted') };
     }
     return { values, error: errorMessage(error) };
   }

@@ -1,38 +1,49 @@
-import { SUPPORT_TOPIC_LABEL, type SupportRequestView } from '@nixzora/validation';
+import { rich } from '@nixzora/i18n';
+import { type SupportRequestView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AccountHeader } from '@/components/AccountHeader';
-import { accountApi, day } from '@/lib/account';
+import { accountApi } from '@/lib/account';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Your support requests', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('accountActivity');
+  return { title: t('supportTitle'), robots: { index: false } };
+}
 
 const STATUS = {
-  OPEN: { text: 'Waiting for us', pill: 'pill--pending_payment' },
-  ANSWERED: { text: 'Answered', pill: 'pill--delivered' },
-  CLOSED: { text: 'Closed', pill: '' },
+  OPEN: { text: 'supportStatus_OPEN', pill: 'pill--pending_payment' },
+  ANSWERED: { text: 'supportStatus_ANSWERED', pill: 'pill--delivered' },
+  CLOSED: { text: 'supportStatus_CLOSED', pill: '' },
 } as const;
 
 export default async function SupportRequestsPage() {
-  const requests = await accountApi<SupportRequestView[]>(
-    '/me/support-requests',
-    '/account/support',
-  );
+  const [requests, t, f] = await Promise.all([
+    accountApi<SupportRequestView[]>('/me/support-requests', '/account/support'),
+    getT('accountActivity'),
+    getFormat(),
+  ]);
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <AccountHeader
-        title="Your support requests"
-        description="We answer within one business day, by email."
+        title={t('supportTitle')}
+        description={t('supportDescription')}
         actions={
           <Link className="btn btn--primary" href="/help/contact">
-            Contact support
+            {t('contactSupport')}
           </Link>
         }
       />
       {requests.length === 0 ? (
         <div className="card">
           <p style={{ margin: 0 }}>
-            You have not contacted us yet. Many answers are in the{' '}
-            <Link href="/help">help center</Link>.
+            {rich(t('supportEmpty'), {
+              link: (chunk) => (
+                <Link key="help" href="/help">
+                  {chunk}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       ) : (
@@ -43,8 +54,8 @@ export default async function SupportRequestsPage() {
                 <div className="stack" style={{ gap: 2 }}>
                   <strong>{r.subject}</strong>
                   <span className="muted" style={{ fontSize: 14 }}>
-                    <span className="mono">{r.reference}</span> · {SUPPORT_TOPIC_LABEL[r.topic]} ·{' '}
-                    {day(r.createdAt)}
+                    <span className="mono">{r.reference}</span> · {t(`topic_${r.topic}`)} ·{' '}
+                    {f.date(r.createdAt)}
                     {r.orderNumber ? (
                       <>
                         {' '}
@@ -53,12 +64,14 @@ export default async function SupportRequestsPage() {
                     ) : null}
                   </span>
                 </div>
-                <span className={`pill ${STATUS[r.status].pill}`}>{STATUS[r.status].text}</span>
+                <span className={`pill ${STATUS[r.status].pill}`}>{t(STATUS[r.status].text)}</span>
               </div>
               <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{r.message}</p>
               {r.staffReply ? (
                 <div className="banner banner--info" style={{ margin: 0, whiteSpace: 'pre-line' }}>
-                  <strong>NIXZORA{r.answeredAt ? `, ${day(r.answeredAt)}` : ''}:</strong>{' '}
+                  <strong>
+                    {r.answeredAt ? t('replyByOn', { date: f.date(r.answeredAt) }) : t('replyBy')}
+                  </strong>{' '}
                   {r.staffReply}
                 </div>
               ) : null}

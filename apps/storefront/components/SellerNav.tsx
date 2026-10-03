@@ -1,49 +1,50 @@
 import { type SellerView } from '@nixzora/validation';
 import Link from 'next/link';
-import { SELLER_STATUS_LABEL } from '@/lib/sell';
+import { getT } from '@/lib/i18n';
 
 const LINKS = [
-  { href: '/sell', label: 'Overview' },
-  { href: '/sell/orders', label: 'Orders' },
-  { href: '/sell/feedback', label: 'Returns & ratings' },
-  { href: '/sell/listings', label: 'Listings' },
-  { href: '/sell/analytics', label: 'Analytics' },
-  { href: '/sell/earnings', label: 'Earnings' },
-  { href: '/sell/settings', label: 'Store settings' },
-];
+  { href: '/sell', label: 'navOverview' },
+  { href: '/sell/orders', label: 'navOrders' },
+  { href: '/sell/feedback', label: 'navFeedback' },
+  { href: '/sell/listings', label: 'navListings' },
+  { href: '/sell/analytics', label: 'navAnalytics' },
+  { href: '/sell/earnings', label: 'navEarnings' },
+  { href: '/sell/settings', label: 'navSettings' },
+] as const;
 
 /** Header of every seller-portal page: store name, status and sections. */
-export function SellerNav({
+export async function SellerNav({
   seller,
   current,
 }: {
   seller: SellerView;
   current: (typeof LINKS)[number]['href'];
 }) {
+  const t = await getT('sell');
   return (
     <div className="seller-head">
       <div className="stack" style={{ gap: 4 }}>
-        <p className="eyebrow">Seller portal</p>
+        <p className="eyebrow">{t('portal')}</p>
         <h1>{seller.displayName}</h1>
         <p className="muted" style={{ fontSize: 14 }}>
           <span className={`pill pill--seller-${seller.status.toLowerCase()}`}>
-            {SELLER_STATUS_LABEL[seller.status]}
+            {t(`status_${seller.status}`)}
           </span>{' '}
           {seller.status === 'ACTIVE' ? (
-            <Link href={`/s/${seller.handle}`}>View your store →</Link>
+            <Link href={`/s/${seller.handle}`}>{t('viewStore')}</Link>
           ) : (
             <span className="mono">nixzora.com/s/{seller.handle}</span>
           )}
         </p>
       </div>
-      <nav className="seller-tabs" aria-label="Seller portal">
+      <nav className="seller-tabs" aria-label={t('portal')}>
         {LINKS.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             aria-current={link.href === current ? 'page' : undefined}
           >
-            {link.label}
+            {t(link.label)}
           </Link>
         ))}
       </nav>

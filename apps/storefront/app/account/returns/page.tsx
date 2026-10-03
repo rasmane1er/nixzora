@@ -1,35 +1,48 @@
 import { type ReturnView } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
+import { rich } from '@nixzora/i18n';
 import Link from 'next/link';
 import { AccountHeader } from '@/components/AccountHeader';
-import { RETURN_STATUS_TEXT, accountApi, day } from '@/lib/account';
+import { accountApi, returnStatusText } from '@/lib/account';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Returns & refunds', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('accountActivity');
+  return { title: t('returnsTitle'), robots: { index: false } };
+}
 
 const STEPS = ['REQUESTED', 'APPROVED', 'RECEIVED', 'REFUNDED'] as const;
 
 export default async function ReturnsPage() {
-  const returns = await accountApi<ReturnView[]>('/me/returns', '/account/returns');
+  const [returns, t, f] = await Promise.all([
+    accountApi<ReturnView[]>('/me/returns', '/account/returns'),
+    getT('accountActivity'),
+    getFormat(),
+  ]);
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <AccountHeader
-        title="Returns & refunds"
-        description="Most items can be returned within 30 days of delivery. Refunds go back to the card you paid with."
+        title={t('returnsTitle')}
+        description={t('returnsDescription')}
         actions={
           <Link className="btn btn--secondary" href="/account/orders?filter=delivered">
-            Start a return
+            {t('startReturn')}
           </Link>
         }
       />
 
       {returns.length === 0 ? (
         <div className="card stack" style={{ gap: 8 }}>
-          <p style={{ margin: 0 }}>You have no returns.</p>
+          <p style={{ margin: 0 }}>{t('noReturns')}</p>
           <p className="muted" style={{ margin: 0 }}>
-            To return something, open the order in <Link href="/account/orders">Your orders</Link>{' '}
-            and choose “Return or replace items”.
+            {rich(t('noReturnsHelp'), {
+              link: (chunk) => (
+                <Link key="orders" href="/account/orders">
+                  {chunk}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       ) : (
@@ -41,21 +54,31 @@ export default async function ReturnsPage() {
               <li key={r.id} className="card stack" style={{ gap: 12 }}>
                 <div className="section-head" style={{ marginBottom: 0 }}>
                   <div className="stack" style={{ gap: 2 }}>
-                    <strong>{RETURN_STATUS_TEXT[r.status] ?? r.status}</strong>
+                    <strong>{returnStatusText(t, r.status)}</strong>
                     <span className="muted" style={{ fontSize: 14 }}>
-                      Order <Link href={`/orders/${r.orderNumber}`}>{r.orderNumber}</Link> ·
-                      requested {day(r.createdAt)}
+                      {rich(
+                        t('returnOrderLine', { number: r.orderNumber, date: f.date(r.createdAt) }),
+                        {
+                          link: (chunk) => (
+                            <Link key="order" href={`/orders/${r.orderNumber}`}>
+                              {chunk}
+                            </Link>
+                          ),
+                        },
+                      )}
                     </span>
                   </div>
                   {r.refundCents ? (
-                    <strong>Refunded {formatMoney(r.refundCents, 'USD')}</strong>
+                    <strong>
+                      {t('refundedAmount', { amount: f.money(r.refundCents, 'USD') })}
+                    </strong>
                   ) : null}
                 </div>
                 {r.status !== 'REJECTED' ? (
-                  <ol className="return-steps" aria-label="Progress">
+                  <ol className="return-steps" aria-label={t('progressLabel')}>
                     {STEPS.map((step, i) => (
                       <li key={step} data-done={i <= reached || undefined}>
-                        {RETURN_STATUS_TEXT[step]!.split(':')[0]}
+                        {t(`returnStep_${step}`)}
                       </li>
                     ))}
                   </ol>
@@ -68,12 +91,12 @@ export default async function ReturnsPage() {
                   ))}
                 </ul>
                 <p style={{ margin: 0, fontSize: 14 }}>
-                  Reason: {r.reason}
+                  {t('reason', { reason: r.reason })}
                   {r.customerNote ? ` · “${r.customerNote}”` : ''}
                 </p>
                 {r.staffNote ? (
                   <p className="banner banner--info" style={{ margin: 0 }}>
-                    From NIXZORA: {r.staffNote}
+                    {t('fromNixzora', { note: r.staffNote })}
                   </p>
                 ) : null}
               </li>

@@ -13,6 +13,7 @@ import QRCode from 'qrcode';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { cookies } from 'next/headers';
+import { getT } from '@/lib/i18n';
 import { THEME_COOKIE, clearSession } from '@/lib/session';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,14 +58,15 @@ export async function updateProfile(form: FormData): Promise<void> {
           phone: text(form, 'phone') ?? null,
         },
       }),
-    'Your name and phone number are saved.',
+    (await getT('account'))('profileSaved'),
   );
 }
 
 export async function changePassword(form: FormData): Promise<void> {
+  const t = await getT('account');
   const next = String(form.get('newPassword') ?? '');
   if (next !== String(form.get('confirmPassword') ?? '')) {
-    redirect(to('/account/security#password', 'error', 'The new passwords do not match.'));
+    redirect(to('/account/security#password', 'error', t('passwordsMismatch')));
   }
   await perform(
     '/account/security#password',
@@ -73,7 +75,7 @@ export async function changePassword(form: FormData): Promise<void> {
         method: 'POST',
         body: { currentPassword: String(form.get('currentPassword') ?? ''), newPassword: next },
       }),
-    'Password changed. Other devices were signed out.',
+    t('passwordChanged'),
   );
 }
 
@@ -81,7 +83,7 @@ export async function resendVerification(): Promise<void> {
   await perform(
     '/account/security',
     () => api('/auth/email/verify/resend', { method: 'POST' }),
-    'We sent a new confirmation link. Check your inbox.',
+    (await getT('account'))('verificationSent'),
   );
 }
 
@@ -119,7 +121,7 @@ export async function disableMfa(form: FormData): Promise<void> {
   await perform(
     '/account/security#two-step',
     () => api('/me/mfa/disable', { method: 'POST', body: { code: text(form, 'code') ?? '' } }),
-    'Two-step verification is off.',
+    (await getT('account'))('twoStepTurnedOff'),
   );
 }
 
@@ -129,7 +131,7 @@ export async function signOutDevice(form: FormData): Promise<void> {
   await perform(
     '/account/security#devices',
     () => api(`/me/sessions/${id}`, { method: 'DELETE' }),
-    'That device is signed out.',
+    (await getT('account'))('deviceSignedOut'),
   );
 }
 
@@ -137,7 +139,7 @@ export async function signOutOtherDevices(): Promise<void> {
   await perform(
     '/account/security#devices',
     () => api('/me/sessions', { method: 'DELETE' }),
-    'Signed out everywhere except here.',
+    (await getT('account'))('signedOutElsewhere'),
   );
 }
 
@@ -161,6 +163,7 @@ function addressFrom(form: FormData): AddressCreate {
 export async function saveAddress(form: FormData): Promise<void> {
   const id = String(form.get('id') ?? '');
   const editing = UUID.test(id);
+  const t = await getT('account');
   await perform(
     editing ? `/account/addresses#a-${id}` : '/account/addresses',
     () =>
@@ -168,7 +171,7 @@ export async function saveAddress(form: FormData): Promise<void> {
         method: editing ? 'PATCH' : 'POST',
         body: addressFrom(form),
       }),
-    editing ? 'Address updated.' : 'Address added.',
+    editing ? t('addressUpdated') : t('addressAdded'),
   );
 }
 
@@ -178,7 +181,7 @@ export async function makeDefaultAddress(form: FormData): Promise<void> {
   await perform(
     '/account/addresses',
     () => api(`/me/addresses/${id}`, { method: 'PATCH', body: { isDefaultShipping: true } }),
-    'Default address changed.',
+    (await getT('account'))('defaultAddressChanged'),
   );
 }
 
@@ -188,7 +191,7 @@ export async function removeAddress(form: FormData): Promise<void> {
   await perform(
     '/account/addresses',
     () => api(`/me/addresses/${id}`, { method: 'DELETE' }),
-    'Address removed.',
+    (await getT('account'))('addressRemoved'),
   );
 }
 
@@ -226,13 +229,14 @@ export async function savePreferences(form: FormData): Promise<void> {
           reviewRequests: form.get('reviewRequests') === 'on',
         },
       }),
-    'Preferences saved.',
+    (await getT('account'))('preferencesSaved'),
   );
 }
 
 export async function closeAccount(form: FormData): Promise<void> {
+  const t = await getT('account');
   if (form.get('understand') !== 'on') {
-    redirect(to('/account/privacy#close', 'error', 'Tick the box to confirm you understand.'));
+    redirect(to('/account/privacy#close', 'error', t('tickToConfirm')));
   }
   const password = text(form, 'password');
   const confirm = text(form, 'confirm');
@@ -245,7 +249,7 @@ export async function closeAccount(form: FormData): Promise<void> {
     redirect(to('/account/privacy#close', 'error', errorMessage(error)));
   }
   await clearSession();
-  redirect('/?notice=Your+account+is+closed.');
+  redirect(`/?notice=${encodeURIComponent(t('accountClosed'))}`);
 }
 
 // ───── Profile photo (called from the browser component) ─────
@@ -283,7 +287,7 @@ export async function removeAvatar(): Promise<void> {
   await perform(
     '/account/profile',
     () => api('/me/avatar', { method: 'DELETE' }),
-    'Profile photo removed.',
+    (await getT('account'))('photoRemoved'),
   );
 }
 
@@ -298,7 +302,8 @@ export async function setTheme(form: FormData): Promise<void> {
     store.delete(THEME_COOKIE);
   }
   revalidatePath('/', 'layout');
-  redirect('/account/settings?notice=Appearance+saved.');
+  const t = await getT('account');
+  redirect(`/account/settings?notice=${encodeURIComponent(t('appearanceSaved'))}`);
 }
 
 // ───── Support ─────

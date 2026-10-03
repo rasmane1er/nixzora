@@ -1,0 +1,70 @@
+import { defineMessages } from '../define';
+
+/** Site title, header and footer of the storefront. */
+export const layout = defineMessages({
+  en: {
+    siteTitle: 'NIXZORA — computers and electronics, explained',
+    siteDescription:
+      'Laptops, monitors, phones and accessories with clear specs and honest advice. Tell us what you need; NIXZORA finds it and builds the cart.',
+    home: 'NIXZORA home',
+    accountAndCart: 'Account and cart',
+    departments: 'Departments',
+    tagline: 'Computers and electronics, explained. Free shipping over $99 · 30-day returns.',
+    footerNav: 'Footer',
+    allProducts: 'All products',
+    yourOrders: 'Your orders',
+    help: 'Help',
+    shipping: 'Shipping',
+    returns: 'Returns',
+    about: 'About',
+    sellOnNixzora: 'Sell on NIXZORA',
+    status: 'Platform status',
+    privacy: 'Privacy',
+    terms: 'Terms',
+    chooseLanguage: 'Choose a language',
+  },
+  fr: {
+    siteTitle: 'NIXZORA — l’informatique et l’électronique, expliquées',
+    siteDescription:
+      'Ordinateurs, écrans, téléphones et accessoires avec des caractéristiques claires et des conseils honnêtes. Dites-nous ce qu’il vous faut : NIXZORA le trouve et prépare le panier.',
+    home: 'Accueil NIXZORA',
+    accountAndCart: 'Compte et panier',
+    departments: 'Rayons',
+    tagline:
+      'L’informatique et l’électronique, expliquées. Livraison offerte dès 99 $ · retours sous 30 jours.',
+    footerNav: 'Pied de page',
+    allProducts: 'Tous les produits',
+    yourOrders: 'Vos commandes',
+    help: 'Aide',
+    shipping: 'Livraison',
+    returns: 'Retours',
+    about: 'À propos',
+    sellOnNixzora: 'Vendre sur NIXZORA',
+    status: 'État de la plateforme',
+    privacy: 'Confidentialité',
+    terms: 'Conditions',
+    chooseLanguage: 'Choisir une langue',
+  },
+  es: {
+    siteTitle: 'NIXZORA — computación y electrónica, explicadas',
+    siteDescription:
+      'Laptops, monitores, teléfonos y accesorios con especificaciones claras y consejos honestos. Dinos qué necesitas: NIXZORA lo encuentra y arma el carrito.',
+    home: 'Inicio de NIXZORA',
+    accountAndCart: 'Cuenta y carrito',
+    departments: 'Departamentos',
+    tagline:
+      'Computación y electrónica, explicadas. Envío gratis desde $99 · devoluciones en 30 días.',
+    footerNav: 'Pie de página',
+    allProducts: 'Todos los productos',
+    yourOrders: 'Tus pedidos',
+    help: 'Ayuda',
+    shipping: 'Envíos',
+    returns: 'Devoluciones',
+    about: 'Acerca de',
+    sellOnNixzora: 'Vender en NIXZORA',
+    status: 'Estado de la plataforma',
+    privacy: 'Privacidad',
+    terms: 'Términos',
+    chooseLanguage: 'Elegir un idioma',
+  },
+});

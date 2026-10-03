@@ -1,9 +1,14 @@
+import { rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AccountHeader } from '@/components/AccountHeader';
 import { accountApi } from '@/lib/account';
+import { getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Payment methods', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('account');
+  return { title: t('paymentMethods'), robots: { index: false } };
+}
 
 /**
  * NIXZORA does not keep cards: they are entered on the payment provider's secure form at
@@ -11,35 +16,34 @@ export const metadata: Metadata = { title: 'Payment methods', robots: { index: f
  */
 export default async function PaymentsPage() {
   await accountApi('/me/profile', '/account/payments');
+  const t = await getT('account');
   return (
     <div className="wrap section stack" style={{ gap: 20, maxWidth: 820 }}>
-      <AccountHeader
-        title="Payment methods"
-        description="How you can pay, and how we keep your card details safe."
-      />
+      <AccountHeader title={t('paymentMethods')} description={t('paymentsDescription')} />
       <section className="card stack">
-        <h2>Ways to pay</h2>
+        <h2>{t('waysToPay')}</h2>
         <ul className="pay-list">
           <li>
-            <strong>Credit and debit cards</strong>
-            <span className="muted">Visa, Mastercard, American Express and Discover.</span>
+            <strong>{t('cards')}</strong>
+            <span className="muted">{t('cardBrands')}</span>
           </li>
           <li>
-            <strong>Apple Pay and Google Pay</strong>
-            <span className="muted">Offered at checkout on devices that support them.</span>
+            <strong>{t('wallets')}</strong>
+            <span className="muted">{t('walletsHint')}</span>
           </li>
         </ul>
       </section>
       <section className="card stack">
-        <h2>No saved cards, on purpose</h2>
-        <p style={{ margin: 0 }}>
-          You enter your card on our payment provider&apos;s secure form at checkout, each time.
-          Card numbers never reach NIXZORA&apos;s servers and are not stored in your account, so
-          there is nothing here to steal or to remove.
-        </p>
+        <h2>{t('noSavedCards')}</h2>
+        <p style={{ margin: 0 }}>{t('noSavedCardsText')}</p>
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          Refunds always go back to the card you paid with. See{' '}
-          <Link href="/account/returns">Returns &amp; refunds</Link>.
+          {rich(t('refundsNote'), {
+            link: (chunk) => (
+              <Link key="returns" href="/account/returns">
+                {chunk}
+              </Link>
+            ),
+          })}
         </p>
       </section>
     </div>

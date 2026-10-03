@@ -1,26 +1,32 @@
 import type { Metadata } from 'next';
 import { SellerNav } from '@/components/SellerNav';
+import { getFormat, getT } from '@/lib/i18n';
 import { requireSeller } from '@/lib/sell';
 import { ImportForm } from './ImportForm';
 
-export const metadata: Metadata = { title: 'Import listings', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaImport'), robots: { index: false } };
+}
 
+/** CSV column names stay English (they are the file format); their help is translated. */
 const COLUMNS = [
-  ['product', 'Groups rows into one listing (e.g. colors of the same item). Optional.'],
-  ['title', 'Product name. Needed on the first row of a new listing.'],
-  ['category', 'Category address, e.g. "speakers" or "laptops".'],
-  ['description', 'What shoppers read. Needed for new listings.'],
-  ['specs', 'Numbers that matter, as "name: value; name: value".'],
-  ['sku', 'Your stock code. Required on every row.'],
-  ['option', 'Option name, e.g. "Black" or "256GB". Defaults to "Standard".'],
-  ['price', 'Price in dollars, e.g. 249.99. Required.'],
-  ['compare_at_price', 'Optional "was" price, higher than the price.'],
-  ['stock', 'Units on hand. Replaces the current number for existing SKUs.'],
-  ['barcode', 'Optional EAN or UPC.'],
+  'product',
+  'title',
+  'category',
+  'description',
+  'specs',
+  'sku',
+  'option',
+  'price',
+  'compare_at_price',
+  'stock',
+  'barcode',
 ] as const;
 
 export default async function ImportListingsPage() {
   const seller = await requireSeller('/sell/listings/import');
+  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
   const blocked = seller.status === 'SUSPENDED' || seller.status === 'REJECTED';
 
   return (
@@ -28,38 +34,34 @@ export default async function ImportListingsPage() {
       <SellerNav seller={seller} current="/sell/listings" />
       <div className="two-col-sell">
         <section className="card stack">
-          <h2>Import listings from a spreadsheet</h2>
-          <p className="muted">
-            New SKUs become draft listings. SKUs you already sell get the file&apos;s price and
-            stock: the same file works for your daily stock update. We check the whole file first
-            and save nothing until every row is right.
-          </p>
+          <h2>{t('importTitle')}</h2>
+          <p className="muted">{t('importIntro')}</p>
           <p>
             <a className="btn btn--secondary btn--sm" href="/sell/listings/template.csv">
-              Download the template
+              {t('downloadTemplate')}
             </a>{' '}
             <a className="btn btn--secondary btn--sm" href="/sell/listings/export.csv">
-              Download your listings
+              {t('downloadListings')}
             </a>
           </p>
           {blocked ? (
-            <p className="banner banner--error">Your store cannot change listings right now.</p>
+            <p className="banner banner--error">{t('cannotChangeListings')}</p>
           ) : (
             <ImportForm />
           )}
         </section>
         <section className="card stack">
-          <h2>Columns</h2>
+          <h2>{t('columnsTitle')}</h2>
           <dl className="facts">
-            {COLUMNS.map(([name, help]) => (
+            {COLUMNS.map((name) => (
               <div key={name} style={{ display: 'contents' }}>
                 <dt className="mono">{name}</dt>
-                <dd>{help}</dd>
+                <dd>{t(`col_${name}`)}</dd>
               </div>
             ))}
           </dl>
           <p className="muted" style={{ fontSize: 14 }}>
-            Photos are added on each listing&apos;s page. Up to 2,000 rows per file.
+            {t('importFootnote', { max: f.number(2000) })}
           </p>
         </section>
       </div>

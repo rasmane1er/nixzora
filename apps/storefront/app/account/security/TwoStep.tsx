@@ -1,10 +1,12 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { confirmMfa, type MfaStep, startMfa } from '../hub-actions';
 
 /** Turning on two-step verification: scan the QR code, enter a code, save the recovery codes. */
 export function TwoStepSetup() {
+  const t = useT('account');
   const [state, act, pending] = useActionState<MfaStep, FormData>(
     async (current, form) => (current.step === 'idle' ? startMfa() : confirmMfa(current, form)),
     { step: 'idle' },
@@ -14,12 +16,9 @@ export function TwoStepSetup() {
     return (
       <div className="stack" style={{ gap: 10 }}>
         <p className="banner banner--ok" role="status">
-          Two-step verification is on.
+          {t('twoStepIsOn')}
         </p>
-        <p style={{ margin: 0 }}>
-          Save these recovery codes somewhere safe. Each one signs you in once if you lose your
-          phone. They are not shown again.
-        </p>
+        <p style={{ margin: 0 }}>{t('recoveryCodesIntro')}</p>
         <ul className="recovery-codes">
           {state.recoveryCodes.map((code) => (
             <li key={code} className="mono">
@@ -41,22 +40,22 @@ export function TwoStepSetup() {
       {state.step === 'idle' ? (
         <div>
           <button className="btn btn--primary" type="submit" disabled={pending}>
-            {pending ? 'Starting…' : 'Turn on two-step verification'}
+            {pending ? t('starting') : t('turnOnTwoStep')}
           </button>
         </div>
       ) : (
         <>
           <ol className="steps">
-            <li>Open an authenticator app (Google Authenticator, 1Password, Authy…).</li>
-            <li>Scan this code, or enter the key by hand.</li>
+            <li>{t('stepOpenApp')}</li>
+            <li>{t('stepScan')}</li>
           </ol>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={state.qr} alt="QR code for your authenticator app" width={180} height={180} />
+          <img src={state.qr} alt={t('qrAlt')} width={180} height={180} />
           <p className="mono" style={{ margin: 0, overflowWrap: 'anywhere' }}>
             {state.secret}
           </p>
           <label>
-            6-digit code from the app
+            {t('sixDigitCode')}
             <input
               name="code"
               inputMode="numeric"
@@ -68,7 +67,7 @@ export function TwoStepSetup() {
           </label>
           <div>
             <button className="btn btn--primary" type="submit" disabled={pending}>
-              {pending ? 'Checking…' : 'Turn on'}
+              {pending ? t('checking') : t('turnOn')}
             </button>
           </div>
         </>

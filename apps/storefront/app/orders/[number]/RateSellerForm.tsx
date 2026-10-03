@@ -1,7 +1,9 @@
 'use client';
 
 import { type OrderView } from '@nixzora/validation';
+import { rich } from '@nixzora/i18n';
 import { useActionState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { Stars } from '@/components/Stars';
 import { rateSeller, type RatingState } from './actions';
 
@@ -17,26 +19,26 @@ export function RateSellerForm({
   token?: string;
   shipment: Shipment;
 }) {
+  const t = useT('order');
+  const tCommon = useT('common');
   const [state, action, pending] = useActionState<RatingState, FormData>(rateSeller, {});
   const seller = shipment.seller!;
   const current = shipment.rating;
   if (state.ok && current) {
     return (
       <p className="rating-line" role="status">
-        <Stars value={current.value} size={14} /> Thanks, {seller.displayName} has your rating.
+        <Stars value={current.value} size={14} /> {t('ratingThanks', { name: seller.displayName })}
       </p>
     );
   }
   return (
     <details className="seller-rating">
       <summary>
-        {current ? (
-          <>
-            Your rating <Stars value={current.value} size={14} /> · Change
-          </>
-        ) : (
-          `Rate ${seller.displayName}`
-        )}
+        {current
+          ? rich(t('yourRatingChange'), {
+              stars: () => <Stars key="stars" value={current.value} size={14} />,
+            })
+          : t('rateSeller', { name: seller.displayName })}
       </summary>
       <form action={action} className="form" style={{ marginTop: 10, gap: 10 }}>
         <input type="hidden" name="number" value={number} />
@@ -49,7 +51,7 @@ export function RateSellerForm({
         ) : null}
         <fieldset className="star-input">
           <legend className="hint" style={{ marginBottom: 6 }}>
-            How was this seller? Packing, speed and the item matching its listing.
+            {t('ratingLegend')}
           </legend>
           {[5, 4, 3, 2, 1].map((n) => (
             <label key={n}>
@@ -65,7 +67,7 @@ export function RateSellerForm({
           ))}
         </fieldset>
         <label>
-          Comment for the seller <span className="hint">(optional, not shown publicly)</span>
+          {t('commentForSeller')} <span className="hint">{t('commentHint')}</span>
           <textarea
             name="comment"
             rows={2}
@@ -75,7 +77,7 @@ export function RateSellerForm({
         </label>
         <div>
           <button type="submit" className="btn btn--secondary btn--sm" disabled={pending}>
-            {pending ? 'Saving…' : current ? 'Update rating' : 'Send rating'}
+            {pending ? tCommon('saving') : current ? t('updateRating') : t('sendRating')}
           </button>
         </div>
       </form>

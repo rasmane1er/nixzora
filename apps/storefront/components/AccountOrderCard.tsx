@@ -1,8 +1,8 @@
 import { type AccountOrder, type BuyAgainItem } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import Link from 'next/link';
 import { buyAgain } from '@/app/account/hub-actions';
-import { ORDER_STATUS_TEXT, day } from '@/lib/account';
+import { orderStatusText } from '@/lib/account';
+import { getFormat, getT } from '@/lib/i18n';
 import { StatusPill } from './OrderSummary';
 
 /**
@@ -10,30 +10,31 @@ import { StatusPill } from './OrderSummary';
  * top; the items with "Buy it again" and "Write a review"; tracking, returns and details on the
  * side.
  */
-export function AccountOrderCard({ order, back }: { order: AccountOrder; back: string }) {
+export async function AccountOrderCard({ order, back }: { order: AccountOrder; back: string }) {
+  const [t, f] = await Promise.all([getT('accountActivity'), getFormat()]);
   const placed = order.placedAt ?? order.createdAt;
   return (
     <article className="order-card">
       <header className="order-card__head">
         <dl>
           <div>
-            <dt>Order placed</dt>
-            <dd>{day(placed)}</dd>
+            <dt>{t('orderPlaced')}</dt>
+            <dd>{f.date(placed)}</dd>
           </div>
           <div>
-            <dt>Total</dt>
-            <dd>{formatMoney(order.totalCents, order.currency)}</dd>
+            <dt>{t('total')}</dt>
+            <dd>{f.money(order.totalCents, order.currency)}</dd>
           </div>
           {order.shipTo ? (
             <div className="hide-sm">
-              <dt>Ship to</dt>
+              <dt>{t('shipTo')}</dt>
               <dd>{order.shipTo}</dd>
             </div>
           ) : null}
         </dl>
         <div className="order-card__number">
           <span className="mono">{order.number}</span>
-          <Link href={`/orders/${order.number}`}>Order details</Link>
+          <Link href={`/orders/${order.number}`}>{t('orderDetails')}</Link>
         </div>
       </header>
 
@@ -43,13 +44,13 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
             <StatusPill status={order.status} />{' '}
             <strong>
               {order.status === 'DELIVERED' && order.deliveredAt
-                ? `Delivered ${day(order.deliveredAt)}`
-                : ORDER_STATUS_TEXT[order.status]}
+                ? t('deliveredOn', { date: f.date(order.deliveredAt) })
+                : orderStatusText(t, order.status)}
             </strong>
             {order.openReturns ? (
               <span className="muted">
                 {' '}
-                · {order.openReturns} {order.openReturns === 1 ? 'return' : 'returns'} in progress
+                · {t('returnsInProgress', { count: order.openReturns })}
               </span>
             ) : null}
           </p>
@@ -71,11 +72,11 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
                     <span className="order-lines__title">{line.productTitle}</span>
                   )}
                   <span className="muted" style={{ fontSize: 14 }}>
-                    {line.variantTitle} · Qty {line.quantity}
+                    {line.variantTitle} · {t('qty', { quantity: line.quantity })}
                     {line.seller ? (
                       <>
                         {' '}
-                        · Sold by{' '}
+                        · {t('soldBy')}{' '}
                         <Link href={`/s/${line.seller.handle}`}>{line.seller.displayName}</Link>
                       </>
                     ) : null}
@@ -86,7 +87,7 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
                         <input type="hidden" name="variantId" value={line.variantId} />
                         <input type="hidden" name="back" value={back} />
                         <button className="btn btn--primary btn--sm" type="submit">
-                          Buy it again
+                          {t('buyItAgain')}
                         </button>
                       </form>
                     ) : null}
@@ -95,7 +96,7 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
                         className="btn btn--secondary btn--sm"
                         href={`/p/${line.productSlug}#write-review`}
                       >
-                        Write a review
+                        {t('writeReview')}
                       </Link>
                     ) : null}
                   </div>
@@ -113,19 +114,21 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
               target="_blank"
               rel="noopener noreferrer"
             >
-              Track package
+              {t('trackPackage')}
             </a>
           ) : null}
           {order.returnableUntil ? (
             <Link className="btn btn--secondary" href={`/orders/${order.number}#return`}>
-              Return or replace items
+              {t('returnOrReplace')}
             </Link>
           ) : null}
           <Link className="btn btn--secondary" href={`/orders/${order.number}`}>
-            View order
+            {t('viewOrder')}
           </Link>
           {order.returnableUntil ? (
-            <span className="hint">Returns open until {day(order.returnableUntil)}</span>
+            <span className="hint">
+              {t('returnsOpenUntil', { date: f.date(order.returnableUntil) })}
+            </span>
           ) : null}
         </div>
       </div>
@@ -134,7 +137,8 @@ export function AccountOrderCard({ order, back }: { order: AccountOrder; back: s
 }
 
 /** A product from past orders, one tap from the cart. */
-export function BuyAgainCard({ item, back }: { item: BuyAgainItem; back: string }) {
+export async function BuyAgainCard({ item, back }: { item: BuyAgainItem; back: string }) {
+  const [t, f] = await Promise.all([getT('accountActivity'), getFormat()]);
   return (
     <div className="buy-again">
       <Link href={`/p/${item.slug}`} className="buy-again__img">
@@ -147,18 +151,18 @@ export function BuyAgainCard({ item, back }: { item: BuyAgainItem; back: string 
         {item.title}
       </Link>
       <span className="muted" style={{ fontSize: 13 }}>
-        {item.variantTitle} · {formatMoney(item.priceCents, item.currency)}
+        {item.variantTitle} · {f.money(item.priceCents, item.currency)}
       </span>
       {item.inStock ? (
         <form action={buyAgain}>
           <input type="hidden" name="variantId" value={item.variantId} />
           <input type="hidden" name="back" value={back} />
           <button className="btn btn--secondary btn--sm" type="submit" style={{ width: '100%' }}>
-            Add to cart
+            {t('addToCart')}
           </button>
         </form>
       ) : (
-        <span className="hint">Out of stock</span>
+        <span className="hint">{t('outOfStock')}</span>
       )}
     </div>
   );

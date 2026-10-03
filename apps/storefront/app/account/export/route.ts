@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { api, ApiError } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { SITE_URL } from '@/lib/params';
 
 /** "Download your data": the account export as a JSON file. */
@@ -19,7 +20,7 @@ export async function GET() {
       to.pathname = '/account/login';
       to.searchParams.set('next', '/account/privacy');
     } else {
-      to.searchParams.set('error', 'We could not prepare your data. Try again in a minute.');
+      to.searchParams.set('error', (await getT('accountActivity'))('exportFailed'));
     }
     return NextResponse.redirect(to);
   }

@@ -4,6 +4,7 @@ import { type Cart } from '@nixzora/validation';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { api, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { accessToken, saveGuestCartId } from '@/lib/session';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,7 +18,10 @@ async function remember(cart: Cart): Promise<void> {
 export type AddResult = { ok: true; itemCount: number } | { ok: false; error: string };
 
 export async function addToCart(variantId: string, quantity: number): Promise<AddResult> {
-  if (!UUID.test(variantId)) return { ok: false, error: 'Choose an option first.' };
+  if (!UUID.test(variantId)) {
+    const t = await getT('cart');
+    return { ok: false, error: t('chooseOption') };
+  }
   try {
     const cart = await api<Cart>('/cart/items', {
       method: 'POST',
@@ -35,7 +39,8 @@ export async function updateLine(form: FormData): Promise<void> {
   const variantId = String(form.get('variantId') ?? '');
   const quantity = Number(form.get('quantity') ?? 0);
   if (!UUID.test(variantId) || !Number.isInteger(quantity) || quantity < 0 || quantity > 20) {
-    redirect('/cart?error=That+quantity+is+not+possible.');
+    const t = await getT('cart');
+    redirect(`/cart?error=${encodeURIComponent(t('badQuantity'))}`);
   }
   let message: string | null = null;
   try {

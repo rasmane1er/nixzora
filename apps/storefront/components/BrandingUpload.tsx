@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { requestBrandingUpload } from '@/app/sell/apply/actions';
+import { useT } from '@/components/I18nProvider';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
@@ -21,15 +22,18 @@ export function BrandingUpload({
   const [image, setImage] = useState({ key: keyValue ?? '', url: urlValue ?? '' });
   const [status, setStatus] = useState<{ busy?: boolean; error?: string }>({});
   const logo = kind === 'logo';
+  const t = useT('sellApply');
+  const tc = useT('common');
+  const name = logo ? t('storeLogo') : t('storeBanner');
 
   async function onChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     if (!(TYPES as readonly string[]).includes(file.type)) {
-      return setStatus({ error: 'Use a PNG, JPEG or WebP image.' });
+      return setStatus({ error: t('uploadType') });
     }
-    if (file.size > 5 * 1024 * 1024) return setStatus({ error: 'Images can be up to 5 MB.' });
+    if (file.size > 5 * 1024 * 1024) return setStatus({ error: t('uploadSize') });
     setStatus({ busy: true });
     const ticket = await requestBrandingUpload({
       kind,
@@ -42,7 +46,7 @@ export function BrandingUpload({
       headers: ticket.data.headers,
       body: file,
     }).catch(() => null);
-    if (!put?.ok) return setStatus({ error: 'The upload failed. Try again.' });
+    if (!put?.ok) return setStatus({ error: t('uploadFailed') });
     setImage({ key: ticket.data.storageKey, url: ticket.data.publicUrl });
     setStatus({});
   }
@@ -54,11 +58,11 @@ export function BrandingUpload({
       <label className="brand-upload__drop">
         {image.url ? (
           // eslint-disable-next-line @next/next/no-img-element -- a just-uploaded preview
-          <img src={image.url} alt={logo ? 'Store logo' : 'Store banner'} />
+          <img src={image.url} alt={name} />
         ) : (
           <span className="brand-upload__empty">
             <span aria-hidden="true">+</span>
-            {status.busy ? 'Uploading…' : logo ? 'Upload logo' : 'Upload banner'}
+            {status.busy ? t('uploading') : logo ? t('uploadLogo') : t('uploadBanner')}
           </span>
         )}
         <input
@@ -67,14 +71,13 @@ export function BrandingUpload({
           onChange={onChange}
           disabled={status.busy}
           className="sr-only"
-          aria-label={logo ? 'Store logo' : 'Store banner'}
+          aria-label={name}
         />
       </label>
       <div className="stack" style={{ gap: 4 }}>
-        <strong>{logo ? 'Store logo' : 'Store banner'}</strong>
+        <strong>{name}</strong>
         <span className="hint">
-          {logo ? 'Recommended: 500 × 500 px.' : 'Recommended: 1600 × 500 px.'} PNG, JPEG or WebP,
-          up to 5 MB.
+          {logo ? t('logoRecommended') : t('bannerRecommended')} {t('uploadFormats')}
         </span>
         {status.error ? (
           <span className="hint" role="alert" style={{ color: 'var(--err-fg)' }}>
@@ -87,7 +90,7 @@ export function BrandingUpload({
             className="link-button"
             onClick={() => setImage({ key: '', url: '' })}
           >
-            Remove
+            {tc('remove')}
           </button>
         ) : null}
       </div>

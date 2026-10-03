@@ -1,33 +1,38 @@
+import { rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthCard, Submit } from '@/components/AuthCard';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { socialProviders } from '../social-actions';
 import { register } from '../actions';
 
-export const metadata: Metadata = { title: 'Create an account', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('auth');
+  return { title: t('registerTitle'), robots: { index: false } };
+}
 
 export default async function RegisterPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const next = param(params, 'next') ?? '/account';
   const providers = await socialProviders();
+  const t = await getT('auth');
   return (
-    <AuthCard title="Create an account" error={param(params, 'error')}>
+    <AuthCard title={t('registerTitle')} error={param(params, 'error')}>
       <SocialSignIn providers={providers} next={next} intent="signup" />
       <form action={register} className="form">
         <input type="hidden" name="next" value={next} />
         <label>
-          First name <span className="hint">Optional</span>
+          {t('firstName')} <span className="hint">{t('optional')}</span>
           <input name="firstName" autoComplete="given-name" maxLength={100} />
         </label>
         <label>
-          Email
+          {t('email')}
           <input name="email" type="email" autoComplete="email" required />
         </label>
         <label>
-          Password{' '}
-          <span className="hint">At least 12 characters. A short sentence works well.</span>
+          {t('password')} <span className="hint">{t('passwordHint')}</span>
           <input
             name="password"
             type="password"
@@ -37,11 +42,16 @@ export default async function RegisterPage({ searchParams }: { searchParams: Sea
             maxLength={128}
           />
         </label>
-        <Submit>Create account</Submit>
+        <Submit>{t('createAccountButton')}</Submit>
       </form>
       <p className="muted" style={{ fontSize: 14 }}>
-        Already have one?{' '}
-        <Link href={`/account/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+        {rich(t('alreadyHaveOne'), {
+          link: (chunk) => (
+            <Link key="login" href={`/account/login?next=${encodeURIComponent(next)}`}>
+              {chunk}
+            </Link>
+          ),
+        })}
       </p>
     </AuthCard>
   );

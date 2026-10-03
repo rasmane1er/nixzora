@@ -1,9 +1,11 @@
 'use client';
 
 import { type AssistantChatResponse, type AssistantMessage } from '@nixzora/validation';
-import { Price, formatMoney } from '@nixzora/ui';
+import { INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
+import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../cart/actions';
 import { askAssistant } from './actions';
 
@@ -11,25 +13,37 @@ type Turn =
   | { role: 'user'; content: string }
   | { role: 'assistant'; content: string; response: AssistantChatResponse };
 
-/** "$1,500" rather than "$1,500.00" for round budgets. */
-const usd = (cents: number) => formatMoney(cents, 'USD').replace(/\.00$/, '');
+/** A department in the visitor's language when it is one NIXZORA knows, else as given. */
+function useDepartmentName() {
+  const d = useT('departments');
+  return (slug: string | null, name: string | null) => {
+    if (!slug) return name;
+    const known = d(slug as MessageKey<'departments'>);
+    return known === slug ? name : known;
+  };
+}
 
 function Understood({ need }: { need: AssistantChatResponse['need'] }) {
+  const t = useT('assistant');
+  const f = useFormat();
+  const departmentName = useDepartmentName();
+  /** "$1,500" rather than "$1,500.00" for round budgets. */
+  const usd = (cents: number) => f.money(cents, 'USD').replace(/[.,]00(?=\D*$)/, '');
   const chips = [
-    need.categoryName,
+    departmentName(need.category, need.categoryName),
     need.minPriceCents !== null && need.maxPriceCents !== null
       ? `${usd(need.minPriceCents)} – ${usd(need.maxPriceCents)}`
       : need.maxPriceCents !== null
-        ? `Up to ${usd(need.maxPriceCents)}`
+        ? t('upTo', { price: usd(need.maxPriceCents) })
         : need.minPriceCents !== null
-          ? `From ${usd(need.minPriceCents)}`
+          ? t('fromPrice', { price: usd(need.minPriceCents) })
           : null,
     ...need.mustHave,
   ].filter(Boolean) as string[];
   if (!chips.length) return null;
   return (
-    <div className="understood" aria-label="What the assistant understood">
-      <span className="understood__label">Understood</span>
+    <div className="understood" aria-label={t('understoodLabel')}>
+      <span className="understood__label">{t('understood')}</span>
       {chips.map((chip) => (
         <span key={chip} className="understood__chip">
           {chip}
@@ -40,6 +54,7 @@ function Understood({ need }: { need: AssistantChatResponse['need'] }) {
 }
 
 function AddButton({ variantId, title }: { variantId: string | null; title: string }) {
+  const t = useT('assistant');
   const [state, setState] = useState<'idle' | 'added' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [pending, startTransition] = useTransition();
@@ -50,16 +65,16 @@ function AddButton({ variantId, title }: { variantId: string | null; title: stri
         type="button"
         className="btn btn--primary btn--sm"
         disabled={pending}
-        aria-label={state === 'added' ? `Added ${title} to cart` : `Add ${title} to cart`}
+        aria-label={state === 'added' ? t('addedTitle', { title }) : t('addTitle', { title })}
         onClick={() =>
           startTransition(async () => {
             const result = await addToCart(variantId, 1);
             setState(result.ok ? 'added' : 'error');
-            setMessage(result.ok ? 'Added' : result.error);
+            setMessage(result.ok ? t('added') : result.error);
           })
         }
       >
-        {pending ? 'Adding…' : state === 'added' ? 'Added ✓' : 'Add to cart'}
+        {pending ? t('adding') : state === 'added' ? t('addedCheck') : t('addToCart')}
       </button>
       {state === 'error' ? (
         <span className="field-error" role="alert">
@@ -77,6 +92,10 @@ function Answer({
   response: AssistantChatResponse;
   onAsk: (text: string) => void;
 }) {
+  const t = useT('assistant');
+  const p = useT('product');
+  const locale = useLocale();
+  const departmentName = useDepartmentName();
   return (
     <div className="answer">
       <Understood need={response.need} />
@@ -102,7 +121,9 @@ function Answer({
                     loading="lazy"
                   />
                 ) : (
-                  <span>{pick.product.category.name}</span>
+                  <span>
+                    {departmentName(pick.product.category.slug, pick.product.category.name)}
+                  </span>
                 )}
               </Link>
               <div className="pick__body">
@@ -114,18 +135,20 @@ function Answer({
                   cents={pick.product.priceFromCents}
                   compareAtCents={pick.product.compareAtCents}
                   currency={pick.product.currency}
-                  prefix="From"
+                  prefix={p('from')}
+                  locale={INTL_LOCALE[locale]}
+                  wasLabel={p('was')}
                 />
                 <p className="pick__reason">{pick.reason}</p>
                 {pick.matched.length ? (
-                  <ul className="pick__matched" aria-label="Matches your request">
+                  <ul className="pick__matched" aria-label={t('matches')}>
                     {pick.matched.map((m) => (
                       <li key={m}>✓ {m}</li>
                     ))}
                   </ul>
                 ) : null}
                 <span className={`stock${pick.product.inStock ? '' : ' stock--out'}`}>
-                  {pick.product.inStock ? 'In stock' : 'Sold out'}
+                  {pick.product.inStock ? p('inStock') : p('soldOut')}
                 </span>
                 {pick.product.inStock ? (
                   <AddButton variantId={pick.variantId} title={pick.product.title} />
@@ -139,10 +162,10 @@ function Answer({
         <div className="compare">
           <div className="table-scroll">
             <table className="plain">
-              <caption className="sr-only">Comparison of the picks</caption>
+              <caption className="sr-only">{t('comparisonCaption')}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Compare</th>
+                  <th scope="col">{t('compare')}</th>
                   {response.picks.map((pick) => (
                     <th key={pick.product.id} scope="col">
                       {pick.product.title}
@@ -165,7 +188,7 @@ function Answer({
         </div>
       ) : null}
       {response.suggestions.length ? (
-        <div className="suggestions" aria-label="Follow-up ideas">
+        <div className="suggestions" aria-label={t('followUps')}>
           {response.suggestions.map((s) => (
             <button key={s} type="button" className="suggestion" onClick={() => onAsk(s)}>
               {s}
@@ -174,8 +197,7 @@ function Answer({
         </div>
       ) : null}
       <p className="answer__note">
-        Products, prices and stock come from the live catalog
-        {response.model === 'local' ? '' : ` · written by ${response.model}`}.
+        {response.model === 'local' ? t('noteLocal') : t('noteModel', { model: response.model })}
       </p>
     </div>
   );
@@ -189,6 +211,8 @@ export function AssistantChat({
   initialQuery: string;
   examples: string[];
 }) {
+  const t = useT('assistant');
+  const c = useT('common');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -232,7 +256,7 @@ export function AssistantChat({
       <div className="assistant__log" aria-live="polite">
         {!turns.length && !pending ? (
           <div className="assistant__empty">
-            <p className="muted">Try one of these:</p>
+            <p className="muted">{t('tryThese')}</p>
             <div className="suggestions">
               {examples.map((example) => (
                 <button
@@ -258,7 +282,7 @@ export function AssistantChat({
         )}
         {pending ? (
           <p className="bubble bubble--thinking" role="status">
-            Searching the catalog…
+            {t('searching')}
           </p>
         ) : null}
         {error ? (
@@ -276,20 +300,18 @@ export function AssistantChat({
         }}
       >
         <label className="sr-only" htmlFor="assistant-input">
-          Message the assistant
+          {t('messageLabel')}
         </label>
         <input
           id="assistant-input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={
-            turns.length ? 'Ask a follow-up, e.g. “something lighter”' : 'Describe what you need'
-          }
+          placeholder={turns.length ? t('followUpPlaceholder') : t('describePlaceholder')}
           maxLength={1000}
           autoComplete="off"
         />
         <button className="btn btn--primary" type="submit" disabled={pending || !draft.trim()}>
-          Send
+          {c('send')}
         </button>
       </form>
     </div>

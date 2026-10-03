@@ -2,6 +2,7 @@
 
 import { type ProductCopySuggestion } from '@nixzora/validation';
 import { useState, useTransition } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { suggestListingCopy } from '../../actions';
 
 /**
@@ -10,6 +11,7 @@ import { suggestListingCopy } from '../../actions';
  * Nothing is saved until the seller presses "Save details".
  */
 export function DescriptionAssistant({ productId, target }: { productId: string; target: string }) {
+  const t = useT('sellerTools');
   const [draft, setDraft] = useState<ProductCopySuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -39,9 +41,9 @@ export function DescriptionAssistant({ productId, target }: { productId: string;
           disabled={pending}
           onClick={ask}
         >
-          {pending ? 'Drafting…' : 'Suggest a description'}
+          {pending ? t('drafting') : t('suggestDescription')}
         </button>{' '}
-        <span className="hint">Written from the specs below. Save the specs first.</span>
+        <span className="hint">{t('suggestHint')}</span>
       </div>
       {error ? (
         <p className="banner banner--error" role="alert">
@@ -50,7 +52,7 @@ export function DescriptionAssistant({ productId, target }: { productId: string;
       ) : null}
       {draft ? (
         <div className="card stack" role="status" style={{ gap: 8, padding: 16 }}>
-          <span className="pill">{draft.aiWritten ? 'AI draft' : 'Draft from your specs'}</span>
+          <span className="pill">{draft.aiWritten ? t('aiDraft') : t('specsDraft')}</span>
           <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{draft.description}</p>
           {draft.notes.map((note) => (
             <p key={note} className="muted" style={{ margin: 0, fontSize: 13 }}>
@@ -59,18 +61,18 @@ export function DescriptionAssistant({ productId, target }: { productId: string;
           ))}
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" className="btn btn--primary btn--sm" onClick={use}>
-              Use this text
+              {t('useText')}
             </button>
             <button
               type="button"
               className="btn btn--secondary btn--sm"
               onClick={() => setDraft(null)}
             >
-              Discard
+              {t('discard')}
             </button>
           </div>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Check it matches your product, then press Save details.
+            {t('checkThenSave')}
           </p>
         </div>
       ) : null}

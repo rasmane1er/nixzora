@@ -1,20 +1,21 @@
 import { type SellerBalance } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
+import { getFormat, getT } from '@/lib/i18n';
 
 /** The four seller balance figures: available, on hold, waiting to ship, lifetime. */
-export function SellerBalanceCards({ balance }: { balance: SellerBalance }) {
-  const money = (cents: number) => formatMoney(cents, balance.currency);
+export async function SellerBalanceCards({ balance }: { balance: SellerBalance }) {
+  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const money = (cents: number) => f.money(cents, balance.currency);
   return (
     <div className="seller-stats">
       {(
         [
-          ['Available', money(balance.availableCents), 'Ready for the next payout'],
-          ['On hold', money(balance.onHoldCents), 'Shipped, inside the hold period'],
-          ['Waiting to ship', money(balance.pendingCents), 'Paid orders you have not shipped'],
-          ['Lifetime', money(balance.lifetimeNetCents), 'Earned after commission and refunds'],
+          ['available', t('balAvailable'), money(balance.availableCents), t('balAvailableHint')],
+          ['onHold', t('balOnHold'), money(balance.onHoldCents), t('balOnHoldHint')],
+          ['waiting', t('balWaiting'), money(balance.pendingCents), t('balWaitingHint')],
+          ['lifetime', t('balLifetime'), money(balance.lifetimeNetCents), t('balLifetimeHint')],
         ] as const
-      ).map(([label, value, hint]) => (
-        <div key={label} className="card">
+      ).map(([key, label, value, hint]) => (
+        <div key={key} className="card">
           <span className="muted">{label}</span>
           <strong>{value}</strong>
           <span className="muted" style={{ fontSize: 13 }}>

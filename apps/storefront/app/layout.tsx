@@ -8,31 +8,40 @@ import '@fontsource/jetbrains-mono/500.css';
 import '@fontsource/jetbrains-mono/600.css';
 import '@nixzora/ui/tokens.css';
 import './globals.css';
+import { messagesFor } from '@nixzora/i18n';
+import { I18nProvider } from '@/components/I18nProvider';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
 import { cookies } from 'next/headers';
 import { SITE_URL } from '@/lib/params';
+import { getLocale, getT } from '@/lib/i18n';
 import { THEME_COOKIE } from '@/lib/session';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: 'NIXZORA — computers and electronics, explained', template: '%s · NIXZORA' },
-  description:
-    'Laptops, monitors, phones and accessories with clear specs and honest advice. Tell us what you need; NIXZORA finds it and builds the cart.',
-  openGraph: { siteName: 'NIXZORA', type: 'website' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('layout');
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: t('siteTitle'), template: '%s · NIXZORA' },
+    description: t('siteDescription'),
+    openGraph: { siteName: 'NIXZORA', type: 'website' },
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = (await cookies()).get(THEME_COOKIE)?.value;
+  const locale = await getLocale();
+  const t = await getT('common');
   return (
-    <html lang="en" data-theme={theme === 'light' || theme === 'dark' ? theme : undefined}>
+    <html lang={locale} data-theme={theme === 'light' || theme === 'dark' ? theme : undefined}>
       <body>
-        <a className="skip" href="#main">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <main id="main">{children}</main>
-        <SiteFooter />
+        <I18nProvider locale={locale} messages={messagesFor(locale)}>
+          <a className="skip" href="#main">
+            {t('skipToContent')}
+          </a>
+          <SiteHeader />
+          <main id="main">{children}</main>
+          <SiteFooter />
+        </I18nProvider>
       </body>
     </html>
   );

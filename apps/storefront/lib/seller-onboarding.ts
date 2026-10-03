@@ -1,3 +1,4 @@
+import { type MessageKey, messagesFor, type Translate, translator } from '@nixzora/i18n';
 import {
   SELLER_ONBOARDING_STEPS,
   SELLER_STEP_SCHEMAS,
@@ -88,14 +89,42 @@ export function readStep(step: StepKey, form: FormData): Record<string, unknown>
   }
 }
 
-/** Field errors keyed by the form field name ("address.city"). */
-export function checkStep(step: StepKey, values: Record<string, unknown>) {
+type ErrorKey = MessageKey<'sellApply'> & `err${string}`;
+
+/** The validation's English messages, by the translated message that replaces each. */
+const ERROR_KEYS: Record<string, ErrorKey> = Object.fromEntries(
+  Object.entries(messagesFor('en').sellApply)
+    .filter(([key]) => key.startsWith('err'))
+    .map(([key, english]) => [english, key as ErrorKey]),
+);
+
+/** Messages that read differently depending on the field. */
+const FIELD_KEYS: Record<string, ErrorKey> = {
+  'handle:too_small': 'errHandleShort',
+  'handle:too_big': 'errHandleLong',
+  'dateOfBirth:custom': 'errAdult',
+};
+
+/** English (the validation's own words) unless a translator is given. */
+const english: Translate<'sellApply'> = translator('en')('sellApply');
+
+/**
+ * Field errors keyed by the form field name ("address.city"), in the language of `t`.
+ * Messages the app does not know (rare: e.g. a length limit the form already enforces) stay as
+ * the validation wrote them.
+ */
+export function checkStep(
+  step: StepKey,
+  values: Record<string, unknown>,
+  t: Translate<'sellApply'> = english,
+) {
   const result = SELLER_STEP_SCHEMAS[step].safeParse(values);
   if (result.success) return { ok: true as const, errors: {} };
   const errors: Record<string, string> = {};
   for (const issue of result.error.issues) {
     const field = issue.path.join('.') || 'form';
-    errors[field] ??= issue.message;
+    const key = ERROR_KEYS[issue.message] ?? FIELD_KEYS[`${field}:${issue.code}`];
+    errors[field] ??= key ? t(key) : issue.message;
   }
   return { ok: false as const, errors };
 }

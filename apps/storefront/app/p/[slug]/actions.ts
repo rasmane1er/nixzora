@@ -2,13 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 import { api, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { ensureVisitorId } from '@/lib/visitor';
 
 export type ReviewState = { ok?: boolean; error?: string };
 
 export async function submitReview(_: ReviewState, form: FormData): Promise<ReviewState> {
   const slug = String(form.get('slug') ?? '');
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return { error: 'Unknown product.' };
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug))
+    return { error: (await getT('productPage'))('unknownProduct') };
   try {
     await api(`/catalog/products/${slug}/reviews`, {
       method: 'POST',

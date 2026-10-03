@@ -1,6 +1,8 @@
 'use client';
 
+import { INTL_LOCALE, type Locale } from '@nixzora/i18n';
 import { useEffect, useRef, useState } from 'react';
+import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 
 type Day = { date: string; salesCents: number; orders: number };
 
@@ -32,23 +34,31 @@ function useWidth(fallback: number) {
   return [ref, width] as const;
 }
 
-const dollars = (cents: number) =>
-  new Intl.NumberFormat('en-US', {
+const dollars = (locale: Locale, cents: number) =>
+  new Intl.NumberFormat(INTL_LOCALE[locale], {
     style: 'currency',
     currency: 'USD',
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
     maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
 
-const shortDate = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
-    new Date(`${iso}T00:00:00Z`),
-  );
+const shortDate = (locale: Locale, iso: string) =>
+  new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${iso}T00:00:00Z`));
 
 /**
  * Daily sales as columns: one series in the brand orange, 4px rounded tops on a single baseline,
  * a hairline grid, a tooltip per day on hover, and the same numbers in a table below.
  */
 export function SalesChart({ daily }: { daily: Day[] }) {
+  const t = useT('sellerTools');
+  const f = useFormat();
+  const locale = useLocale();
+  const money = (cents: number) => dollars(locale, cents);
+  const day = (iso: string) => shortDate(locale, iso);
   const [hover, setHover] = useState<number | null>(null);
   const [ref, width] = useWidth(760);
   const max = niceMax(Math.max(...daily.map((d) => d.salesCents)));
@@ -71,7 +81,7 @@ export function SalesChart({ daily }: { daily: Day[] }) {
           height={H}
           viewBox={`0 0 ${width} ${H}`}
           role="img"
-          aria-label={`Daily sales over ${daily.length} days, ${dollars(total)} in total. The table below lists each day.`}
+          aria-label={t('chartAria', { days: daily.length, total: money(total) })}
           onPointerLeave={() => setHover(null)}
         >
           {ticks.map((tick) => (
@@ -90,20 +100,20 @@ export function SalesChart({ daily }: { daily: Day[] }) {
                 textAnchor="end"
                 className="sales-chart__tick"
               >
-                {dollars(tick)}
+                {money(tick)}
               </text>
             </g>
           ))}
-          {daily.map((day, i) => {
+          {daily.map((dayData, i) => {
             const cx = PAD.left + band * i + band / 2;
-            const top = y(day.salesCents);
+            const top = y(dayData.salesCents);
             const h = PAD.top + plotH - top;
             const r = Math.min(4, h, barW / 2);
             const x0 = cx - barW / 2;
             const x1 = cx + barW / 2;
             const base = PAD.top + plotH;
             return (
-              <g key={day.date}>
+              <g key={dayData.date}>
                 {h > 0 ? (
                   <path
                     className="sales-chart__bar"
@@ -123,7 +133,7 @@ export function SalesChart({ daily }: { daily: Day[] }) {
                 />
                 {(daily.length - 1 - i) % labelEvery === 0 ? (
                   <text x={cx} y={H - 8} textAnchor="middle" className="sales-chart__tick">
-                    {shortDate(day.date)}
+                    {day(dayData.date)}
                   </text>
                 ) : null}
               </g>
@@ -142,30 +152,30 @@ export function SalesChart({ daily }: { daily: Day[] }) {
             })()}
             role="status"
           >
-            <strong>{dollars(active.salesCents)}</strong>
+            <strong>{money(active.salesCents)}</strong>
             <span>
-              {active.orders} {active.orders === 1 ? 'order' : 'orders'} · {shortDate(active.date)}
+              {t('ordersCount', { count: active.orders })} · {day(active.date)}
             </span>
           </div>
         ) : null}
       </div>
       <details className="sales-chart__table">
-        <summary>Show as a table</summary>
+        <summary>{t('showTable')}</summary>
         <div className="table-scroll">
           <table className="plain">
             <thead>
               <tr>
-                <th>Day</th>
-                <th className="num">Orders</th>
-                <th className="num">Sales</th>
+                <th>{t('colDay')}</th>
+                <th className="num">{t('colOrders')}</th>
+                <th className="num">{t('colSales')}</th>
               </tr>
             </thead>
             <tbody>
-              {daily.map((day) => (
-                <tr key={day.date}>
-                  <td>{shortDate(day.date)}</td>
-                  <td className="num">{day.orders}</td>
-                  <td className="num">{dollars(day.salesCents)}</td>
+              {daily.map((row) => (
+                <tr key={row.date}>
+                  <td>{day(row.date)}</td>
+                  <td className="num">{f.number(row.orders)}</td>
+                  <td className="num">{money(row.salesCents)}</td>
                 </tr>
               ))}
             </tbody>

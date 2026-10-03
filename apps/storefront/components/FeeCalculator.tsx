@@ -2,12 +2,13 @@
 
 import { sellerProceeds } from '@nixzora/validation';
 import { useState } from 'react';
-
-const usd = (cents: number) =>
-  (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+import { useFormat, useT } from '@/components/I18nProvider';
 
 /** What one sale earns: commission on the item price only (shipping passes through). */
 export function FeeCalculator({ commissionBps }: { commissionBps: number }) {
+  const t = useT('sellApply');
+  const f = useFormat();
+  const usd = (cents: number) => f.money(cents);
   const [price, setPrice] = useState('100');
   const [shipping, setShipping] = useState('0');
   const toCents = (value: string) => Math.max(0, Math.round(Number(value || 0) * 100)) || 0;
@@ -19,7 +20,7 @@ export function FeeCalculator({ commissionBps }: { commissionBps: number }) {
     <div className="fee-calc">
       <div className="form-row">
         <label>
-          Item price
+          {t('itemPrice')}
           <input
             inputMode="decimal"
             value={price}
@@ -28,7 +29,7 @@ export function FeeCalculator({ commissionBps }: { commissionBps: number }) {
           />
         </label>
         <label>
-          Shipping the customer pays
+          {t('shippingCustomerPays')}
           <input
             inputMode="decimal"
             value={shipping}
@@ -40,15 +41,15 @@ export function FeeCalculator({ commissionBps }: { commissionBps: number }) {
       <table className="fee-calc__table" id="fee-result" aria-live="polite">
         <tbody>
           <tr>
-            <td>Customer pays (before tax)</td>
+            <td>{t('calcCustomerPays')}</td>
             <td className="num">{usd(item + ship)}</td>
           </tr>
           <tr>
-            <td>NIXZORA commission ({commissionBps / 100}% of the item price)</td>
+            <td>{t('calcCommission', { rate: f.percent(commissionBps / 10_000) })}</td>
             <td className="num">−{usd(commissionCents)}</td>
           </tr>
           <tr className="fee-calc__total">
-            <td>Your proceeds</td>
+            <td>{t('yourProceeds')}</td>
             <td className="num">{usd(proceedsCents)}</td>
           </tr>
         </tbody>

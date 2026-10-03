@@ -2,6 +2,7 @@ import 'server-only';
 import { type CategoryNode, type SellerMeResponse, type SellerView } from '@nixzora/validation';
 import { redirect } from 'next/navigation';
 import { api, ApiError, catalog } from './api';
+import { getT } from './i18n';
 
 /** The signed-in customer's store (or null). Sends signed-out visitors to sign in. */
 export async function sellerMe(next = '/sell'): Promise<SellerMeResponse> {
@@ -22,12 +23,19 @@ export async function requireSeller(next: string): Promise<SellerView> {
   return seller;
 }
 
+/** English store status labels; pages show `sellerStatusLabel()` in the visitor's language. */
 export const SELLER_STATUS_LABEL: Record<SellerView['status'], string> = {
   PENDING: 'Waiting for approval',
   ACTIVE: 'Approved',
   SUSPENDED: 'Suspended',
   REJECTED: 'Not approved',
 };
+
+/** A store's status ("Waiting for approval") in the visitor's language. */
+export async function sellerStatusLabel(status: SellerView['status']): Promise<string> {
+  const t = await getT('sell');
+  return t(`status_${status}`);
+}
 
 export const LISTING_STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Draft',

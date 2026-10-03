@@ -4,6 +4,10 @@ import { type SocialProvidersResponse } from '@nixzora/validation';
 import Script from 'next/script';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { completeSocialSignIn, startSocialSignIn } from '@/app/account/social-actions';
+import { useLocale, useT } from './I18nProvider';
+
+/** The language of Apple's own button. */
+const APPLE_LOCALE = { en: 'en_US', fr: 'fr_FR', es: 'es_MX' } as const;
 
 type GoogleId = {
   initialize(options: {
@@ -23,6 +27,7 @@ type GoogleId = {
       text: string;
       shape: string;
       width: number;
+      locale?: string;
     },
   ): void;
 };
@@ -65,6 +70,8 @@ export function SocialSignIn({
   const [googleReady, setGoogleReady] = useState(false);
   const [appleReady, setAppleReady] = useState(false);
   const googleButton = useRef<HTMLDivElement>(null);
+  const t = useT('auth');
+  const locale = useLocale();
 
   useEffect(() => {
     if (!googleClientId && !appleServicesId) return;
@@ -103,8 +110,9 @@ export function SocialSignIn({
       text: intent === 'signup' ? 'signup_with' : 'continue_with',
       shape: 'rectangular',
       width: Math.min(400, googleButton.current.clientWidth || 320),
+      locale,
     });
-  }, [googleReady, googleClientId, nonce, next, intent, complete]);
+  }, [googleReady, googleClientId, nonce, next, intent, complete, locale]);
 
   useEffect(() => {
     if (!appleReady || !window.AppleID || !appleServicesId || !nonce) return;
@@ -140,7 +148,7 @@ export function SocialSignIn({
       // Closing the popup is not an error worth showing.
       const reason = (event as CustomEvent<{ error?: string }>).detail?.error;
       if (reason && reason !== 'popup_closed_by_user' && reason !== 'user_cancelled_authorize') {
-        setError('Apple sign-in did not finish. Try again.');
+        setError(t('appleFailed'));
       }
     };
     document.addEventListener('AppleIDSignInOnSuccess', onSuccess);
@@ -149,7 +157,7 @@ export function SocialSignIn({
       document.removeEventListener('AppleIDSignInOnSuccess', onSuccess);
       document.removeEventListener('AppleIDSignInOnFailure', onFailure);
     };
-  }, [appleServicesId, next, complete]);
+  }, [appleServicesId, next, complete, t]);
 
   if (!googleClientId && !appleServicesId) return null;
 
@@ -168,7 +176,7 @@ export function SocialSignIn({
       {appleServicesId ? (
         <>
           <Script
-            src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"
+            src={`https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/${APPLE_LOCALE[locale]}/appleid.auth.js`}
             strategy="afterInteractive"
             onReady={() => setAppleReady(true)}
           />
@@ -192,11 +200,11 @@ export function SocialSignIn({
       ) : null}
       {pending ? (
         <p className="muted small" role="status">
-          Signing you in…
+          {t('signingIn')}
         </p>
       ) : null}
       <div className="divider" role="separator">
-        <span>or use your email</span>
+        <span>{t('orUseEmail')}</span>
       </div>
     </div>
   );

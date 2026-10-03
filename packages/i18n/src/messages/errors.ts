@@ -1,0 +1,66 @@
+import { defineMessages } from '../define';
+
+/** Error and not-found pages, and the platform status page. */
+export const errors = defineMessages({
+  en: {
+    errorTitle: 'Something went wrong',
+    errorBody: 'We couldn’t load this page. Please try again in a moment.',
+    notFoundTitle: 'We couldn’t find that',
+    notFoundBody: 'The page or product may have moved, or the link is incomplete.',
+    browseAll: 'Browse all products',
+
+    statusTitle: 'Platform status',
+    statusOk: 'All systems normal',
+    statusDegraded: 'Degraded',
+    statusUnreachable: 'API unreachable',
+    apiVersion: 'API version',
+    checkUp: 'Up · {latency} ms',
+    checkDown: 'Down',
+    jobs: 'Emails and notifications',
+    jobsSending: 'Sending · {backlog} waiting',
+    jobsUpToDate: 'Up to date',
+    jobsDelayed: 'Delayed',
+    jobsStarting: 'Starting',
+  },
+  fr: {
+    errorTitle: 'Une erreur est survenue',
+    errorBody: 'Nous n’avons pas pu charger cette page. Veuillez réessayer dans un instant.',
+    notFoundTitle: 'Page introuvable',
+    notFoundBody: 'La page ou le produit a peut-être été déplacé, ou le lien est incomplet.',
+    browseAll: 'Parcourir tous les produits',
+
+    statusTitle: 'État de la plateforme',
+    statusOk: 'Tous les systèmes fonctionnent normalement',
+    statusDegraded: 'Service dégradé',
+    statusUnreachable: 'API injoignable',
+    apiVersion: 'Version de l’API',
+    checkUp: 'Opérationnel · {latency} ms',
+    checkDown: 'Hors service',
+    jobs: 'E-mails et notifications',
+    jobsSending: 'Envoi en cours · {backlog} en attente',
+    jobsUpToDate: 'À jour',
+    jobsDelayed: 'Retardés',
+    jobsStarting: 'Démarrage',
+  },
+  es: {
+    errorTitle: 'Algo salió mal',
+    errorBody: 'No pudimos cargar esta página. Inténtalo de nuevo en un momento.',
+    notFoundTitle: 'No encontramos eso',
+    notFoundBody:
+      'Es posible que la página o el producto se haya movido, o que el enlace esté incompleto.',
+    browseAll: 'Ver todos los productos',
+
+    statusTitle: 'Estado de la plataforma',
+    statusOk: 'Todos los sistemas funcionan con normalidad',
+    statusDegraded: 'Servicio degradado',
+    statusUnreachable: 'API inaccesible',
+    apiVersion: 'Versión de la API',
+    checkUp: 'Activo · {latency} ms',
+    checkDown: 'Caído',
+    jobs: 'Correos y notificaciones',
+    jobsSending: 'Enviando · {backlog} en espera',
+    jobsUpToDate: 'Al día',
+    jobsDelayed: 'Con retraso',
+    jobsStarting: 'Iniciando',
+  },
+});

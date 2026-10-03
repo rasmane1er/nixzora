@@ -4,12 +4,12 @@ import {
   type SellerBalance,
   type SellerLedgerEntryView,
 } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SellerBalanceCards } from '@/components/SellerBalanceCards';
 import { SellerNav } from '@/components/SellerNav';
 import { api } from '@/lib/api';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { requireSeller } from '@/lib/sell';
 
@@ -18,20 +18,10 @@ function isFuture(iso: string): boolean {
   return Date.parse(iso) > Date.now();
 }
 
-export const metadata: Metadata = { title: 'Earnings', robots: { index: false } };
-
-const PAYOUT_LABEL: Record<PayoutView['status'], string> = {
-  PENDING: 'Sending',
-  PAID: 'Sent',
-  FAILED: 'Failed',
-};
-
-const TYPE_LABEL: Record<SellerLedgerEntryView['type'], string> = {
-  SALE: 'Sale',
-  REFUND: 'Refund',
-  PAYOUT: 'Payout',
-  ADJUSTMENT: 'Adjustment',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaEarnings'), robots: { index: false } };
+}
 
 export default async function EarningsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
@@ -42,38 +32,44 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
     api<PagedResult<SellerLedgerEntryView>>(`/seller/ledger?page=${page}`),
     api<PagedResult<PayoutView>>('/seller/payouts'),
   ]);
-  const money = (cents: number) => formatMoney(cents, balance.currency);
-  const day = (iso: string) =>
-    new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso));
+  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const money = (cents: number) => f.money(cents, balance.currency);
+  const day = (iso: string) => f.date(iso);
+  const payoutLabel = (status: PayoutView['status']) => t(`payout_${status}`);
+  const typeLabel = (type: SellerLedgerEntryView['type']) => t(`ledger_${type}`);
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <SellerNav seller={seller} current="/sell/earnings" />
       <SellerBalanceCards balance={balance} />
       <p className="muted" style={{ fontSize: 14 }}>
-        Earnings are added when you ship an order and become available after your{' '}
-        {seller.payoutHoldDays}-day hold
-        {balance.nextReleaseAt ? `; the next release is on ${day(balance.nextReleaseAt)}` : ''}.
-        Refunds of your items are deducted, with the commission on them returned to you.
-        {seller.payouts.provider === 'FAKE' ? ' Test mode: no money moves.' : ''}
+        {balance.nextReleaseAt
+          ? t('earningsHoldNext', {
+              days: seller.payoutHoldDays,
+              date: day(balance.nextReleaseAt),
+            })
+          : t('earningsHold', { days: seller.payoutHoldDays })}{' '}
+        {t('earningsRefunds')}
+        {seller.payouts.provider === 'FAKE' ? ` ${t('testMode')}` : ''}
       </p>
 
       <section className="card">
-        <h2>Payouts</h2>
+        <h2>{t('payoutsTitle')}</h2>
         <p className="muted" style={{ fontSize: 14 }}>
-          Your available balance is sent to your bank automatically once a day when it is $10.00 or
-          more{seller.payouts.payoutsEnabled ? '' : ', once payout verification is complete'}.
+          {t(seller.payouts.payoutsEnabled ? 'payoutsAuto' : 'payoutsAutoPending', {
+            min: money(1000),
+          })}
         </p>
         {payouts.items.length === 0 ? (
-          <p className="muted">No payouts yet.</p>
+          <p className="muted">{t('noPayouts')}</p>
         ) : (
           <div className="table-scroll">
             <table className="plain">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th className="num">Amount</th>
+                  <th>{t('colDate')}</th>
+                  <th>{t('colStatus')}</th>
+                  <th className="num">{t('colAmount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,10 +77,10 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
                   <tr key={payout.id}>
                     <td>{day(payout.paidAt ?? payout.createdAt)}</td>
                     <td>
-                      {PAYOUT_LABEL[payout.status]}
+                      {payoutLabel(payout.status)}
                       {payout.status === 'FAILED' ? (
                         <div className="muted" style={{ fontSize: 13 }}>
-                          Returned to your balance. Check your payout details in Store settings.
+                          {t('payoutFailedHint')}
                         </div>
                       ) : null}
                     </td>
@@ -98,18 +94,18 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
       </section>
 
       <section className="card">
-        <h2>Activity</h2>
+        <h2>{t('activityTitle')}</h2>
         {ledger.items.length === 0 ? (
-          <p className="muted">Nothing yet. Ship your first order to start earning.</p>
+          <p className="muted">{t('noActivity')}</p>
         ) : (
           <div className="table-scroll">
             <table className="plain">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Activity</th>
-                  <th>Available</th>
-                  <th className="num">Amount</th>
+                  <th>{t('colDate')}</th>
+                  <th>{t('colActivity')}</th>
+                  <th>{t('colAvailable')}</th>
+                  <th className="num">{t('colAmount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,10 +113,12 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
                   <tr key={entry.id}>
                     <td>{day(entry.createdAt)}</td>
                     <td>
-                      <strong>{TYPE_LABEL[entry.type]}</strong>{' '}
+                      <strong>{typeLabel(entry.type)}</strong>{' '}
                       <span className="muted">{entry.description}</span>
                     </td>
-                    <td>{isFuture(entry.availableAt) ? day(entry.availableAt) : 'Now'}</td>
+                    <td>
+                      {isFuture(entry.availableAt) ? day(entry.availableAt) : t('availableNow')}
+                    </td>
                     <td className={`num ${entry.amountCents < 0 ? 'neg' : ''}`}>
                       {entry.amountCents > 0 ? '+' : ''}
                       {money(entry.amountCents)}
@@ -133,13 +131,13 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
         )}
       </section>
       {ledger.totalPages > 1 ? (
-        <nav className="pager" aria-label="Pages">
-          {page > 1 ? <Link href={`/sell/earnings?page=${page - 1}`}>← Newer</Link> : null}
+        <nav className="pager" aria-label={t('pagesLabel')}>
+          {page > 1 ? <Link href={`/sell/earnings?page=${page - 1}`}>{t('newer')}</Link> : null}
           <span className="muted">
-            Page {ledger.page} of {ledger.totalPages}
+            {t('pageOf', { page: ledger.page, total: ledger.totalPages })}
           </span>
           {page < ledger.totalPages ? (
-            <Link href={`/sell/earnings?page=${page + 1}`}>Older →</Link>
+            <Link href={`/sell/earnings?page=${page + 1}`}>{t('older')}</Link>
           ) : null}
         </nav>
       ) : null}

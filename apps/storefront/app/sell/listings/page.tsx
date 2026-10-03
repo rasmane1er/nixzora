@@ -1,19 +1,22 @@
 import { type PagedResult, type SellerProductRow } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api } from '@/lib/api';
+import { departmentName, getFormat, getT } from '@/lib/i18n';
 import { param, query, type SearchParams } from '@/lib/params';
-import { LISTING_STATUS_LABEL, requireSeller } from '@/lib/sell';
+import { requireSeller } from '@/lib/sell';
 
-export const metadata: Metadata = { title: 'Your listings', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaListings'), robots: { index: false } };
+}
 
 const FILTERS = [
-  [undefined, 'All'],
-  ['DRAFT', 'Drafts'],
-  ['PENDING_REVIEW', 'In review'],
-  ['ACTIVE', 'Live'],
+  [undefined, 'filterAll'],
+  ['DRAFT', 'filterDrafts'],
+  ['PENDING_REVIEW', 'filterInReview'],
+  ['ACTIVE', 'filterLive'],
 ] as const;
 
 export default async function ListingsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -24,29 +27,34 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
   const result = await api<PagedResult<SellerProductRow>>(
     `/seller/products${query({ status, page })}`,
   );
+  const [t, f, categoryNames] = await Promise.all([
+    getT('sellerTools'),
+    getFormat(),
+    Promise.all(result.items.map((row) => departmentName(row.category))),
+  ]);
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
       <SellerNav seller={seller} current="/sell/listings" />
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
       <div className="section-head" style={{ marginBottom: 0 }}>
-        <nav className="seller-filters" aria-label="Filter listings">
+        <nav className="seller-filters" aria-label={t('filterListingsLabel')}>
           {FILTERS.map(([value, label]) => (
             <Link
               key={label}
               href={`/sell/listings${query({ status: value })}`}
               aria-current={status === value ? 'page' : undefined}
             >
-              {label}
+              {t(label)}
             </Link>
           ))}
         </nav>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link className="btn btn--secondary" href="/sell/listings/import">
-            Import from CSV
+            {t('importCsv')}
           </Link>
           <Link className="btn btn--primary" href="/sell/listings/new">
-            Add a listing
+            {t('addListing')}
           </Link>
         </div>
       </div>
@@ -54,8 +62,8 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
       {result.items.length === 0 ? (
         <div className="empty card">
           <p>
-            {status ? 'No listings here.' : 'No listings yet.'}{' '}
-            <Link href="/sell/listings/new">Add your first product →</Link>
+            {status ? t('noListingsHere') : t('noListingsYet')}{' '}
+            <Link href="/sell/listings/new">{t('addFirstProduct')}</Link>
           </p>
         </div>
       ) : (
@@ -64,14 +72,14 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
             <table className="plain">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Status</th>
-                  <th className="num">Price</th>
-                  <th className="num">Stock</th>
+                  <th>{t('colProduct')}</th>
+                  <th>{t('colStatus')}</th>
+                  <th className="num">{t('colPrice')}</th>
+                  <th className="num">{t('colStock')}</th>
                 </tr>
               </thead>
               <tbody>
-                {result.items.map((row) => (
+                {result.items.map((row, i) => (
                   <tr key={row.id}>
                     <td>
                       <div className="listing-cell">
@@ -84,23 +92,23 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                         <div>
                           <Link href={`/sell/listings/${row.id}`}>{row.title}</Link>
                           <div className="muted" style={{ fontSize: 13 }}>
-                            {row.category.name}
+                            {categoryNames[i]}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td>
                       <span className={`pill pill--listing-${row.status.toLowerCase()}`}>
-                        {LISTING_STATUS_LABEL[row.status]}
+                        {t(`listing_${row.status}`)}
                       </span>
                       {row.reviewNote ? (
                         <div className="muted" style={{ fontSize: 13 }}>
-                          Changes requested
+                          {t('changesRequested')}
                         </div>
                       ) : null}
                     </td>
-                    <td className="num">{formatMoney(row.priceFromCents, row.currency)}</td>
-                    <td className="num">{row.inStock ? 'In stock' : 'Out of stock'}</td>
+                    <td className="num">{f.money(row.priceFromCents, row.currency)}</td>
+                    <td className="num">{row.inStock ? t('inStock') : t('outOfStock')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -109,15 +117,15 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
         </section>
       )}
       {result.totalPages > 1 ? (
-        <nav className="pager" aria-label="Pages">
+        <nav className="pager" aria-label={t('pagesLabel')}>
           {page > 1 ? (
-            <Link href={`/sell/listings${query({ status, page: page - 1 })}`}>← Newer</Link>
+            <Link href={`/sell/listings${query({ status, page: page - 1 })}`}>{t('newer')}</Link>
           ) : null}
           <span className="muted">
-            Page {result.page} of {result.totalPages}
+            {t('pageOf', { page: result.page, total: result.totalPages })}
           </span>
           {page < result.totalPages ? (
-            <Link href={`/sell/listings${query({ status, page: page + 1 })}`}>Older →</Link>
+            <Link href={`/sell/listings${query({ status, page: page + 1 })}`}>{t('older')}</Link>
           ) : null}
         </nav>
       ) : null}

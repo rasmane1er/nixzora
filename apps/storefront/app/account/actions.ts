@@ -4,6 +4,7 @@ import { type AuthTokens, type LoginResponse } from '@nixzora/validation';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { api, errorMessage } from '@/lib/api';
+import { getLocale, getT } from '@/lib/i18n';
 import { back, finishSignIn as finish, safeNext } from './sign-in';
 import { MFA_COOKIE, clearSession, cookieOptions } from '@/lib/session';
 
@@ -35,7 +36,10 @@ export async function signIn(form: FormData): Promise<void> {
 export async function verifyCode(form: FormData): Promise<void> {
   const next = safeNext(form.get('next'));
   const mfaToken = (await cookies()).get(MFA_COOKIE)?.value;
-  if (!mfaToken) redirect(back('/account/login', 'That sign-in expired. Start again.', next));
+  if (!mfaToken) {
+    const t = await getT('auth');
+    redirect(back('/account/login', t('signInExpired'), next));
+  }
   let tokens: AuthTokens;
   try {
     tokens = await api<AuthTokens>('/auth/mfa/challenge', {
@@ -60,6 +64,7 @@ export async function register(form: FormData): Promise<void> {
         email: String(form.get('email') ?? ''),
         password: String(form.get('password') ?? ''),
         firstName: String(form.get('firstName') ?? '').trim() || undefined,
+        language: await getLocale(),
         deviceName: DEVICE,
       },
     });

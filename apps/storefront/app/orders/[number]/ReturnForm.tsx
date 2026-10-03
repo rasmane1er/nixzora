@@ -2,33 +2,29 @@
 
 import { type OrderView } from '@nixzora/validation';
 import { useActionState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { requestReturn, type ReturnState } from './actions';
 
-const REASONS = [
-  ['DAMAGED', 'Arrived damaged'],
-  ['NOT_AS_DESCRIBED', 'Not as described'],
-  ['WRONG_ITEM', 'Wrong item sent'],
-  ['NO_LONGER_NEEDED', 'No longer needed'],
-  ['OTHER', 'Something else'],
-] as const;
+const REASONS = ['DAMAGED', 'NOT_AS_DESCRIBED', 'WRONG_ITEM', 'NO_LONGER_NEEDED', 'OTHER'] as const;
 
 export function ReturnForm({ order, token }: { order: OrderView; token?: string }) {
+  const t = useT('order');
   const [state, action, pending] = useActionState<ReturnState, FormData>(requestReturn, {});
   if (state.ok) {
     return (
       <p className="banner banner--ok" role="status">
-        Return requested. We’ll email you the next steps within one business day.
+        {t('returnRequested')}
       </p>
     );
   }
   return (
     <details className="card" id="return">
-      <summary>Start a return</summary>
+      <summary>{t('startReturn')}</summary>
       <form action={action} className="form" style={{ marginTop: 14 }}>
         <input type="hidden" name="number" value={order.number} />
         <input type="hidden" name="token" value={token ?? ''} />
         <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0, gap: 8 }}>
-          <legend style={{ fontWeight: 600, marginBottom: 6 }}>Which items?</legend>
+          <legend style={{ fontWeight: 600, marginBottom: 6 }}>{t('whichItems')}</legend>
           {order.items.map((item) => (
             <div key={item.id} className="check" style={{ justifyContent: 'space-between' }}>
               <label className="check">
@@ -38,7 +34,7 @@ export function ReturnForm({ order, token }: { order: OrderView; token?: string 
               {item.quantity > 1 ? (
                 <select
                   name={`qty-${item.id}`}
-                  aria-label={`How many ${item.productTitle}`}
+                  aria-label={t('howMany', { title: item.productTitle })}
                   defaultValue={1}
                 >
                   {Array.from({ length: item.quantity }, (_, i) => i + 1).map((n) => (
@@ -54,17 +50,17 @@ export function ReturnForm({ order, token }: { order: OrderView; token?: string 
           ))}
         </fieldset>
         <label>
-          Reason
+          {t('reason')}
           <select name="reason" defaultValue="DAMAGED">
-            {REASONS.map(([value, label]) => (
+            {REASONS.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {t(`reason_${value}`)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Anything we should know? <span className="hint">Optional</span>
+          {t('anythingToKnow')} <span className="hint">{t('optional')}</span>
           <textarea name="note" rows={3} maxLength={1000} />
         </label>
         {state.error ? (
@@ -74,7 +70,7 @@ export function ReturnForm({ order, token }: { order: OrderView; token?: string 
         ) : null}
         <div>
           <button className="btn btn--primary" type="submit" disabled={pending}>
-            {pending ? 'Sending…' : 'Request return'}
+            {pending ? t('sending') : t('requestReturn')}
           </button>
         </div>
       </form>

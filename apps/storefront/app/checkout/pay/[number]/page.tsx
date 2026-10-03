@@ -4,10 +4,14 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AddressBlock, OrderItems, OrderTotals } from '@/components/OrderSummary';
 import { api, ApiError } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { PayForm } from './PayForm';
 
-export const metadata: Metadata = { title: 'Payment', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('checkout');
+  return { title: t('paymentTitle'), robots: { index: false } };
+}
 
 type Props = { params: Promise<{ number: string }>; searchParams: SearchParams };
 
@@ -33,28 +37,30 @@ export default async function PayPage({ params, searchParams }: Props) {
     throw error;
   }
   const returnPath = `/orders/${number}${qs || '?'}`;
+  const t = await getT('checkout');
+  const to = await getT('order');
 
   return (
     <div className="wrap section">
-      <p className="eyebrow">Order {order.number}</p>
-      <h1 style={{ marginBottom: 20 }}>Payment</h1>
+      <p className="eyebrow">{to('orderNumber', { number: order.number })}</p>
+      <h1 style={{ marginBottom: 20 }}>{t('paymentTitle')}</h1>
       <div className="cart">
         <section className="card stack">
           <PayForm session={session} returnPath={returnPath} />
           <p className="muted" style={{ fontSize: 13 }}>
-            Your items are held for you for 15 minutes while you pay.
+            {t('heldNotice')}
           </p>
         </section>
-        <aside className="card summary" aria-label="Order summary">
-          <h2>Summary</h2>
+        <aside className="card summary" aria-label={to('orderSummary')}>
+          <h2>{to('summary')}</h2>
           <OrderItems order={order} />
           <OrderTotals order={order} />
           <div className="stack" style={{ gap: 4 }}>
-            <strong>Shipping to</strong>
+            <strong>{to('shippingTo')}</strong>
             <AddressBlock address={order.shippingAddress} />
           </div>
           <Link href="/cart" className="muted" style={{ fontSize: 14 }}>
-            Need to change something? Start again from your cart.
+            {t('changeSomething')}
           </Link>
         </aside>
       </div>

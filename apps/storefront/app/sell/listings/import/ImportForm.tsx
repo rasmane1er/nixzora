@@ -1,14 +1,17 @@
 'use client';
 
 import { type ListingImportResult } from '@nixzora/validation';
+import { rich } from '@nixzora/i18n';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { importListings } from '../../actions';
 
 const MAX_BYTES = 1_000_000;
 
 /** Pick a CSV, check it (nothing saved), then import. Errors are listed by row and column. */
 export function ImportForm() {
+  const t = useT('sellerTools');
   const [csv, setCsv] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,7 +24,7 @@ export function ImportForm() {
     setProblem(null);
     setCsv(null);
     if (!file) return;
-    if (file.size > MAX_BYTES) return setProblem('Files can be up to 1 MB. Split it in two.');
+    if (file.size > MAX_BYTES) return setProblem(t('fileTooBig'));
     setFileName(file.name);
     const text = await file.text();
     setCsv(text);
@@ -43,10 +46,10 @@ export function ImportForm() {
   return (
     <div className="stack" style={{ gap: 16 }}>
       <label>
-        CSV file <span className="hint">Saved from Excel, Numbers or Google Sheets.</span>
+        {t('csvFile')} <span className="hint">{t('csvFileHint')}</span>
         <input type="file" accept=".csv,text/csv" onChange={choose} disabled={busy} />
       </label>
-      {busy ? <p className="muted">Checking {fileName}…</p> : null}
+      {busy ? <p className="muted">{t('checkingFile', { file: fileName })}</p> : null}
       {problem ? (
         <p className="banner banner--error" role="alert">
           {problem}
@@ -58,18 +61,15 @@ export function ImportForm() {
           {result.errors.length ? (
             <>
               <p className="banner banner--error" role="alert">
-                {result.errors.length === 1
-                  ? '1 thing to fix'
-                  : `${result.errors.length} things to fix`}{' '}
-                before importing. Nothing was saved.
+                {t('thingsToFix', { count: result.errors.length })}
               </p>
               <div className="table-scroll">
                 <table className="plain">
                   <thead>
                     <tr>
-                      <th>Row</th>
-                      <th>Column</th>
-                      <th>Problem</th>
+                      <th>{t('colRow')}</th>
+                      <th>{t('colColumn')}</th>
+                      <th>{t('colProblem')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -85,16 +85,16 @@ export function ImportForm() {
               </div>
             </>
           ) : nothing ? (
-            <p className="banner banner--info">
-              Everything in this file already matches your listings.
-            </p>
+            <p className="banner banner--info">{t('allMatch')}</p>
           ) : (
             <>
               <p className="banner banner--ok" role="status">
-                Ready: {result.rows} rows · {result.newListings} new{' '}
-                {result.newListings === 1 ? 'listing' : 'listings'} ({result.newOptions} options) ·{' '}
-                {result.updatedOptions} price or stock{' '}
-                {result.updatedOptions === 1 ? 'change' : 'changes'}.
+                {t('readySummary', {
+                  rows: result.rows,
+                  listings: result.newListings,
+                  options: result.newOptions,
+                  changes: result.updatedOptions,
+                })}
               </p>
               <div>
                 <button
@@ -103,7 +103,7 @@ export function ImportForm() {
                   disabled={busy || !csv}
                   onClick={() => csv && void send(csv, false)}
                 >
-                  Import now
+                  {t('importNow')}
                 </button>
               </div>
             </>
@@ -113,24 +113,34 @@ export function ImportForm() {
 
       {clean && result && !result.dryRun ? (
         <p className="banner banner--ok" role="status">
-          Done.{' '}
-          {[
-            result.createdIds.length
-              ? `${result.createdIds.length} new ${result.createdIds.length === 1 ? 'draft' : 'drafts'}`
-              : '',
-            result.updatedOptions
-              ? `${result.updatedOptions} price or stock ${result.updatedOptions === 1 ? 'change' : 'changes'}`
-              : '',
-          ]
-            .filter(Boolean)
-            .join(' and ')}
-          . <Link href="/sell/listings?status=DRAFT">See your drafts →</Link> Add photos to them,
-          then submit them for review.
+          {rich(
+            t('doneSummary', {
+              summary: [
+                result.createdIds.length
+                  ? t('doneDrafts', { count: result.createdIds.length })
+                  : '',
+                result.updatedOptions ? t('doneChanges', { count: result.updatedOptions }) : '',
+              ]
+                .filter(Boolean)
+                .join(t('and')),
+            }),
+            {
+              link: (chunk) => (
+                <Link key="drafts" href="/sell/listings?status=DRAFT">
+                  {chunk}
+                </Link>
+              ),
+            },
+          )}
         </p>
       ) : null}
       {result && !result.dryRun && result.errors.length ? (
         <p className="banner banner--error" role="alert">
-          Imported, except: {result.errors.map((e) => `row ${e.row}: ${e.message}`).join('; ')}
+          {t('importedExcept', {
+            list: result.errors
+              .map((e) => t('rowError', { row: e.row, message: e.message }))
+              .join('; '),
+          })}
         </p>
       ) : null}
     </div>

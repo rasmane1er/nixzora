@@ -1,15 +1,13 @@
+import { rich } from '@nixzora/i18n';
 import {
-  BUSINESS_TYPE_LABEL,
   BUSINESS_TYPES,
   HANDLING_DAYS,
   type MeResponse,
   SELLER_CARRIER_LABEL,
   SELLER_CARRIERS,
   SELLER_CATEGORIES,
-  SELLER_CATEGORY_LABEL,
   SELLER_ONBOARDING_STEPS,
   type SellerApplicationDraftView,
-  SHIP_REGION_LABEL,
   SHIP_REGIONS,
   US_STATES,
 } from '@nixzora/validation';
@@ -20,6 +18,7 @@ import { AgreementSubmit } from '@/components/AgreementSubmit';
 import { BrandingUpload } from '@/components/BrandingUpload';
 import { FeeCalculator } from '@/components/FeeCalculator';
 import { api } from '@/lib/api';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { sellerMe } from '@/lib/sell';
 import {
@@ -32,7 +31,10 @@ import {
 } from '@/lib/seller-onboarding';
 import { discardApplication, saveStep, submitApplication } from './actions';
 
-export const metadata: Metadata = { title: 'Open your store', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellApply');
+  return { title: t('metaTitle'), robots: { index: false } };
+}
 
 const COMMISSION_BPS = 1200;
 
@@ -45,10 +47,11 @@ const list = (values: Values | undefined, key: string): string[] =>
   Array.isArray(values?.[key]) ? (values[key] as string[]) : [];
 
 /** "Public on your store" / "Private" beside a field name. */
-function Visibility({ pub }: { pub?: boolean }) {
+async function Visibility({ pub }: { pub?: boolean }) {
+  const t = await getT('sellApply');
   return (
     <span className={`visibility ${pub ? 'visibility--public' : ''}`}>
-      {pub ? 'Public on your store' : 'Private'}
+      {pub ? t('visibilityPublic') : t('visibilityPrivate')}
     </span>
   );
 }
@@ -61,17 +64,18 @@ function FieldError({ errors, name }: { errors: Record<string, string>; name: st
   ) : null;
 }
 
-function Progress({
+async function Progress({
   current,
   draft,
 }: {
   current: StepKey;
   draft: SellerApplicationDraftView | null;
 }) {
+  const t = await getT('sellApply');
   const done = new Set(draft?.completed ?? []);
   const percent = percentDone(draft);
   return (
-    <nav className="onboarding-progress" aria-label="Application steps">
+    <nav className="onboarding-progress" aria-label={t('stepsLabel')}>
       <ol>
         {SELLER_ONBOARDING_STEPS.map((step, index) => {
           const state = step.key === current ? 'current' : done.has(step.key) ? 'done' : 'todo';
@@ -83,14 +87,14 @@ function Progress({
                   <span className="onboarding-progress__n">
                     {state === 'done' ? '✓' : index + 1}
                   </span>
-                  <span className="onboarding-progress__label">{step.title}</span>
+                  <span className="onboarding-progress__label">{t(`step_${step.key}`)}</span>
                 </Link>
               ) : (
                 <span aria-current={step.key === current ? 'step' : undefined}>
                   <span className="onboarding-progress__n">
                     {state === 'done' ? '✓' : index + 1}
                   </span>
-                  <span className="onboarding-progress__label">{step.title}</span>
+                  <span className="onboarding-progress__label">{t(`step_${step.key}`)}</span>
                 </span>
               )}
             </li>
@@ -103,22 +107,23 @@ function Progress({
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Application complete"
+        aria-label={t('progressLabel')}
       >
         <span style={{ width: `${percent}%` }} />
       </div>
-      <p className="onboarding-progress__percent">{percent}% complete</p>
+      <p className="onboarding-progress__percent">{t('percentComplete', { percent })}</p>
     </nav>
   );
 }
 
-function StepButtons({ step }: { step: StepKey }) {
+async function StepButtons({ step }: { step: StepKey }) {
+  const t = await getT('sellApply');
   const first = stepIndex(step) === 0;
   return (
     <div className="onboarding-actions">
       {first ? null : (
         <button className="btn btn--ghost" type="submit" name="intent" value="back" formNoValidate>
-          ← Back
+          {t('back')}
         </button>
       )}
       <button
@@ -128,23 +133,26 @@ function StepButtons({ step }: { step: StepKey }) {
         value="later"
         formNoValidate
       >
-        Save &amp; continue later
+        {t('saveLater')}
       </button>
       <button className="btn btn--primary" type="submit" name="intent" value="continue">
-        Continue →
+        {t('continue')}
       </button>
     </div>
   );
 }
 
-function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+async function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+  const t = await getT('sellApply');
+  const tc = await getT('common');
+  const td = await getT('departments');
   return (
     <>
-      <h2>Business information</h2>
+      <h2>{t('businessTitle')}</h2>
       <div className="form-row">
         <label>
           <span>
-            Business type <Visibility />
+            {t('businessType')} <Visibility />
           </span>
           <select
             name="businessType"
@@ -153,11 +161,11 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             aria-invalid={Boolean(errors.businessType)}
           >
             <option value="" disabled>
-              Choose…
+              {t('choose')}
             </option>
-            {BUSINESS_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {BUSINESS_TYPE_LABEL[t]}
+            {BUSINESS_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`businessType_${type}`)}
               </option>
             ))}
           </select>
@@ -165,7 +173,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
         </label>
         <label>
           <span>
-            Legal business name <Visibility />
+            {t('legalBusinessName')} <Visibility />
           </span>
           <input
             name="legalName"
@@ -175,14 +183,14 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             placeholder="Brightline Audio LLC"
             aria-invalid={Boolean(errors.legalName)}
           />
-          <span className="hint">As registered. For a sole proprietor, your legal name.</span>
+          <span className="hint">{t('legalNameHint')}</span>
           <FieldError errors={errors} name="legalName" />
         </label>
       </div>
       <div className="form-row">
         <label>
           <span>
-            Store name (DBA) <Visibility pub />
+            {t('storeNameDba')} <Visibility pub />
           </span>
           <input
             name="displayName"
@@ -197,7 +205,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
         </label>
         <label>
           <span>
-            Store address <Visibility pub />
+            {t('storeAddress')} <Visibility pub />
           </span>
           <input
             name="handle"
@@ -208,16 +216,14 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             placeholder="brightline-audio"
             aria-invalid={Boolean(errors.handle)}
           />
-          <span className="hint">
-            Optional: nixzora.com/s/your-address. Made from the store name if empty.
-          </span>
+          <span className="hint">{t('handleHint')}</span>
           <FieldError errors={errors} name="handle" />
         </label>
       </div>
       <div className="form-row">
         <label>
           <span>
-            Business category <Visibility pub />
+            {t('businessCategory')} <Visibility pub />
           </span>
           <select
             name="category"
@@ -226,11 +232,11 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             aria-invalid={Boolean(errors.category)}
           >
             <option value="" disabled>
-              Choose…
+              {t('choose')}
             </option>
             {SELLER_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {SELLER_CATEGORY_LABEL[c]}
+                {td(c)}
               </option>
             ))}
           </select>
@@ -238,7 +244,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
         </label>
         <label>
           <span>
-            Business website <Visibility pub />
+            {t('businessWebsite')} <Visibility pub />
           </span>
           <input
             name="website"
@@ -247,20 +253,20 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             placeholder="https://"
             aria-invalid={Boolean(errors.website)}
           />
-          <span className="hint">Optional.</span>
+          <span className="hint">{tc('optional')}</span>
           <FieldError errors={errors} name="website" />
         </label>
       </div>
       <label>
         <span>
-          What do you sell? <Visibility />
+          {t('whatYouSell')} <Visibility />
         </span>
         <input
           name="whatYouSell"
           defaultValue={str(v, 'whatYouSell')}
           required
           maxLength={300}
-          placeholder="Laptops, accessories, headphones…"
+          placeholder={t('whatYouSellPlaceholder')}
           aria-invalid={Boolean(errors.whatYouSell)}
         />
         <FieldError errors={errors} name="whatYouSell" />
@@ -268,17 +274,17 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
 
       <fieldset className="stack" style={{ gap: 12 }}>
         <legend>
-          Business address <Visibility />
+          {t('businessAddress')} <Visibility />
         </legend>
         <label>
-          Country
+          {t('country')}
           <select name="address.country" defaultValue="US" disabled>
-            <option value="US">United States</option>
+            <option value="US">{t('unitedStates')}</option>
           </select>
-          <span className="hint">NIXZORA supports US businesses for now.</span>
+          <span className="hint">{t('usBusinessesOnly')}</span>
         </label>
         <label>
-          Street address
+          {t('streetAddress')}
           <input
             name="address.line1"
             defaultValue={str(v, 'address.line1')}
@@ -289,7 +295,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
           <FieldError errors={errors} name="address.line1" />
         </label>
         <label>
-          Suite, unit <span className="hint">Optional.</span>
+          {t('suiteUnit')} <span className="hint">{tc('optional')}</span>
           <input
             name="address.line2"
             defaultValue={str(v, 'address.line2')}
@@ -298,7 +304,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
         </label>
         <div className="form-row form-row--3">
           <label>
-            City
+            {t('city')}
             <input
               name="address.city"
               defaultValue={str(v, 'address.city')}
@@ -309,7 +315,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             <FieldError errors={errors} name="address.city" />
           </label>
           <label>
-            State
+            {t('state')}
             <select
               name="address.region"
               defaultValue={str(v, 'address.region')}
@@ -317,7 +323,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
               aria-invalid={Boolean(errors['address.region'])}
             >
               <option value="" disabled>
-                Choose…
+                {t('choose')}
               </option>
               {US_STATES.map((s) => (
                 <option key={s} value={s}>
@@ -328,7 +334,7 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
             <FieldError errors={errors} name="address.region" />
           </label>
           <label>
-            ZIP code
+            {t('zip')}
             <input
               name="address.postalCode"
               defaultValue={str(v, 'address.postalCode')}
@@ -345,17 +351,16 @@ function BusinessStep({ v, errors }: { v?: Values; errors: Record<string, string
   );
 }
 
-function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+async function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+  const t = await getT('sellApply');
   return (
     <>
-      <h2>Seller information</h2>
-      <p className="banner banner--info">
-        Your information is used to verify your seller account and is never shown on your store.
-      </p>
+      <h2>{t('ownerTitle')}</h2>
+      <p className="banner banner--info">{t('ownerBanner')}</p>
       <div className="form-row">
         <label>
           <span>
-            Legal first name <Visibility />
+            {t('firstName')} <Visibility />
           </span>
           <input
             name="firstName"
@@ -368,7 +373,7 @@ function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }
         </label>
         <label>
           <span>
-            Legal last name <Visibility />
+            {t('lastName')} <Visibility />
           </span>
           <input
             name="lastName"
@@ -383,7 +388,7 @@ function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }
       <div className="form-row">
         <label>
           <span>
-            Date of birth <Visibility />
+            {t('dateOfBirth')} <Visibility />
           </span>
           <input
             name="dateOfBirth"
@@ -393,12 +398,12 @@ function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }
             autoComplete="bday"
             aria-invalid={Boolean(errors.dateOfBirth)}
           />
-          <span className="hint">Sellers must be 18 or older. Stored encrypted.</span>
+          <span className="hint">{t('dobHint')}</span>
           <FieldError errors={errors} name="dateOfBirth" />
         </label>
         <label>
           <span>
-            Phone number <Visibility />
+            {t('phone')} <Visibility />
           </span>
           <input
             name="phone"
@@ -412,16 +417,16 @@ function OwnerStep({ v, errors }: { v?: Values; errors: Record<string, string> }
         </label>
       </div>
       <label>
-        Country of residence
+        {t('residence')}
         <select name="residenceCountry" defaultValue="US" disabled>
-          <option value="US">United States</option>
+          <option value="US">{t('unitedStates')}</option>
         </select>
       </label>
     </>
   );
 }
 
-function StoreStep({
+async function StoreStep({
   v,
   errors,
   email,
@@ -430,11 +435,13 @@ function StoreStep({
   errors: Record<string, string>;
   email: string;
 }) {
+  const t = await getT('sellApply');
+  const tc = await getT('common');
   return (
     <>
-      <h2>Store setup</h2>
+      <h2>{t('storeTitle')}</h2>
       <p className="muted" style={{ margin: 0 }}>
-        This is what shoppers see on your store page. You can change it later in Store settings.
+        {t('storeLead')}
       </p>
       <div className="stack" style={{ gap: 14 }}>
         <BrandingUpload kind="logo" keyValue={str(v, 'logoKey')} urlValue={str(v, 'logoUrl')} />
@@ -446,7 +453,7 @@ function StoreStep({
       </div>
       <label>
         <span>
-          About your store <Visibility pub />
+          {t('aboutStore')} <Visibility pub />
         </span>
         <textarea
           name="description"
@@ -455,7 +462,7 @@ function StoreStep({
           required
           minLength={20}
           maxLength={1000}
-          placeholder="Premium desk speakers and amplifiers, tested and tuned in Baltimore."
+          placeholder={t('aboutPlaceholder')}
           aria-invalid={Boolean(errors.description)}
         />
         <FieldError errors={errors} name="description" />
@@ -463,7 +470,7 @@ function StoreStep({
       <div className="form-row">
         <label>
           <span>
-            Customer support email <Visibility pub />
+            {t('supportEmail')} <Visibility pub />
           </span>
           <input
             name="supportEmail"
@@ -471,12 +478,12 @@ function StoreStep({
             defaultValue={str(v, 'supportEmail')}
             aria-invalid={Boolean(errors.supportEmail)}
           />
-          <span className="hint">Optional. Shown on your store.</span>
+          <span className="hint">{t('supportEmailHint')}</span>
           <FieldError errors={errors} name="supportEmail" />
         </label>
         <label>
           <span>
-            Customer support phone <Visibility pub />
+            {t('supportPhone')} <Visibility pub />
           </span>
           <input
             name="supportPhone"
@@ -484,13 +491,13 @@ function StoreStep({
             defaultValue={str(v, 'supportPhone')}
             aria-invalid={Boolean(errors.supportPhone)}
           />
-          <span className="hint">Optional.</span>
+          <span className="hint">{tc('optional')}</span>
           <FieldError errors={errors} name="supportPhone" />
         </label>
       </div>
       <label>
         <span>
-          Email for NIXZORA <Visibility />
+          {t('contactEmail')} <Visibility />
         </span>
         <input
           name="contactEmail"
@@ -499,42 +506,41 @@ function StoreStep({
           placeholder={email}
           aria-invalid={Boolean(errors.contactEmail)}
         />
-        <span className="hint">
-          Where we send orders, payouts and policy updates. Defaults to {email}.
-        </span>
+        <span className="hint">{t('contactEmailHint', { email })}</span>
         <FieldError errors={errors} name="contactEmail" />
       </label>
     </>
   );
 }
 
-function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+async function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+  const t = await getT('sellApply');
   const carriers = v ? list(v, 'carriers') : ['USPS', 'UPS'];
   const regions = v ? list(v, 'shipRegions') : ['US_CONTIGUOUS'];
   return (
     <>
-      <h2>Shipping</h2>
+      <h2>{t('shippingTitle')}</h2>
       <div className="form-row">
         <label>
-          Shipping from
-          <input value="Your business address, United States" readOnly disabled />
-          <span className="hint">From the Business step.</span>
+          {t('shippingFrom')}
+          <input value={t('shippingFromValue')} readOnly disabled />
+          <span className="hint">{t('shippingFromHint')}</span>
         </label>
         <label>
-          Orders shipped within
+          {t('shippedWithin')}
           <select name="handlingDays" defaultValue={str(v, 'handlingDays') || '2'}>
             {HANDLING_DAYS.map((d) => (
               <option key={d} value={d}>
-                {d} business {d === 1 ? 'day' : 'days'}
+                {t('businessDays', { count: d })}
               </option>
             ))}
           </select>
-          <span className="hint">NIXZORA&apos;s standard is 2 business days or faster.</span>
+          <span className="hint">{t('handlingHint')}</span>
         </label>
       </div>
       <fieldset aria-invalid={Boolean(errors.carriers)}>
         <legend>
-          Carriers you use <Visibility />
+          {t('carriersYouUse')} <Visibility />
         </legend>
         <div className="check-grid">
           {SELLER_CARRIERS.map((c) => (
@@ -545,14 +551,14 @@ function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string
                 value={c}
                 defaultChecked={carriers.includes(c)}
               />
-              <span>{SELLER_CARRIER_LABEL[c]}</span>
+              <span>{c === 'OTHER' ? t('carrier_OTHER') : SELLER_CARRIER_LABEL[c]}</span>
             </label>
           ))}
         </div>
         <FieldError errors={errors} name="carriers" />
       </fieldset>
       <fieldset aria-invalid={Boolean(errors.shipRegions)}>
-        <legend>Shipping regions</legend>
+        <legend>{t('shippingRegions')}</legend>
         <div className="check-grid">
           {SHIP_REGIONS.map((r) => (
             <label key={r} className="check">
@@ -562,31 +568,30 @@ function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string
                 value={r}
                 defaultChecked={regions.includes(r)}
               />
-              <span>{SHIP_REGION_LABEL[r]}</span>
+              <span>{t(`region_${r}`)}</span>
             </label>
           ))}
           <label className="check" aria-disabled="true">
             <input type="checkbox" disabled />
-            <span className="muted">International (not available yet)</span>
+            <span className="muted">{t('international')}</span>
           </label>
         </div>
         <FieldError errors={errors} name="shipRegions" />
       </fieldset>
 
-      <h2 id="returns">Returns &amp; refunds</h2>
+      <h2 id="returns">{t('returnsTitle')}</h2>
       <div className="returns-box">
         <p style={{ margin: 0 }}>
-          NIXZORA sellers follow the Marketplace Return Policy. Shoppers can return items within{' '}
-          <strong>30 days</strong> of delivery.
+          {rich(t('returnsIntro'), { b: (chunk) => <strong key="b">{chunk}</strong> })}
         </p>
         <ul className="ticks">
-          <li>Accept the returns NIXZORA approves under the policy</li>
-          <li>Follow return requests for your items in your seller dashboard</li>
-          <li>Refunds are issued by NIXZORA to the customer&apos;s card</li>
-          <li>Follow NIXZORA&apos;s decision when a customer disputes an order</li>
+          <li>{t('returnsTick1')}</li>
+          <li>{t('returnsTick2')}</li>
+          <li>{t('returnsTick3')}</li>
+          <li>{t('returnsTick4')}</li>
         </ul>
         <Link href="/policies/sellers#returns" target="_blank">
-          View the Seller Return Policy →
+          {t('viewReturnPolicy')}
         </Link>
       </div>
       <label className="check">
@@ -597,7 +602,7 @@ function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string
           aria-invalid={Boolean(errors.acceptReturnPolicy)}
         />
         <span>
-          I have read and agree to the NIXZORA Seller Return Policy.
+          {t('acceptReturns')}
           <FieldError errors={errors} name="acceptReturnPolicy" />
         </span>
       </label>
@@ -605,64 +610,64 @@ function ShippingStep({ v, errors }: { v?: Values; errors: Record<string, string
   );
 }
 
-function PaymentsStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+async function PaymentsStep({ v, errors }: { v?: Values; errors: Record<string, string> }) {
+  const t = await getT('sellApply');
+  const f = await getFormat();
+  const rate = f.percent(COMMISSION_BPS / 10_000);
   return (
     <>
-      <h2>Seller fees</h2>
+      <h2>{t('feesTitle')}</h2>
       <div className="fee-headline">
-        <strong>{COMMISSION_BPS / 100}%</strong>
-        <span>per completed sale, on the item price</span>
+        <strong>{rate}</strong>
+        <span>{t('perSale')}</span>
       </div>
       <FeeCalculator commissionBps={COMMISSION_BPS} />
       <table className="fee-rules">
         <tbody>
           <tr>
-            <th scope="row">Item price</th>
-            <td>
-              The {COMMISSION_BPS / 100}% commission applies here, at the price the item sold for.
-            </td>
+            <th scope="row">{t('itemPrice')}</th>
+            <td>{t('itemPriceRule', { rate })}</td>
           </tr>
           <tr>
-            <th scope="row">Shipping</th>
-            <td>No commission. What the customer pays for shipping goes to you.</td>
+            <th scope="row">{t('shipping')}</th>
+            <td>{t('shippingRule')}</td>
           </tr>
           <tr>
-            <th scope="row">Sales tax</th>
-            <td>No commission. NIXZORA collects and remits it; it never reaches you.</td>
+            <th scope="row">{t('salesTax')}</th>
+            <td>{t('salesTaxRule')}</td>
           </tr>
           <tr>
-            <th scope="row">Coupons</th>
-            <td>Paid by NIXZORA. You are paid on the price before the discount.</td>
+            <th scope="row">{t('coupons')}</th>
+            <td>{t('couponsRule')}</td>
           </tr>
           <tr>
-            <th scope="row">Refunds</th>
-            <td>The commission on the refunded amount is returned to you.</td>
+            <th scope="row">{t('refunds')}</th>
+            <td>{t('refundsRule')}</td>
           </tr>
           <tr>
-            <th scope="row">Cancelled orders</th>
-            <td>No fee: orders cancelled before shipping earn and cost nothing.</td>
+            <th scope="row">{t('cancelledOrders')}</th>
+            <td>{t('cancelledRule')}</td>
           </tr>
           <tr>
-            <th scope="row">Card processing</th>
-            <td>No separate fee: NIXZORA pays the card processing cost.</td>
+            <th scope="row">{t('cardProcessing')}</th>
+            <td>{t('cardRule')}</td>
           </tr>
         </tbody>
       </table>
       <Link href="/policies/sellers#fees" target="_blank">
-        View the complete fee schedule →
+        {t('viewFeeSchedule')}
       </Link>
 
-      <h2>Payments &amp; payouts</h2>
+      <h2>{t('paymentsTitle')}</h2>
       <div className="stripe-box">
         <p style={{ margin: 0 }}>
-          NIXZORA uses <strong>Stripe Connect</strong> to verify sellers and pay them. Right after
-          you submit, you&apos;ll connect your Stripe account from your seller dashboard.
+          {rich(t('stripeIntro'), { b: (chunk) => <strong key="b">{chunk}</strong> })}
         </p>
         <ul className="ticks">
-          <li>Secure payment processing</li>
-          <li>Bank details and tax forms (W-9) handled by Stripe; NIXZORA never sees them</li>
-          <li>Payouts to your bank once earnings clear the 14-day hold after shipping</li>
-          <li>Identity verification</li>
+          <li>{t('stripeTick1')}</li>
+          <li>{t('stripeTick2')}</li>
+          <li>{t('stripeTick3')}</li>
+          <li>{t('stripeTick4')}</li>
         </ul>
       </div>
       <label className="check">
@@ -673,7 +678,7 @@ function PaymentsStep({ v, errors }: { v?: Values; errors: Record<string, string
           aria-invalid={Boolean(errors.acknowledgeFees)}
         />
         <span>
-          I understand the seller fees and that payouts go through Stripe Connect.
+          {t('acknowledgeFees')}
           <FieldError errors={errors} name="acknowledgeFees" />
         </span>
       </label>
@@ -681,7 +686,10 @@ function PaymentsStep({ v, errors }: { v?: Values; errors: Record<string, string
   );
 }
 
-function Summary({ data }: { data: DraftData }) {
+async function Summary({ data }: { data: DraftData }) {
+  const t = await getT('sellApply');
+  const tc = await getT('common');
+  const td = await getT('departments');
   const b = data.business;
   const o = data.owner;
   const s = data.store;
@@ -697,26 +705,37 @@ function Summary({ data }: { data: DraftData }) {
     <section className="review-section">
       <header>
         <h3>{title}</h3>
-        <Link href={`/sell/apply?step=${step}`}>Edit</Link>
+        <Link href={`/sell/apply?step=${step}`}>{tc('edit')}</Link>
       </header>
       <dl>{rows}</dl>
     </section>
   );
-  const businessType = str(b, 'businessType') as keyof typeof BUSINESS_TYPE_LABEL;
-  const category = str(b, 'category') as keyof typeof SELLER_CATEGORY_LABEL;
+  const businessType = str(b, 'businessType');
+  const category = str(b, 'category');
+  const handlingDays = str(sh, 'handlingDays');
   return (
     <div className="stack" style={{ gap: 12 }}>
       {section(
         'business',
-        'Business',
+        t('step_business'),
         <>
-          {row('Business type', BUSINESS_TYPE_LABEL[businessType])}
-          {row('Legal name', str(b, 'legalName'))}
-          {row('Store name', str(b, 'displayName'))}
-          {row('Category', SELLER_CATEGORY_LABEL[category])}
-          {row('Website', str(b, 'website'))}
           {row(
-            'Address',
+            t('businessType'),
+            (BUSINESS_TYPES as readonly string[]).includes(businessType)
+              ? t(`businessType_${businessType as (typeof BUSINESS_TYPES)[number]}`)
+              : '',
+          )}
+          {row(t('summaryLegalName'), str(b, 'legalName'))}
+          {row(t('summaryStoreName'), str(b, 'displayName'))}
+          {row(
+            t('summaryCategory'),
+            (SELLER_CATEGORIES as readonly string[]).includes(category)
+              ? td(category as (typeof SELLER_CATEGORIES)[number])
+              : '',
+          )}
+          {row(t('summaryWebsite'), str(b, 'website'))}
+          {row(
+            t('summaryAddress'),
             [
               str(b, 'address.line1'),
               str(b, 'address.line2'),
@@ -729,33 +748,33 @@ function Summary({ data }: { data: DraftData }) {
       )}
       {section(
         'owner',
-        'Seller',
+        t('summarySeller'),
         <>
-          {row('Name', `${str(o, 'firstName')} ${str(o, 'lastName')}`.trim())}
-          {row('Date of birth', str(o, 'dateOfBirth') ? '••••-••-•• (provided)' : '')}
-          {row('Phone', str(o, 'phone'))}
+          {row(t('summaryName'), `${str(o, 'firstName')} ${str(o, 'lastName')}`.trim())}
+          {row(t('dateOfBirth'), str(o, 'dateOfBirth') ? t('dobProvided') : '')}
+          {row(t('summaryPhone'), str(o, 'phone'))}
         </>,
       )}
       {section(
         'store',
-        'Store',
+        t('step_store'),
         <>
-          {row('Logo', str(s, 'logoUrl') ? 'Uploaded' : 'None yet')}
-          {row('Banner', str(s, 'bannerUrl') ? 'Uploaded' : 'None yet')}
-          {row('About', str(s, 'description'))}
-          {row('Support email', str(s, 'supportEmail'))}
+          {row(t('summaryLogo'), str(s, 'logoUrl') ? t('uploaded') : t('noneYet'))}
+          {row(t('summaryBanner'), str(s, 'bannerUrl') ? t('uploaded') : t('noneYet'))}
+          {row(t('summaryAbout'), str(s, 'description'))}
+          {row(t('summarySupportEmail'), str(s, 'supportEmail'))}
         </>,
       )}
       {section(
         'shipping',
-        'Shipping & returns',
+        t('step_shipping'),
         <>
           {row(
-            'Ships within',
-            str(sh, 'handlingDays') ? `${str(sh, 'handlingDays')} business days` : '',
+            t('shipsWithin'),
+            handlingDays ? t('businessDays', { count: Number(handlingDays) }) : '',
           )}
-          {row('Carriers', list(sh, 'carriers').join(', '))}
-          {row('Return policy', sh?.acceptReturnPolicy ? 'Accepted' : 'Not accepted yet')}
+          {row(t('summaryCarriers'), list(sh, 'carriers').join(', '))}
+          {row(t('returnPolicy'), sh?.acceptReturnPolicy ? t('accepted') : t('notAcceptedYet'))}
         </>,
       )}
     </div>
@@ -779,25 +798,26 @@ export default async function ApplyPage({ searchParams }: { searchParams: Search
   const errors = data.errors?.[step] ?? {};
   const message = param(params, 'message');
   const index = stepIndex(step);
+  const t = await getT('sellApply');
 
   return (
     <div className="wrap section onboarding">
       <div className="stack" style={{ gap: 6 }}>
-        <p className="eyebrow">Sell on NIXZORA</p>
-        <h1>Open your NIXZORA store</h1>
+        <p className="eyebrow">{t('eyebrow')}</p>
+        <h1>{t('title')}</h1>
         <p className="muted" style={{ margin: 0 }}>
-          Step {index + 1} of {STEP_KEYS.length}. Your answers are saved as you go.
+          {t('stepOf', { n: index + 1, total: STEP_KEYS.length })}
         </p>
       </div>
       <Progress current={step} draft={draft} />
 
       {param(params, 'error') === 'incomplete' ? (
         <p className="banner banner--error" role="alert">
-          This step still needs a few answers before you can submit.
+          {t('incomplete')}
         </p>
       ) : Object.keys(errors).length ? (
         <p className="banner banner--error" role="alert">
-          Check the highlighted fields.
+          {t('checkFields')}
         </p>
       ) : null}
       {message ? (
@@ -808,13 +828,12 @@ export default async function ApplyPage({ searchParams }: { searchParams: Search
 
       {step === 'review' ? (
         <form id="form" action={submitApplication} className="card form stack">
-          <h2>Review &amp; submit</h2>
+          <h2>{t('reviewTitle')}</h2>
           <Summary data={data} />
-          <h2>Seller agreement</h2>
+          <h2>{t('agreementTitle')}</h2>
           <AgreementSubmit errors={errors} />
           <p className="hint" style={{ margin: 0 }}>
-            By submitting, you agree to NIXZORA&apos;s Seller Terms and Policies. Our team reviews
-            applications, usually within one business day.
+            {t('submitHint')}
           </p>
         </form>
       ) : (
@@ -832,7 +851,7 @@ export default async function ApplyPage({ searchParams }: { searchParams: Search
       {draft ? (
         <form action={discardApplication} className="onboarding-discard">
           <button className="link-button" type="submit">
-            Discard this application
+            {t('discard')}
           </button>
         </form>
       ) : null}

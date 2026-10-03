@@ -1,134 +1,102 @@
+import { type MessageKey, rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getT } from '@/lib/i18n';
 
-export const metadata: Metadata = {
-  title: 'Help center',
-  description: 'Answers about orders, delivery, returns, payments and your NIXZORA account.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('help');
+  return { title: t('metaTitle'), description: t('metaDescription') };
+}
 
-const SECTIONS: { title: string; faqs: [string, React.ReactNode][] }[] = [
+type Key = MessageKey<'help'>;
+
+/** Each FAQ is a question key and an answer key; answers may link with these tags. */
+const SECTIONS: { title: Key; faqs: [Key, Key][] }[] = [
   {
-    title: 'Orders and delivery',
+    title: 'sectionOrders',
     faqs: [
-      [
-        'Where is my order?',
-        <>
-          Open <Link href="/account/orders?filter=open">Your orders</Link> and choose “Track
-          package”. Orders with items from marketplace sellers arrive in more than one parcel, each
-          with its own tracking.
-        </>,
-      ],
-      [
-        'How long does delivery take?',
-        <>
-          Most orders ship within 1–2 business days. Delivery dates from the carrier are estimates.
-          See the <Link href="/policies/shipping">shipping policy</Link>.
-        </>,
-      ],
-      [
-        'Can I change or cancel an order?',
-        <>
-          Until it ships, <Link href="/help/contact?topic=ORDER">contact us</Link> with the order
-          number and we will cancel it and refund you. Once it has shipped, return it instead.
-        </>,
-      ],
-      ['Do you ship outside the United States?', 'Not yet: we deliver to US addresses only.'],
+      ['faqWhereQ', 'faqWhereA'],
+      ['faqDeliveryTimeQ', 'faqDeliveryTimeA'],
+      ['faqCancelQ', 'faqCancelA'],
+      ['faqAbroadQ', 'faqAbroadA'],
     ],
   },
   {
-    title: 'Returns and refunds',
+    title: 'sectionReturns',
     faqs: [
-      [
-        'How do I return something?',
-        <>
-          Within 30 days of delivery, open the order and choose “Return or replace items”. Follow
-          its progress in <Link href="/account/returns">Returns &amp; refunds</Link>.
-        </>,
-      ],
-      [
-        'When do I get my money back?',
-        'When the item arrives back with us, we refund the card you paid with. Banks usually show it within 5–10 business days.',
-      ],
-      [
-        'Items from marketplace sellers',
-        'They follow the same 30-day policy and you return them through NIXZORA, like everything else.',
-      ],
+      ['faqReturnQ', 'faqReturnA'],
+      ['faqRefundQ', 'faqRefundA'],
+      ['faqSellersQ', 'faqSellersA'],
     ],
   },
   {
-    title: 'Payments and prices',
+    title: 'sectionPayments',
     faqs: [
-      [
-        'Which payment methods do you take?',
-        <>
-          Cards, Apple Pay and Google Pay. See <Link href="/account/payments">Payment methods</Link>
-          .
-        </>,
-      ],
-      [
-        'How do I use a coupon?',
-        <>
-          Enter the code in your cart. Current offers are in{' '}
-          <Link href="/account/coupons">Coupons &amp; promotions</Link>.
-        </>,
-      ],
-      ['Do you charge sales tax?', 'Where the law requires it; the cart shows it before you pay.'],
+      ['faqPaymentQ', 'faqPaymentA'],
+      ['faqCouponQ', 'faqCouponA'],
+      ['faqTaxQ', 'faqTaxA'],
     ],
   },
   {
-    title: 'Your account',
+    title: 'sectionAccount',
     faqs: [
-      [
-        'I forgot my password',
-        <>
-          Use <Link href="/account/forgot-password">Forgot password</Link> on the sign-in page.
-        </>,
-      ],
-      [
-        'How do I keep my account safe?',
-        <>
-          Turn on two-step verification and review your devices in{' '}
-          <Link href="/account/security">Password &amp; security</Link>.
-        </>,
-      ],
-      [
-        'How do I close my account or get my data?',
-        <>
-          Both are in <Link href="/account/privacy">Privacy &amp; your data</Link>.
-        </>,
-      ],
+      ['faqPasswordQ', 'faqPasswordA'],
+      ['faqSafeQ', 'faqSafeA'],
+      ['faqCloseQ', 'faqCloseA'],
     ],
   },
 ];
 
-export default function HelpPage() {
+const LINKS: Record<string, string> = {
+  orders: '/account/orders?filter=open',
+  shipping: '/policies/shipping',
+  contactOrder: '/help/contact?topic=ORDER',
+  returns: '/account/returns',
+  payments: '/account/payments',
+  coupons: '/account/coupons',
+  forgot: '/account/forgot-password',
+  security: '/account/security',
+  privacy: '/account/privacy',
+};
+
+const TAGS = Object.fromEntries(
+  Object.entries(LINKS).map(([tag, href]) => [
+    tag,
+    (chunk: string) => (
+      <Link key={tag} href={href}>
+        {chunk}
+      </Link>
+    ),
+  ]),
+);
+
+export default async function HelpPage() {
+  const t = await getT('help');
   return (
     <div className="wrap section stack" style={{ gap: 24, maxWidth: 900 }}>
       <div className="stack" style={{ gap: 6 }}>
-        <p className="eyebrow">Help center</p>
-        <h1>How can we help?</h1>
-        <p className="muted">
-          Quick answers first. Can&apos;t find yours? We reply within one business day.
-        </p>
+        <p className="eyebrow">{t('eyebrow')}</p>
+        <h1>{t('heading')}</h1>
+        <p className="muted">{t('intro')}</p>
       </div>
       <div className="help-actions">
         <Link className="btn btn--primary" href="/help/contact">
-          Contact support
+          {t('contactSupport')}
         </Link>
         <Link className="btn btn--secondary" href="/account/orders?filter=open">
-          Track a package
+          {t('trackPackage')}
         </Link>
         <Link className="btn btn--secondary" href="/help/contact?topic=PROBLEM">
-          Report a problem
+          {t('reportProblem')}
         </Link>
       </div>
       {SECTIONS.map((section) => (
         <section key={section.title} className="card stack" style={{ gap: 4 }}>
-          <h2 style={{ marginBottom: 8 }}>{section.title}</h2>
+          <h2 style={{ marginBottom: 8 }}>{t(section.title)}</h2>
           {section.faqs.map(([q, a]) => (
             <details key={q} className="faq">
-              <summary>{q}</summary>
-              <p>{a}</p>
+              <summary>{t(q)}</summary>
+              <p>{rich(t(a), TAGS)}</p>
             </details>
           ))}
         </section>

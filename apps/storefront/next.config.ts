@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../..'),
   poweredByHeader: false,
   reactStrictMode: true,
-  transpilePackages: ['@nixzora/validation', '@nixzora/ui'],
+  transpilePackages: ['@nixzora/validation', '@nixzora/ui', '@nixzora/i18n'],
   // Sellers' CSV imports (up to 1 MB of text) are sent through a server action.
   experimental: { serverActions: { bodySizeLimit: '2mb' } },
   async headers() {

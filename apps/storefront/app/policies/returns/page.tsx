@@ -1,36 +1,46 @@
+import { rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalPage } from '@/components/LegalPage';
+import { getT } from '@/lib/i18n';
 
-export const metadata: Metadata = {
-  title: 'Return policy',
-  description: 'Returns and refunds at NIXZORA.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('legal');
+  return { title: t('returnsTitle'), description: t('returnsDescription') };
+}
 
-export default function ReturnPolicyPage() {
+export default async function ReturnPolicyPage() {
+  const t = await getT('legal');
   return (
-    <LegalPage title="Return policy" updated="October 3, 2026">
-      <h2>30 days</h2>
+    <LegalPage title={t('returnsTitle')} updated="2026-10-03" translationNote>
+      <h2>{t('returnsWindowTitle')}</h2>
+      <p>{t('returnsWindowBody')}</p>
+      <h2>{t('returnsHowTitle')}</h2>
       <p>
-        You can return most items within 30 days of delivery, in their original condition and with
-        their accessories. This includes items from marketplace sellers.
+        {rich(t('returnsHowBody'), {
+          orders: (c) => (
+            <Link key="orders" href="/account/orders">
+              {c}
+            </Link>
+          ),
+          returns: (c) => (
+            <Link key="returns" href="/account/returns">
+              {c}
+            </Link>
+          ),
+        })}
       </p>
-      <h2>How to return</h2>
+      <h2>{t('returnsRefundsTitle')}</h2>
+      <p>{t('returnsRefundsBody')}</p>
+      <h2>{t('returnsDamagedTitle')}</h2>
       <p>
-        Open the order in <Link href="/account/orders">Your orders</Link>, choose “Return or replace
-        items”, pick the items and a reason. We approve it and tell you how to send it back. Follow
-        the steps in <Link href="/account/returns">Returns &amp; refunds</Link>.
-      </p>
-      <h2>Refunds</h2>
-      <p>
-        When the item arrives back with us, we refund what you paid for it to the card you used,
-        including its share of tax, less its share of any coupon discount. Banks usually show the
-        refund within 5–10 business days.
-      </p>
-      <h2>Damaged or wrong items</h2>
-      <p>
-        Choose “Arrived damaged” or “Wrong item sent” as the reason. Questions?{' '}
-        <Link href="/help/contact?topic=RETURN">Contact us</Link>.
+        {rich(t('returnsDamagedBody'), {
+          contact: (c) => (
+            <Link key="contact" href="/help/contact?topic=RETURN">
+              {c}
+            </Link>
+          ),
+        })}
       </p>
     </LegalPage>
   );

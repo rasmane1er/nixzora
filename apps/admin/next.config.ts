@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../..'),
   poweredByHeader: false,
   reactStrictMode: true,
-  transpilePackages: ['@nixzora/validation', '@nixzora/ui'],
+  transpilePackages: ['@nixzora/validation', '@nixzora/ui', '@nixzora/i18n'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

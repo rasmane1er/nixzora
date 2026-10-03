@@ -42,6 +42,8 @@ model User {
   reviewRequests  Boolean    @default(true) @map("review_requests")
   /// Profile photo (an uploaded image's storage key).
   avatarKey       String?    @map("avatar_key")
+  /// Language for the website, the app, emails and push: "en", "fr" or "es".
+  language        String     @default("en")
   mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
   mfaSecretEnc    String?    @map("mfa_secret_enc")

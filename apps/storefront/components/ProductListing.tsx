@@ -1,5 +1,6 @@
 import { type PagedResult, type ProductCard as Card } from '@nixzora/validation';
 import Link from 'next/link';
+import { getT } from '@/lib/i18n';
 import { ProductCard } from './ProductCard';
 
 export type ListingFilters = {
@@ -22,7 +23,7 @@ function href(base: string, filters: ListingFilters, page: number): string {
 }
 
 /** Filters (plain GET form: works without JavaScript) plus the result grid. */
-export function ProductListing({
+export async function ProductListing({
   base,
   filters,
   result,
@@ -33,6 +34,8 @@ export function ProductListing({
   result: PagedResult<Card>;
   brands: { slug: string; name: string }[];
 }) {
+  const t = await getT('catalog');
+  const p = await getT('product');
   return (
     <div className="listing">
       <form className="filters card" action={base}>
@@ -40,9 +43,9 @@ export function ProductListing({
           <input type="hidden" name="q" value={filters.q} />
         ) : null}
         <fieldset>
-          <legend>Brand</legend>
-          <select name="brand" defaultValue={filters.brand ?? ''} aria-label="Brand">
-            <option value="">All brands</option>
+          <legend>{t('brand')}</legend>
+          <select name="brand" defaultValue={filters.brand ?? ''} aria-label={t('brand')}>
+            <option value="">{t('allBrands')}</option>
             {brands.map((brand) => (
               <option key={brand.slug} value={brand.slug}>
                 {brand.name}
@@ -51,21 +54,21 @@ export function ProductListing({
           </select>
         </fieldset>
         <fieldset>
-          <legend>Price (USD)</legend>
+          <legend>{t('priceUsd')}</legend>
           <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <input
               name="minPrice"
               inputMode="numeric"
-              placeholder="Min"
+              placeholder={t('min')}
               defaultValue={filters.minPrice}
-              aria-label="Minimum price in dollars"
+              aria-label={t('minPriceLabel')}
             />
             <input
               name="maxPrice"
               inputMode="numeric"
-              placeholder="Max"
+              placeholder={t('max')}
               defaultValue={filters.maxPrice}
-              aria-label="Maximum price in dollars"
+              aria-label={t('maxPriceLabel')}
             />
           </div>
         </fieldset>
@@ -76,23 +79,23 @@ export function ProductListing({
             value="true"
             defaultChecked={filters.inStock === 'true'}
           />{' '}
-          In stock only
+          {t('inStockOnly')}
         </label>
         <fieldset>
-          <legend>Sort by</legend>
+          <legend>{t('sortBy')}</legend>
           <select
             name="sort"
             defaultValue={filters.sort ?? (filters.q ? 'relevance' : 'newest')}
-            aria-label="Sort by"
+            aria-label={t('sortBy')}
           >
-            {filters.q ? <option value="relevance">Best match</option> : null}
-            <option value="newest">Newest</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
+            {filters.q ? <option value="relevance">{t('sortRelevance')}</option> : null}
+            <option value="newest">{t('sortNewest')}</option>
+            <option value="price_asc">{t('sortPriceAsc')}</option>
+            <option value="price_desc">{t('sortPriceDesc')}</option>
           </select>
         </fieldset>
         <button className="btn btn--primary" type="submit">
-          Apply
+          {t('apply')}
         </button>
         <Link
           href={
@@ -100,19 +103,17 @@ export function ProductListing({
           }
           className="btn btn--link"
         >
-          Clear filters
+          {t('clearFilters')}
         </Link>
       </form>
 
-      <section aria-label="Products">
+      <section aria-label={t('productsLabel')}>
         <div className="listing__bar">
-          <span className="muted">
-            {result.total} {result.total === 1 ? 'product' : 'products'}
-          </span>
+          <span className="muted">{p('products', { count: result.total })}</span>
         </div>
         {result.items.length === 0 ? (
           <div className="empty card">
-            <p>Nothing matches yet. Try fewer filters or a different word.</p>
+            <p>{t('noResults')}</p>
           </div>
         ) : (
           <div className="grid">
@@ -122,17 +123,17 @@ export function ProductListing({
           </div>
         )}
         {result.totalPages > 1 ? (
-          <nav className="pager" aria-label="Pages">
+          <nav className="pager" aria-label={t('pages')}>
             {result.page > 1 ? (
-              <Link href={href(base, filters, result.page - 1)}>← Previous</Link>
+              <Link href={href(base, filters, result.page - 1)}>{t('previous')}</Link>
             ) : (
               <span />
             )}
             <span className="muted">
-              Page {result.page} of {result.totalPages}
+              {t('pageOf', { page: result.page, total: result.totalPages })}
             </span>
             {result.page < result.totalPages ? (
-              <Link href={href(base, filters, result.page + 1)}>Next →</Link>
+              <Link href={href(base, filters, result.page + 1)}>{t('next')}</Link>
             ) : (
               <span />
             )}

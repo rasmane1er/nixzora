@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { setWish } from '../../account/wishlist/actions';
 
 export function WishButton({
@@ -13,6 +14,7 @@ export function WishButton({
   initial: boolean;
   slug: string;
 }) {
+  const t = useT('productPage');
   const [saved, setSaved] = useState(initial);
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -31,7 +33,7 @@ export function WishButton({
         })
       }
     >
-      {saved ? '♥ Saved' : '♡ Save'}
+      {saved ? t('saved') : t('save')}
     </button>
   );
 }

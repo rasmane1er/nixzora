@@ -1,23 +1,17 @@
+import { INTL_LOCALE, rich } from '@nixzora/i18n';
 import { type SellerFeedback } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SellerNav } from '@/components/SellerNav';
 import { Stars } from '@/components/Stars';
 import { api } from '@/lib/api';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { requireSeller } from '@/lib/sell';
 
-export const metadata: Metadata = { title: 'Returns and ratings', robots: { index: false } };
-
-const RETURN_LABEL: Record<SellerFeedback['returns'][number]['status'], string> = {
-  REQUESTED: 'Requested',
-  APPROVED: 'Approved, on its way back',
-  REJECTED: 'Rejected',
-  RECEIVED: 'Received',
-  REFUNDED: 'Refunded',
-};
-
-const day = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso));
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaFeedback'), robots: { index: false } };
+}
 
 /**
  * What customers say (p7-07): the store's rating with private comments, and return requests
@@ -27,6 +21,12 @@ export default async function SellerFeedbackPage() {
   const seller = await requireSeller('/sell/feedback');
   const feedback = await api<SellerFeedback>('/seller/feedback');
   const { rating } = feedback;
+  const [t, f, locale] = await Promise.all([getT('sellerTools'), getFormat(), getLocale()]);
+  const day = (iso: string) => f.date(iso);
+  const oneDecimal = new Intl.NumberFormat(INTL_LOCALE[locale], {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
   const open = feedback.returns.filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED');
 
   return (
@@ -34,21 +34,20 @@ export default async function SellerFeedbackPage() {
       <SellerNav seller={seller} current="/sell/feedback" />
 
       <section className="card stack">
-        <h2>Your rating</h2>
+        <h2>{t('yourRating')}</h2>
         {rating.count && rating.average !== null ? (
           <div className="reviews">
             <div className="stack" style={{ gap: 6 }}>
-              <strong style={{ fontSize: 32 }}>{rating.average.toFixed(1)}</strong>
+              <strong style={{ fontSize: 32 }}>{oneDecimal.format(rating.average)}</strong>
               <Stars value={rating.average} />
               <span className="muted" style={{ fontSize: 14 }}>
-                From {rating.count} {rating.count === 1 ? 'order' : 'orders'}. Shoppers see the
-                average on your store page and listings.
+                {t('ratingFrom', { count: rating.count })}
               </span>
             </div>
-            <div className="histogram" aria-label="Ratings breakdown">
+            <div className="histogram" aria-label={t('ratingsBreakdown')}>
               {(['5', '4', '3', '2', '1'] as const).map((star) => (
                 <div key={star}>
-                  <span>{star} star</span>
+                  <span>{t('starRow', { count: Number(star) })}</span>
                   <meter min={0} max={rating.count} value={rating.breakdown[star]} />
                   <span className="muted">{rating.breakdown[star]}</span>
                 </div>
@@ -56,35 +55,39 @@ export default async function SellerFeedbackPage() {
             </div>
           </div>
         ) : (
-          <p className="muted">
-            No ratings yet. Customers can rate your store for 60 days after an order is delivered.
-          </p>
+          <p className="muted">{t('noRatings')}</p>
         )}
       </section>
 
       <section className="card stack">
         <div className="section-head" style={{ marginBottom: 0 }}>
-          <h2>Return requests</h2>
+          <h2>{t('returnRequests')}</h2>
           {open.length ? (
-            <span className="pill pill--seller-order-paid">{open.length} open</span>
+            <span className="pill pill--seller-order-paid">
+              {t('openCount', { count: open.length })}
+            </span>
           ) : null}
         </div>
         <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-          NIXZORA reviews every return. When an approved return arrives, the customer is refunded
-          and the amount for your items, less the commission returned to you, is deducted from your{' '}
-          <Link href="/sell/earnings">earnings</Link>.
+          {rich(t('returnsIntro'), {
+            link: (chunk) => (
+              <Link key="earnings" href="/sell/earnings">
+                {chunk}
+              </Link>
+            ),
+          })}
         </p>
         {feedback.returns.length === 0 ? (
-          <p className="muted">No returns of your items.</p>
+          <p className="muted">{t('noReturns')}</p>
         ) : (
           <div className="table-scroll">
             <table className="plain">
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Items</th>
-                  <th>Reason</th>
-                  <th>Status</th>
+                  <th>{t('colOrder')}</th>
+                  <th>{t('colItems')}</th>
+                  <th>{t('colReason')}</th>
+                  <th>{t('colStatus')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,7 +115,7 @@ export default async function SellerFeedbackPage() {
                       ) : null}
                     </td>
                     <td>
-                      {RETURN_LABEL[r.status]}
+                      {t(`return_${r.status}`)}
                       {r.staffNote ? (
                         <div className="muted" style={{ fontSize: 13 }}>
                           {r.staffNote}
@@ -128,12 +131,12 @@ export default async function SellerFeedbackPage() {
       </section>
 
       <section className="card stack">
-        <h2>Comments from customers</h2>
+        <h2>{t('commentsTitle')}</h2>
         <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-          Only you and NIXZORA see these.
+          {t('commentsPrivate')}
         </p>
         {feedback.ratings.length === 0 ? (
-          <p className="muted">Nothing yet.</p>
+          <p className="muted">{t('nothingYet')}</p>
         ) : (
           <ul className="shipments">
             {feedback.ratings.map((r) => (

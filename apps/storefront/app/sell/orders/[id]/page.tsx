@@ -1,15 +1,18 @@
 import { CARRIERS, type SellerOrderView } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api, ApiError } from '@/lib/api';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { requireSeller, SELLER_ORDER_LABEL } from '@/lib/sell';
+import { requireSeller } from '@/lib/sell';
 import { shipSellerOrder } from '../../actions';
 
-export const metadata: Metadata = { title: 'Order', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaOrder'), robots: { index: false } };
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -31,13 +34,9 @@ export default async function SellerOrderPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const money = (cents: number) => formatMoney(cents, order.currency);
-  const date = (iso: string | null) =>
-    iso
-      ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(
-          new Date(iso),
-        )
-      : '—';
+  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const money = (cents: number) => f.money(cents, order.currency);
+  const date = (iso: string | null) => (iso ? f.dateTime(iso) : '—');
   const a = order.shipTo;
 
   return (
@@ -47,30 +46,24 @@ export default async function SellerOrderPage({
 
       <section className="card stack">
         <p className="eyebrow">
-          <Link href="/sell/orders">Orders</Link>
+          <Link href="/sell/orders">{t('breadcrumbOrders')}</Link>
         </p>
         <h2 className="mono">{order.orderNumber}</h2>
         <p>
           <span className={`pill pill--seller-order-${order.status.toLowerCase()}`}>
-            {SELLER_ORDER_LABEL[order.status]}
+            {t(`order_${order.status}`)}
           </span>{' '}
-          <span className="muted">Placed {date(order.placedAt)}</span>
+          <span className="muted">{t('placedOn', { date: date(order.placedAt) })}</span>
         </p>
-        {order.status === 'PAID' ? (
-          <p className="banner banner--info">
-            Ship within 2 business days, then add the tracking number below.
-          </p>
-        ) : null}
+        {order.status === 'PAID' ? <p className="banner banner--info">{t('shipWithin')}</p> : null}
         {order.status === 'CANCELLED' ? (
-          <p className="banner banner--error">
-            The customer&apos;s order was cancelled. Do not ship it.
-          </p>
+          <p className="banner banner--error">{t('cancelledDoNotShip')}</p>
         ) : null}
       </section>
 
       <div className="two-col-sell">
         <section className="card stack">
-          <h2>Items to ship</h2>
+          <h2>{t('itemsToShip')}</h2>
           <div className="table-scroll">
             <table className="plain">
               <tbody>
@@ -90,7 +83,7 @@ export default async function SellerOrderPage({
               </tbody>
             </table>
           </div>
-          <h3>Ship to</h3>
+          <h3>{t('shipTo')}</h3>
           <address style={{ fontStyle: 'normal' }}>
             {a.fullName}
             <br />
@@ -109,43 +102,42 @@ export default async function SellerOrderPage({
         </section>
 
         <section className="card stack">
-          <h2>Your earnings</h2>
+          <h2>{t('yourEarnings')}</h2>
           <dl className="facts">
-            <dt>Items</dt>
+            <dt>{t('factItems')}</dt>
             <dd>{money(order.itemsCents)}</dd>
-            <dt>Shipping paid by customer</dt>
-            <dd>{order.shippingCents ? money(order.shippingCents) : 'Free shipping'}</dd>
-            <dt>Commission ({order.commissionBps / 100}%)</dt>
+            <dt>{t('factShipping')}</dt>
+            <dd>{order.shippingCents ? money(order.shippingCents) : t('freeShipping')}</dd>
+            <dt>{t('factCommission', { rate: f.percent(order.commissionBps / 10000) })}</dt>
             <dd>−{money(order.commissionCents)}</dd>
             {order.refundedCents ? (
               <>
-                <dt>Refunded to customer</dt>
+                <dt>{t('factRefunded')}</dt>
                 <dd>−{money(order.refundedCents)}</dd>
               </>
             ) : null}
             <dt>
-              <strong>You earn</strong>
+              <strong>{t('youEarn')}</strong>
             </dt>
             <dd>
               <strong>{money(order.netCents)}</strong>
-              {order.refundedCents ? <span className="muted"> before refunds</span> : null}
+              {order.refundedCents ? <span className="muted"> {t('beforeRefunds')}</span> : null}
             </dd>
           </dl>
           <p className="muted" style={{ fontSize: 14 }}>
-            Earnings are added when you ship and paid out after your {seller.payoutHoldDays}-day
-            hold.
+            {t('earningsAfterHold', { days: seller.payoutHoldDays })}
           </p>
 
           {order.status === 'PAID' ? (
             <form action={shipSellerOrder} className="form">
-              <h3>Mark as shipped</h3>
+              <h3>{t('markAsShipped')}</h3>
               <input type="hidden" name="id" value={order.id} />
               <div className="form-row">
                 <label>
-                  Carrier
+                  {t('fieldCarrier')}
                   <select name="carrier" required defaultValue="">
                     <option value="" disabled>
-                      Choose
+                      {t('choose')}
                     </option>
                     {CARRIERS.map((carrier) => (
                       <option key={carrier}>{carrier}</option>
@@ -153,7 +145,7 @@ export default async function SellerOrderPage({
                   </select>
                 </label>
                 <label>
-                  Tracking number
+                  {t('fieldTracking')}
                   <input
                     name="trackingNumber"
                     required
@@ -165,19 +157,19 @@ export default async function SellerOrderPage({
               </div>
               <div>
                 <button className="btn btn--primary" type="submit">
-                  Mark as shipped
+                  {t('markAsShipped')}
                 </button>
               </div>
             </form>
           ) : order.tracking ? (
             <p>
-              Shipped {date(order.shippedAt)} with {order.tracking.carrier}{' '}
+              {t('shippedWith', { date: date(order.shippedAt), carrier: order.tracking.carrier })}{' '}
               <span className="mono">{order.tracking.number}</span>
               {order.tracking.url ? (
                 <>
                   {' · '}
                   <a href={order.tracking.url} rel="noopener noreferrer" target="_blank">
-                    Track
+                    {t('track')}
                   </a>
                 </>
               ) : null}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '@/components/I18nProvider';
 
 type Photo = { id: string; url: string; alt: string };
 
@@ -53,13 +54,14 @@ function useSlides(track: React.RefObject<HTMLDivElement | null>, count: number)
 }
 
 function Arrows({ index, count, go }: { index: number; count: number; go: (to: number) => void }) {
+  const t = useT('productPage');
   if (count < 2) return null;
   return (
     <>
       <button
         type="button"
         className="gallery__arrow gallery__arrow--prev"
-        aria-label="Previous photo"
+        aria-label={t('previousPhoto')}
         disabled={index === 0}
         onClick={() => go(index - 1)}
       >
@@ -68,7 +70,7 @@ function Arrows({ index, count, go }: { index: number; count: number; go: (to: n
       <button
         type="button"
         className="gallery__arrow gallery__arrow--next"
-        aria-label="Next photo"
+        aria-label={t('nextPhoto')}
         disabled={index === count - 1}
         onClick={() => go(index + 1)}
       >
@@ -83,6 +85,8 @@ function Arrows({ index, count, go }: { index: number; count: number; go: (to: n
 
 /** Product photos: swipe or use the arrows and thumbnails; tap a photo to see it full screen. */
 export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: string }) {
+  const t = useT('productPage');
+  const c = useT('common');
   const mainTrack = useRef<HTMLDivElement>(null);
   const fullTrack = useRef<HTMLDivElement>(null);
   const main = useSlides(mainTrack, photos.length);
@@ -131,7 +135,7 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
       <section
         className="gallery__main"
         aria-roledescription="carousel"
-        aria-label={`Product photos, ${photos.length} in total`}
+        aria-label={t('photosLabel', { count: photos.length })}
       >
         <div ref={mainTrack} className="gallery__track" tabIndex={0} onKeyDown={main.onKeyDown}>
           {photos.map((photo, i) => (
@@ -140,7 +144,7 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
               type="button"
               className="gallery__slide"
               aria-roledescription="slide"
-              aria-label={`Photo ${i + 1} of ${photos.length}: ${photo.alt}. Open full screen.`}
+              aria-label={t('slideLabel', { n: i + 1, count: photos.length, alt: photo.alt })}
               tabIndex={-1}
               onClick={() => open(i)}
             >
@@ -158,17 +162,17 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
         </div>
         <Arrows index={main.index} count={photos.length} go={main.go} />
         <span className="sr-only" aria-live="polite">
-          Photo {main.index + 1} of {photos.length}
+          {t('photoOf', { n: main.index + 1, count: photos.length })}
         </span>
       </section>
 
       {photos.length > 1 ? (
-        <div ref={thumbs} className="gallery__thumbs" role="group" aria-label="Choose a photo">
+        <div ref={thumbs} className="gallery__thumbs" role="group" aria-label={t('choosePhoto')}>
           {photos.map((photo, i) => (
             <button
               key={photo.id}
               type="button"
-              aria-label={`Show photo ${i + 1}: ${photo.alt}`}
+              aria-label={t('showPhoto', { n: i + 1, alt: photo.alt })}
               aria-current={i === main.index ? 'true' : undefined}
               onClick={() => main.go(i)}
             >
@@ -182,7 +186,7 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
       <dialog
         ref={dialog}
         className="lightbox"
-        aria-label="Product photos, full screen"
+        aria-label={t('photosFullScreen')}
         onClose={onClose}
         onClick={(event) => {
           if (event.target === event.currentTarget) close();
@@ -208,7 +212,7 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
           ))}
         </div>
         <Arrows index={full.index} count={photos.length} go={full.go} />
-        <button type="button" className="lightbox__close" aria-label="Close" onClick={close}>
+        <button type="button" className="lightbox__close" aria-label={c('close')} onClick={close}>
           ×
         </button>
       </dialog>

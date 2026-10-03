@@ -1,3 +1,4 @@
+import { rich } from '@nixzora/i18n';
 import { type AccountOverview } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -6,11 +7,15 @@ import { AccountOrderCard, BuyAgainCard } from '@/components/AccountOrderCard';
 import { Notices } from '@/components/AccountHeader';
 import { Avatar } from '@/components/Avatar';
 import { accountApi } from '@/lib/account';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { signOut } from './actions';
 import { resendVerification } from './hub-actions';
 
-export const metadata: Metadata = { title: 'Your account', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('account');
+  return { title: t('yourAccount'), robots: { index: false } };
+}
 
 type Item = {
   href: string;
@@ -56,100 +61,101 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const o = await accountApi<AccountOverview>('/me/overview', '/account');
   const { counts, profile, security } = o;
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
-  const since = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(
-    new Date(profile.memberSince),
-  );
+  const [t, tc, f] = await Promise.all([getT('account'), getT('common'), getFormat()]);
+  const since = f.monthYear(profile.memberSince);
 
   const groups: Group[] = [
     {
-      title: 'Orders',
+      title: t('groupOrders'),
       items: [
         {
           href: '/account/orders',
           icon: 'orders',
-          label: 'Your orders',
-          hint: `${counts.orders} ${counts.orders === 1 ? 'order' : 'orders'}`,
+          label: t('yourOrders'),
+          hint: t('ordersCount', { count: counts.orders }),
         },
         {
           href: '/account/orders?filter=open',
           icon: 'track',
-          label: 'Track a package',
-          badge: counts.openOrders ? `${counts.openOrders} on the way` : null,
+          label: t('trackPackage'),
+          badge: counts.openOrders ? t('onTheWayCount', { count: counts.openOrders }) : null,
         },
         {
           href: '/account/returns',
           icon: 'returns',
-          label: 'Returns & refunds',
-          badge: counts.openReturns ? `${counts.openReturns} in progress` : null,
+          label: t('returnsRefunds'),
+          badge: counts.openReturns ? t('inProgressCount', { count: counts.openReturns }) : null,
         },
         {
           href: '/account/wishlist',
           icon: 'wishlist',
-          label: 'Wishlist',
-          hint: counts.wishlist ? `${counts.wishlist} saved` : undefined,
+          label: t('wishlist'),
+          hint: counts.wishlist ? t('savedCount', { count: counts.wishlist }) : undefined,
         },
-        { href: '/account/buy-again', icon: 'buyAgain', label: 'Buy again' },
+        { href: '/account/buy-again', icon: 'buyAgain', label: t('buyAgain') },
         {
           href: '/account/reviews',
           icon: 'reviews',
-          label: 'Your reviews',
-          badge: counts.toReview ? `${counts.toReview} to review` : null,
+          label: t('yourReviews'),
+          badge: counts.toReview ? t('toReviewCount', { count: counts.toReview }) : null,
         },
       ],
     },
     {
-      title: 'Shopping & payments',
+      title: t('groupShopping'),
       items: [
         {
           href: '/account/addresses',
           icon: 'addresses',
-          label: 'Addresses',
-          hint: counts.addresses ? `${counts.addresses} saved` : 'Home, work and more',
+          label: t('addresses'),
+          hint: counts.addresses
+            ? t('savedCount', { count: counts.addresses })
+            : t('addressesHint'),
         },
-        { href: '/account/payments', icon: 'payment', label: 'Payment methods' },
-        { href: '/account/coupons', icon: 'coupon', label: 'Coupons & promotions' },
+        { href: '/account/payments', icon: 'payment', label: t('paymentMethods') },
+        { href: '/account/coupons', icon: 'coupon', label: t('coupons') },
         o.seller
-          ? { href: '/sell', icon: 'store', label: 'Your store', hint: o.seller.displayName }
-          : { href: '/sell', icon: 'store', label: 'Sell on NIXZORA' },
+          ? { href: '/sell', icon: 'store', label: t('yourStore'), hint: o.seller.displayName }
+          : { href: '/sell', icon: 'store', label: t('sellOnNixzora') },
       ],
     },
     {
-      title: 'Account & security',
+      title: t('groupSecurity'),
       items: [
         {
           href: '/account/security',
           icon: 'security',
-          label: 'Password & security',
-          hint: security.mfaEnabled ? 'Two-step verification on' : undefined,
-          badge: security.mfaEnabled ? null : 'Turn on two-step',
+          label: t('passwordSecurity'),
+          hint: security.mfaEnabled ? t('twoStepOnHint') : undefined,
+          badge: security.mfaEnabled ? null : t('turnOnTwoStepBadge'),
         },
-        { href: '/account/preferences', icon: 'preferences', label: 'Notifications' },
-        { href: '/account/privacy', icon: 'privacy', label: 'Privacy & your data' },
+        { href: '/account/preferences', icon: 'preferences', label: t('notifications') },
+        { href: '/account/privacy', icon: 'privacy', label: t('privacyData') },
         {
           href: '/account/settings',
           icon: 'settings',
-          label: 'Settings',
-          hint: 'Appearance, language',
+          label: t('settings'),
+          hint: t('settingsHint'),
         },
       ],
     },
     {
-      title: 'Help & support',
+      title: t('groupHelp'),
       items: [
-        { href: '/help', icon: 'help', label: 'Help center & FAQ' },
-        { href: '/help/contact', icon: 'chat', label: 'Contact support' },
-        { href: '/help/contact?topic=PROBLEM', icon: 'flag', label: 'Report a problem' },
-        { href: '/account/support', icon: 'document', label: 'Your support requests' },
+        { href: '/help', icon: 'help', label: t('helpCenter') },
+        { href: '/help/contact', icon: 'chat', label: t('contactSupport') },
+        { href: '/help/contact?topic=PROBLEM', icon: 'flag', label: t('reportProblem') },
+        { href: '/account/support', icon: 'document', label: t('supportRequests') },
       ],
     },
     {
-      title: 'About',
+      title: t('groupAbout'),
       items: [
-        { href: '/about', icon: 'info', label: 'About NIXZORA' },
-        { href: '/policies/shipping', icon: 'track', label: 'Shipping policy' },
-        { href: '/policies/returns', icon: 'returns', label: 'Return policy' },
-        { href: '/terms', icon: 'document', label: 'Terms & conditions' },
-        { href: '/privacy', icon: 'privacy', label: 'Privacy policy' },
+        { href: '/about', icon: 'info', label: t('aboutNixzora') },
+        { href: '/policies/shipping', icon: 'track', label: t('shippingPolicy') },
+        { href: '/policies/returns', icon: 'returns', label: t('returnPolicy') },
+        { href: '/terms', icon: 'document', label: t('terms') },
+        { href: '/privacy', icon: 'privacy', label: t('privacyPolicy') },
       ],
     },
   ];
@@ -159,54 +165,60 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
       {!profile.emailVerified ? (
         <form action={resendVerification} className="banner banner--info account-banner">
-          <span>Confirm your email address to keep your account secure.</span>
+          <span>{t('confirmEmailBanner')}</span>
           <button className="btn btn--secondary btn--sm" type="submit">
-            Send the link again
+            {t('sendLinkAgain')}
           </button>
         </form>
       ) : null}
 
       <div className="account-layout">
         <div className="stack" style={{ gap: 20 }}>
-          <section className="card profile-card" aria-label="Your profile">
+          <section className="card profile-card" aria-label={t('yourProfile')}>
             <Avatar url={profile.avatarUrl} name={name} email={profile.email} />
             <div className="stack" style={{ gap: 2, minWidth: 0 }}>
-              <h1 className="profile-card__name">{name || 'Your account'}</h1>
+              <h1 className="profile-card__name">{name || t('yourAccount')}</h1>
               <span className="muted profile-card__line">{profile.email}</span>
               {profile.phone ? (
                 <span className="muted profile-card__line">{profile.phone}</span>
               ) : null}
               <span className="profile-card__member">
-                <span className="pill pill--delivered">Member</span> since {since}
+                {rich(t('memberSince', { date: since }), {
+                  pill: (chunk) => (
+                    <span key="pill" className="pill pill--delivered">
+                      {chunk}
+                    </span>
+                  ),
+                })}
               </span>
             </div>
             <Link className="btn btn--secondary btn--sm profile-card__edit" href="/account/profile">
-              Edit profile
+              {t('editProfile')}
             </Link>
           </section>
 
-          <ul className="account-stats account-stats--compact" aria-label="At a glance">
+          <ul className="account-stats account-stats--compact" aria-label={t('atAGlance')}>
             <li>
               <Link href="/account/orders?filter=open">
                 <strong>{counts.openOrders}</strong>
-                <span>On the way</span>
+                <span>{t('onTheWay')}</span>
               </Link>
             </li>
             <li>
               <Link href="/account/reviews">
                 <strong>{counts.toReview}</strong>
-                <span>To review</span>
+                <span>{t('toReview')}</span>
               </Link>
             </li>
             <li>
               <Link href="/account/wishlist">
                 <strong>{counts.wishlist}</strong>
-                <span>Saved</span>
+                <span>{t('saved')}</span>
               </Link>
             </li>
           </ul>
 
-          <nav className="menu" aria-label="Your account">
+          <nav className="menu" aria-label={t('yourAccount')}>
             {groups.map((group) => (
               <MenuGroup key={group.title} group={group} />
             ))}
@@ -216,7 +228,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
                   <AccountIcon name="signout" size={22} />
                 </span>
                 <span className="menu-row__text">
-                  <span>Sign out</span>
+                  <span>{tc('signOut')}</span>
                 </span>
               </button>
             </form>
@@ -226,16 +238,26 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
         <div className="stack" style={{ gap: 20 }}>
           <section className="stack" style={{ gap: 14 }}>
             <div className="section-head" style={{ marginBottom: 0 }}>
-              <h2>Recent orders</h2>
+              <h2>{t('recentOrders')}</h2>
               {counts.orders > o.recentOrders.length ? (
-                <Link href="/account/orders">See all orders →</Link>
+                <Link href="/account/orders">{t('seeAllOrders')}</Link>
               ) : null}
             </div>
             {o.recentOrders.length === 0 ? (
               <div className="card">
                 <p className="muted" style={{ margin: 0 }}>
-                  No orders yet. <Link href="/search">Start shopping →</Link> or{' '}
-                  <Link href="/assistant">ask the assistant</Link> what to get.
+                  {rich(t('noOrders'), {
+                    shop: (chunk) => (
+                      <Link key="shop" href="/search">
+                        {chunk}
+                      </Link>
+                    ),
+                    assistant: (chunk) => (
+                      <Link key="assistant" href="/assistant">
+                        {chunk}
+                      </Link>
+                    ),
+                  })}
                 </p>
               </div>
             ) : (
@@ -248,8 +270,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
           {o.buyAgain.length ? (
             <section className="stack" style={{ gap: 14 }}>
               <div className="section-head" style={{ marginBottom: 0 }}>
-                <h2>Buy it again</h2>
-                <Link href="/account/buy-again">See all →</Link>
+                <h2>{t('buyItAgain')}</h2>
+                <Link href="/account/buy-again">{t('seeAllArrow')}</Link>
               </div>
               <div className="buy-again-row">
                 {o.buyAgain.map((item) => (
@@ -260,9 +282,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
           ) : null}
 
           <p className="muted" style={{ fontSize: 13 }}>
-            Signed in on {security.activeSessions}{' '}
-            {security.activeSessions === 1 ? 'device' : 'devices'}.{' '}
-            <Link href="/account/security#devices">Review devices →</Link>
+            {t('signedInOnDevices', { count: security.activeSessions })}{' '}
+            <Link href="/account/security#devices">{t('reviewDevices')}</Link>
           </p>
         </div>
       </div>

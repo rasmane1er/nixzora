@@ -9,6 +9,7 @@ import {
   type ProductDetail,
 } from '@nixzora/validation';
 import { clientHeaders } from './client-headers';
+import { getLocale } from './i18n';
 import { accessToken, guestCartId } from './session';
 
 export const API_URL = (process.env.API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
@@ -50,6 +51,9 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const cartId = cart ? await guestCartId() : undefined;
   // Cached public reads are shared by every visitor, so they carry no visitor identity.
   const relay = revalidate === undefined ? await clientHeaders() : {};
+  // Error messages and emails in the visitor's language (not on shared cached reads).
+  const language: Record<string, string> =
+    revalidate === undefined ? { 'Accept-Language': await getLocale() } : {};
 
   const res = await fetch(`${API_URL}/api/v1${path}`, {
     ...rest,
@@ -60,6 +64,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       ...(cartId && !token ? { 'X-Cart-Id': cartId } : {}),
       'User-Agent': 'nixzora-storefront',
       ...relay,
+      ...language,
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

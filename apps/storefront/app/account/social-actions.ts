@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { api, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
 import { MFA_COOKIE, cookieOptions } from '@/lib/session';
 import { finishSignIn, safeNext } from './sign-in';
 
@@ -42,7 +43,7 @@ export async function completeSocialSignIn(input: {
   const next = safeNext(input.next);
   const jar = await cookies();
   const nonce = jar.get(NONCE_COOKIE)?.value;
-  if (!nonce) return { error: 'That sign-in expired. Try again.' };
+  if (!nonce) return { error: (await getT('auth'))('socialExpired') };
   jar.delete(NONCE_COOKIE);
 
   let result: LoginResponse;

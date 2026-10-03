@@ -1,7 +1,9 @@
+import { INTL_LOCALE, rich, type Translate } from '@nixzora/i18n';
 import { type AccountProfile, type MeResponse, type SessionSummary } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { AccountHeader, Notices } from '@/components/AccountHeader';
-import { accountApi, day } from '@/lib/account';
+import { accountApi } from '@/lib/account';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import {
   changePassword,
@@ -12,10 +14,13 @@ import {
 } from '../hub-actions';
 import { TwoStepSetup } from './TwoStep';
 
-export const metadata: Metadata = { title: 'Login & security', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('account');
+  return { title: t('securityTitle'), robots: { index: false } };
+}
 
 /** "Chrome on macOS" from a user agent, for the device list. */
-function deviceLabel(session: SessionSummary): string {
+function deviceLabel(session: SessionSummary, t: Translate<'account'>): string {
   if (session.deviceName && session.deviceName !== 'NIXZORA web') return session.deviceName;
   const ua = session.userAgent ?? '';
   const browser = /Edg\//.test(ua)
@@ -38,8 +43,8 @@ function deviceLabel(session: SessionSummary): string {
           : /Linux/.test(ua)
             ? 'Linux'
             : null;
-  if (browser && os) return `${browser} on ${os}`;
-  return session.deviceName ?? 'Unknown device';
+  if (browser && os) return t('browserOnOs', { browser, os });
+  return session.deviceName ?? t('unknownDevice');
 }
 
 export default async function SecurityPage({ searchParams }: { searchParams: SearchParams }) {
@@ -50,63 +55,71 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
     accountApi<SessionSummary[]>('/me/sessions', '/account/security'),
   ]);
   const others = sessions.filter((s) => !s.current).length;
+  const [t, tc, f, locale] = await Promise.all([
+    getT('account'),
+    getT('common'),
+    getFormat(),
+    getLocale(),
+  ]);
+  const providerNames = (providers: string[]) =>
+    new Intl.ListFormat(INTL_LOCALE[locale], { type: 'conjunction' }).format(providers);
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
-      <AccountHeader
-        title="Login & security"
-        description="Your name, how you sign in, and where you are signed in."
-      />
+      <AccountHeader title={t('securityTitle')} description={t('securityDescription')} />
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
 
       <div className="account-grid">
         <section className="card stack">
-          <h2>Profile</h2>
+          <h2>{t('profile')}</h2>
           <p style={{ margin: 0 }}>
-            {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'No name yet'}
+            {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || t('noNameYet')}
             {profile.phone ? ` · ${profile.phone}` : ''}
           </p>
           <div>
             <a className="btn btn--secondary btn--sm" href="/account/profile">
-              Edit profile
+              {t('editProfile')}
             </a>
           </div>
         </section>
 
         <section className="card stack">
-          <h2>Email</h2>
+          <h2>{t('email')}</h2>
           <p style={{ margin: 0 }}>
             <strong>{profile.email}</strong>{' '}
             {profile.emailVerified ? (
-              <span className="pill pill--delivered">Confirmed</span>
+              <span className="pill pill--delivered">{t('confirmed')}</span>
             ) : (
-              <span className="pill pill--pending_payment">Not confirmed</span>
+              <span className="pill pill--pending_payment">{t('notConfirmed')}</span>
             )}
           </p>
           {!profile.emailVerified ? (
             <form action={resendVerification}>
               <button className="btn btn--secondary btn--sm" type="submit">
-                Send the confirmation link again
+                {t('sendConfirmationAgain')}
               </button>
             </form>
           ) : null}
           <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-            Order confirmations and receipts go here. To use another address, contact support.
+            {t('emailNote')}
           </p>
           {me.linkedProviders.length ? (
             <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-              You can also sign in with{' '}
-              {me.linkedProviders.map((p) => (p === 'google' ? 'Google' : 'Apple')).join(' and ')}.
+              {t('alsoSignInWith', {
+                providers: providerNames(
+                  me.linkedProviders.map((p) => (p === 'google' ? 'Google' : 'Apple')),
+                ),
+              })}
             </p>
           ) : null}
         </section>
 
         <section className="card stack" id="password">
-          <h2>Password</h2>
+          <h2>{t('password')}</h2>
           {me.hasPassword ? (
             <form action={changePassword} className="form">
               <label>
-                Current password
+                {t('currentPassword')}
                 <input
                   name="currentPassword"
                   type="password"
@@ -115,7 +128,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                 />
               </label>
               <label>
-                New password <span className="hint">At least 12 characters.</span>
+                {t('newPassword')} <span className="hint">{t('newPasswordHint')}</span>
                 <input
                   name="newPassword"
                   type="password"
@@ -125,7 +138,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                 />
               </label>
               <label>
-                New password again
+                {t('newPasswordAgain')}
                 <input
                   name="confirmPassword"
                   type="password"
@@ -136,40 +149,49 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
               </label>
               <div>
                 <button className="btn btn--primary" type="submit">
-                  Change password
+                  {t('changePassword')}
                 </button>
               </div>
-              <p className="hint">Changing it signs you out on your other devices.</p>
+              <p className="hint">{t('changeSignsOut')}</p>
             </form>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              You sign in with {me.linkedProviders.includes('apple') ? 'Apple' : 'Google'}, so this
-              account has no NIXZORA password. To add one, use{' '}
-              <a href="/account/forgot-password">Forgot password</a> with your email.
+              {rich(
+                t('noPassword', {
+                  provider: me.linkedProviders.includes('apple') ? 'Apple' : 'Google',
+                }),
+                {
+                  link: (chunk) => (
+                    <a key="forgot" href="/account/forgot-password">
+                      {chunk}
+                    </a>
+                  ),
+                },
+              )}
             </p>
           )}
         </section>
 
         <section className="card stack" id="two-step">
-          <h2>Two-step verification</h2>
+          <h2>{t('twoStep')}</h2>
           <p className="muted" style={{ margin: 0 }}>
-            A code from your phone at sign-in, so a stolen password is not enough to get in.
+            {t('twoStepIntro')}
           </p>
           {me.mfaEnabled ? (
             <>
               <p style={{ margin: 0 }}>
-                <span className="pill pill--delivered">On</span>
+                <span className="pill pill--delivered">{t('on')}</span>
               </p>
               <details>
-                <summary>Turn it off</summary>
+                <summary>{t('turnItOff')}</summary>
                 <form action={disableMfa} className="form" style={{ marginTop: 10 }}>
                   <label>
-                    Code from your app, or a recovery code
+                    {t('disableCodeLabel')}
                     <input name="code" autoComplete="one-time-code" required maxLength={14} />
                   </label>
                   <div>
                     <button className="btn btn--secondary" type="submit">
-                      Turn off two-step verification
+                      {t('turnOffTwoStep')}
                     </button>
                   </div>
                 </form>
@@ -183,11 +205,11 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
 
       <section className="card stack" id="devices">
         <div className="section-head" style={{ marginBottom: 0 }}>
-          <h2>Where you are signed in</h2>
+          <h2>{t('whereSignedIn')}</h2>
           {others ? (
             <form action={signOutOtherDevices}>
               <button className="btn btn--secondary btn--sm" type="submit">
-                Sign out everywhere else
+                {t('signOutEverywhereElse')}
               </button>
             </form>
           ) : null}
@@ -197,13 +219,16 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
             <li key={session.id}>
               <div className="stack" style={{ gap: 2 }}>
                 <strong>
-                  {deviceLabel(session)}{' '}
+                  {deviceLabel(session, t)}{' '}
                   {session.current ? (
-                    <span className="pill pill--delivered">This device</span>
+                    <span className="pill pill--delivered">{t('thisDevice')}</span>
                   ) : null}
                 </strong>
                 <span className="muted" style={{ fontSize: 14 }}>
-                  Signed in {day(session.createdAt)} · last active {day(session.lastUsedAt)}
+                  {t('sessionLine', {
+                    signedIn: f.date(session.createdAt),
+                    lastActive: f.date(session.lastUsedAt),
+                  })}
                   {session.ipAddress ? ` · ${session.ipAddress}` : ''}
                 </span>
               </div>
@@ -211,14 +236,14 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                 <form action={signOutDevice}>
                   <input type="hidden" name="id" value={session.id} />
                   <button className="btn btn--secondary btn--sm" type="submit">
-                    Sign out
+                    {tc('signOut')}
                   </button>
                 </form>
               ) : null}
             </li>
           ))}
         </ul>
-        <p className="hint">Don&apos;t recognise a device? Sign it out and change your password.</p>
+        <p className="hint">{t('unrecognisedDevice')}</p>
       </section>
     </div>
   );

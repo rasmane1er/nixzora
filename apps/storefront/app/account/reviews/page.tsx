@@ -3,24 +3,31 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AccountHeader } from '@/components/AccountHeader';
 import { Stars } from '@/components/Stars';
-import { accountApi, day } from '@/lib/account';
+import { accountApi } from '@/lib/account';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Your reviews', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('accountActivity');
+  return { title: t('reviewsTitle'), robots: { index: false } };
+}
 
-const STATUS: Record<AccountReview['status'], { text: string; pill: string }> = {
-  PENDING: { text: 'Being checked', pill: 'pill--pending_payment' },
-  APPROVED: { text: 'Published', pill: 'pill--delivered' },
-  REJECTED: { text: 'Not published', pill: 'pill--cancelled' },
-};
+const STATUS = {
+  PENDING: { text: 'reviewStatus_PENDING', pill: 'pill--pending_payment' },
+  APPROVED: { text: 'reviewStatus_APPROVED', pill: 'pill--delivered' },
+  REJECTED: { text: 'reviewStatus_REJECTED', pill: 'pill--cancelled' },
+} as const satisfies Record<AccountReview['status'], { text: string; pill: string }>;
 
 export default async function ReviewsPage() {
-  const [reviews, delivered] = await Promise.all([
+  const [reviews, delivered, t, f] = await Promise.all([
     accountApi<AccountReview[]>('/me/reviews', '/account/reviews'),
     accountApi<PagedResult<AccountOrder>>(
       '/me/order-history?filter=delivered&pageSize=50',
       '/account/reviews',
     ),
+    getT('accountActivity'),
+    getFormat(),
   ]);
+  const tc = await getT('common');
   // Products you received and have not reviewed yet, once each.
   const seen = new Set<string>();
   const toReview = delivered.items
@@ -29,14 +36,11 @@ export default async function ReviewsPage() {
 
   return (
     <div className="wrap section stack" style={{ gap: 24 }}>
-      <AccountHeader
-        title="Your reviews"
-        description="Reviews help other shoppers. We check each one before it is published."
-      />
+      <AccountHeader title={t('reviewsTitle')} description={t('reviewsDescription')} />
 
       {toReview.length ? (
         <section className="stack" style={{ gap: 12 }}>
-          <h2>Waiting for your review</h2>
+          <h2>{t('waitingForReview')}</h2>
           <ul className="review-prompts">
             {toReview.map((line) => (
               <li key={line.productSlug} className="card">
@@ -50,7 +54,7 @@ export default async function ReviewsPage() {
                     className="btn btn--primary btn--sm"
                     href={`/p/${line.productSlug}#write-review`}
                   >
-                    Write a review
+                    {t('writeReview')}
                   </Link>
                 </div>
               </li>
@@ -60,11 +64,11 @@ export default async function ReviewsPage() {
       ) : null}
 
       <section className="stack" style={{ gap: 12 }}>
-        <h2>Reviews you wrote</h2>
+        <h2>{t('reviewsYouWrote')}</h2>
         {reviews.length === 0 ? (
           <p className="muted">
-            You have not written any reviews yet.
-            {toReview.length ? '' : ' Products you receive will show up here to review.'}
+            {t('noReviews')}
+            {toReview.length ? '' : ` ${t('noReviewsHint')}`}
           </p>
         ) : (
           <ul className="review-list">
@@ -79,15 +83,15 @@ export default async function ReviewsPage() {
                     <Stars value={review.rating} size={14} />
                     <strong>{review.title}</strong>
                     <span className={`pill ${STATUS[review.status].pill}`}>
-                      {STATUS[review.status].text}
+                      {t(STATUS[review.status].text)}
                     </span>
                   </div>
                   <p style={{ margin: 0 }}>{review.body}</p>
                   <span className="muted" style={{ fontSize: 13 }}>
                     <Link href={`/p/${review.product.slug}`}>{review.product.title}</Link> ·{' '}
-                    {day(review.createdAt)}
-                    {review.verifiedPurchase ? ' · Verified purchase' : ''} ·{' '}
-                    <Link href={`/p/${review.product.slug}#write-review`}>Edit</Link>
+                    {f.date(review.createdAt)}
+                    {review.verifiedPurchase ? ` · ${t('verifiedPurchase')}` : ''} ·{' '}
+                    <Link href={`/p/${review.product.slug}#write-review`}>{tc('edit')}</Link>
                   </span>
                 </div>
               </li>

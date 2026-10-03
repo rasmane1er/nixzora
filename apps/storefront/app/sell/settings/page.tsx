@@ -1,26 +1,36 @@
 import {
-  BUSINESS_TYPE_LABEL,
+  BUSINESS_TYPES,
   type BusinessType,
   HANDLING_DAYS,
   SELLER_CARRIER_LABEL,
   SELLER_CARRIERS,
   SELLER_CATEGORIES,
-  SELLER_CATEGORY_LABEL,
-  SHIP_REGION_LABEL,
   SHIP_REGIONS,
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { BrandingUpload } from '@/components/BrandingUpload';
 import { Notices, SellerNav } from '@/components/SellerNav';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { requireSeller } from '@/lib/sell';
 import { updateStore } from '../actions';
 
-export const metadata: Metadata = { title: 'Store settings', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sell');
+  return { title: t('settingsTitle'), robots: { index: false } };
+}
 
 export default async function StoreSettingsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const seller = await requireSeller('/sell/settings');
+  const [t, ta, tc, td, f] = await Promise.all([
+    getT('sell'),
+    getT('sellApply'),
+    getT('common'),
+    getT('departments'),
+    getFormat(),
+  ]);
+  const businessType = seller.businessType as BusinessType | null | undefined;
 
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
@@ -28,17 +38,17 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
       <div className="two-col-sell">
         <form action={updateStore} className="card form">
-          <h2>Store profile</h2>
+          <h2>{t('storeProfile')}</h2>
           <label>
-            Store name
+            {t('storeName')}
             <input name="displayName" required defaultValue={seller.displayName} maxLength={60} />
           </label>
           <label>
-            Contact email <span className="hint">For orders and payouts.</span>
+            {t('contactEmail')} <span className="hint">{t('contactEmailHint')}</span>
             <input name="contactEmail" type="email" required defaultValue={seller.contactEmail} />
           </label>
           <label>
-            About your store <span className="hint">Shown on your store page.</span>
+            {t('aboutStore')} <span className="hint">{t('aboutStoreHint')}</span>
             <textarea
               name="description"
               rows={4}
@@ -48,32 +58,32 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
           </label>
           <div className="form-row">
             <label>
-              Category
+              {t('category')}
               <select name="category" defaultValue={seller.category ?? ''}>
-                <option value="">Not set</option>
+                <option value="">{t('notSet')}</option>
                 {SELLER_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {SELLER_CATEGORY_LABEL[c]}
+                    {td(c)}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              Website <span className="hint">Optional.</span>
+              {t('website')} <span className="hint">{tc('optional')}</span>
               <input name="website" type="url" defaultValue={seller.website ?? ''} />
             </label>
           </div>
           <div className="form-row">
             <label>
-              Support email <span className="hint">Public.</span>
+              {t('supportEmail')} <span className="hint">{t('publicHint')}</span>
               <input name="supportEmail" type="email" defaultValue={seller.supportEmail ?? ''} />
             </label>
             <label>
-              Support phone <span className="hint">Public.</span>
+              {t('supportPhone')} <span className="hint">{t('publicHint')}</span>
               <input name="supportPhone" type="tel" defaultValue={seller.supportPhone ?? ''} />
             </label>
           </div>
-          <h3>Branding</h3>
+          <h3>{t('branding')}</h3>
           <BrandingUpload
             kind="logo"
             urlValue={seller.logoUrl ?? undefined}
@@ -84,19 +94,19 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
             urlValue={seller.bannerUrl ?? undefined}
             keyValue={seller.bannerUrl ? 'keep' : undefined}
           />
-          <h3>Shipping</h3>
+          <h3>{t('shipping')}</h3>
           <label>
-            Orders shipped within
+            {ta('shippedWithin')}
             <select name="handlingDays" defaultValue={String(seller.shipping.handlingDays)}>
               {HANDLING_DAYS.map((d) => (
                 <option key={d} value={d}>
-                  {d} business {d === 1 ? 'day' : 'days'}
+                  {ta('businessDays', { count: d })}
                 </option>
               ))}
             </select>
           </label>
           <fieldset>
-            <legend>Carriers</legend>
+            <legend>{t('carriers')}</legend>
             <div className="check-grid">
               {SELLER_CARRIERS.map((c) => (
                 <label key={c} className="check">
@@ -106,13 +116,13 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
                     value={c}
                     defaultChecked={seller.shipping.carriers.includes(c)}
                   />
-                  <span>{SELLER_CARRIER_LABEL[c]}</span>
+                  <span>{c === 'OTHER' ? ta('carrier_OTHER') : SELLER_CARRIER_LABEL[c]}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <fieldset>
-            <legend>Shipping regions</legend>
+            <legend>{ta('shippingRegions')}</legend>
             <div className="check-grid">
               {SHIP_REGIONS.map((r) => (
                 <label key={r} className="check">
@@ -122,32 +132,36 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
                     value={r}
                     defaultChecked={seller.shipping.shipRegions.includes(r)}
                   />
-                  <span>{SHIP_REGION_LABEL[r]}</span>
+                  <span>{ta(`region_${r}`)}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <div>
             <button className="btn btn--primary" type="submit">
-              Save
+              {tc('save')}
             </button>
           </div>
         </form>
 
         <section className="card stack">
-          <h2>Business and payouts</h2>
+          <h2>{t('businessAndPayouts')}</h2>
           <dl className="facts">
-            <dt>Legal name</dt>
+            <dt>{t('legalName')}</dt>
             <dd>{seller.legalName}</dd>
-            {seller.businessType ? (
+            {businessType ? (
               <>
-                <dt>Business type</dt>
-                <dd>{BUSINESS_TYPE_LABEL[seller.businessType as BusinessType]}</dd>
+                <dt>{ta('businessType')}</dt>
+                <dd>
+                  {BUSINESS_TYPES.includes(businessType)
+                    ? ta(`businessType_${businessType}`)
+                    : businessType}
+                </dd>
               </>
             ) : null}
             {seller.address ? (
               <>
-                <dt>Business address</dt>
+                <dt>{ta('businessAddress')}</dt>
                 <dd>
                   {seller.address.line1}
                   {seller.address.line2 ? `, ${seller.address.line2}` : ''}, {seller.address.city},{' '}
@@ -155,33 +169,31 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
                 </dd>
               </>
             ) : null}
-            <dt>Store address</dt>
+            <dt>{t('storeAddress')}</dt>
             <dd className="mono">nixzora.com/s/{seller.handle}</dd>
-            <dt>Commission</dt>
-            <dd>{seller.commissionBps / 100}% of each sale</dd>
-            <dt>Payout hold</dt>
-            <dd>{seller.payoutHoldDays} days after shipping</dd>
-            <dt>Payouts</dt>
+            <dt>{t('commission')}</dt>
+            <dd>{t('commissionValue', { rate: f.percent(seller.commissionBps / 10_000) })}</dd>
+            <dt>{t('payoutHold')}</dt>
+            <dd>{t('payoutHoldValue', { days: seller.payoutHoldDays })}</dd>
+            <dt>{t('payouts')}</dt>
             <dd>
               {seller.payouts.payoutsEnabled
-                ? `On${seller.payouts.provider === 'FAKE' ? ' (test mode: no money moves)' : ''}`
+                ? `${t('payoutsOn')}${seller.payouts.provider === 'FAKE' ? t('payoutsTestMode') : ''}`
                 : seller.payouts.detailsSubmitted
-                  ? 'Being verified'
-                  : 'Not set up'}
+                  ? t('payoutsVerifying')
+                  : t('payoutsNotSetUp')}
             </dd>
           </dl>
           {seller.payouts.requirementsDue.length ? (
-            <p className="banner banner--info">
-              Stripe needs a few more details before paying you out.
-            </p>
+            <p className="banner banner--info">{t('stripeNeedsMore')}</p>
           ) : null}
           <div>
             <a className="btn btn--secondary" href="/sell/payouts/start">
-              {seller.payouts.accountConnected ? 'Update payout details' : 'Set up payouts'}
+              {seller.payouts.accountConnected ? t('updatePayouts') : t('setUpPayouts')}
             </a>
           </div>
           <p className="muted" style={{ fontSize: 13 }}>
-            Legal name, business address and store address changes go through seller support.
+            {t('supportChanges')}
           </p>
         </section>
       </div>

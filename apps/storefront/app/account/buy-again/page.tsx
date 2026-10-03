@@ -4,24 +4,28 @@ import Link from 'next/link';
 import { AccountHeader, Notices } from '@/components/AccountHeader';
 import { BuyAgainCard } from '@/components/AccountOrderCard';
 import { accountApi } from '@/lib/account';
+import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 
-export const metadata: Metadata = { title: 'Buy again', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('accountActivity');
+  return { title: t('buyAgainTitle'), robots: { index: false } };
+}
 
 export default async function BuyAgainPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const items = await accountApi<BuyAgainItem[]>('/me/buy-again', '/account/buy-again');
+  const [items, t] = await Promise.all([
+    accountApi<BuyAgainItem[]>('/me/buy-again', '/account/buy-again'),
+    getT('accountActivity'),
+  ]);
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
-      <AccountHeader
-        title="Buy again"
-        description="Products from your past orders that are still for sale, most recent first."
-      />
+      <AccountHeader title={t('buyAgainTitle')} description={t('buyAgainDescription')} />
       <Notices notice={param(params, 'notice')} error={param(params, 'error')} />
       {items.length === 0 ? (
         <div className="card">
           <p style={{ margin: 0 }}>
-            Products you have received show up here. <Link href="/search">Start shopping →</Link>
+            {t('buyAgainEmpty')} <Link href="/search">{t('startShopping')}</Link>
           </p>
         </div>
       ) : (

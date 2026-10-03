@@ -17,6 +17,8 @@ import {
   AccountOrderQuerySchema,
   type AccountPreferences,
   AccountPreferencesSchema,
+  type LanguageUpdate,
+  LanguageUpdateSchema,
   type ProfileUpdate,
   ProfileUpdateSchema,
   type ReturnView,
@@ -117,6 +119,16 @@ export class AccountHubController {
   @Get('preferences')
   preferences(@CurrentUser() user: AuthUser) {
     return this.hub.preferences(user.id);
+  }
+
+  /** The customer's language, for every app and for emails and push. */
+  @Put('language')
+  @ApiZodBody(LanguageUpdateSchema)
+  setLanguage(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(LanguageUpdateSchema)) body: LanguageUpdate,
+  ) {
+    return this.hub.setLanguage(user.id, body.language);
   }
 
   @Put('preferences')

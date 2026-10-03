@@ -1,12 +1,12 @@
 import { type ProductDetail } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api, ApiError } from '@/lib/api';
+import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { categoryOptions, LISTING_STATUS_LABEL, requireSeller, specsText } from '@/lib/sell';
+import { categoryOptions, requireSeller, specsText } from '@/lib/sell';
 import {
   addVariant,
   adjustStock,
@@ -19,17 +19,12 @@ import { DescriptionAssistant } from './DescriptionAssistant';
 import { PhotoOrder } from './PhotoOrder';
 import { PhotoUpload } from './PhotoUpload';
 
-export const metadata: Metadata = { title: 'Edit listing', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('sellerTools');
+  return { title: t('metaEditListing'), robots: { index: false } };
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const STATUS_HELP: Record<string, string> = {
-  DRAFT: 'Only you can see this listing. Submit it when it is ready.',
-  PENDING_REVIEW: 'Our team is reviewing this listing, usually within one business day.',
-  ACTIVE:
-    'Live on NIXZORA. Price and stock changes apply at once; changes to the name, description, specs or photos go back to review.',
-  ARCHIVED: 'Archived: hidden from the store.',
-};
 
 const dollars = (cents: number | null) => (cents == null ? '' : (cents / 100).toFixed(2));
 
@@ -51,7 +46,12 @@ export default async function ListingPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const categories = await categoryOptions();
+  const [categories, t, f] = await Promise.all([
+    categoryOptions(),
+    getT('sellerTools'),
+    getFormat(),
+  ]);
+  const tc = await getT('common');
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
   const canSubmit =
     seller.status === 'ACTIVE' && (product.status === 'DRAFT' || product.status === 'ARCHIVED');
@@ -65,27 +65,27 @@ export default async function ListingPage({
         <div className="section-head" style={{ marginBottom: 0 }}>
           <div className="stack" style={{ gap: 4 }}>
             <p className="eyebrow">
-              <Link href="/sell/listings">Listings</Link>
+              <Link href="/sell/listings">{t('breadcrumbListings')}</Link>
             </p>
             <h2>{product.title}</h2>
             <p>
               <span className={`pill pill--listing-${product.status.toLowerCase()}`}>
-                {LISTING_STATUS_LABEL[product.status]}
+                {t(`listing_${product.status}`)}
               </span>{' '}
-              <span className="muted">{STATUS_HELP[product.status]}</span>
+              <span className="muted">{t(`statusHelp_${product.status}`)}</span>
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {product.status === 'ACTIVE' ? (
               <Link className="btn btn--secondary" href={`/p/${product.slug}`}>
-                View in store
+                {t('viewInStore')}
               </Link>
             ) : null}
             {canSubmit ? (
               <form action={submitListing}>
                 <input type="hidden" name="id" value={product.id} />
                 <button className="btn btn--primary" type="submit">
-                  Submit for review
+                  {t('submitForReview')}
                 </button>
               </form>
             ) : null}
@@ -93,7 +93,7 @@ export default async function ListingPage({
               <form action={withdrawListing}>
                 <input type="hidden" name="id" value={product.id} />
                 <button className="btn btn--secondary" type="submit">
-                  {product.status === 'ACTIVE' ? 'Take off sale' : 'Withdraw'}
+                  {product.status === 'ACTIVE' ? t('takeOffSale') : t('withdraw')}
                 </button>
               </form>
             ) : null}
@@ -101,26 +101,26 @@ export default async function ListingPage({
         </div>
         {product.reviewNote ? (
           <p className="banner banner--info">
-            <strong>Changes requested:</strong> {product.reviewNote}
+            <strong>{t('changesRequestedLabel')}</strong> {product.reviewNote}
           </p>
         ) : null}
         {seller.status === 'PENDING' && product.status === 'DRAFT' ? (
           <p className="muted" style={{ fontSize: 14 }}>
-            You can submit listings once your store is approved.
+            {t('submitOnceApproved')}
           </p>
         ) : null}
       </section>
 
       <div className="two-col-sell">
         <form action={updateListing} className="card form">
-          <h2>Details</h2>
+          <h2>{t('detailsTitle')}</h2>
           <input type="hidden" name="id" value={product.id} />
           <label>
-            Product name
+            {t('fieldProductName')}
             <input name="title" required defaultValue={product.title} maxLength={200} />
           </label>
           <label>
-            Category
+            {t('fieldCategory')}
             <select name="categoryId" defaultValue={categoryId}>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -130,7 +130,7 @@ export default async function ListingPage({
             </select>
           </label>
           <label>
-            Description
+            {t('fieldDescription')}
             <textarea
               id="listing-description"
               name="description"
@@ -141,22 +141,22 @@ export default async function ListingPage({
           </label>
           <DescriptionAssistant productId={product.id} target="listing-description" />
           <label>
-            Specs <span className="hint">One per line, “name: value”.</span>
+            {t('fieldSpecs')} <span className="hint">{t('specsHintEdit')}</span>
             <textarea name="specs" rows={5} defaultValue={specsText(product.attributes)} />
           </label>
           <div>
             <button className="btn btn--primary" type="submit">
-              Save details
+              {t('saveDetails')}
             </button>
           </div>
         </form>
 
         <section className="card stack">
-          <h2>Photos</h2>
+          <h2>{t('photosTitle')}</h2>
           {product.images.length ? (
             <PhotoOrder productId={product.id} photos={product.images} />
           ) : (
-            <p className="muted">Listings need at least one photo before review.</p>
+            <p className="muted">{t('needPhoto')}</p>
           )}
           <PhotoUpload
             productId={product.id}
@@ -167,15 +167,15 @@ export default async function ListingPage({
       </div>
 
       <section className="card stack">
-        <h2>Options, prices and stock</h2>
+        <h2>{t('optionsTitle')}</h2>
         <div className="table-scroll">
           <table className="plain">
             <thead>
               <tr>
-                <th>Option</th>
-                <th>Price</th>
-                <th className="num">Available</th>
-                <th>Add or remove stock</th>
+                <th>{t('colOption')}</th>
+                <th>{t('colPrice')}</th>
+                <th className="num">{t('colAvailable')}</th>
+                <th>{t('colAdjustStock')}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,7 +185,7 @@ export default async function ListingPage({
                     <strong>{variant.title}</strong>
                     <div className="muted mono" style={{ fontSize: 13 }}>
                       {variant.sku}
-                      {variant.isActive ? '' : ' · hidden'}
+                      {variant.isActive ? '' : ` · ${t('hidden')}`}
                     </div>
                   </td>
                   <td>
@@ -194,29 +194,29 @@ export default async function ListingPage({
                       <input type="hidden" name="variantId" value={variant.id} />
                       <input
                         name="price"
-                        aria-label={`Price of ${variant.title}`}
+                        aria-label={t('ariaPriceOf', { option: variant.title })}
                         defaultValue={dollars(variant.priceCents)}
                         inputMode="decimal"
                         size={8}
                       />
                       <input
                         name="compareAt"
-                        aria-label={`Was price of ${variant.title}`}
-                        placeholder="Was"
+                        aria-label={t('ariaWasPriceOf', { option: variant.title })}
+                        placeholder={t('fieldWas')}
                         defaultValue={dollars(variant.compareAtCents)}
                         inputMode="decimal"
                         size={8}
                       />
                       <label className="check" style={{ fontSize: 14 }}>
                         <input type="checkbox" name="isActive" defaultChecked={variant.isActive} />
-                        On sale
+                        {t('onSale')}
                       </label>
                       <button className="btn btn--secondary btn--sm" type="submit">
-                        Save
+                        {tc('save')}
                       </button>
                     </form>
                   </td>
-                  <td className="num">{variant.available}</td>
+                  <td className="num">{f.number(variant.available)}</td>
                   <td>
                     <form action={adjustStock} className="inline-form">
                       <input type="hidden" name="productId" value={product.id} />
@@ -224,13 +224,13 @@ export default async function ListingPage({
                       <input
                         name="delta"
                         type="number"
-                        aria-label={`Units to add or remove for ${variant.title}`}
-                        placeholder="+10 or -2"
+                        aria-label={t('ariaUnitsFor', { option: variant.title })}
+                        placeholder={t('deltaPlaceholder')}
                         required
                         style={{ width: 110 }}
                       />
                       <button className="btn btn--secondary btn--sm" type="submit">
-                        Update
+                        {t('update')}
                       </button>
                     </form>
                   </td>
@@ -240,40 +240,45 @@ export default async function ListingPage({
           </table>
         </div>
         <p className="muted" style={{ fontSize: 14 }}>
-          Lowest price shown to shoppers: {formatMoney(product.priceFromCents, product.currency)}
+          {t('lowestPrice', { price: f.money(product.priceFromCents, product.currency) })}
         </p>
 
         <details>
-          <summary>Add another option (color, size, capacity)</summary>
+          <summary>{t('addAnotherOption')}</summary>
           <form action={addVariant} className="form" style={{ marginTop: 12 }}>
             <input type="hidden" name="id" value={product.id} />
             <div className="form-row">
               <label>
-                Option name
-                <input name="variantTitle" required placeholder="Sand" maxLength={120} />
+                {t('fieldOptionName')}
+                <input
+                  name="variantTitle"
+                  required
+                  placeholder={t('optionPlaceholderExample')}
+                  maxLength={120}
+                />
               </label>
               <label>
-                SKU
+                {t('fieldSku')}
                 <input name="sku" required pattern="[A-Za-z0-9][A-Za-z0-9\-]{2,63}" />
               </label>
             </div>
             <div className="form-row">
               <label>
-                Price (USD)
+                {t('fieldPrice')}
                 <input name="price" required inputMode="decimal" />
               </label>
               <label>
-                Was <span className="hint">Optional</span>
+                {t('fieldWas')} <span className="hint">{t('hintOptional')}</span>
                 <input name="compareAt" inputMode="decimal" />
               </label>
               <label>
-                In stock
+                {t('fieldInStock')}
                 <input name="stock" type="number" min={0} defaultValue={0} />
               </label>
             </div>
             <div>
               <button className="btn btn--secondary" type="submit">
-                Add option
+                {t('addOption')}
               </button>
             </div>
           </form>

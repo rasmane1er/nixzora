@@ -1,8 +1,18 @@
 import { type ProductCard as Card } from '@nixzora/validation';
+import { INTL_LOCALE } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
+import { departmentName, getLocale, getT } from '@/lib/i18n';
 
-export function ProductCard({ product, priority = false }: { product: Card; priority?: boolean }) {
+export async function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: Card;
+  priority?: boolean;
+}) {
+  const t = await getT('product');
+  const locale = await getLocale();
   return (
     <Link href={`/p/${product.slug}`} className="product-card">
       <div className="product-card__img">
@@ -17,7 +27,7 @@ export function ProductCard({ product, priority = false }: { product: Card; prio
             height={300}
           />
         ) : (
-          <span aria-hidden="true">{product.category.name}</span>
+          <span aria-hidden="true">{await departmentName(product.category)}</span>
         )}
       </div>
       <div className="product-card__body">
@@ -27,10 +37,12 @@ export function ProductCard({ product, priority = false }: { product: Card; prio
           cents={product.priceFromCents}
           compareAtCents={product.compareAtCents}
           currency={product.currency}
-          prefix="From"
+          prefix={t('from')}
+          locale={INTL_LOCALE[locale]}
+          wasLabel={t('was')}
         />
         <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
-          {product.inStock ? 'In stock' : 'Sold out'}
+          {product.inStock ? t('inStock') : t('soldOut')}
         </span>
       </div>
     </Link>

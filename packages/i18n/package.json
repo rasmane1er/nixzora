@@ -1,0 +1,25 @@
+{
+  "name": "@nixzora/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Translations (English, French, Spanish) and locale-aware formatting shared by every NIXZORA app",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test \"dist/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@nixzora/eslint-config": "workspace:*",
+    "@nixzora/tsconfig": "workspace:*",
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3"
+  }
+}

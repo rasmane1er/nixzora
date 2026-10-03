@@ -1,13 +1,15 @@
 import Link from 'next/link';
+import { getT } from '@/lib/i18n';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getT('errors');
   return (
     <div className="wrap section">
       <section className="card auth stack">
-        <h1>We couldn’t find that</h1>
-        <p className="muted">The page or product may have moved, or the link is incomplete.</p>
+        <h1>{t('notFoundTitle')}</h1>
+        <p className="muted">{t('notFoundBody')}</p>
         <Link className="btn btn--primary" href="/search">
-          Browse all products
+          {t('browseAll')}
         </Link>
       </section>
     </div>

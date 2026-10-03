@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import { getT } from '@/lib/i18n';
 
 /** "Your Account › Orders": every account page starts with the way back to the hub. */
-export function AccountHeader({
+export async function AccountHeader({
   title,
   description,
   actions,
@@ -10,13 +11,14 @@ export function AccountHeader({
   description?: string;
   actions?: React.ReactNode;
 }) {
+  const t = await getT('account');
   return (
     <div className="section-head" style={{ marginBottom: 0 }}>
       <div className="stack" style={{ gap: 6 }}>
-        <nav aria-label="Breadcrumb">
+        <nav aria-label={t('breadcrumb')}>
           <ol className="breadcrumb">
             <li>
-              <Link href="/account">Your account</Link>
+              <Link href="/account">{t('yourAccount')}</Link>
             </li>
             <li aria-current="page">{title}</li>
           </ol>

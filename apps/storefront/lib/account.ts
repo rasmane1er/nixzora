@@ -1,4 +1,5 @@
 import 'server-only';
+import { type Translate } from '@nixzora/i18n';
 import { redirect } from 'next/navigation';
 import { api, ApiError } from './api';
 
@@ -14,24 +15,33 @@ export async function accountApi<T>(path: string, next: string): Promise<T> {
   }
 }
 
-export const ORDER_STATUS_TEXT: Record<string, string> = {
-  PENDING_PAYMENT: 'Waiting for payment',
-  PAID: 'Preparing your order',
-  FULFILLING: 'Preparing to ship',
-  SHIPPED: 'On its way',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-  PARTIALLY_REFUNDED: 'Delivered · partly refunded',
-  REFUNDED: 'Refunded',
-};
+const ORDER_STATUSES = [
+  'PENDING_PAYMENT',
+  'PAID',
+  'FULFILLING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+  'PARTIALLY_REFUNDED',
+  'REFUNDED',
+] as const;
 
-export const RETURN_STATUS_TEXT: Record<string, string> = {
-  REQUESTED: 'Requested',
-  APPROVED: 'Approved: send it back',
-  REJECTED: 'Not accepted',
-  RECEIVED: 'Received',
-  REFUNDED: 'Refunded',
-};
+const RETURN_STATUSES = ['REQUESTED', 'APPROVED', 'REJECTED', 'RECEIVED', 'REFUNDED'] as const;
 
+/** "On its way" for SHIPPED, in the visitor's language; unknown statuses show as stored. */
+export function orderStatusText(t: Translate<'accountActivity'>, status: string): string {
+  return (ORDER_STATUSES as readonly string[]).includes(status)
+    ? t(`orderStatus_${status as (typeof ORDER_STATUSES)[number]}`)
+    : status;
+}
+
+/** "Approved: send it back" for APPROVED, in the visitor's language. */
+export function returnStatusText(t: Translate<'accountActivity'>, status: string): string {
+  return (RETURN_STATUSES as readonly string[]).includes(status)
+    ? t(`returnStatus_${status as (typeof RETURN_STATUSES)[number]}`)
+    : status;
+}
+
+/** English-only date; localized pages use `(await getFormat()).date(iso)` instead. */
 export const day = (iso: string) =>
   new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso));

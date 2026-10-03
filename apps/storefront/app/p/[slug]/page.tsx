@@ -5,6 +5,7 @@ import {
   type ReviewInsights as Insights,
   type ReviewView,
 } from '@nixzora/validation';
+import { INTL_LOCALE, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -14,6 +15,7 @@ import { SellerRating } from '@/components/SellerRating';
 import { ReviewInsights } from '@/components/ReviewInsights';
 import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
+import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
 import { AddToCart } from './AddToCart';
@@ -63,9 +65,9 @@ const WORDS: Record<string, string> = {
 };
 
 /** "battery_hours" → "Battery (hours)", "ram_gb" → "RAM (GB)", "cpu_cores" → "CPU cores" */
-function label(key: string): string {
+function label(key: string, units: Record<string, string> = UNITS): string {
   const parts = key.split('_');
-  const unit = parts.length > 1 ? UNITS[parts[parts.length - 1]!] : undefined;
+  const unit = parts.length > 1 ? units[parts[parts.length - 1]!] : undefined;
   const words = (unit ? parts.slice(0, -1) : parts).map((w) => WORDS[w] ?? w);
   const text = words.join(' ');
   const cased = text.charAt(0).toUpperCase() + text.slice(1);
@@ -118,6 +120,19 @@ export default async function ProductPage({ params }: Props) {
       .catch(() => null),
   ]);
   const specs = Object.entries(product.attributes);
+  const t = await getT('productPage');
+  const p = await getT('product');
+  const c = await getT('common');
+  const f = await getFormat();
+  const locale = await getLocale();
+  const units = { ...UNITS, in: t('unitInches'), hours: t('unitHours') };
+  /** A known attribute's name in the visitor's language, else built from its key. */
+  const specLabel = (key: string) => {
+    const known = t(`spec_${key}` as Parameters<typeof t>[0]);
+    return known === `spec_${key}` ? label(key, units) : known;
+  };
+  const crumbNames = await Promise.all(product.breadcrumb.map((crumb) => departmentName(crumb)));
+  const categoryName = await departmentName(product.category);
 
   // Structured data so search engines can show price and availability.
   const jsonLd = {
@@ -157,11 +172,11 @@ export default async function ProductPage({ params }: Props) {
       />
       <ol className="breadcrumb">
         <li>
-          <Link href="/">Home</Link>
+          <Link href="/">{t('home')}</Link>
         </li>
-        {product.breadcrumb.map((crumb) => (
+        {product.breadcrumb.map((crumb, i) => (
           <li key={crumb.slug}>
-            <Link href={`/c/${crumb.slug}`}>{crumb.name}</Link>
+            <Link href={`/c/${crumb.slug}`}>{crumbNames[i]}</Link>
           </li>
         ))}
       </ol>
@@ -169,7 +184,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="pdp">
         <Gallery
           photos={product.images.map(({ id, url, alt }) => ({ id, url, alt }))}
-          fallback={product.category.name}
+          fallback={categoryName}
         />
 
         <div className="buybox">
@@ -182,8 +197,8 @@ export default async function ProductPage({ params }: Props) {
               <a href="#reviews" className="rating-line">
                 <Stars value={product.rating.average ?? 0} />
                 <span>
-                  {product.rating.average} · {product.rating.count}{' '}
-                  {product.rating.count === 1 ? 'review' : 'reviews'}
+                  {f.number(product.rating.average ?? 0)} ·{' '}
+                  {t('reviewCount', { count: product.rating.count })}
                 </span>
               </a>
             ) : null}
@@ -191,7 +206,9 @@ export default async function ProductPage({ params }: Props) {
               cents={product.priceFromCents}
               compareAtCents={product.compareAtCents}
               currency={product.currency}
-              prefix={product.variants.length > 1 ? 'From' : undefined}
+              prefix={product.variants.length > 1 ? p('from') : undefined}
+              locale={INTL_LOCALE[locale]}
+              wasLabel={p('was')}
             />
           </div>
           <AddToCart variants={product.variants} />
@@ -203,7 +220,7 @@ export default async function ProductPage({ params }: Props) {
             />
           </div>
           <p className="sold-by">
-            Sold by{' '}
+            {t('soldBy')}{' '}
             {product.seller ? (
               <>
                 <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>{' '}
@@ -214,27 +231,29 @@ export default async function ProductPage({ params }: Props) {
             )}
           </p>
           <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
-            <li>Free shipping on orders over $99</li>
-            <li>30-day returns</li>
-            <li>Secure checkout — card details never touch our servers</li>
+            <li>{t('perkShipping')}</li>
+            <li>{t('perkReturns')}</li>
+            <li>{t('perkSecure')}</li>
           </ul>
         </div>
       </div>
 
       <div className="two section">
         <section className="stack" aria-labelledby="about">
-          <h2 id="about">About this product</h2>
+          <h2 id="about">{t('aboutProduct')}</h2>
           <p className="description">{product.description}</p>
         </section>
         {specs.length ? (
           <section className="stack" aria-labelledby="specs">
-            <h2 id="specs">Specifications</h2>
+            <h2 id="specs">{t('specifications')}</h2>
             <table className="specs">
               <tbody>
                 {specs.map(([key, value]) => (
                   <tr key={key}>
-                    <th scope="row">{label(key)}</th>
-                    <td>{typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}</td>
+                    <th scope="row">{specLabel(key)}</th>
+                    <td>
+                      {typeof value === 'boolean' ? (value ? c('yes') : c('no')) : String(value)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -243,7 +262,7 @@ export default async function ProductPage({ params }: Props) {
         ) : null}
       </div>
       <section id="reviews" className="section stack" aria-labelledby="reviews-title">
-        <h2 id="reviews-title">Customer reviews</h2>
+        <h2 id="reviews-title">{t('customerReviews')}</h2>
         {insights ? <ReviewInsights insights={insights} /> : null}
         <div className="reviews">
           <div className="stack">
@@ -251,12 +270,14 @@ export default async function ProductPage({ params }: Props) {
               <>
                 <div className="rating-line" style={{ fontSize: 18 }}>
                   <Stars value={reviews.summary.average ?? 0} size={22} />
-                  <strong>{reviews.summary.average} out of 5</strong>
+                  <strong>
+                    {t('outOfFive', { rating: f.number(reviews.summary.average ?? 0) })}
+                  </strong>
                 </div>
-                <div className="histogram" aria-label="Ratings breakdown">
+                <div className="histogram" aria-label={t('ratingsBreakdown')}>
                   {[5, 4, 3, 2, 1].map((star) => (
                     <div key={star}>
-                      <span>{star} star</span>
+                      <span>{t('starRow', { count: star })}</span>
                       <meter
                         min={0}
                         max={reviews.summary.count}
@@ -268,7 +289,7 @@ export default async function ProductPage({ params }: Props) {
                 </div>
               </>
             ) : (
-              <p className="muted">No reviews yet.</p>
+              <p className="muted">{t('noReviews')}</p>
             )}
             {signedIn ? (
               <div id="write-review" style={{ scrollMarginTop: 'calc(var(--header-h) + 60px)' }}>
@@ -276,8 +297,13 @@ export default async function ProductPage({ params }: Props) {
               </div>
             ) : (
               <p className="muted">
-                <Link href={`/account/login?next=/p/${product.slug}%23reviews`}>Sign in</Link> to
-                write a review.
+                {rich(t('signInToReview'), {
+                  link: (chunk) => (
+                    <Link key="link" href={`/account/login?next=/p/${product.slug}%23reviews`}>
+                      {chunk}
+                    </Link>
+                  ),
+                })}
               </p>
             )}
           </div>
@@ -289,12 +315,11 @@ export default async function ProductPage({ params }: Props) {
                   <strong>{review.title}</strong>
                 </div>
                 <span className="muted" style={{ fontSize: 13 }}>
-                  {review.author} ·{' '}
-                  {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(
-                    new Date(review.createdAt),
-                  )}
+                  {review.author} · {f.date(review.createdAt)}
                 </span>
-                {review.verifiedPurchase ? <span className="badge">Verified purchase</span> : null}
+                {review.verifiedPurchase ? (
+                  <span className="badge">{t('verifiedPurchase')}</span>
+                ) : null}
                 <p className="description">{review.body}</p>
               </article>
             ))}
@@ -302,9 +327,13 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </section>
 
-      <ProductRail id="together" title="Often bought together" products={related.boughtTogether} />
-      <ProductRail id="similar" title="Similar products" products={related.similar} />
-      <ProductRail id="also-viewed" title="Customers also viewed" products={related.alsoViewed} />
+      <ProductRail
+        id="together"
+        title={t('oftenBoughtTogether')}
+        products={related.boughtTogether}
+      />
+      <ProductRail id="similar" title={t('similarProducts')} products={related.similar} />
+      <ProductRail id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />
       <ViewTracker productId={product.id} />
     </div>
   );

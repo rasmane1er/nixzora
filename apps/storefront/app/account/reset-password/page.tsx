@@ -1,18 +1,23 @@
 import type { Metadata } from 'next';
 import { AuthCard, Submit } from '@/components/AuthCard';
+import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { resetPassword } from '../actions';
 
-export const metadata: Metadata = { title: 'Choose a new password', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('auth');
+  return { title: t('resetTitle'), robots: { index: false } };
+}
 
 export default async function ResetPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  const t = await getT('auth');
   return (
-    <AuthCard title="Choose a new password" error={param(params, 'error')}>
+    <AuthCard title={t('resetTitle')} error={param(params, 'error')}>
       <form action={resetPassword} className="form">
         <input type="hidden" name="token" value={param(params, 'token') ?? ''} />
         <label>
-          New password <span className="hint">At least 12 characters.</span>
+          {t('newPassword')} <span className="hint">{t('newPasswordHint')}</span>
           <input
             name="password"
             type="password"
@@ -22,7 +27,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Search
             maxLength={128}
           />
         </label>
-        <Submit>Save password</Submit>
+        <Submit>{t('savePassword')}</Submit>
       </form>
     </AuthCard>
   );

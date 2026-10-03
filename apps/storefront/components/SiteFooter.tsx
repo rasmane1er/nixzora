@@ -1,30 +1,33 @@
 import Link from 'next/link';
+import { getT } from '@/lib/i18n';
+import { LanguagePicker } from './LanguagePicker';
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = await getT('layout');
+  const c = await getT('common');
   return (
     <footer className="site-footer">
       <div className="wrap site-footer__row">
         <div className="stack" style={{ gap: 6 }}>
           <strong>NIXZORA</strong>
-          <span className="muted">
-            Computers and electronics, explained. Free shipping over $99 · 30-day returns.
-          </span>
+          <span className="muted">{t('tagline')}</span>
+          <LanguagePicker id="footer-language" />
         </div>
-        <nav aria-label="Footer">
-          <Link href="/search">All products</Link>
-          <Link href="/account/orders">Your orders</Link>
-          <Link href="/help">Help</Link>
-          <Link href="/policies/shipping">Shipping</Link>
-          <Link href="/policies/returns">Returns</Link>
-          <Link href="/about">About</Link>
-          <Link href="/sell">Sell on NIXZORA</Link>
-          <Link href="/status">Platform status</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
+        <nav aria-label={t('footerNav')}>
+          <Link href="/search">{t('allProducts')}</Link>
+          <Link href="/account/orders">{t('yourOrders')}</Link>
+          <Link href="/help">{t('help')}</Link>
+          <Link href="/policies/shipping">{t('shipping')}</Link>
+          <Link href="/policies/returns">{t('returns')}</Link>
+          <Link href="/about">{t('about')}</Link>
+          <Link href="/sell">{t('sellOnNixzora')}</Link>
+          <Link href="/status">{t('status')}</Link>
+          <Link href="/privacy">{t('privacy')}</Link>
+          <Link href="/terms">{t('terms')}</Link>
         </nav>
       </div>
       <div className="wrap muted" style={{ marginTop: 16, fontSize: 13 }}>
-        Demo store: products, brands and prices are fictional.
+        {c('demoNotice')}
       </div>
     </footer>
   );

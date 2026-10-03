@@ -1,12 +1,12 @@
 'use client';
 
 import { type PaymentSession } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 // The "pure" entry loads Stripe.js only when a Stripe payment form is shown.
 import { type Stripe } from '@stripe/stripe-js';
 import { loadStripe } from '@stripe/stripe-js/pure';
 import { useState } from 'react';
+import { useFormat, useT } from '@/components/I18nProvider';
 import { confirmTestPayment } from './actions';
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -40,6 +40,8 @@ export function PayForm({ session, returnPath }: { session: PaymentSession; retu
 function StripePayment({ session, returnPath }: { session: PaymentSession; returnPath: string }) {
   const stripe = useStripe();
   const elements = useElements();
+  const t = useT('checkout');
+  const f = useFormat();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -53,7 +55,7 @@ function StripePayment({ session, returnPath }: { session: PaymentSession; retur
       confirmParams: { return_url: `${window.location.origin}${returnPath}&confirming=1` },
     });
     // Only reached when the payment fails before redirecting (e.g. card declined).
-    setError(result.error?.message ?? 'The payment did not go through.');
+    setError(result.error?.message ?? t('paymentFailed'));
     setPending(false);
   }
 
@@ -66,13 +68,17 @@ function StripePayment({ session, returnPath }: { session: PaymentSession; retur
         </p>
       ) : null}
       <button className="btn btn--primary btn--block" type="submit" disabled={!stripe || pending}>
-        {pending ? 'Processing…' : `Pay ${formatMoney(session.amountCents, session.currency)}`}
+        {pending
+          ? t('processing')
+          : t('pay', { amount: f.money(session.amountCents, session.currency) })}
       </button>
     </form>
   );
 }
 
 function TestPayment({ session, returnPath }: { session: PaymentSession; returnPath: string }) {
+  const t = useT('checkout');
+  const f = useFormat();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -81,12 +87,12 @@ function TestPayment({ session, returnPath }: { session: PaymentSession; returnP
     setError(null);
     const result = await confirmTestPayment(session.clientSecret, outcome);
     if (!result.ok) {
-      setError(result.error ?? 'The test payment failed.');
+      setError(result.error ?? t('testPaymentFailed'));
       setPending(false);
       return;
     }
     if (outcome === 'failed') {
-      setError('Your card was declined (test). Try again.');
+      setError(t('declinedTest'));
       setPending(false);
       return;
     }
@@ -97,10 +103,9 @@ function TestPayment({ session, returnPath }: { session: PaymentSession; returnP
 
   return (
     <div className="test-pay">
-      <strong>Test payment mode</strong>
+      <strong>{t('testMode')}</strong>
       <p className="muted" style={{ fontSize: 14 }}>
-        No payment provider is configured, so no card is needed. Add Stripe test keys to the API to
-        see the real payment form.
+        {t('testModeHelp')}
       </p>
       {error ? (
         <p className="banner banner--error" role="alert">
@@ -114,8 +119,8 @@ function TestPayment({ session, returnPath }: { session: PaymentSession; returnP
         onClick={() => run('succeeded')}
       >
         {pending
-          ? 'Processing…'
-          : `Pay ${formatMoney(session.amountCents, session.currency)} (test)`}
+          ? t('processing')
+          : t('payTest', { amount: f.money(session.amountCents, session.currency) })}
       </button>
       <button
         className="btn btn--secondary btn--block"
@@ -123,7 +128,7 @@ function TestPayment({ session, returnPath }: { session: PaymentSession; returnP
         disabled={pending}
         onClick={() => run('failed')}
       >
-        Simulate a declined card
+        {t('simulateDecline')}
       </button>
     </div>
   );

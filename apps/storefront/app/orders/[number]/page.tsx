@@ -1,5 +1,5 @@
+import { INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
 import { type OrderView, type ReturnView } from '@nixzora/validation';
-import { formatMoney } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -11,20 +11,23 @@ import {
   StatusPill,
 } from '@/components/OrderSummary';
 import { api, ApiError } from '@/lib/api';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { isSignedIn } from '@/lib/session';
 import { RateSellerForm } from './RateSellerForm';
 import { ReturnForm } from './ReturnForm';
 
-const RETURN_LABEL: Record<string, string> = {
-  REQUESTED: 'Return requested',
-  APPROVED: 'Return approved — send the items back',
-  REJECTED: 'Return not accepted',
-  RECEIVED: 'Return received',
-  REFUNDED: 'Return refunded',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('order');
+  return { title: t('title'), robots: { index: false } };
+}
 
-export const metadata: Metadata = { title: 'Your order', robots: { index: false } };
+/** `prefix_VALUE` from the order messages, or the value as sent when there is no such key. */
+function label(t: (key: MessageKey<'order'>) => string, prefix: string, value: string): string {
+  const key = `${prefix}_${value}` as MessageKey<'order'>;
+  const text = t(key);
+  return text === key ? value : text;
+}
 
 type Props = { params: Promise<{ number: string }>; searchParams: SearchParams };
 
@@ -48,6 +51,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
     throw error;
   }
 
+  const t = await getT('order');
+  const f = await getFormat();
+  const locale = await getLocale();
   const waiting = order.status === 'PENDING_PAYMENT' && confirming;
   const unpaid = order.status === 'PENDING_PAYMENT' && !confirming;
 
@@ -56,25 +62,25 @@ export default async function OrderPage({ params, searchParams }: Props) {
       {/* While the payment provider confirms, check again every few seconds. */}
       {waiting ? <meta httpEquiv="refresh" content="3" /> : null}
       <div className="stack" style={{ gap: 8 }}>
-        <p className="eyebrow">Order {order.number}</p>
+        <p className="eyebrow">{t('orderNumber', { number: order.number })}</p>
         <h1>
           {order.status === 'PENDING_PAYMENT'
             ? waiting
-              ? 'Confirming your payment…'
-              : 'Waiting for payment'
+              ? t('confirmingPayment')
+              : t('waitingForPayment')
             : order.status === 'CANCELLED'
-              ? 'This order was cancelled'
-              : 'Thank you! Your order is confirmed.'}
+              ? t('cancelledTitle')
+              : t('confirmedTitle')}
         </h1>
         <p className="muted">
-          <StatusPill status={order.status} /> · Receipt sent to {order.email}
+          <StatusPill status={order.status} /> · {t('receiptSentTo', { email: order.email })}
         </p>
       </div>
 
       {unpaid ? (
         <p className="banner banner--info">
-          We haven’t received payment yet.{' '}
-          <Link href={`/checkout/pay/${order.number}${qs}`}>Complete payment →</Link>
+          {t('notPaidYet')}{' '}
+          <Link href={`/checkout/pay/${order.number}${qs}`}>{t('completePayment')}</Link>
         </p>
       ) : null}
 
@@ -85,34 +91,37 @@ export default async function OrderPage({ params, searchParams }: Props) {
             <Shipments order={order} token={token} />
           ) : order.tracking ? (
             <p>
-              {order.tracking.carrier} tracking{' '}
+              {t('carrierTracking', { carrier: order.tracking.carrier })}{' '}
               <span className="mono">{order.tracking.number}</span>
               {order.tracking.url ? (
                 <>
                   {' · '}
                   <a href={order.tracking.url} rel="noopener noreferrer" target="_blank">
-                    Track package
+                    {t('trackPackage')}
                   </a>
                 </>
               ) : null}
             </p>
           ) : (
-            <p className="muted">You’ll get an email with tracking as soon as it ships.</p>
+            <p className="muted">{t('trackingByEmail')}</p>
           )}
         </section>
       ) : null}
 
       {returns.length ? (
         <section className="card stack">
-          <h2>Returns</h2>
+          <h2>{t('returns')}</h2>
           {returns.map((r) => (
             <div key={r.id} className="stack" style={{ gap: 4 }}>
               <strong>
-                {RETURN_LABEL[r.status] ?? r.status}
-                {r.refundCents ? ` · ${formatMoney(r.refundCents)} refunded` : ''}
+                {label(t, 'return', r.status)}
+                {r.refundCents
+                  ? ` · ${t('refundedAmount', { amount: f.money(r.refundCents) })}`
+                  : ''}
               </strong>
               <span className="muted">
-                {r.items.map((i) => `${i.quantity} × ${i.productTitle}`).join(', ')} — {r.reason}
+                {r.items.map((i) => `${i.quantity} × ${i.productTitle}`).join(', ')} —{' '}
+                {label(t, 'reason', r.reason)}
               </span>
               {r.staffNote ? <span>{r.staffNote}</span> : null}
             </div>
@@ -124,63 +133,55 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <div className="stack" style={{ gap: 6 }}>
           <ReturnForm order={order} token={token} />
           <p className="hint">
-            Returns are open until{' '}
-            {new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(
-              new Date(order.returnableUntil),
-            )}
-            .
+            {t('returnsOpenUntil', {
+              date: new Intl.DateTimeFormat(INTL_LOCALE[locale], { dateStyle: 'long' }).format(
+                new Date(order.returnableUntil),
+              ),
+            })}
           </p>
         </div>
       ) : null}
 
       <div className="two">
         <section className="card summary">
-          <h2>Items</h2>
+          <h2>{t('items')}</h2>
           <OrderItems order={order} />
           <OrderTotals order={order} />
         </section>
         <section className="card stack">
-          <h2>Shipping to</h2>
+          <h2>{t('shippingTo')}</h2>
           <AddressBlock address={order.shippingAddress} />
-          {token ? (
-            <p className="hint">
-              Keep this page’s link (it’s also in your email) to check on your order.
-            </p>
-          ) : null}
+          {token ? <p className="hint">{t('keepLink')}</p> : null}
         </section>
       </div>
-      <Link href="/search">Continue shopping →</Link>
+      <Link href="/search">{t('continueShopping')}</Link>
     </div>
   );
 }
 
-const SHIPMENT_LABEL: Record<OrderView['shipments'][number]['status'], string> = {
-  PROCESSING: 'Preparing',
-  SHIPPED: 'Shipped',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-};
-
 /** Marketplace orders arrive in parcels: NIXZORA's own items and one per seller. */
-function Shipments({ order, token }: { order: OrderView; token?: string }) {
+async function Shipments({ order, token }: { order: OrderView; token?: string }) {
+  const t = await getT('order');
   return (
     <ul className="shipments">
       {order.shipments.map((shipment) => {
         const items = order.items.filter((item) => shipment.itemIds.includes(item.id));
+        const seller = shipment.seller;
         return (
           <li key={shipment.seller?.handle ?? 'nixzora'}>
             <div>
               <strong>
-                {shipment.seller ? (
-                  <>
-                    From{' '}
-                    <Link href={`/s/${shipment.seller.handle}`}>{shipment.seller.displayName}</Link>
-                  </>
-                ) : (
-                  'From NIXZORA'
-                )}
+                {seller
+                  ? rich(t('fromSeller'), {
+                      link: () => (
+                        <Link key="seller" href={`/s/${seller.handle}`}>
+                          {seller.displayName}
+                        </Link>
+                      ),
+                    })
+                  : t('fromNixzora')}
               </strong>{' '}
-              <span className="muted">· {SHIPMENT_LABEL[shipment.status]}</span>
+              <span className="muted">· {t(`shipment_${shipment.status}`)}</span>
             </div>
             <div className="muted" style={{ fontSize: 14 }}>
               {items.map((item) => `${item.quantity} × ${item.productTitle}`).join(', ')}
@@ -192,7 +193,7 @@ function Shipments({ order, token }: { order: OrderView; token?: string }) {
                   <>
                     {' · '}
                     <a href={shipment.tracking.url} rel="noopener noreferrer" target="_blank">
-                      Track package
+                      {t('trackPackage')}
                     </a>
                   </>
                 ) : null}
@@ -202,7 +203,7 @@ function Shipments({ order, token }: { order: OrderView; token?: string }) {
               <RateSellerForm number={order.number} token={token} shipment={shipment} />
             ) : shipment.rating ? (
               <div className="muted" style={{ fontSize: 14 }}>
-                You rated this seller {shipment.rating.value} out of 5.
+                {t('ratedSeller', { value: shipment.rating.value })}
               </div>
             ) : null}
           </li>

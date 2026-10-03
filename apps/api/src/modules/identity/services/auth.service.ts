@@ -87,6 +87,7 @@ export class AuthService {
         passwordHash: await this.passwords.hash(input.password),
         firstName: input.firstName ?? null,
         lastName: input.lastName ?? null,
+        language: input.language ?? 'en',
         roles: { create: [{ role: { connect: { key: 'customer' } } }] },
       },
     });

@@ -5,12 +5,15 @@ import {
   type ListingImportResult,
   type ProductCopySuggestion,
   type ProductDetail,
-  type SellerView,
   type UploadTicket,
 } from '@nixzora/validation';
+import { type MessageKey } from '@nixzora/i18n';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
+import { getT } from '@/lib/i18n';
+
+type NoticeKey = MessageKey<'sellerTools'>;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,7 +71,7 @@ function withMessage(path: string, kind: 'notice' | 'error', message: string): s
 }
 
 /** Runs an API call, then returns to `path` with a notice or the API's error message. */
-async function perform(path: string, call: () => Promise<unknown>, notice: string) {
+async function perform(path: string, call: () => Promise<unknown>, notice: NoticeKey) {
   try {
     await call();
   } catch (error) {
@@ -78,7 +81,8 @@ async function perform(path: string, call: () => Promise<unknown>, notice: strin
     redirect(withMessage(path, 'error', errorMessage(error)));
   }
   revalidatePath(path.split('?')[0]!);
-  redirect(withMessage(path, 'notice', notice));
+  const t = await getT('sellerTools');
+  redirect(withMessage(path, 'notice', t(notice)));
 }
 
 // ───── Store ─────
@@ -109,7 +113,7 @@ export async function updateStore(form: FormData): Promise<void> {
           shipRegions: form.getAll('shipRegions').map(String),
         },
       }),
-    'Store details saved.',
+    'noticeStoreSaved',
   );
 }
 
@@ -141,9 +145,8 @@ export async function createListing(form: FormData): Promise<void> {
       redirect('/account/login?next=/sell/listings/new');
     redirect(withMessage('/sell/listings/new', 'error', errorMessage(error)));
   }
-  redirect(
-    `/sell/listings/${created.id}?notice=${encodeURIComponent('Draft saved. Add a photo, then submit it for review.')}`,
-  );
+  const t = await getT('sellerTools');
+  redirect(`/sell/listings/${created.id}?notice=${encodeURIComponent(t('noticeDraftSaved'))}`);
 }
 
 export async function updateListing(form: FormData): Promise<void> {
@@ -160,7 +163,7 @@ export async function updateListing(form: FormData): Promise<void> {
           attributes: specs(form, 'specs'),
         },
       }),
-    'Listing saved.',
+    'noticeListingSaved',
   );
 }
 
@@ -179,7 +182,7 @@ export async function addVariant(form: FormData): Promise<void> {
           initialStock: Number(text(form, 'stock') ?? 0),
         },
       }),
-    'Option added.',
+    'noticeOptionAdded',
   );
 }
 
@@ -197,7 +200,7 @@ export async function updateVariant(form: FormData): Promise<void> {
           isActive: form.get('isActive') === 'on',
         },
       }),
-    'Price saved.',
+    'noticePriceSaved',
   );
 }
 
@@ -213,7 +216,7 @@ export async function adjustStock(form: FormData): Promise<void> {
   await perform(
     `/sell/listings/${productId}`,
     () => api(`/seller/variants/${variantId}/stock`, { method: 'POST', body }),
-    'Stock updated.',
+    'noticeStockUpdated',
   );
 }
 
@@ -222,7 +225,7 @@ export async function submitListing(form: FormData): Promise<void> {
   await perform(
     `/sell/listings/${productId}`,
     () => api(`/seller/products/${productId}/submit`, { method: 'POST' }),
-    'Submitted. We usually review listings within one business day.',
+    'noticeSubmitted',
   );
 }
 
@@ -231,7 +234,7 @@ export async function withdrawListing(form: FormData): Promise<void> {
   await perform(
     `/sell/listings/${productId}`,
     () => api(`/seller/products/${productId}/withdraw`, { method: 'POST' }),
-    'Listing moved back to draft.',
+    'noticeWithdrawn',
   );
 }
 
@@ -250,7 +253,7 @@ export async function importListings(
       }),
     };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   } finally {
     if (!dryRun) revalidatePath('/sell/listings');
   }
@@ -261,7 +264,9 @@ export async function importListings(
 export async function suggestListingCopy(
   productId: string,
 ): Promise<Result<ProductCopySuggestion>> {
-  if (!UUID.test(productId)) return { ok: false, error: 'Unknown listing.' };
+  if (!UUID.test(productId)) {
+    return { ok: false, error: (await getT('sellerTools'))('errorUnknownListing') };
+  }
   try {
     return {
       ok: true,
@@ -270,7 +275,7 @@ export async function suggestListingCopy(
       }),
     };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   }
 }
 
@@ -285,7 +290,7 @@ export async function shipSellerOrder(form: FormData): Promise<void> {
         method: 'POST',
         body: { carrier: text(form, 'carrier'), trackingNumber: text(form, 'trackingNumber') },
       }),
-    'Marked as shipped. The customer gets the tracking number.',
+    'noticeShipped',
   );
 }
 
@@ -293,9 +298,10 @@ export async function shipSellerOrder(form: FormData): Promise<void> {
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
-function failure(error: unknown): { ok: false; error: string } {
+async function failure(error: unknown): Promise<{ ok: false; error: string }> {
   if (error instanceof ApiError && error.status === 401) {
-    return { ok: false, error: 'Your session ended. Reload the page and sign in again.' };
+    const t = await getT('sellerTools');
+    return { ok: false, error: t('errorSessionEnded') };
   }
   return { ok: false, error: errorMessage(error) };
 }
@@ -313,7 +319,7 @@ export async function requestPhotoUpload(
       }),
     };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   }
 }
 
@@ -322,7 +328,9 @@ export async function attachPhoto(
   storageKey: string,
   alt: string,
 ): Promise<Result<null>> {
-  if (!UUID.test(productId)) return { ok: false, error: 'Unknown listing.' };
+  if (!UUID.test(productId)) {
+    return { ok: false, error: (await getT('sellerTools'))('errorUnknownListing') };
+  }
   try {
     await api(`/seller/products/${productId}/images`, {
       method: 'POST',
@@ -331,13 +339,13 @@ export async function attachPhoto(
     revalidatePath(`/sell/listings/${productId}`);
     return { ok: true, data: null };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   }
 }
 
 export async function reorderPhotos(productId: string, imageIds: string[]): Promise<Result<null>> {
   if (!UUID.test(productId) || !imageIds.every((i) => UUID.test(i))) {
-    return { ok: false, error: 'Unknown listing.' };
+    return { ok: false, error: (await getT('sellerTools'))('errorUnknownListing') };
   }
   try {
     await api(`/seller/products/${productId}/images/order`, {
@@ -347,17 +355,19 @@ export async function reorderPhotos(productId: string, imageIds: string[]): Prom
     revalidatePath(`/sell/listings/${productId}`);
     return { ok: true, data: null };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   }
 }
 
 export async function deletePhoto(productId: string, imageId: string): Promise<Result<null>> {
-  if (!UUID.test(productId) || !UUID.test(imageId)) return { ok: false, error: 'Unknown photo.' };
+  if (!UUID.test(productId) || !UUID.test(imageId)) {
+    return { ok: false, error: (await getT('sellerTools'))('errorUnknownPhoto') };
+  }
   try {
     await api(`/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' });
     revalidatePath(`/sell/listings/${productId}`);
     return { ok: true, data: null };
   } catch (error) {
-    return failure(error);
+    return await failure(error);
   }
 }
