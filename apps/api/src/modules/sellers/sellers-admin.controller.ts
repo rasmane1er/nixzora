@@ -28,6 +28,7 @@ import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { RequirePermissions } from '../identity/guards/decorators';
+import { PayoutsService } from './payouts.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellersAdminService } from './sellers-admin.service';
 
@@ -41,7 +42,21 @@ export class SellersAdminController {
   constructor(
     private readonly admin: SellersAdminService,
     private readonly orders: SellerOrdersService,
+    private readonly payouts: PayoutsService,
   ) {}
+
+  @Get('sellers/:id/payouts')
+  @RequirePermissions('sellers.manage')
+  payoutsList(@Param('id', uuid) id: string, @Query('page') page: string | undefined) {
+    return this.payouts.list(id, Math.min(500, Math.max(1, Number(page) || 1)));
+  }
+
+  /** Sends the store's available balance now, outside the daily run. */
+  @Post('sellers/:id/payouts')
+  @RequirePermissions('sellers.manage')
+  payOut(@Param('id', uuid) id: string, @Actor() actor: ActorContext) {
+    return this.payouts.payOut(id, actor);
+  }
 
   @Get('sellers/:id/balance')
   @RequirePermissions('sellers.manage')

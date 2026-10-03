@@ -22,6 +22,15 @@ export type PayoutAccountStatus = {
   requirementsDue: string[];
 };
 
+export type TransferInput = {
+  accountId: string;
+  amountCents: number;
+  currency: string;
+  /** Our payout id: the provider's idempotency key, so a retried transfer is sent once. */
+  payoutId: string;
+  description: string;
+};
+
 export interface PayoutGateway {
   readonly name: PayoutProviderName;
   /** Creates the seller's connected account. Safe to retry: one account per seller. */
@@ -35,6 +44,8 @@ export interface PayoutGateway {
     urls: { returnUrl: string; refreshUrl: string },
   ): Promise<string>;
   accountStatus(accountId: string): Promise<PayoutAccountStatus>;
+  /** Moves money from NIXZORA's balance to the seller's connected account. */
+  transfer(input: TransferInput): Promise<{ id: string }>;
 }
 
 export const PAYOUT_GATEWAY = Symbol('PAYOUT_GATEWAY');

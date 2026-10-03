@@ -27,6 +27,17 @@ Oldest first. Approve when:
 Otherwise **Send back** with a specific note ("Add the driver size to the specs"). Price and stock
 changes on live listings do not come back to this queue; text, spec and photo changes do.
 
+## Payouts
+
+Available balances are sent automatically once a day (minimum $10). To pay a store now, open it in
+**Sellers** and press **Pay out … now**. A **failed** payout shows Stripe's reason; the money is
+already back in the store's balance and the next daily run retries it once the seller has fixed
+their payout details. A payout stuck in **pending** for more than an hour means the API stopped
+between debiting and transferring: check the transfer in the Stripe Dashboard (search the payout
+id) before doing anything else.
+
+To slow down payouts for a new or risky store, raise its **payout hold** in Terms.
+
 ## Switching payouts to Stripe Connect
 
 Test mode (`PAYOUTS_PROVIDER=fake`) verifies sellers instantly and moves no money. For real

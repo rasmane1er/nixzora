@@ -46,6 +46,7 @@ import {
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
+import { PayoutsService } from './payouts.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellersService } from './sellers.service';
@@ -64,7 +65,13 @@ export class SellerController {
     private readonly sellers: SellersService,
     private readonly listings: SellerListingsService,
     private readonly orders: SellerOrdersService,
+    private readonly payouts: PayoutsService,
   ) {}
+
+  @Get('payouts')
+  payoutsList(@Query('page') page: string | undefined, @Actor() actor: ActorContext) {
+    return this.payouts.listForSeller(actor, Math.min(500, Math.max(1, Number(page) || 1)));
+  }
 
   // Orders and earnings
   @Get('orders')

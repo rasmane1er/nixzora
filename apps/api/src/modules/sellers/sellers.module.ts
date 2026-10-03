@@ -3,6 +3,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { MediaModule } from '../media/media.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PayoutsService } from './payouts.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellerController } from './seller.controller';
@@ -15,7 +16,13 @@ import { SellersService } from './sellers.service';
 @Module({
   imports: [CatalogModule, InventoryModule, MediaModule, PaymentsModule],
   controllers: [SellerController, SellersAdminController, SellersPublicController],
-  providers: [SellersService, SellerListingsService, SellerOrdersService, SellersAdminService],
+  providers: [
+    SellersService,
+    SellerListingsService,
+    SellerOrdersService,
+    SellersAdminService,
+    PayoutsService,
+  ],
   exports: [SellersService],
 })
 export class SellersModule {}

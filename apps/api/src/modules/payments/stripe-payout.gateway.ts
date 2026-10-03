@@ -3,6 +3,7 @@ import {
   type PayoutAccountInput,
   type PayoutAccountStatus,
   type PayoutGateway,
+  type TransferInput,
 } from './payout-gateway';
 
 /**
@@ -62,5 +63,20 @@ export class StripePayoutGateway implements PayoutGateway {
         ...(account.requirements?.past_due ?? []),
       ].filter((field, index, all) => all.indexOf(field) === index),
     };
+  }
+
+  async transfer(input: TransferInput) {
+    const transfer = await this.stripe.transfers.create(
+      {
+        amount: input.amountCents,
+        currency: input.currency.toLowerCase(),
+        destination: input.accountId,
+        description: input.description,
+        transfer_group: `payout_${input.payoutId}`,
+        metadata: { payoutId: input.payoutId },
+      },
+      { idempotencyKey: `nixzora-payout-${input.payoutId}` },
+    );
+    return { id: transfer.id };
   }
 }

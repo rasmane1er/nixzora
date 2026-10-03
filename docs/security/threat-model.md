@@ -205,6 +205,15 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Refund of NIXZORA's items charged to a seller          | Refunds follow the returned lines, or each party's share of the items, capped per part          | ✔      |
 | Cancelling an order a seller already shipped           | Refused: the order must be refunded instead                                                     | ✔      |
 
+## Seller payouts (ADR-0014)
+
+| Threat                                           | Mitigation                                                                                       | Status |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------ |
+| The same balance paid twice (retries, two tasks) | Balance debited first under a per-seller lock; one pending payout per store; idempotent transfer | ✔      |
+| Money lost when a transfer fails                 | Failed payouts credit the amount back to the balance and keep the provider's reason              | ✔      |
+| Staff member pays out to themselves              | Payouts only go to the store's verified connected account; staff action needs MFA and is audited | ✔      |
+| Seller withdraws before a refund or chargeback   | Earnings held 14 days after shipping (adjustable per store); negative balances net later sales   | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).

@@ -810,6 +810,7 @@ model Seller {
   orderItems OrderItem[]
   orders     SellerOrder[]
   ledger     SellerLedgerEntry[]
+  payouts    Payout[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -895,12 +896,48 @@ model SellerLedgerEntry {
   description    String
   /// Makes each entry happen once, e.g. "sale:<sellerOrderId>".
   idempotencyKey String           @unique @map("idempotency_key")
+  /// The payout this entry pays out or reverses.
+  payoutId       String?          @map("payout_id") @db.Uuid
   createdAt      DateTime         @default(now()) @map("created_at")
 
   seller      Seller       @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   sellerOrder SellerOrder? @relation(fields: [sellerOrderId], references: [id], onDelete: Restrict)
+  payout      Payout?      @relation(fields: [payoutId], references: [id], onDelete: Restrict)
 
   @@index([sellerId, availableAt])
   @@index([sellerOrderId])
+  @@index([payoutId])
   @@map("seller_ledger_entries")
+}
+
+enum PayoutStatus {
+  /// Debited from the balance; the transfer is being sent.
+  PENDING
+  PAID
+  /// The transfer failed; the amount went back to the balance.
+  FAILED
+}
+
+/// Money sent from NIXZORA to a seller's connected account (p7-06, ADR-0014).
+model Payout {
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  sellerId           String       @map("seller_id") @db.Uuid
+  amountCents        Int          @map("amount_cents")
+  currency           String       @default("USD") @db.Char(3)
+  status             PayoutStatus @default(PENDING)
+  /// "FAKE" or "STRIPE"
+  provider           String
+  providerTransferId String?      @unique @map("provider_transfer_id")
+  failureReason      String?      @map("failure_reason")
+  /// Staff member who sent it; null for the automatic daily run.
+  requestedBy        String?      @map("requested_by") @db.Uuid
+  createdAt          DateTime     @default(now()) @map("created_at")
+  paidAt             DateTime?    @map("paid_at")
+
+  seller Seller              @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  ledger SellerLedgerEntry[]
+
+  @@index([sellerId, createdAt])
+  @@index([status])
+  @@map("payouts")
 }

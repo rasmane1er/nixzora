@@ -113,6 +113,10 @@ export const EnvSchema = z
      * (development, tests, demo); "stripe" uses Stripe Connect Express accounts.
      */
     PAYOUTS_PROVIDER: z.enum(['fake', 'stripe']).default('fake'),
+    /** Smallest payout, in cents; smaller balances wait for more sales. */
+    PAYOUT_MIN_CENTS: z.coerce.number().int().min(100).default(1000),
+    /** Send available balances automatically once a day (off in tests). */
+    PAYOUTS_AUTO: booleanString.default(true),
     /** Flat shipping rate, free above the threshold. */
     SHIPPING_FLAT_CENTS: z.coerce.number().int().min(0).default(999),
     FREE_SHIPPING_THRESHOLD_CENTS: z.coerce.number().int().min(0).default(9900),

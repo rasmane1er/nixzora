@@ -61,3 +61,12 @@ export async function reviewListing(form: FormData): Promise<void> {
     decision === 'APPROVE' ? 'Listing approved and live.' : 'Sent back to the seller.',
   );
 }
+
+export async function payOutSeller(form: FormData): Promise<void> {
+  const id = uuidField(form, 'id');
+  await perform(
+    `/sellers/${id}`,
+    () => api(`/admin/sellers/${id}/payouts`, { method: 'POST' }),
+    'Payout sent.',
+  );
+}

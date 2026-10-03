@@ -202,6 +202,18 @@ export type SellerLedgerEntryView = {
   createdAt: string;
 };
 
+export type PayoutView = {
+  id: string;
+  amountCents: number;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED';
+  failureReason: string | null;
+  /** Sent by the daily run (true) or by a staff member (false). */
+  automatic: boolean;
+  createdAt: string;
+  paidAt: string | null;
+};
+
 export type SellerOrderListQuery = z.infer<typeof SellerOrderListQuerySchema>;
 export type SellerOrderShip = z.infer<typeof SellerOrderShipSchema>;
 

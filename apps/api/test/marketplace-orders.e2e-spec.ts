@@ -15,6 +15,7 @@ import {
   AuthTokensSchema,
   type CheckoutResponse,
   type OrderView,
+  type PayoutView,
   type SellerBalance,
   type SellerOrderView,
 } from '@nixzora/validation';
@@ -24,7 +25,9 @@ import { configureApp } from '../src/app.setup';
 import { totp } from '../src/modules/identity/services/totp';
 import { MailService } from '../src/modules/notifications/mail.service';
 import { OutboxService } from '../src/modules/outbox/outbox.service';
+import { PayoutsService } from '../src/modules/sellers/payouts.service';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { RedisService } from '../src/redis/redis.service';
 import { removeTestData } from './cleanup';
 
 const address = {
@@ -375,6 +378,95 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
           .expect(200)
       ).body as SellerBalance;
       expect(staffView.onHoldCents).toBe(17600 + 8800);
+    });
+  });
+
+  describe('payouts', () => {
+    const payouts = async () =>
+      (await http().get('/api/v1/seller/payouts').set(bearer(sellerToken)).expect(200)).body
+        .items as PayoutView[];
+
+    it('pays out only what is past its hold, and never twice', async () => {
+      // Nothing has cleared the 14-day hold yet: available is still -$88 from the refund.
+      await http()
+        .post(`/api/v1/admin/sellers/${sellerId}/payouts`)
+        .set(bearer(staffToken))
+        .expect(409);
+      // Fast-forward: the two sales clear their hold.
+      await prisma.sellerLedgerEntry.updateMany({
+        where: { sellerId, type: 'SALE' },
+        data: { availableAt: new Date(Date.now() - 1000) },
+      });
+      expect((await balance()).availableCents).toBe(17600 + 8800 - 8800);
+
+      await http()
+        .post(`/api/v1/admin/sellers/${sellerId}/payouts`)
+        .set(bearer(sellerToken))
+        .expect(403);
+      const payout = (
+        await http()
+          .post(`/api/v1/admin/sellers/${sellerId}/payouts`)
+          .set(bearer(staffToken))
+          .expect(201)
+      ).body as PayoutView;
+      expect(payout).toMatchObject({ status: 'PAID', amountCents: 17600, automatic: false });
+      expect(await balance()).toMatchObject({ availableCents: 0, lifetimeNetCents: 17600 });
+      expect((await payouts()).map((p) => p.id)).toEqual([payout.id]);
+      expect(mail.lastTo(sellerEmail, 'sellers.payout-sent')?.text).toContain('$176.00');
+
+      // The balance is empty now; a second payout is refused.
+      await http()
+        .post(`/api/v1/admin/sellers/${sellerId}/payouts`)
+        .set(bearer(staffToken))
+        .expect(409);
+      const row = await prisma.payout.findUniqueOrThrow({ where: { id: payout.id } });
+      expect(row.providerTransferId).toMatch(/^fake_tr_/);
+    });
+
+    it('puts the money back when the transfer fails', async () => {
+      await prisma.sellerLedgerEntry.create({
+        data: {
+          sellerId,
+          type: 'ADJUSTMENT',
+          amountCents: 2500,
+          availableAt: new Date(Date.now() - 1000),
+          description: 'Test credit',
+          idempotencyKey: `test-credit:${run}`,
+        },
+      });
+      await prisma.seller.update({
+        where: { id: sellerId },
+        data: { payoutAccountId: `broken_${run}` },
+      });
+      const failed = (
+        await http()
+          .post(`/api/v1/admin/sellers/${sellerId}/payouts`)
+          .set(bearer(staffToken))
+          .expect(201)
+      ).body as PayoutView;
+      expect(failed).toMatchObject({ status: 'FAILED', amountCents: 2500 });
+      expect(failed.failureReason).toBeTruthy();
+      expect((await balance()).availableCents).toBe(2500);
+
+      // Fixed account: the daily run sends it (the store's last successful payout was today, so
+      // first make it look like yesterday's).
+      await prisma.seller.update({
+        where: { id: sellerId },
+        data: { payoutAccountId: `fake_acct_${run}` },
+      });
+      await prisma.payout.updateMany({
+        where: { sellerId },
+        data: { createdAt: new Date(Date.now() - 2 * 86_400_000) },
+      });
+      await app.get(RedisService).client.del('payouts:run');
+      const result = await app.get(PayoutsService).runDue();
+      expect(result.paid).toBeGreaterThanOrEqual(1);
+      expect((await payouts())[0]).toMatchObject({
+        status: 'PAID',
+        amountCents: 2500,
+        automatic: true,
+      });
+      expect((await balance()).availableCents).toBe(0);
     });
   });
 });

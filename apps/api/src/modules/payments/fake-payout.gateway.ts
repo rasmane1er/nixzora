@@ -3,6 +3,7 @@ import {
   type PayoutAccountInput,
   type PayoutAccountStatus,
   type PayoutGateway,
+  type TransferInput,
 } from './payout-gateway';
 
 /**
@@ -25,5 +26,14 @@ export class FakePayoutGateway implements PayoutGateway {
 
   async accountStatus(): Promise<PayoutAccountStatus> {
     return { detailsSubmitted: true, payoutsEnabled: true, requirementsDue: [] };
+  }
+
+  async transfer(input: TransferInput) {
+    if (!input.accountId.startsWith('fake_acct_')) {
+      throw new Error('Not a test-mode account.');
+    }
+    // Deterministic per payout, like Stripe's idempotency key.
+    const digest = createHash('sha256').update(`nixzora-fake-tr:${input.payoutId}`).digest('hex');
+    return { id: `fake_tr_${digest.slice(0, 20)}` };
   }
 }

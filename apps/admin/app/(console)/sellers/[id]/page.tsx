@@ -1,4 +1,9 @@
-import { type AdminSellerView, type SellerBalance } from '@nixzora/validation';
+import {
+  type AdminSellerView,
+  type PagedResult,
+  type PayoutView,
+  type SellerBalance,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -6,7 +11,12 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { dateTime, money, param, type SearchParams } from '@/lib/format';
-import { changeSellerStatus, refreshSellerPayouts, updateSellerTerms } from '../actions';
+import {
+  changeSellerStatus,
+  payOutSeller,
+  refreshSellerPayouts,
+  updateSellerTerms,
+} from '../actions';
 
 export const metadata: Metadata = { title: 'Seller' };
 
@@ -33,7 +43,10 @@ export default async function SellerPage({
   const { id } = await params;
   const search = await searchParams;
   const seller = await loadSeller(id);
-  const balance = await load<SellerBalance>(`/admin/sellers/${id}/balance`);
+  const [balance, payoutHistory] = await Promise.all([
+    load<SellerBalance>(`/admin/sellers/${id}/balance`),
+    load<PagedResult<PayoutView>>(`/admin/sellers/${id}/payouts`),
+  ]);
   const { payouts } = seller;
 
   return (
@@ -168,6 +181,38 @@ export default async function SellerPage({
               </tr>
             </tbody>
           </table>
+          {balance.availableCents >= 1000 &&
+          seller.status === 'ACTIVE' &&
+          payouts.payoutsEnabled ? (
+            <ActionButton
+              action={payOutSeller}
+              label={`Pay out ${money(balance.availableCents)} now`}
+              tone="primary"
+              fields={{ id }}
+            />
+          ) : null}
+          {payoutHistory.items.length ? (
+            <>
+              <h3>Recent payouts</h3>
+              <table>
+                <tbody>
+                  {payoutHistory.items.slice(0, 10).map((payout) => (
+                    <tr key={payout.id}>
+                      <td>{dateTime(payout.paidAt ?? payout.createdAt)}</td>
+                      <td>
+                        <StatusPill value={payout.status} />
+                        {payout.failureReason ? (
+                          <div className="muted">{payout.failureReason}</div>
+                        ) : null}
+                      </td>
+                      <td>{payout.automatic ? 'Daily run' : 'Staff'}</td>
+                      <td className="num">{money(payout.amountCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
           {payouts.accountConnected ? (
             <ActionButton
               action={refreshSellerPayouts}
