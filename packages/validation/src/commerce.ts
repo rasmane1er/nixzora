@@ -202,6 +202,15 @@ export type OrderItemView = {
   totalCents: number;
 };
 
+export type ShipmentView = {
+  /** null for NIXZORA's own items. */
+  seller: { handle: string; displayName: string } | null;
+  status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  tracking: { carrier: string; number: string; url: string | null } | null;
+  /** Order item ids in this shipment. */
+  itemIds: string[];
+};
+
 export type OrderView = {
   id: string;
   number: string;
@@ -218,6 +227,11 @@ export type OrderView = {
   shippingAddress: z.infer<typeof AddressSchema>;
   items: OrderItemView[];
   tracking: { carrier: string; number: string; url: string | null } | null;
+  /**
+   * Marketplace orders ship in parts: NIXZORA's own items and each seller's (empty for orders
+   * that only contain NIXZORA's items, which use `tracking`).
+   */
+  shipments: ShipmentView[];
   /** Delivered within the return window and not fully returned yet. */
   returnableUntil: string | null;
   timeline: { status: OrderStatus; at: string }[];

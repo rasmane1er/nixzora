@@ -1,6 +1,13 @@
-import { type MeResponse, type SellerView } from '@nixzora/validation';
+import {
+  type MeResponse,
+  type PagedResult,
+  type SellerBalance,
+  type SellerOrderView,
+  type SellerView,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { SellerBalanceCards } from '@/components/SellerBalanceCards';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api } from '@/lib/api';
 import { param, type SearchParams } from '@/lib/params';
@@ -24,7 +31,19 @@ export default async function SellPage({ searchParams }: { searchParams: SearchP
     const me = await api<MeResponse>('/auth/me');
     return <Apply email={me.email} notice={notice} error={error} />;
   }
-  return <Overview seller={seller} notice={notice} error={error} />;
+  const [balance, toShip] = await Promise.all([
+    api<SellerBalance>('/seller/balance'),
+    api<PagedResult<SellerOrderView>>('/seller/orders?status=PAID&pageSize=1'),
+  ]);
+  return (
+    <Overview
+      seller={seller}
+      balance={balance}
+      toShip={toShip.total}
+      notice={notice}
+      error={error}
+    />
+  );
 }
 
 const STEPS = [
@@ -139,10 +158,14 @@ function Apply({ email, notice, error }: { email: string; notice?: string; error
 
 function Overview({
   seller,
+  balance,
+  toShip,
   notice,
   error,
 }: {
   seller: SellerView;
+  balance: SellerBalance;
+  toShip: number;
   notice?: string;
   error?: string;
 }) {
@@ -200,21 +223,18 @@ function Overview({
         </p>
       ) : null}
 
-      <div className="seller-stats">
-        {(
-          [
-            ['Live', seller.listings.active],
-            ['In review', seller.listings.pendingReview],
-            ['Drafts', seller.listings.draft],
-            ['Commission', `${seller.commissionBps / 100}%`],
-          ] as const
-        ).map(([label, value]) => (
-          <div key={label} className="card">
-            <span className="muted">{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </div>
+      {toShip ? (
+        <p className="banner banner--info">
+          {toShip} {toShip === 1 ? 'order is' : 'orders are'} waiting to ship.{' '}
+          <Link href="/sell/orders">Ship now →</Link>
+        </p>
+      ) : null}
+      <SellerBalanceCards balance={balance} />
+      <p className="muted" style={{ fontSize: 14 }}>
+        {seller.listings.active} live · {seller.listings.pendingReview} in review ·{' '}
+        {seller.listings.draft} {seller.listings.draft === 1 ? 'draft' : 'drafts'} ·{' '}
+        {seller.commissionBps / 100}% commission
+      </p>
 
       <section className="card stack">
         <h2>Getting started</h2>

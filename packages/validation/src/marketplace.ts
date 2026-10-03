@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EmailSchema } from './auth';
+import { CARRIERS } from './commerce';
 import {
   ProductCardSchema,
   ProductCreateSchema,
@@ -121,6 +122,88 @@ export const SellerProductRowSchema = ProductCardSchema.extend({
   reviewNote: z.string().nullable(),
   updatedAt: z.iso.datetime(),
 });
+
+// ───────────── Seller orders and earnings (p7-04, p7-05) ─────────────
+
+export const SellerOrderStatusSchema = z.enum(['PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED']);
+
+export const SellerOrderListQuerySchema = z.object({
+  status: SellerOrderStatusSchema.optional(),
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+});
+
+export const SellerOrderShipSchema = z.object({
+  carrier: z.enum(CARRIERS),
+  trackingNumber: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9-]{6,40}$/, { message: 'Enter the tracking number.' }),
+});
+
+export type SellerOrderView = {
+  id: string;
+  orderNumber: string;
+  status: z.infer<typeof SellerOrderStatusSchema>;
+  currency: string;
+  placedAt: string | null;
+  items: {
+    id: string;
+    productTitle: string;
+    variantTitle: string;
+    sku: string;
+    quantity: number;
+    unitPriceCents: number;
+    totalCents: number;
+  }[];
+  itemsCents: number;
+  shippingCents: number;
+  commissionBps: number;
+  commissionCents: number;
+  netCents: number;
+  refundedCents: number;
+  /** Where to send it. Only what the label needs: no customer email or phone. */
+  shipTo: {
+    fullName: string;
+    line1: string;
+    line2?: string | null;
+    city: string;
+    region: string;
+    postalCode: string;
+    country: string;
+  };
+  tracking: { carrier: string; number: string; url: string | null } | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+};
+
+export type SellerBalance = {
+  currency: string;
+  /** Net of paid orders the seller has not shipped yet. */
+  pendingCents: number;
+  /** Earned, waiting for the hold period to end. */
+  onHoldCents: number;
+  /** Can be paid out now (may be negative after refunds). */
+  availableCents: number;
+  /** All sales minus refunds, ever. */
+  lifetimeNetCents: number;
+  /** When the next held amount becomes available. */
+  nextReleaseAt: string | null;
+};
+
+export type SellerLedgerEntryView = {
+  id: string;
+  type: 'SALE' | 'REFUND' | 'PAYOUT' | 'ADJUSTMENT';
+  amountCents: number;
+  description: string;
+  orderNumber: string | null;
+  availableAt: string;
+  createdAt: string;
+};
+
+export type SellerOrderListQuery = z.infer<typeof SellerOrderListQuerySchema>;
+export type SellerOrderShip = z.infer<typeof SellerOrderShipSchema>;
 
 // ───────────── Ops Center ─────────────
 

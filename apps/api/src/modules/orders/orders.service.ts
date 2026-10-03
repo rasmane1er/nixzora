@@ -39,6 +39,13 @@ import {
   type PaymentGateway,
 } from '../payments/payment-gateway';
 import {
+  assertNoSellerShipped,
+  hasSellerItems,
+  markPartsDelivered,
+  settleShipment,
+  splitBySeller,
+} from './marketplace';
+import {
   newOrderNumber,
   orderAccessToken,
   orderInclude,
@@ -277,6 +284,15 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               });
             }
           }
+          // Who sells each line, frozen at purchase (null = NIXZORA).
+          const owners = new Map(
+            (
+              await tx.product.findMany({
+                where: { id: { in: [...new Set(lines.map((line) => line.productId))] } },
+                select: { id: true, sellerId: true },
+              })
+            ).map((product) => [product.id, product.sellerId]),
+          );
           const order = await tx.order.create({
             data: {
               number: newOrderNumber(),
@@ -299,6 +315,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                   unitPriceCents: line.unitPriceCents,
                   quantity: line.quantity,
                   totalCents: line.lineTotalCents,
+                  sellerId: owners.get(line.productId) ?? null,
                 })),
               },
             },
@@ -409,6 +426,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             data: { status: 'PAID', placedAt: new Date(), cancelledAt: null, cancelReason: null },
           });
           if (paid.count === 0) return 'applied' as const;
+          await splitBySeller(tx, order);
           const shortfall = await this.inventory.commitOrder(
             tx,
             order.id,
@@ -604,6 +622,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           where: { id, status: { in: from as never[] } },
           data,
         });
+        if (updated.count && data.status === 'DELIVERED') await markPartsDelivered(tx, id, now);
         if (updated.count && event) {
           await tx.outboxEvent.create({
             data: {
@@ -628,6 +647,16 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         await transition(['PAID'], { status: 'FULFILLING', fulfillingAt: now });
         break;
       case 'ship':
+        if (hasSellerItems(order)) {
+          // Marketplace order: this ships NIXZORA's own items; sellers ship theirs.
+          await this.prisma.$transaction((tx) =>
+            settleShipment(tx, id, {
+              carrier: input.carrier,
+              trackingNumber: input.trackingNumber,
+            }),
+          );
+          break;
+        }
         await transition(
           ['PAID', 'FULFILLING'],
           {
@@ -685,6 +714,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (order.status !== 'PAID' && order.status !== 'FULFILLING') {
       throw new ConflictException('Only orders that have not shipped can be cancelled.');
     }
+    if (order.trackingNumber) {
+      throw new ConflictException('Part of this order has already shipped. Refund it instead.');
+    }
+    await assertNoSellerShipped(this.prisma, order.id);
     if (!user.permissions.includes('orders.refund')) {
       throw new ConflictException(
         'Cancelling a paid order refunds it. Ask someone who can issue refunds.',

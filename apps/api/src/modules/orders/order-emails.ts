@@ -81,6 +81,19 @@ export class OrderEmails implements OnModuleInit {
       .filter(Boolean)
       .join('\n');
 
+    // Marketplace orders arrive in several parcels, one per seller.
+    const parcels = view.shipments.length
+      ? view.shipments.filter((part) => part.tracking)
+      : view.tracking
+        ? [{ seller: null, tracking: view.tracking }]
+        : [];
+    const trackingText = parcels
+      .map(
+        (part) =>
+          `${part.seller ? `From ${part.seller.displayName}: ` : view.shipments.length ? 'From NIXZORA: ' : ''}${part.tracking!.carrier} tracking number ${part.tracking!.number}\n${part.tracking!.url ?? ''}\n\n`,
+      )
+      .join('');
+
     const content = {
       receipt: {
         subject: `Your NIXZORA order ${view.number}`,
@@ -88,7 +101,7 @@ export class OrderEmails implements OnModuleInit {
       },
       shipped: {
         subject: `Your order ${view.number} is on its way`,
-        text: `Good news: order ${view.number} has shipped.\n\n${view.tracking ? `${view.tracking.carrier} tracking number: ${view.tracking.number}\n${view.tracking.url ?? ''}\n\n` : ''}Order details: ${link}\n`,
+        text: `Good news: order ${view.number} has shipped.\n\n${trackingText}Order details: ${link}\n`,
       },
       cancelled: {
         subject: `Your order ${view.number} was cancelled`,

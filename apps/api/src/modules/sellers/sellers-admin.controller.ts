@@ -28,6 +28,7 @@ import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { RequirePermissions } from '../identity/guards/decorators';
+import { SellerOrdersService } from './seller-orders.service';
 import { SellersAdminService } from './sellers-admin.service';
 
 const uuid = new ParseUUIDPipe();
@@ -37,7 +38,16 @@ const uuid = new ParseUUIDPipe();
 @ApiBearerAuth()
 @Controller({ path: 'admin', version: '1' })
 export class SellersAdminController {
-  constructor(private readonly admin: SellersAdminService) {}
+  constructor(
+    private readonly admin: SellersAdminService,
+    private readonly orders: SellerOrdersService,
+  ) {}
+
+  @Get('sellers/:id/balance')
+  @RequirePermissions('sellers.manage')
+  balance(@Param('id', uuid) id: string) {
+    return this.orders.balance(id);
+  }
 
   @Get('sellers')
   @RequirePermissions('sellers.manage')

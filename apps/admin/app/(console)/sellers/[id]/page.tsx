@@ -1,11 +1,11 @@
-import { type AdminSellerView } from '@nixzora/validation';
+import { type AdminSellerView, type SellerBalance } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
-import { dateTime, param, type SearchParams } from '@/lib/format';
+import { dateTime, money, param, type SearchParams } from '@/lib/format';
 import { changeSellerStatus, refreshSellerPayouts, updateSellerTerms } from '../actions';
 
 export const metadata: Metadata = { title: 'Seller' };
@@ -33,6 +33,7 @@ export default async function SellerPage({
   const { id } = await params;
   const search = await searchParams;
   const seller = await loadSeller(id);
+  const balance = await load<SellerBalance>(`/admin/sellers/${id}/balance`);
   const { payouts } = seller;
 
   return (
@@ -144,6 +145,27 @@ export default async function SellerPage({
                   <td className="mono">{payouts.requirementsDue.join(', ')}</td>
                 </tr>
               ) : null}
+            </tbody>
+          </table>
+          <h3>Earnings</h3>
+          <table>
+            <tbody>
+              <tr>
+                <th scope="row">Available</th>
+                <td>{money(balance.availableCents)}</td>
+              </tr>
+              <tr>
+                <th scope="row">On hold</th>
+                <td>{money(balance.onHoldCents)}</td>
+              </tr>
+              <tr>
+                <th scope="row">Waiting to ship</th>
+                <td>{money(balance.pendingCents)}</td>
+              </tr>
+              <tr>
+                <th scope="row">Lifetime net</th>
+                <td>{money(balance.lifetimeNetCents)}</td>
+              </tr>
             </tbody>
           </table>
           {payouts.accountConnected ? (

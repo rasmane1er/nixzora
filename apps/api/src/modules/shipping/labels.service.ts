@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from '../identity/auth-user';
+import { markPartsDelivered, settleShipment } from '../orders/marketplace';
 import { orderInclude, toOrderView } from '../orders/order-links';
 import {
   type ShipAddress,
@@ -54,6 +55,12 @@ export class LabelsService {
     if (order.status !== 'PAID' && order.status !== 'FULFILLING') {
       throw new ConflictException('Labels can be bought for paid orders that have not shipped.');
     }
+    if (order.items.every((item) => item.sellerId)) {
+      throw new ConflictException('Every item in this order ships from its seller.');
+    }
+    if (order.trackingNumber) {
+      throw new ConflictException("NIXZORA's items in this order have already shipped.");
+    }
     const to = order.shippingAddress as Address;
     const label = await this.gateway.buyLabel({
       reference: order.number,
@@ -74,6 +81,16 @@ export class LabelsService {
 
     const now = new Date();
     const updated = await this.prisma.$transaction(async (tx) => {
+      if (order.items.some((item) => item.sellerId)) {
+        // Marketplace order: the label covers NIXZORA's own items; sellers ship theirs.
+        await settleShipment(tx, orderId, {
+          carrier: label.carrier,
+          trackingNumber: label.trackingNumber,
+          labelUrl: label.labelUrl,
+          postageCents: label.postageCents,
+        });
+        return true;
+      }
       const result = await tx.order.updateMany({
         where: { id: orderId, status: { in: ['PAID', 'FULFILLING'] } },
         data: {
@@ -138,6 +155,7 @@ export class LabelsService {
         where: { id: order.id, status: 'SHIPPED' },
         data: { status: 'DELIVERED', deliveredAt: new Date() },
       });
+      if (result.count) await markPartsDelivered(tx, order.id);
       if (result.count) {
         await tx.outboxEvent.create({
           data: {

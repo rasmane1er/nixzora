@@ -44,6 +44,9 @@ export default async function OrderPage({
     provider: string;
   }>(`/admin/orders/${id}/shipping`).catch(() => null);
   const open = ['PAID', 'FULFILLING'].includes(order.status);
+  // Marketplace orders: staff ship only NIXZORA's own items; sellers ship theirs.
+  const ownPart = order.shipments.find((part) => !part.seller);
+  const shipOwn = open && (!order.shipments.length || ownPart?.status === 'PROCESSING');
   const a = order.shippingAddress;
 
   return (
@@ -129,6 +132,46 @@ export default async function OrderPage({
             </div>
           </section>
 
+          {order.shipments.length ? (
+            <section className="card">
+              <h2>Shipments</h2>
+              <p className="muted">
+                Marketplace order: each seller ships its own items. The order is shipped when every
+                part has shipped.
+              </p>
+              <table>
+                <tbody>
+                  {order.shipments.map((part) => (
+                    <tr key={part.seller?.handle ?? 'nixzora'}>
+                      <td>
+                        <strong>{part.seller?.displayName ?? 'NIXZORA'}</strong>
+                        <div className="muted">
+                          {order.items
+                            .filter((item) => part.itemIds.includes(item.id))
+                            .map((item) => `${item.quantity} × ${item.sku}`)
+                            .join(', ')}
+                        </div>
+                      </td>
+                      <td>
+                        <StatusPill value={part.status} />
+                      </td>
+                      <td>
+                        {part.tracking ? (
+                          <>
+                            {part.tracking.carrier}{' '}
+                            <span className="mono">{part.tracking.number}</span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          ) : null}
+
           {canFulfill &&
           (open || order.status === 'SHIPPED' || order.status === 'PENDING_PAYMENT') ? (
             <section className="card">
@@ -141,7 +184,7 @@ export default async function OrderPage({
                     fields={{ id: order.id, action: 'start' }}
                   />
                 ) : null}
-                {open && label?.provider !== 'NONE' ? (
+                {shipOwn && label?.provider !== 'NONE' ? (
                   <form action={buyLabel} className="inline-form" style={{ flexWrap: 'wrap' }}>
                     <input type="hidden" name="id" value={order.id} />
                     <span className="muted">Box (in)</span>
@@ -173,7 +216,7 @@ export default async function OrderPage({
                     <SubmitButton>Buy label &amp; ship</SubmitButton>
                   </form>
                 ) : null}
-                {open ? (
+                {shipOwn ? (
                   <form action={fulfill} className="inline-form" style={{ flexWrap: 'wrap' }}>
                     <span className="muted">Or enter tracking yourself:</span>
                     <input type="hidden" name="id" value={order.id} />

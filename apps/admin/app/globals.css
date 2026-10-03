@@ -375,6 +375,7 @@ th.num {
 .pill--partially_refunded,
 .pill--pending,
 .pill--pending_review,
+.pill--processing,
 .pill--draft {
   background: #fdf0d8;
   color: var(--warn-fg);

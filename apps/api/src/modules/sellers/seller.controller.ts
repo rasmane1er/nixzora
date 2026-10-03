@@ -22,6 +22,10 @@ import {
   type SellerApplication,
   SellerApplicationSchema,
   type SellerMeResponse,
+  type SellerOrderListQuery,
+  SellerOrderListQuerySchema,
+  type SellerOrderShip,
+  SellerOrderShipSchema,
   SellerMeResponseSchema,
   type SellerProductCreate,
   SellerProductCreateSchema,
@@ -43,6 +47,7 @@ import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { SellerListingsService } from './seller-listings.service';
+import { SellerOrdersService } from './seller-orders.service';
 import { SellersService } from './sellers.service';
 
 const uuid = new ParseUUIDPipe();
@@ -58,7 +63,43 @@ export class SellerController {
   constructor(
     private readonly sellers: SellersService,
     private readonly listings: SellerListingsService,
+    private readonly orders: SellerOrdersService,
   ) {}
+
+  // Orders and earnings
+  @Get('orders')
+  sellerOrders(
+    @Query(new ZodValidationPipe(SellerOrderListQuerySchema)) query: SellerOrderListQuery,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.orders.list(query, actor);
+  }
+
+  @Get('orders/:id')
+  sellerOrder(@Param('id', uuid) id: string, @Actor() actor: ActorContext) {
+    return this.orders.get(id, actor);
+  }
+
+  @Post('orders/:id/ship')
+  @HttpCode(HttpStatus.OK)
+  @ApiZodBody(SellerOrderShipSchema)
+  ship(
+    @Param('id', uuid) id: string,
+    @Body(new ZodValidationPipe(SellerOrderShipSchema)) body: SellerOrderShip,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.orders.ship(id, body, actor);
+  }
+
+  @Get('balance')
+  balance(@Actor() actor: ActorContext) {
+    return this.orders.balanceFor(actor);
+  }
+
+  @Get('ledger')
+  ledger(@Query('page') page: string | undefined, @Actor() actor: ActorContext) {
+    return this.orders.ledger(actor, Math.min(500, Math.max(1, Number(page) || 1)));
+  }
 
   @Get('me')
   @ApiZodResponse(SellerMeResponseSchema)

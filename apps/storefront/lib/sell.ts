@@ -36,6 +36,13 @@ export const LISTING_STATUS_LABEL: Record<string, string> = {
   ARCHIVED: 'Archived',
 };
 
+export const SELLER_ORDER_LABEL: Record<string, string> = {
+  PAID: 'To ship',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+};
+
 export type CategoryOption = { id: string; slug: string; label: string };
 
 /** Category tree flattened for a <select>: "Audio › Speakers". */

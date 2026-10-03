@@ -193,6 +193,18 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Malicious or counterfeit listing reaches shoppers | Manual review queue with photos, specs and prices; staff notes; audit trail of every decision       | ✔      |
 | Test payouts enabled in production                | Environment validation refuses PAYOUTS_PROVIDER=fake in production unless the demo flag is set      | ✔      |
 
+## Marketplace orders and earnings (ADR-0013)
+
+| Threat                                                 | Mitigation                                                                                      | Status |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------ |
+| Seller sees customer contact details                   | Seller views include the ship-to name and address only; no email or phone                       | ✔      |
+| Seller ships or reads another store's order            | Every seller-order route is scoped to the caller's store; others read as 404                    | ✔      |
+| Seller marks an order shipped with a fake tracking no. | Earnings are held 14 days after shipping; refunds are debited from the seller; audit trail      | ◐      |
+| Commission changed after the sale                      | The rate is frozen on the seller order when the payment succeeds                                | ✔      |
+| Earnings counted twice (retried webhook or request)    | Ledger entries carry unique idempotency keys (one sale per part, one debit per refund and part) | ✔      |
+| Refund of NIXZORA's items charged to a seller          | Refunds follow the returned lines, or each party's share of the items, capped per part          | ✔      |
+| Cancelling an order a seller already shipped           | Refused: the order must be refunded instead                                                     | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).
@@ -201,3 +213,4 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 - Content Security Policy for the Ops Center (P6).
 - Stripe Connect `account.updated` webhook so verification changes arrive without a refresh (p7-06).
 - Seller staff invitations (STAFF members) with their own audit trail (P7).
+- Verify seller tracking numbers with carrier webhooks before releasing earnings (P8).

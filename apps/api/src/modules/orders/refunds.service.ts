@@ -10,6 +10,7 @@ import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PAYMENT_GATEWAY, type PaymentGateway } from '../payments/payment-gateway';
+import { allocateRefund } from './marketplace';
 
 const REFUNDABLE = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'] as const;
 
@@ -19,7 +20,14 @@ export type RefundableOrder = {
   status: string;
   totalCents: number;
   refundedCents: number;
-  items: { id: string; variantId: string | null; quantity: number }[];
+  items: {
+    id: string;
+    variantId: string | null;
+    quantity: number;
+    sellerId?: string | null;
+    totalCents?: number;
+    unitPriceCents?: number;
+  }[];
 };
 
 export type RefundOptions = {
@@ -104,7 +112,7 @@ export class RefundsService {
           data: { refundedCents: { increment: amountCents } },
         });
       }
-      await tx.refund.create({
+      const row = await tx.refund.create({
         data: {
           paymentId: payment.id,
           providerRefundId: refund.id,
@@ -117,6 +125,12 @@ export class RefundsService {
         where: { id: payment.id },
         data: { status: full ? 'REFUNDED' : 'PARTIALLY_REFUNDED' },
       });
+      await allocateRefund(
+        tx,
+        order,
+        { id: row.id, amountCents, cancel: Boolean(options.cancel) },
+        options.restock,
+      );
       if (options.restock?.length) await this.inventory.restock(tx, options.restock);
       if (options.returnId) {
         await tx.returnRequest.update({

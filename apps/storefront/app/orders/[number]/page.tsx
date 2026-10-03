@@ -80,7 +80,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
       {order.status !== 'PENDING_PAYMENT' && order.status !== 'CANCELLED' ? (
         <section className="card stack">
           <OrderTimeline order={order} />
-          {order.tracking ? (
+          {order.shipments.length ? (
+            <Shipments order={order} />
+          ) : order.tracking ? (
             <p>
               {order.tracking.carrier} tracking{' '}
               <span className="mono">{order.tracking.number}</span>
@@ -148,5 +150,56 @@ export default async function OrderPage({ params, searchParams }: Props) {
       </div>
       <Link href="/search">Continue shopping →</Link>
     </div>
+  );
+}
+
+const SHIPMENT_LABEL: Record<OrderView['shipments'][number]['status'], string> = {
+  PROCESSING: 'Preparing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+};
+
+/** Marketplace orders arrive in parcels: NIXZORA's own items and one per seller. */
+function Shipments({ order }: { order: OrderView }) {
+  return (
+    <ul className="shipments">
+      {order.shipments.map((shipment) => {
+        const items = order.items.filter((item) => shipment.itemIds.includes(item.id));
+        return (
+          <li key={shipment.seller?.handle ?? 'nixzora'}>
+            <div>
+              <strong>
+                {shipment.seller ? (
+                  <>
+                    From{' '}
+                    <Link href={`/s/${shipment.seller.handle}`}>{shipment.seller.displayName}</Link>
+                  </>
+                ) : (
+                  'From NIXZORA'
+                )}
+              </strong>{' '}
+              <span className="muted">· {SHIPMENT_LABEL[shipment.status]}</span>
+            </div>
+            <div className="muted" style={{ fontSize: 14 }}>
+              {items.map((item) => `${item.quantity} × ${item.productTitle}`).join(', ')}
+            </div>
+            {shipment.tracking ? (
+              <div style={{ fontSize: 14 }}>
+                {shipment.tracking.carrier} <span className="mono">{shipment.tracking.number}</span>
+                {shipment.tracking.url ? (
+                  <>
+                    {' · '}
+                    <a href={shipment.tracking.url} rel="noopener noreferrer" target="_blank">
+                      Track package
+                    </a>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

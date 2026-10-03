@@ -69,6 +69,13 @@ function Timeline({ order }: { order: OrderView }) {
   );
 }
 
+const SHIPMENT_LABEL = {
+  PROCESSING: 'Preparing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+} as const;
+
 export default function OrderScreen() {
   const { number, token, placed } = useLocalSearchParams<{
     number: string;
@@ -175,7 +182,39 @@ export default function OrderScreen() {
 
         <Card>
           <Timeline order={o} />
-          {o.tracking ? (
+          {o.shipments.length ? (
+            // Marketplace order: one parcel for NIXZORA's items and one per seller.
+            o.shipments.map((part) => (
+              <View
+                key={part.seller?.handle ?? 'nixzora'}
+                style={{ gap: space.xs, marginTop: space.sm }}
+              >
+                <Divider />
+                <Text style={{ fontFamily: fonts.bodyMedium }}>
+                  From {part.seller?.displayName ?? 'NIXZORA'} · {SHIPMENT_LABEL[part.status]}
+                </Text>
+                <Text variant="small" muted>
+                  {o.items
+                    .filter((item) => part.itemIds.includes(item.id))
+                    .map((item) => `${item.quantity} × ${item.productTitle}`)
+                    .join(', ')}
+                </Text>
+                {part.tracking ? (
+                  <Text variant="small" muted>
+                    {part.tracking.carrier} · <Text variant="mono">{part.tracking.number}</Text>
+                  </Text>
+                ) : null}
+                {part.tracking?.url ? (
+                  <Button
+                    title="Track package"
+                    tone="ghost"
+                    icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
+                    onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
+                  />
+                ) : null}
+              </View>
+            ))
+          ) : o.tracking ? (
             <View style={{ gap: space.sm, marginTop: space.sm }}>
               <Divider />
               <Text variant="small" muted>

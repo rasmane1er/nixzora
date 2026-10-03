@@ -248,6 +248,21 @@ export async function removePhoto(form: FormData): Promise<void> {
   );
 }
 
+// ───── Orders ─────
+
+export async function shipSellerOrder(form: FormData): Promise<void> {
+  const orderId = id(form);
+  await perform(
+    `/sell/orders/${orderId}`,
+    () =>
+      api(`/seller/orders/${orderId}/ship`, {
+        method: 'POST',
+        body: { carrier: text(form, 'carrier'), trackingNumber: text(form, 'trackingNumber') },
+      }),
+    'Marked as shipped. The customer gets the tracking number.',
+  );
+}
+
 // ───── Photo upload (called from the browser component) ─────
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };

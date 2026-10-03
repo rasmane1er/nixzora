@@ -22,7 +22,7 @@ export function newOrderNumber(): string {
   return out;
 }
 
-const TRACKING_URLS: Record<string, (n: string) => string> = {
+export const TRACKING_URLS: Record<string, (n: string) => string> = {
   UPS: (n) => `https://www.ups.com/track?tracknum=${encodeURIComponent(n)}`,
   USPS: (n) => `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(n)}`,
   FedEx: (n) => `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(n)}`,
@@ -38,8 +38,47 @@ function returnableUntil(order: { status: string; deliveredAt: Date | null }): s
   return until > new Date() ? until.toISOString() : null;
 }
 
-export const orderInclude = { items: true } satisfies Prisma.OrderInclude;
+export const orderInclude = {
+  items: true,
+  sellerOrders: { include: { seller: { select: { handle: true, displayName: true } } } },
+} satisfies Prisma.OrderInclude;
 export type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
+
+function tracking(carrier: string | null, number: string | null) {
+  return carrier && number
+    ? { carrier, number, url: TRACKING_URLS[carrier]?.(number) ?? null }
+    : null;
+}
+
+/** One entry for NIXZORA's own items and one per seller, for marketplace orders only. */
+function shipments(order: OrderRow): OrderView['shipments'] {
+  if (!order.items.some((item) => item.sellerId)) return [];
+  const own = order.items.filter((item) => !item.sellerId);
+  const out: OrderView['shipments'] = [];
+  if (own.length) {
+    out.push({
+      seller: null,
+      status: order.cancelledAt
+        ? 'CANCELLED'
+        : order.deliveredAt
+          ? 'DELIVERED'
+          : order.trackingNumber
+            ? 'SHIPPED'
+            : 'PROCESSING',
+      tracking: tracking(order.trackingCarrier, order.trackingNumber),
+      itemIds: own.map((item) => item.id),
+    });
+  }
+  for (const part of order.sellerOrders) {
+    out.push({
+      seller: part.seller,
+      status: part.status === 'PAID' ? 'PROCESSING' : part.status,
+      tracking: tracking(part.trackingCarrier, part.trackingNumber),
+      itemIds: order.items.filter((item) => item.sellerId === part.sellerId).map((item) => item.id),
+    });
+  }
+  return out;
+}
 
 export function toOrderView(order: OrderRow): OrderView {
   const timeline: { status: OrderStatus; at: string }[] = [];
@@ -85,6 +124,7 @@ export function toOrderView(order: OrderRow): OrderView {
             url: TRACKING_URLS[order.trackingCarrier]?.(order.trackingNumber) ?? null,
           }
         : null,
+    shipments: shipments(order),
     returnableUntil: returnableUntil(order),
     timeline,
     createdAt: order.createdAt.toISOString(),

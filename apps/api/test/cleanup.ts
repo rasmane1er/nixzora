@@ -6,6 +6,8 @@ import { type PrismaService } from '../src/prisma/prisma.service';
  */
 export async function removeTestData(prisma: PrismaService, run: string): Promise<void> {
   const tag = `${run}`;
+  // Seller earnings reference orders; remove them first.
+  await prisma.sellerLedgerEntry.deleteMany({ where: { seller: { handle: { endsWith: tag } } } });
   const orders = await prisma.order.findMany({
     where: {
       OR: [
