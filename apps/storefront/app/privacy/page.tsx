@@ -33,8 +33,9 @@ export default function PrivacyPage() {
           keep only the payment status, card brand and last four digits.
         </li>
         <li>
-          <strong>Shopping activity</strong>: your cart, saved products, reviews you write and
-          messages you send to the shopping assistant.
+          <strong>Shopping activity</strong>: your cart, saved products, the products you view,
+          reviews you write and messages you send to the shopping assistant. Before you sign in,
+          product views are tied to a random id stored in your browser or the app, not to you.
         </li>
         <li>
           <strong>Device and security data</strong>: IP address, browser or device type, sign-in
@@ -48,7 +49,11 @@ export default function PrivacyPage() {
         <li>
           To run your account and keep it secure (sign-in, two-step verification, fraud checks).
         </li>
-        <li>To answer shopping questions and recommend products from our catalog.</li>
+        <li>
+          To answer shopping questions and recommend products from our catalog (&quot;similar
+          products&quot;, &quot;recommended for you&quot;). &quot;Customers also viewed&quot; only
+          shows products several different shoppers looked at, never one person&apos;s browsing.
+        </li>
         <li>To meet tax, accounting and legal obligations.</li>
       </ul>
 
@@ -79,7 +84,8 @@ export default function PrivacyPage() {
       <p>
         Account data stays while your account is open. Order and payment records are kept for as
         long as tax and accounting law requires (generally seven years), without a sign-in once you
-        close your account. Security logs are kept for up to one year.
+        close your account. Product views are deleted after 180 days. Security logs are kept for up
+        to one year.
       </p>
 
       <h2>Your choices</h2>

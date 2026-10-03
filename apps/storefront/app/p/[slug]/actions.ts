@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { api, errorMessage } from '@/lib/api';
+import { ensureVisitorId } from '@/lib/visitor';
 
 export type ReviewState = { ok?: boolean; error?: string };
 
@@ -21,5 +22,16 @@ export async function submitReview(_: ReviewState, form: FormData): Promise<Revi
     return { ok: true };
   } catch (error) {
     return { error: errorMessage(error) };
+  }
+}
+
+/** Records a product view for recommendations. Never fails the page. */
+export async function recordView(productId: string): Promise<void> {
+  if (!/^[0-9a-f-]{36}$/i.test(productId)) return;
+  try {
+    const visitor = await ensureVisitorId();
+    await api('/events/views', { method: 'POST', body: { productId, visitorId: visitor } });
+  } catch {
+    // Recommendations are best-effort.
   }
 }

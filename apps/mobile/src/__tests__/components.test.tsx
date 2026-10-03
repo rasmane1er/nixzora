@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Price } from '@/components/Price';
+import { ProductRail } from '@/components/ProductRail';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Totals } from '@/components/Totals';
 
@@ -46,5 +47,32 @@ describe('Totals', () => {
     expect(screen.getByText('Free')).toBeTruthy();
     expect(screen.getByText('At checkout')).toBeTruthy();
     expect(screen.getByText('Add $39.00 more for free shipping.')).toBeTruthy();
+  });
+});
+
+describe('ProductRail', () => {
+  const card = (n: number, inStock = true) => ({
+    id: `0190a5b2-0000-7000-8000-00000000000${n}`,
+    slug: `watch-${n}`,
+    title: `Watch ${n}`,
+    brand: null,
+    category: { slug: 'wearables', name: 'Wearables' },
+    priceFromCents: 19900,
+    compareAtCents: null,
+    currency: 'USD',
+    inStock,
+    image: null,
+  });
+
+  it('lists the products in a titled, sideways-scrolling row', () => {
+    render(<ProductRail title="Similar products" products={[card(1), card(2, false)]} />);
+    expect(screen.getByText('Similar products')).toBeTruthy();
+    expect(screen.getByLabelText('Watch 1')).toBeTruthy();
+    expect(screen.getByLabelText('Watch 2, sold out')).toBeTruthy();
+  });
+
+  it('renders nothing when there is nothing to show', () => {
+    render(<ProductRail title="Similar products" products={[]} />);
+    expect(screen.queryByText('Similar products')).toBeNull();
   });
 });

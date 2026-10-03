@@ -6,12 +6,15 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Logo } from '@/components/Logo';
 import { ProductGrid } from '@/components/ProductGrid';
+import { ProductRail } from '@/components/ProductRail';
 import { Banner, Button, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { errorMessage } from '@nixzora/api-client';
 import { useCategories } from '@/lib/hooks';
 import { keys } from '@/lib/query';
+import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
+import { visitorId } from '@/lib/visitor';
 
 const NEW_IN = { sort: 'newest', pageSize: 12 } as const;
 
@@ -21,6 +24,13 @@ export default function HomeScreen() {
   const products = useQuery({
     queryKey: keys.products(NEW_IN),
     queryFn: () => api.catalog.products(NEW_IN),
+  });
+  const { status } = useSession();
+  // Re-fetched when the shopper signs in or out, so history follows the account.
+  const picks = useQuery({
+    queryKey: ['recommendations', status],
+    queryFn: async () => api.recommendations.forYou(await visitorId()),
+    staleTime: 60_000,
   });
   const departments = categories.data ?? [];
 
@@ -87,6 +97,12 @@ export default function HomeScreen() {
         </ScrollView>
       ) : null}
 
+      <ProductRail
+        title={picks.data?.basis === 'history' ? 'Recommended for you' : 'Popular right now'}
+        products={picks.data?.products ?? []}
+      />
+      <ProductRail title="Recently viewed" products={picks.data?.recentlyViewed ?? []} />
+
       {products.error && !products.data ? (
         <Banner tone="error">{errorMessage(products.error)}</Banner>
       ) : null}
@@ -103,6 +119,7 @@ export default function HomeScreen() {
         onRefresh={() => {
           void products.refetch();
           void categories.refetch();
+          void picks.refetch();
         }}
         empty={
           products.isLoading ? undefined : (

@@ -95,7 +95,7 @@ export default function RegisterScreen() {
         textContentType="newPassword"
       />
       {error ? (
-        <Banner tone="error">{typeof error === 'string' ? error : error.message}</Banner>
+        <Banner tone="error">{typeof error === 'string' ? error : errorMessage(error)}</Banner>
       ) : null}
       <Button title="Create account" loading={busy} onPress={() => void submit()} />
       <Text muted style={{ textAlign: 'center' }}>

@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { type Recommendations } from '@nixzora/validation';
 import { ProductCard } from '@/components/ProductCard';
-import { catalog } from '@/lib/api';
+import { ProductRail } from '@/components/ProductRail';
+import { api, catalog } from '@/lib/api';
+import { visitorId } from '@/lib/visitor';
 import { countProducts } from '@/lib/categories';
 
 const PROMPTS = [
@@ -11,9 +14,13 @@ const PROMPTS = [
 ];
 
 export default async function HomePage() {
-  const [categories, newest] = await Promise.all([
+  const visitor = await visitorId();
+  const [categories, newest, picks] = await Promise.all([
     catalog.categories().catch(() => []),
     catalog.products('?sort=newest&pageSize=8&inStock=true').catch(() => null),
+    api<Recommendations>(
+      `/recommendations${visitor ? `?visitorId=${encodeURIComponent(visitor)}` : ''}`,
+    ).catch(() => null),
   ]);
 
   return (
@@ -62,6 +69,17 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+      ) : null}
+
+      {picks ? (
+        <>
+          <ProductRail
+            id="for-you"
+            title={picks.basis === 'history' ? 'Recommended for you' : 'Popular right now'}
+            products={picks.products}
+          />
+          <ProductRail id="recent" title="Recently viewed" products={picks.recentlyViewed} />
+        </>
       ) : null}
 
       {newest?.items.length ? (

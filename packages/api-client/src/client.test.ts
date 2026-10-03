@@ -117,5 +117,5 @@ test('turns problem details and network failures into ApiErrors', async () => {
   assert.equal(errorMessage(invalid), 'Check the form. Enter an email.');
   const offline = await api.catalog.categories().catch((error: unknown) => error);
   assert.ok(offline instanceof ApiError && offline.offline);
-  assert.match(errorMessage(offline), /offline/);
+  assert.match(errorMessage(offline), /Can't reach NIXZORA/);
 });

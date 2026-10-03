@@ -33,7 +33,7 @@ export class ApiError extends Error {
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.offline
-      ? 'You appear to be offline. Check your connection and try again.'
+      ? "Can't reach NIXZORA right now. Check your connection and try again."
       : error.summary;
   }
   return 'Something went wrong. Try again.';

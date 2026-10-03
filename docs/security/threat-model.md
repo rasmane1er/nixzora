@@ -160,6 +160,16 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Provider secrets leaked                                      | None exist: no code exchange, only public client ids                                                                               | ✔      |
 | Account with no password cannot be closed                    | Google/Apple-only accounts confirm deletion by typing DELETE; linked identities are erased                                         | ✔      |
 
+## Recommendations and view events (ADR-0010)
+
+| Threat                                                  | Mitigation                                                                            | Status |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------ |
+| "Customers also viewed" reveals one shopper's browsing  | A product is only listed when at least 2 different shoppers viewed both               | ✔      |
+| Tracking guests across sites or devices                 | Guest id is random per browser/app, HttpOnly on the web, never an IP, device or ad id | ✔      |
+| Reading someone else's history by guessing a visitor id | 18+ random bytes; ids that fail the format are ignored                                | ✔      |
+| Event spam skews popularity                             | 60 views/min per client, one view per shopper per product per 30 min                  | ✔      |
+| Keeping behavior data forever                           | Deleted after 180 days and on account deletion                                        | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).

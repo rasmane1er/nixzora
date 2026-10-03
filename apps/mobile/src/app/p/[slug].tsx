@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { Price } from '@/components/Price';
+import { ProductRail } from '@/components/ProductRail';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
@@ -26,6 +27,7 @@ import { attributeLabel } from '@/lib/format';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
+import { visitorId } from '@/lib/visitor';
 import { fonts, radius, space, usePalette } from '@/lib/theme';
 
 function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' | 'ok' } {
@@ -99,6 +101,20 @@ export default function ProductScreen() {
   const [chosen, setChosen] = useState<string | undefined>(variantParam);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const related = useQuery({
+    queryKey: ['catalog', 'related', slug],
+    queryFn: () => api.catalog.related(slug),
+    enabled: !!product.data,
+    staleTime: 5 * 60_000,
+  });
+  // One view event per product opened, for recommendations (guests use a random visitor id).
+  const productId = product.data?.id;
+  useEffect(() => {
+    if (!productId) return;
+    void visitorId()
+      .then((id) => api.recommendations.view(productId, id))
+      .catch(() => undefined);
+  }, [productId]);
   const add = useCartMutation(({ variantId, qty }: { variantId: string; qty: number }) =>
     api.cart.add(variantId, qty),
   );
@@ -319,6 +335,13 @@ export default function ProductScreen() {
               SKU {variant.sku}
             </Text>
           ) : null}
+
+          <ProductRail
+            title="Often bought together"
+            products={related.data?.boughtTogether ?? []}
+          />
+          <ProductRail title="Similar products" products={related.data?.similar ?? []} />
+          <ProductRail title="Customers also viewed" products={related.data?.alsoViewed ?? []} />
         </View>
       </Screen>
     </>

@@ -1,14 +1,21 @@
-import { type ProductDetail, type RatingSummary, type ReviewView } from '@nixzora/validation';
+import {
+  type ProductDetail,
+  type RatingSummary,
+  type RelatedProducts,
+  type ReviewView,
+} from '@nixzora/validation';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ProductRail } from '@/components/ProductRail';
 import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
 import { AddToCart } from './AddToCart';
 import { ReviewForm } from './ReviewForm';
+import { ViewTracker } from './ViewTracker';
 import { WishButton } from './WishButton';
 
 type ReviewPage = {
@@ -81,7 +88,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
-  const [reviews, wishIds, mine] = await Promise.all([
+  const [reviews, wishIds, mine, related] = await Promise.all([
     api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
       () => null,
     ),
@@ -95,6 +102,10 @@ export default async function ProductPage({ params }: Props) {
           .then((res) => res.review)
           .catch(() => null)
       : Promise.resolve(null),
+    api<RelatedProducts>(`/catalog/products/${slug}/related`, {
+      auth: false,
+      revalidate: 300,
+    }).catch((): RelatedProducts => ({ similar: [], boughtTogether: [], alsoViewed: [] })),
   ]);
   const [main, ...rest] = product.images;
   const specs = Object.entries(product.attributes);
@@ -288,6 +299,11 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      <ProductRail id="together" title="Often bought together" products={related.boughtTogether} />
+      <ProductRail id="similar" title="Similar products" products={related.similar} />
+      <ProductRail id="also-viewed" title="Customers also viewed" products={related.alsoViewed} />
+      <ViewTracker productId={product.id} />
     </div>
   );
 }

@@ -53,6 +53,7 @@ model User {
   notes              CustomerNote[]
   pushDevices        PushDevice[]
   identities         UserIdentity[]
+  productEvents      ProductEvent[]
 
   @@map("users")
 }
@@ -259,6 +260,7 @@ model Product {
   images   ProductImage[]
   reviews  Review[]
   wishlist WishlistItem[]
+  events    ProductEvent[]
   searchDoc ProductSearchDoc?
 
   @@index([categoryId, status])
@@ -696,4 +698,27 @@ model AiRequest {
   @@index([createdAt])
   @@index([feature, createdAt])
   @@map("ai_requests")
+}
+
+enum ProductEventType {
+  VIEW
+}
+
+/// Shopping signals for recommendations (p6-08): who looked at what, and when. Guests are a
+/// random visitor id from the app or browser, never an IP address. Kept for 180 days.
+model ProductEvent {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  productId String           @map("product_id") @db.Uuid
+  userId    String?          @map("user_id") @db.Uuid
+  visitorId String?          @map("visitor_id")
+  type      ProductEventType
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([productId, createdAt])
+  @@map("product_events")
 }

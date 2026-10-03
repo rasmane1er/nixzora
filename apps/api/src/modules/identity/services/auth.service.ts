@@ -484,6 +484,7 @@ export class AuthService {
       this.prisma.verificationToken.deleteMany({ where: { userId: user.id } }),
       this.prisma.mfaRecoveryCode.deleteMany({ where: { userId: user.id } }),
       this.prisma.userIdentity.deleteMany({ where: { userId: user.id } }),
+      this.prisma.productEvent.deleteMany({ where: { userId: user.id } }),
       this.prisma.user.update({
         where: { id: user.id },
         data: {

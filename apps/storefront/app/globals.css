@@ -1265,3 +1265,56 @@ table.plain th {
 .legal li + li {
   margin-top: 6px;
 }
+
+/* ───── Sideways product rows (similar products, recommendations) ───── */
+.rail .section-head {
+  align-items: center;
+}
+.rail__track {
+  list-style: none;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 4px var(--gutter) 12px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 240px);
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.rail__track:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+.rail__item {
+  scroll-snap-align: start;
+  display: flex;
+}
+.rail__item .product-card {
+  flex: 1;
+}
+.rail__arrows {
+  display: flex;
+  gap: 8px;
+}
+.rail__arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rail__arrow:hover {
+  border-color: var(--color-signal);
+}
+@media (hover: none) {
+  .rail__arrows {
+    display: none;
+  }
+}

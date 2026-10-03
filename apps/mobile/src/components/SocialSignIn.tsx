@@ -3,6 +3,7 @@ import { errorMessage } from '@nixzora/api-client';
 import { type LoginResponse } from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -95,6 +96,9 @@ export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
     });
   }
 
+  // Expo Go runs under its own bundle id, which Google and Apple reject for NIXZORA: the buttons
+  // only work in a development or store build (npx expo run:ios / EAS).
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return null;
   if (!showApple && !googleClientId) return null;
 
   return (

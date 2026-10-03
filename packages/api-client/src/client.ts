@@ -8,6 +8,8 @@ import type {
   CheckoutResponse,
   LoginResponse,
   SocialProvidersResponse,
+  RelatedProducts,
+  Recommendations,
   SocialSignInRequest,
   MeResponse,
   OrderSummary,
@@ -186,8 +188,22 @@ export function createApiClient(options: ClientOptions) {
         }),
       product: (slug: string) =>
         request<ProductDetail>('GET', `/catalog/products/${enc(slug)}`, { auth: 'none' }),
+      /** Similar, bought-together and also-viewed products for a product page. */
+      related: (slug: string) =>
+        request<RelatedProducts>('GET', `/catalog/products/${enc(slug)}/related`, { auth: 'none' }),
       lookup: (code: string) =>
         request<ProductLookup>('GET', '/catalog/lookup', { query: { code }, auth: 'none' }),
+    },
+
+    recommendations: {
+      /** Records that this shopper opened a product page (signed in, or by visitor id). */
+      view: (productId: string, visitorId?: string) =>
+        request<void>('POST', '/events/views', { body: { productId, visitorId } }),
+      /** Picks from viewing history, or popular products. */
+      forYou: (visitorId?: string) =>
+        request<Recommendations>('GET', '/recommendations', {
+          query: visitorId ? { visitorId } : {},
+        }),
     },
 
     assistant: {
