@@ -176,6 +176,7 @@ export class CatalogQueryService {
       where.categoryId = { in: ids };
     }
     if (query.brand) where.brand = { slug: query.brand };
+    if (query.seller) where.seller = { handle: query.seller };
 
     let rank: Map<string, number> | null = null;
     if (query.q) {
@@ -367,6 +368,9 @@ export class CatalogQueryService {
       status: product.status,
       attributes: (product.attributes ?? {}) as Record<string, string | number | boolean>,
       breadcrumb: await this.breadcrumb(product.category),
+      seller: product.seller,
+      // Review feedback is between staff and the seller; the storefront never shows it.
+      reviewNote: activeVariantsOnly ? null : product.reviewNote,
       images: product.images.map((image) => toImage(image, this.url)),
       variants: view.variants.map(toVariant),
       createdAt: product.createdAt.toISOString(),

@@ -12,7 +12,7 @@ export const SlugSchema = z
 
 const Cents = z.number().int().min(0).max(100_000_000);
 
-export const ProductStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
+export const ProductStatusSchema = z.enum(['DRAFT', 'PENDING_REVIEW', 'ACTIVE', 'ARCHIVED']);
 
 /** Specs such as {"ram_gb": 32, "screen_in": 14, "os": "Linux"}. Flat on purpose, so they can be filtered. */
 export const AttributesSchema = z.record(
@@ -168,6 +168,8 @@ export const ProductListQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
   category: SlugSchema.optional(),
   brand: SlugSchema.optional(),
+  /** A marketplace seller's store handle. */
+  seller: SlugSchema.optional(),
   minPrice: z.coerce.number().int().min(0).optional(),
   maxPrice: z.coerce.number().int().min(0).optional(),
   inStock: z
@@ -226,6 +228,10 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   status: ProductStatusSchema,
   attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   breadcrumb: z.array(z.object({ slug: z.string(), name: z.string() })),
+  /** The marketplace seller; null when NIXZORA sells it. */
+  seller: z.object({ handle: z.string(), displayName: z.string() }).nullable().default(null),
+  /** Staff feedback on a seller's listing (only on staff and seller views). */
+  reviewNote: z.string().nullable().default(null),
   images: z.array(ImageSchema),
   variants: z.array(VariantSchema),
   createdAt: z.iso.datetime(),

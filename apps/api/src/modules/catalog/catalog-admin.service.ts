@@ -26,7 +26,7 @@ import { type AuthUser } from '../identity/auth-user';
 import { StorageService } from '../media/storage.service';
 import { CatalogQueryService } from './catalog-query.service';
 
-type Actor = { user: AuthUser; meta: RequestMeta };
+type Actor = { user: AuthUser; meta: RequestMeta; actorType?: 'ADMIN' | 'USER' };
 
 /**
  * Write side of the catalog, used by the Ops Center.
@@ -138,7 +138,12 @@ export class CatalogAdminService {
 
   // ───────────── Products and variants ─────────────
 
-  async createProduct(input: ProductCreate, actor: Actor): Promise<ProductDetail> {
+  /** `sellerId` makes it a marketplace listing owned by that seller (ADR-0012). */
+  async createProduct(
+    input: ProductCreate,
+    actor: Actor,
+    options: { sellerId?: string } = {},
+  ): Promise<ProductDetail> {
     await this.requireCategory(input.categoryId);
     if (input.brandId) await this.requireBrand(input.brandId);
     if (input.status === 'ACTIVE' && !input.variants.some((v) => v.isActive !== false)) {
@@ -158,6 +163,7 @@ export class CatalogAdminService {
             categoryId: input.categoryId,
             brandId: input.brandId ?? null,
             attributes: input.attributes as Prisma.InputJsonObject,
+            sellerId: options.sellerId ?? null,
             variants: { create: input.variants.map((variant) => this.variantData(variant)) },
           },
         });
@@ -399,7 +405,7 @@ export class CatalogAdminService {
   ) {
     return this.audit.record({
       action,
-      actorType: 'ADMIN',
+      actorType: actor.actorType ?? 'ADMIN',
       actorId: actor.user.id,
       entityType,
       entityId,

@@ -51,12 +51,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   }
 }
 
-# Browsers upload directly with presigned PUTs from the Ops Center.
+# Browsers upload directly with presigned PUTs from the Ops Center and the seller portal.
 resource "aws_s3_bucket_cors_configuration" "media" {
   bucket = aws_s3_bucket.media.id
   cors_rule {
     allowed_methods = ["PUT"]
-    allowed_origins = ["https://${local.hosts.admin}"]
+    allowed_origins = ["https://${local.hosts.admin}", "https://${local.hosts.storefront}"]
     allowed_headers = ["content-type"]
     max_age_seconds = 600
   }

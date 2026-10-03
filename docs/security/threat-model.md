@@ -180,9 +180,24 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Summaries look like genuine reviews from real people      | Labelled "AI summary" / "Summary of N reviews"; demo reviewers are named "(demo)"                  | ✔      |
 | Cost runaway from regenerating summaries                  | Hash of reviews + model skips unchanged products; daily budget falls back to templates             | ✔      |
 
+## Marketplace sellers (ADR-0012)
+
+| Threat                                            | Mitigation                                                                                          | Status |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
+| Seller edits or reads another store's listings    | Every seller route resolves the caller's store; other stores' products and variants read as 404     | ✔      |
+| Seller publishes without review                   | Status is not writable by sellers; only staff approve; content edits on live listings re-review     | ✔      |
+| Fraudulent seller receives payouts                | Stripe Connect verifies identity and bank; stores are approved only after verification; payout hold | ✔      |
+| NIXZORA leaks sellers' bank or ID documents       | Never received: Stripe-hosted onboarding; only the account id and verification flags are stored     | ✔      |
+| Suspended store keeps selling                     | Suspension unpublishes live and pending listings in the same transaction; writes are refused        | ✔      |
+| Store name impersonates NIXZORA or support        | Reserved handles and any handle containing "nixzora" are refused                                    | ✔      |
+| Malicious or counterfeit listing reaches shoppers | Manual review queue with photos, specs and prices; staff notes; audit trail of every decision       | ✔      |
+| Test payouts enabled in production                | Environment validation refuses PAYOUTS_PROVIDER=fake in production unless the demo flag is set      | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).
 - Data retention policy for personal data in orders (account deletion is done in the API and app; add it to the web account page) (P6).
 - Image re-encoding (strip EXIF, resize) in a background worker, and malware scanning of uploads in S3 (P6).
 - Content Security Policy for the Ops Center (P6).
+- Stripe Connect `account.updated` webhook so verification changes arrive without a refresh (p7-06).
+- Seller staff invitations (STAFF members) with their own audit trail (P7).

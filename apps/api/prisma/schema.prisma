@@ -54,6 +54,7 @@ model User {
   pushDevices        PushDevice[]
   identities         UserIdentity[]
   productEvents      ProductEvent[]
+  sellerMembership   SellerMember?
 
   @@map("users")
 }
@@ -212,6 +213,8 @@ model Address {
 
 enum ProductStatus {
   DRAFT
+  /// A seller's listing waiting for staff review (p7-03).
+  PENDING_REVIEW
   ACTIVE
   ARCHIVED
 }
@@ -251,9 +254,14 @@ model Product {
   brandId     String?       @map("brand_id") @db.Uuid
   /// Normalized specs, e.g. {"ram_gb": 32, "storage_gb": 1024, "battery_hours": 18}
   attributes  Json          @default("{}")
+  /// Marketplace seller; null means NIXZORA sells it (first party).
+  sellerId    String?       @map("seller_id") @db.Uuid
+  /// Why staff sent a seller's listing back, shown to the seller.
+  reviewNote  String?       @map("review_note")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
+  seller        Seller?           @relation(fields: [sellerId], references: [id])
   category      Category          @relation(fields: [categoryId], references: [id])
   brand         Brand?            @relation(fields: [brandId], references: [id])
   variants      ProductVariant[]
@@ -265,6 +273,7 @@ model Product {
   searchDoc     ProductSearchDoc?
 
   @@index([categoryId, status])
+  @@index([sellerId, status])
   @@map("products")
 }
 
@@ -744,4 +753,70 @@ model ReviewInsight {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("review_insights")
+}
+
+// ─────────────────────────── Marketplace (Phase 7) ───────────────────────────
+
+enum SellerStatus {
+  /// Applied; not yet approved by staff.
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum SellerMemberRole {
+  OWNER
+  STAFF
+}
+
+/// A business selling on NIXZORA (ADR-0012).
+model Seller {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  /// Public storefront address: /s/<handle>
+  handle           String       @unique
+  displayName      String       @map("display_name")
+  legalName        String       @map("legal_name")
+  /// Where NIXZORA contacts the seller (orders, payouts, policy).
+  contactEmail     String       @map("contact_email")
+  /// ISO 3166-1 alpha-2
+  country          String       @default("US") @db.Char(2)
+  description      String?
+  status           SellerStatus @default(PENDING)
+  statusReason     String?      @map("status_reason")
+  /// "FAKE" or "STRIPE"; the connected account that receives payouts.
+  payoutProvider   String?      @map("payout_provider")
+  payoutAccountId  String?      @unique @map("payout_account_id")
+  /// Mirrors the provider: identity and bank details submitted, payouts switched on.
+  detailsSubmitted Boolean      @default(false) @map("details_submitted")
+  payoutsEnabled   Boolean      @default(false) @map("payouts_enabled")
+  /// What the provider still needs, e.g. ["external_account", "individual.id_number"].
+  requirementsDue  String[]     @default([]) @map("requirements_due")
+  /// Marketplace commission in basis points (1200 = 12%).
+  commissionBps    Int          @default(1200) @map("commission_bps")
+  /// Days earnings are held before payout; longer for new sellers.
+  payoutHoldDays   Int          @default(14) @map("payout_hold_days")
+  approvedAt       DateTime?    @map("approved_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  members  SellerMember[]
+  products Product[]
+
+  @@index([status, createdAt])
+  @@map("sellers")
+}
+
+/// Who can act for a seller. A user belongs to at most one seller.
+model SellerMember {
+  sellerId  String           @map("seller_id") @db.Uuid
+  userId    String           @unique @map("user_id") @db.Uuid
+  role      SellerMemberRole @default(OWNER)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sellerId, userId])
+  @@map("seller_members")
 }

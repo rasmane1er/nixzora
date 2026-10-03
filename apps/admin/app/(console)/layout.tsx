@@ -14,6 +14,8 @@ const NAV: (NavItem & { permission: string })[] = [
   { href: '/products', label: 'Products', permission: 'catalog.write' },
   { href: '/categories', label: 'Categories & brands', permission: 'catalog.write' },
   { href: '/inventory', label: 'Inventory', permission: 'inventory.write' },
+  { href: '/sellers', label: 'Sellers', permission: 'sellers.manage' },
+  { href: '/listings', label: 'Listing review', permission: 'catalog.write' },
   { href: '/reviews', label: 'Reviews', permission: 'reviews.moderate' },
   { href: '/coupons', label: 'Coupons', permission: 'promotions.manage' },
   { href: '/users', label: 'Customers & staff', permission: 'users.read' },

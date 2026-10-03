@@ -66,6 +66,15 @@ describe('validateEnv', () => {
     );
   });
 
+  it('refuses test payouts in production unless the demo flag is set', () => {
+    expect(() => validateEnv({ ...valid, NODE_ENV: 'production' })).toThrow(
+      /PAYOUTS_PROVIDER: must be "stripe"/,
+    );
+    expect(() => validateEnv({ ...valid, PAYOUTS_PROVIDER: 'stripe' })).toThrow(
+      /STRIPE_SECRET_KEY: is required when PAYOUTS_PROVIDER=stripe/,
+    );
+  });
+
   it('parses tax rates by state', () => {
     expect(validateEnv({ ...valid, TAX_RATES_BPS: 'MD:600, VA:530' }).TAX_RATES_BPS).toEqual({
       MD: 600,

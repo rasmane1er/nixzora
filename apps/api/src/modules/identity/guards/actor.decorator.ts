@@ -3,7 +3,12 @@ import { requestMetaFrom, type RequestMeta } from '../../../common/request-meta'
 import { type AuthUser } from '../auth-user';
 import { type AuthenticatedRequest } from './decorators';
 
-export type ActorContext = { user: AuthUser; meta: RequestMeta };
+export type ActorContext = {
+  user: AuthUser;
+  meta: RequestMeta;
+  /** How the audit log records the actor; staff routes leave it unset ("ADMIN"). */
+  actorType?: 'ADMIN' | 'USER';
+};
 
 /** The signed-in user plus IP and user agent: everything an audited admin action needs. */
 export const Actor = createParamDecorator((_: unknown, ctx: ExecutionContext): ActorContext => {

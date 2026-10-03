@@ -51,6 +51,8 @@ type ProductSeed = {
   description: string;
   attributes: Record<string, string | number | boolean>;
   variants: VariantSeed[];
+  /** Handle of the marketplace seller; first-party (NIXZORA) when absent. */
+  seller?: string;
 };
 
 const categories: CategorySeed[] = [
@@ -86,6 +88,7 @@ const brands = [
   'Orbit',
   'Nimbus',
   'Lumen',
+  'Brightline',
 ];
 
 const laptop = (
@@ -508,6 +511,39 @@ const products: ProductSeed[] = [
       },
     ],
   },
+  // Sold by the demo marketplace seller "Brightline Audio" (Phase 7).
+  {
+    slug: 'brightline-bookshelf-speakers',
+    title: 'Brightline bookshelf speakers',
+    brand: 'Brightline',
+    category: 'speakers',
+    seller: 'brightline-audio',
+    description:
+      'Passive two-way bookshelf speakers with a 5.25-inch woofer and a silk-dome tweeter, in a walnut-edged cabinet.',
+    attributes: { power_w: 80, woofer_in: 5.25, impedance_ohm: 6, inputs: 'Binding posts' },
+    variants: [
+      {
+        sku: 'BRL-BSS-WAL',
+        title: 'Pair',
+        options: { color: 'Walnut / Linen' },
+        price: 32900,
+        stock: 7,
+      },
+    ],
+  },
+  {
+    slug: 'brightline-studio-headphones',
+    title: 'Brightline studio headphones',
+    brand: 'Brightline',
+    category: 'headphones',
+    seller: 'brightline-audio',
+    description:
+      'Closed-back wired headphones for mixing and long listening sessions, with a detachable cable.',
+    attributes: { wireless: false, driver_mm: 45, impedance_ohm: 38, weight_g: 290 },
+    variants: [
+      { sku: 'BRL-STU-RED', title: 'Red', options: { color: 'Red' }, price: 15900, stock: 15 },
+    ],
+  },
 ];
 
 // Demo reviews so the product pages and "what customers say" have something to show. The
@@ -645,6 +681,40 @@ async function main(): Promise<void> {
     brandIds.set(name, row.id);
   }
 
+  // Demo marketplace seller: approved, with test-mode payouts (no money moves).
+  const sellerIds = new Map<string, string>();
+  {
+    const owner = await prisma.user.upsert({
+      where: { email: 'seller@demo.nixzora.com' },
+      create: {
+        email: 'seller@demo.nixzora.com',
+        firstName: 'Brightline (demo)',
+        roles: { create: [{ role: { connect: { key: 'customer' } } }] },
+      },
+      update: {},
+    });
+    const seller = await prisma.seller.upsert({
+      where: { handle: 'brightline-audio' },
+      create: {
+        handle: 'brightline-audio',
+        displayName: 'Brightline Audio',
+        legalName: 'Brightline Audio LLC (demo)',
+        contactEmail: 'seller@demo.nixzora.com',
+        description:
+          'Speakers and headphones tuned in Baltimore. A demo marketplace seller: products are fictional.',
+        status: 'ACTIVE',
+        payoutProvider: 'FAKE',
+        payoutAccountId: 'fake_acct_demo_brightline',
+        detailsSubmitted: true,
+        payoutsEnabled: true,
+        approvedAt: new Date(),
+        members: { create: { userId: owner.id, role: 'OWNER' } },
+      },
+      update: {},
+    });
+    sellerIds.set(seller.handle, seller.id);
+  }
+
   for (const product of products) {
     const data = {
       title: product.title,
@@ -653,6 +723,7 @@ async function main(): Promise<void> {
       categoryId: categoryIds.get(product.category)!,
       brandId: brandIds.get(product.brand)!,
       attributes: product.attributes,
+      sellerId: product.seller ? sellerIds.get(product.seller)! : null,
     };
     const row = await prisma.product.upsert({
       where: { slug: product.slug },

@@ -1,0 +1,244 @@
+import { type AdminSellerView } from '@nixzora/validation';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { SubmitButton } from '@/components/SubmitButton';
+import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
+import { ApiError, load } from '@/lib/api';
+import { dateTime, param, type SearchParams } from '@/lib/format';
+import { changeSellerStatus, refreshSellerPayouts, updateSellerTerms } from '../actions';
+
+export const metadata: Metadata = { title: 'Seller' };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STOREFRONT = process.env.STOREFRONT_URL ?? 'http://localhost:3000';
+
+async function loadSeller(id: string): Promise<AdminSellerView> {
+  if (!UUID.test(id)) notFound();
+  try {
+    return await load<AdminSellerView>(`/admin/sellers/${id}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  }
+}
+
+export default async function SellerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: SearchParams;
+}) {
+  const { id } = await params;
+  const search = await searchParams;
+  const seller = await loadSeller(id);
+  const { payouts } = seller;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Seller"
+        title={seller.displayName}
+        actions={
+          <Link className="btn btn--secondary" href="/sellers">
+            All sellers
+          </Link>
+        }
+      />
+      <Banner notice={param(search, 'notice')} error={param(search, 'error')} />
+
+      <div className="two-col">
+        <section className="card">
+          <h2>
+            Store <StatusPill value={seller.status} />
+          </h2>
+          {seller.statusReason ? (
+            <p className="banner banner--error">{seller.statusReason}</p>
+          ) : null}
+          <table>
+            <tbody>
+              <tr>
+                <th scope="row">Legal name</th>
+                <td>{seller.legalName}</td>
+              </tr>
+              <tr>
+                <th scope="row">Store page</th>
+                <td>
+                  {seller.status === 'ACTIVE' ? (
+                    <a
+                      href={`${STOREFRONT}/s/${seller.handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      /s/{seller.handle}
+                    </a>
+                  ) : (
+                    `/s/${seller.handle}`
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Contact</th>
+                <td>{seller.contactEmail}</td>
+              </tr>
+              <tr>
+                <th scope="row">Owner account</th>
+                <td>
+                  {seller.owner ? (
+                    <Link href={`/users/${seller.owner.id}`}>{seller.owner.email}</Link>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Country</th>
+                <td>{seller.country}</td>
+              </tr>
+              <tr>
+                <th scope="row">Applied</th>
+                <td>{dateTime(seller.createdAt)}</td>
+              </tr>
+              <tr>
+                <th scope="row">Approved</th>
+                <td>{seller.approvedAt ? dateTime(seller.approvedAt) : '—'}</td>
+              </tr>
+              <tr>
+                <th scope="row">Listings</th>
+                <td>
+                  {seller.listings.active} live · {seller.listings.pendingReview} in review ·{' '}
+                  {seller.listings.draft} draft
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {seller.description ? <p className="muted">{seller.description}</p> : null}
+        </section>
+
+        <section className="card">
+          <h2>Payout verification</h2>
+          <table>
+            <tbody>
+              <tr>
+                <th scope="row">Provider</th>
+                <td>
+                  {payouts.provider === 'FAKE'
+                    ? 'Test mode (no money moves)'
+                    : payouts.provider === 'STRIPE'
+                      ? 'Stripe Connect'
+                      : 'Not started'}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Details submitted</th>
+                <td>{payouts.detailsSubmitted ? 'Yes' : 'No'}</td>
+              </tr>
+              <tr>
+                <th scope="row">Payouts enabled</th>
+                <td>{payouts.payoutsEnabled ? 'Yes' : 'No'}</td>
+              </tr>
+              {payouts.requirementsDue.length ? (
+                <tr>
+                  <th scope="row">Still needed</th>
+                  <td className="mono">{payouts.requirementsDue.join(', ')}</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+          {payouts.accountConnected ? (
+            <ActionButton
+              action={refreshSellerPayouts}
+              label="Refresh from provider"
+              fields={{ id }}
+            />
+          ) : null}
+        </section>
+      </div>
+
+      <div className="two-col">
+        <section className="card">
+          <h2>Decision</h2>
+          {seller.status === 'PENDING' || seller.status === 'SUSPENDED' ? (
+            <>
+              <p className="muted">
+                {seller.status === 'PENDING'
+                  ? 'Approve once the business is verified and the application looks legitimate.'
+                  : 'Reinstating does not republish listings; the seller resubmits them.'}
+              </p>
+              {payouts.detailsSubmitted ? (
+                <ActionButton
+                  action={changeSellerStatus}
+                  label={seller.status === 'PENDING' ? 'Approve store' : 'Reinstate store'}
+                  tone="primary"
+                  fields={{ id, status: 'ACTIVE' }}
+                />
+              ) : (
+                <p className="banner banner--error">
+                  Waiting for the seller to finish payout verification.
+                </p>
+              )}
+            </>
+          ) : null}
+          {seller.status === 'PENDING' || seller.status === 'ACTIVE' ? (
+            <form action={changeSellerStatus} className="form" style={{ marginTop: 16 }}>
+              <input type="hidden" name="id" value={id} />
+              <input
+                type="hidden"
+                name="status"
+                value={seller.status === 'PENDING' ? 'REJECTED' : 'SUSPENDED'}
+              />
+              <label>
+                {seller.status === 'PENDING' ? 'Reason for rejecting' : 'Reason for suspending'}{' '}
+                <span className="hint">Shown to the seller.</span>
+                <textarea name="reason" rows={2} required minLength={5} maxLength={500} />
+              </label>
+              <div>
+                <SubmitButton tone="danger">
+                  {seller.status === 'PENDING' ? 'Reject application' : 'Suspend store'}
+                </SubmitButton>
+              </div>
+              {seller.status === 'ACTIVE' ? (
+                <p className="muted">Suspending takes every listing off sale immediately.</p>
+              ) : null}
+            </form>
+          ) : null}
+          {seller.status === 'REJECTED' ? (
+            <p className="muted">This application was rejected.</p>
+          ) : null}
+        </section>
+
+        <form action={updateSellerTerms} className="card form">
+          <h2>Terms</h2>
+          <input type="hidden" name="id" value={id} />
+          <div className="form-row">
+            <label>
+              Commission (%)
+              <input
+                name="commissionPercent"
+                type="number"
+                min={0}
+                max={50}
+                step={0.01}
+                defaultValue={seller.commissionBps / 100}
+              />
+            </label>
+            <label>
+              Payout hold (days)
+              <input
+                name="payoutHoldDays"
+                type="number"
+                min={0}
+                max={90}
+                defaultValue={seller.payoutHoldDays}
+              />
+            </label>
+          </div>
+          <div>
+            <SubmitButton>Save terms</SubmitButton>
+          </div>
+        </form>
+      </div>
+    </>
+  );
+}

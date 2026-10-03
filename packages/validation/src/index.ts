@@ -4,6 +4,7 @@ export * from './auth';
 export * from './catalog';
 export * from './commerce';
 export * from './health';
+export * from './marketplace';
 export * from './mobile';
 export * from './money';
 export * from './operations';

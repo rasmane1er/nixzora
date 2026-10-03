@@ -1,0 +1,74 @@
+import { type SellerProductRow, type SellerView } from '@nixzora/validation';
+import { type Seller } from '../../generated/prisma/client';
+import { type PrismaService } from '../../prisma/prisma.service';
+import { type ProductWithRelations, toCard } from '../catalog/catalog-mappers';
+
+export type ListingCounts = SellerView['listings'];
+
+export const NO_LISTINGS: ListingCounts = { draft: 0, pendingReview: 0, active: 0, archived: 0 };
+
+export function toSellerView(seller: Seller, listings: ListingCounts = NO_LISTINGS): SellerView {
+  return {
+    id: seller.id,
+    handle: seller.handle,
+    displayName: seller.displayName,
+    legalName: seller.legalName,
+    contactEmail: seller.contactEmail,
+    country: seller.country,
+    description: seller.description,
+    status: seller.status,
+    statusReason: seller.statusReason,
+    payouts: {
+      provider: seller.payoutProvider as 'FAKE' | 'STRIPE' | null,
+      accountConnected: Boolean(seller.payoutAccountId),
+      detailsSubmitted: seller.detailsSubmitted,
+      payoutsEnabled: seller.payoutsEnabled,
+      requirementsDue: seller.requirementsDue,
+    },
+    commissionBps: seller.commissionBps,
+    payoutHoldDays: seller.payoutHoldDays,
+    listings,
+    approvedAt: seller.approvedAt?.toISOString() ?? null,
+    createdAt: seller.createdAt.toISOString(),
+  };
+}
+
+/** Listing counts by status for each seller id, in one query. */
+export async function listingCounts(
+  prisma: PrismaService,
+  sellerIds: string[],
+): Promise<Map<string, ListingCounts>> {
+  const rows = await prisma.product.groupBy({
+    by: ['sellerId', 'status'],
+    where: { sellerId: { in: sellerIds } },
+    _count: { _all: true },
+  });
+  const result = new Map<string, ListingCounts>();
+  for (const row of rows) {
+    if (!row.sellerId) continue;
+    const counts = result.get(row.sellerId) ?? { ...NO_LISTINGS };
+    const key = (
+      {
+        DRAFT: 'draft',
+        PENDING_REVIEW: 'pendingReview',
+        ACTIVE: 'active',
+        ARCHIVED: 'archived',
+      } as const
+    )[row.status];
+    counts[key] = row._count._all;
+    result.set(row.sellerId, counts);
+  }
+  return result;
+}
+
+export function toListingRow(
+  product: ProductWithRelations,
+  publicUrl: (key: string) => string,
+): SellerProductRow {
+  return {
+    ...toCard(product, publicUrl),
+    status: product.status,
+    reviewNote: product.reviewNote,
+    updatedAt: product.updatedAt.toISOString(),
+  };
+}

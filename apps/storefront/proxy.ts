@@ -65,6 +65,8 @@ function expiresSoon(token: string | undefined): boolean {
 }
 
 function needsAccount(pathname: string): boolean {
+  // The seller portal: /sell itself is the public pitch, everything under it needs an account.
+  if (pathname.startsWith('/sell/')) return true;
   return (
     (pathname === '/account' || pathname.startsWith('/account/')) &&
     !OPEN_ACCOUNT_PAGES.some((path) => pathname.startsWith(path))

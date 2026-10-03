@@ -40,5 +40,8 @@ export async function removeTestData(prisma: PrismaService, run: string): Promis
     await prisma.category.delete({ where: { id: category.id } });
   }
   await prisma.brand.deleteMany({ where: { slug: { endsWith: tag } } });
+  const sellers = { handle: { endsWith: tag } };
+  await prisma.product.deleteMany({ where: { seller: sellers } });
+  await prisma.seller.deleteMany({ where: sellers });
   await prisma.user.deleteMany({ where: { email: { contains: `-${tag}` } } });
 }

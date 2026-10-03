@@ -222,6 +222,14 @@ export default async function ProductPage({ params }: Props) {
               initial={wishIds.includes(product.id)}
             />
           </div>
+          <p className="sold-by">
+            Sold by{' '}
+            {product.seller ? (
+              <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>
+            ) : (
+              <strong>NIXZORA</strong>
+            )}
+          </p>
           <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
             <li>Free shipping on orders over $99</li>
             <li>30-day returns</li>

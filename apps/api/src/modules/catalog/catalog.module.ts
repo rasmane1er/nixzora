@@ -10,6 +10,6 @@ import { CatalogController } from './catalog.controller';
   imports: [MediaModule, SearchModule],
   controllers: [CatalogController, CatalogAdminController],
   providers: [CatalogQueryService, CatalogAdminService],
-  exports: [CatalogQueryService],
+  exports: [CatalogQueryService, CatalogAdminService],
 })
 export class CatalogModule {}

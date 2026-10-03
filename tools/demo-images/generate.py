@@ -185,12 +185,12 @@ def earbuds():
     )
 
 
-def speaker(cx, scale=1.0):
+def speaker(cx, scale=1.0, wood="#c9a27a", face="#2b2a28"):
     w, h = 230 * scale, 380 * scale
     x, y = cx - w / 2, 760 - h
     return f"""
-<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="#c9a27a"/>
-<rect x="{x + 12}" y="{y + 12}" width="{w - 24}" height="{h - 24}" rx="12" fill="#2b2a28"/>
+<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="{wood}"/>
+<rect x="{x + 12}" y="{y + 12}" width="{w - 24}" height="{h - 24}" rx="12" fill="{face}"/>
 <circle cx="{cx}" cy="{y + h * 0.28}" r="{38 * scale}" fill="#16171a"/>
 <circle cx="{cx}" cy="{y + h * 0.28}" r="{14 * scale}" fill="#4a4b50"/>
 <circle cx="{cx}" cy="{y + h * 0.65}" r="{78 * scale}" fill="#16171a"/>
@@ -200,8 +200,11 @@ def speaker(cx, scale=1.0):
 """
 
 
-def speakers():
-    return page(f"{shadow(W / 2, 772, 360, 28)}{speaker(430)}{speaker(770)}")
+def speakers(wood="#c9a27a", face="#2b2a28", scale=1.0, bg=("#f4f1ea", "#e6e1d6")):
+    return page(
+        f"{shadow(W / 2, 772, 360, 28)}{speaker(430, scale, wood, face)}{speaker(770, scale, wood, face)}",
+        bg=bg,
+    )
 
 
 def phone():
@@ -368,6 +371,9 @@ PRODUCTS = {
     "tactile-ergo-split": split_keyboard(),
     "tactile-precision-mouse": mouse(),
     "pulse-s-watch": watch(),
+    # Demo marketplace seller "Brightline Audio" (Phase 7)
+    "brightline-bookshelf-speakers": speakers("#6b4a32", "#e9e4da", 1.12, ("#eef1f4", "#d9dee5")),
+    "brightline-studio-headphones": headphones("#8c2f2f", "#2b2d33", "#17181c", "#f2c14e"),
 }
 
 if __name__ == "__main__":

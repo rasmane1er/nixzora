@@ -96,7 +96,7 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
 
     await this.audit.record({
       action: 'inventory.adjusted',
-      actorType: 'ADMIN',
+      actorType: actor.actorType ?? 'ADMIN',
       actorId: actor.user.id,
       entityType: 'variant',
       entityId: variantId,

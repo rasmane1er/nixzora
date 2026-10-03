@@ -373,6 +373,8 @@ th.num {
 .pill--pending_payment,
 .pill--requested,
 .pill--partially_refunded,
+.pill--pending,
+.pill--pending_review,
 .pill--draft {
   background: #fdf0d8;
   color: var(--warn-fg);
@@ -387,6 +389,8 @@ th.num {
   color: var(--err-fg);
 }
 @media (prefers-color-scheme: dark) {
+  .pill--pending,
+  .pill--pending_review,
   .pill--draft {
     background: #33270f;
   }

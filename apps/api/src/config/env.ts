@@ -108,6 +108,11 @@ export const EnvSchema = z
       .regex(/^pk_(test|live)_/)
       .optional(),
     STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
+    /**
+     * Seller payouts (ADR-0012). "fake" verifies sellers instantly and moves no money
+     * (development, tests, demo); "stripe" uses Stripe Connect Express accounts.
+     */
+    PAYOUTS_PROVIDER: z.enum(['fake', 'stripe']).default('fake'),
     /** Flat shipping rate, free above the threshold. */
     SHIPPING_FLAT_CENTS: z.coerce.number().int().min(0).default(999),
     FREE_SHIPPING_THRESHOLD_CENTS: z.coerce.number().int().min(0).default(9900),
@@ -208,6 +213,13 @@ export const EnvSchema = z
           });
       }
     }
+    if (env.PAYOUTS_PROVIDER === 'stripe' && !env.STRIPE_SECRET_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['STRIPE_SECRET_KEY'],
+        message: 'is required when PAYOUTS_PROVIDER=stripe',
+      });
+    }
     if (env.SHIPPING_PROVIDER === 'easypost' && !env.EASYPOST_API_KEY) {
       ctx.addIssue({
         code: 'custom',
@@ -234,6 +246,13 @@ export const EnvSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['PAYMENTS_PROVIDER'],
+        message: 'must be "stripe" in production (or set ALLOW_TEST_PAYMENTS=true for a demo)',
+      });
+    }
+    if (env.PAYOUTS_PROVIDER !== 'stripe' && !env.ALLOW_TEST_PAYMENTS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PAYOUTS_PROVIDER'],
         message: 'must be "stripe" in production (or set ALLOW_TEST_PAYMENTS=true for a demo)',
       });
     }
