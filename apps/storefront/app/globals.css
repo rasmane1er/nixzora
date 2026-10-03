@@ -2971,9 +2971,12 @@ td.neg {
   z-index: 1;
   pointer-events: none;
 }
-.hero__content {
+.hero__content,
+.hero > :not(.hero__art):not(.hero__badge) {
   position: relative;
   z-index: 2;
+}
+.hero__content {
   display: grid;
   gap: 18px;
   max-width: 640px;
@@ -3021,6 +3024,7 @@ td.neg {
     height: auto;
     aspect-ratio: 16 / 9;
     width: calc(100% + 2 * clamp(28px, 6vw, 64px));
+    max-width: none;
     margin: 0 calc(-1 * clamp(28px, 6vw, 64px));
     object-position: 75% center;
   }
@@ -3033,6 +3037,24 @@ td.neg {
     bottom: 16px;
     padding: 8px 14px;
   }
+}
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.hero__note {
+  font-size: 14px;
+  color: #c9ced6;
+}
+.btn--on-dark {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+.btn--on-dark:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 .section-link {
   color: var(--color-signal-text);

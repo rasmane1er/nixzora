@@ -75,28 +75,52 @@ async function Pitch({
   return (
     <div className="wrap section stack" style={{ gap: 28 }}>
       <Notices notice={notice} />
-      <section className="hero">
-        <p className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
-          {t('eyebrow')}
-        </p>
-        <h1>{t('heroTitle')}</h1>
-        <p style={{ maxWidth: 560 }}>{t('heroLead')}</p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {signedIn ? (
-            <Link className="btn btn--primary" href="/sell/apply">
-              {draft ? t('continueApplication', { percent }) : t('startApplication')}
-            </Link>
-          ) : (
-            <>
-              <Link className="btn btn--primary" href="/account/register?next=/sell/apply">
-                {t('createAccountToStart')}
+      <section className="hero" aria-labelledby="sell-hero-title">
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative, sized by CSS */}
+        <img
+          className="hero__art"
+          src="/home/hero-desk.webp"
+          alt={t('heroImageAlt')}
+          width={1600}
+          height={900}
+          fetchPriority="high"
+        />
+        <div className="hero__content">
+          <p className="eyebrow">{t('eyebrow')}</p>
+          <h1 id="sell-hero-title">{t('heroTitle')}</h1>
+          <p>{t('heroLead')}</p>
+          <div className="hero__actions">
+            {signedIn ? (
+              <Link className="btn btn--primary" href="/sell/apply">
+                {draft ? t('continueApplication', { percent }) : t('startApplication')}
               </Link>
-              <Link className="btn btn--secondary" href="/account/login?next=/sell/apply">
-                {tc('signIn')}
-              </Link>
-            </>
-          )}
-          <span style={{ opacity: 0.85, fontSize: 14 }}>{t('heroTime')}</span>
+            ) : (
+              <>
+                <Link className="btn btn--primary" href="/account/register?next=/sell/apply">
+                  {t('createAccountToStart')}
+                </Link>
+                <Link className="btn btn--on-dark" href="/account/login?next=/sell/apply">
+                  {tc('signIn')}
+                </Link>
+              </>
+            )}
+            <span className="hero__note">{t('heroTime')}</span>
+          </div>
+        </div>
+        <div className="hero__badge">
+          <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+            <path
+              d="M3 7.5h18v10.5H3V7.5Zm0 3.75h18M6.75 15h3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>
+            <strong>{t('heroBadgeTitle')}</strong>
+            {t('heroBadgeBody')}
+          </span>
         </div>
       </section>
       <Steps />

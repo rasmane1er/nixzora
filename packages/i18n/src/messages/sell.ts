@@ -16,6 +16,9 @@ export const sell = defineMessages({
     startApplication: 'Start your application',
     createAccountToStart: 'Create an account to start',
     heroTime: 'About 10 minutes. Save and finish later.',
+    heroBadgeTitle: 'Payouts through Stripe',
+    heroBadgeBody: 'No listing or monthly fees',
+    heroImageAlt: 'A desk with a laptop, monitor, headphones, phone and game controller',
     stepApply: 'Apply',
     stepApplyBody: 'Six short steps: your business, you, your store, shipping, fees and review.',
     stepVerify: 'Verify',
@@ -228,6 +231,10 @@ export const sell = defineMessages({
     startApplication: 'Commencer votre candidature',
     createAccountToStart: 'Créer un compte pour commencer',
     heroTime: 'Environ 10 minutes. Enregistrez et terminez plus tard.',
+    heroBadgeTitle: 'Versements via Stripe',
+    heroBadgeBody: 'Sans frais de mise en ligne ni abonnement',
+    heroImageAlt:
+      'Un bureau avec un ordinateur portable, un écran, un casque, un téléphone et une manette',
     stepApply: 'Candidater',
     stepApplyBody:
       'Six courtes étapes : votre entreprise, vous, votre boutique, l’expédition, les frais et la vérification.',
@@ -445,6 +452,10 @@ export const sell = defineMessages({
     startApplication: 'Comenzar tu solicitud',
     createAccountToStart: 'Crea una cuenta para comenzar',
     heroTime: 'Unos 10 minutos. Guarda y termina después.',
+    heroBadgeTitle: 'Pagos a través de Stripe',
+    heroBadgeBody: 'Sin cuotas de publicación ni mensuales',
+    heroImageAlt:
+      'Un escritorio con una laptop, un monitor, audífonos, un teléfono y un control de juegos',
     stepApply: 'Solicita',
     stepApplyBody: 'Seis pasos cortos: tu negocio, tú, tu tienda, envío, comisiones y revisión.',
     stepVerify: 'Verifica',
