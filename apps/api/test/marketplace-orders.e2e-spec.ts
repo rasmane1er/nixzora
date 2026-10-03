@@ -14,6 +14,7 @@ import { Test } from '@nestjs/testing';
 import {
   AuthTokensSchema,
   type CheckoutResponse,
+  type ListingImportResult,
   type OrderView,
   type PayoutView,
   type SellerBalance,
@@ -467,6 +468,87 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
         automatic: true,
       });
       expect((await balance()).availableCents).toBe(0);
+    });
+  });
+
+  describe('bulk listings (CSV)', () => {
+    const importCsv = (csv: string, dryRun: boolean) =>
+      http()
+        .post('/api/v1/seller/products/import')
+        .set(bearer(sellerToken))
+        .send({ csv, dryRun })
+        .expect(200);
+
+    it('serves a template, checks a file without saving, then creates drafts', async () => {
+      const template = await http()
+        .get('/api/v1/seller/products/import/template')
+        .set(bearer(sellerToken))
+        .expect(200);
+      expect(template.headers['content-type']).toContain('text/csv');
+      expect(template.text.split('\r\n')[0]).toBe(
+        'product,title,category,description,specs,sku,option,price,compare_at_price,stock,barcode',
+      );
+
+      const header = template.text.split('\r\n')[0];
+      const bad = [header, `,Preamp,no-such-category,Desc,,PRE-${run},,99,,1,`].join('\n');
+      const checked = (await importCsv(bad, false)).body as ListingImportResult;
+      // Errors force a dry run: nothing is saved.
+      expect(checked).toMatchObject({ dryRun: true, newListings: 0, createdIds: [] });
+      expect(checked.errors).toEqual([
+        { row: 2, column: 'category', message: 'Unknown category "no-such-category".' },
+      ]);
+
+      const good = [
+        header,
+        `pre,Phono preamp ${run},amps-${run},A quiet MM phono stage.,gain_db: 40,PRE-BLK-${run},Black,149,,5,`,
+        `pre,,,,,PRE-SLV-${run},Silver,159,,4,`,
+        // An option the store already sells: its price and stock change.
+        `,,,,,AMP-${run},,95.00,,30,`,
+      ].join('\n');
+      const preview = (await importCsv(good, true)).body as ListingImportResult;
+      expect(preview).toMatchObject({
+        dryRun: true,
+        rows: 3,
+        newListings: 1,
+        newOptions: 2,
+        updatedOptions: 1,
+        errors: [],
+      });
+      expect(await prisma.product.count({ where: { title: `Phono preamp ${run}` } })).toBe(0);
+
+      const done = (await importCsv(good, false)).body as ListingImportResult;
+      expect(done).toMatchObject({ dryRun: false, newListings: 1, errors: [] });
+      expect(done.createdIds).toHaveLength(1);
+      const draft = await prisma.product.findUniqueOrThrow({
+        where: { id: done.createdIds[0] },
+        include: { variants: { include: { inventory: true }, orderBy: { priceCents: 'asc' } } },
+      });
+      expect(draft).toMatchObject({ status: 'DRAFT', sellerId, attributes: { gain_db: 40 } });
+      expect(draft.variants.map((v) => [v.sku, v.priceCents, v.inventory?.onHand])).toEqual([
+        [`PRE-BLK-${run}`.toUpperCase(), 14900, 5],
+        [`PRE-SLV-${run}`.toUpperCase(), 15900, 4],
+      ]);
+      const amp = await prisma.productVariant.findUniqueOrThrow({
+        where: { id: sellerVariant },
+        include: { inventory: true },
+      });
+      expect(amp.priceCents).toBe(9500);
+      expect(amp.inventory?.onHand).toBe(30);
+
+      // The export round-trips: uploading it unchanged changes nothing.
+      const exported = await http()
+        .get('/api/v1/seller/products/export')
+        .set(bearer(sellerToken))
+        .expect(200);
+      expect(exported.text).toContain(`PRE-SLV-${run}`.toUpperCase());
+      const again = (await importCsv(exported.text, true)).body as ListingImportResult;
+      expect(again).toMatchObject({ newListings: 0, updatedOptions: 0, errors: [] });
+    });
+
+    it("refuses another store's SKUs", async () => {
+      const csv = `sku,price,title,category,description\nCBL-${run},10,Cable,amps-${run},Desc`;
+      const result = (await importCsv(csv, true)).body as ListingImportResult;
+      expect(result.errors[0]).toMatchObject({ row: 2, column: 'sku' });
     });
   });
 });

@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ['@nixzora/validation', '@nixzora/ui'],
+  // Sellers' CSV imports (up to 1 MB of text) are sent through a server action.
+  experimental: { serverActions: { bodySizeLimit: '2mb' } },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

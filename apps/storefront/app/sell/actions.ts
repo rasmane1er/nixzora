@@ -2,6 +2,7 @@
 
 import {
   type InventoryAdjust,
+  type ListingImportResult,
   type ProductDetail,
   type SellerView,
   type UploadTicket,
@@ -246,6 +247,27 @@ export async function removePhoto(form: FormData): Promise<void> {
     () => api(`/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
     'Photo removed.',
   );
+}
+
+// ───── Bulk listings (CSV) ─────
+
+export async function importListings(
+  csv: string,
+  dryRun: boolean,
+): Promise<Result<ListingImportResult>> {
+  try {
+    return {
+      ok: true,
+      data: await api<ListingImportResult>('/seller/products/import', {
+        method: 'POST',
+        body: { csv, dryRun },
+      }),
+    };
+  } catch (error) {
+    return failure(error);
+  } finally {
+    if (!dryRun) revalidatePath('/sell/listings');
+  }
 }
 
 // ───── Orders ─────

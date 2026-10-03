@@ -41,9 +41,14 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
             </Link>
           ))}
         </nav>
-        <Link className="btn btn--primary" href="/sell/listings/new">
-          Add a listing
-        </Link>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Link className="btn btn--secondary" href="/sell/listings/import">
+            Import from CSV
+          </Link>
+          <Link className="btn btn--primary" href="/sell/listings/new">
+            Add a listing
+          </Link>
+        </div>
       </div>
 
       {result.items.length === 0 ? (

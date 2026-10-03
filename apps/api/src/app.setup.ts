@@ -22,6 +22,8 @@ export function configureApp(app: INestApplication): void {
     type: Object.keys(IMAGE_TYPES),
     limit: '10mb',
   });
+  // JSON bodies up to 2 MB: sellers' CSV imports are sent as JSON text (1 MB at most).
+  (app as NestExpressApplication).useBodyParser('json', { limit: '2mb' });
   app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

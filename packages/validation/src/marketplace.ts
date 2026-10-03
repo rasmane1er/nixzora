@@ -123,6 +123,49 @@ export const SellerProductRowSchema = ProductCardSchema.extend({
   updatedAt: z.iso.datetime(),
 });
 
+// ───────────── Bulk listing import (p7-03) ─────────────
+
+export const LISTING_IMPORT_COLUMNS = [
+  'product',
+  'title',
+  'category',
+  'description',
+  'specs',
+  'sku',
+  'option',
+  'price',
+  'compare_at_price',
+  'stock',
+  'barcode',
+] as const;
+
+export const ListingImportRequestSchema = z.object({
+  /** The CSV file's text. */
+  csv: z
+    .string()
+    .min(1, { message: 'The file is empty.' })
+    .max(1_000_000, { message: 'Files can be up to 1 MB (about 2,000 rows).' }),
+  /** Check only: report what would happen and every error, change nothing. */
+  dryRun: z.boolean().default(true),
+});
+
+export type ListingImportIssue = { row: number; column?: string; message: string };
+
+export type ListingImportResult = {
+  dryRun: boolean;
+  rows: number;
+  /** New draft listings (and their options) the file creates. */
+  newListings: number;
+  newOptions: number;
+  /** Existing options whose price or stock the file changes. */
+  updatedOptions: number;
+  errors: ListingImportIssue[];
+  /** Ids of the drafts created (empty on a dry run). */
+  createdIds: string[];
+};
+
+export type ListingImportRequest = z.infer<typeof ListingImportRequestSchema>;
+
 // ───────────── Seller orders and earnings (p7-04, p7-05) ─────────────
 
 export const SellerOrderStatusSchema = z.enum(['PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED']);

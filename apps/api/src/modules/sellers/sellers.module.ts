@@ -4,6 +4,7 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { MediaModule } from '../media/media.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PayoutsService } from './payouts.service';
+import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellerController } from './seller.controller';
@@ -22,6 +23,7 @@ import { SellersService } from './sellers.service';
     SellerOrdersService,
     SellersAdminService,
     PayoutsService,
+    SellerImportService,
   ],
   exports: [SellersService],
 })

@@ -10,10 +10,13 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   type InventoryAdjust,
+  type ListingImportRequest,
+  ListingImportRequestSchema,
   InventoryAdjustSchema,
   type PayoutOnboardingLink,
   PayoutOnboardingLinkSchema,
@@ -43,10 +46,12 @@ import {
   type VariantUpdate,
   VariantUpdateSchema,
 } from '@nixzora/validation';
+import { type Response } from 'express';
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { PayoutsService } from './payouts.service';
+import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellersService } from './sellers.service';
@@ -66,7 +71,30 @@ export class SellerController {
     private readonly listings: SellerListingsService,
     private readonly orders: SellerOrdersService,
     private readonly payouts: PayoutsService,
+    private readonly imports: SellerImportService,
   ) {}
+
+  // Bulk listings (CSV). Declared before products/:id so these paths are not read as ids.
+  @Get('products/import/template')
+  template(@Res() res: Response) {
+    res.type('text/csv').attachment('nixzora-listings-template.csv').send(this.imports.template());
+  }
+
+  @Get('products/export')
+  async export(@Actor() actor: ActorContext, @Res() res: Response) {
+    const csv = await this.imports.exportCsv(actor);
+    res.type('text/csv').attachment('nixzora-listings.csv').send(csv);
+  }
+
+  @Post('products/import')
+  @HttpCode(HttpStatus.OK)
+  @ApiZodBody(ListingImportRequestSchema)
+  importListings(
+    @Body(new ZodValidationPipe(ListingImportRequestSchema)) body: ListingImportRequest,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.imports.run(body, actor);
+  }
 
   @Get('payouts')
   payoutsList(@Query('page') page: string | undefined, @Actor() actor: ActorContext) {

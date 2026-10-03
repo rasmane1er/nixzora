@@ -57,6 +57,11 @@ DRAFT ──submit──▶ PENDING_REVIEW ──approve──▶ ACTIVE
 - Suspending or rejecting a store moves its live and pending listings to draft in the same
   transaction, so nothing from it stays on sale. Reinstating does not republish anything.
 
+**Bulk listings.** Sellers can upload a CSV (template and export provided): new SKUs become
+drafts, known SKUs get the file's price and stock, and the whole file is checked first: nothing
+is saved while any row has an error, and errors are reported by row and column. Images are not
+imported from URLs, so the server never fetches addresses supplied by sellers.
+
 Store approval requires finished payout verification, and every decision (apply, approve,
 suspend, terms change, listing approved or sent back) is in the audit log. Staff need the new
 `sellers.manage` permission (admins, catalog managers) for stores and `catalog.write` for listing
