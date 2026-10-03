@@ -2,8 +2,31 @@ import { type ProductCard as Card } from '@nixzora/validation';
 import { INTL_LOCALE } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
-import { departmentName, getLocale, getT } from '@/lib/i18n';
+import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
+import { wishedIds } from '@/lib/wishlist';
+import { CardAdd, CardHeart } from './CardActions';
 
+/** Stars for an average out of 5 (half stars rounded to the nearest half). */
+function StarRow({ average }: { average: number }) {
+  const halves = Math.round(average * 2);
+  return (
+    <span className="card-stars" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className={halves >= (i + 1) * 2 ? 'on' : halves === i * 2 + 1 ? 'half' : 'off'}
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * A product in a grid or rail: photo, brand, title, rating, price, a save heart and, for
+ * single-option products, a one-tap "Add to cart".
+ */
 export async function ProductCard({
   product,
   priority = false,
@@ -13,38 +36,77 @@ export async function ProductCard({
 }) {
   const t = await getT('product');
   const locale = await getLocale();
+  const f = await getFormat();
+  const wished = (await wishedIds()).has(product.id);
+  const rating = product.rating;
+  const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
+  const badge = onSale
+    ? {
+        kind: 'sale',
+        text: t('sale', {
+          percent: f.percent(
+            Math.round((1 - product.priceFromCents / (product.compareAtCents as number)) * 100) /
+              100,
+          ),
+        }),
+      }
+    : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
+      ? { kind: 'top', text: t('topRated') }
+      : null;
+
   return (
-    <Link href={`/p/${product.slug}`} className="product-card">
-      <div className="product-card__img">
-        {product.image ? (
-          // Product photos come from our media host/CDN; sizes are fixed by the card.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.image.url}
-            alt={product.image.alt}
-            loading={priority ? 'eager' : 'lazy'}
-            width={400}
-            height={300}
+    <article className="product-card">
+      <Link href={`/p/${product.slug}`} className="product-card__link">
+        <div className="product-card__img">
+          {product.image ? (
+            // Product photos come from our media host/CDN; sizes are fixed by the card.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.image.url}
+              alt={product.image.alt}
+              loading={priority ? 'eager' : 'lazy'}
+              width={400}
+              height={300}
+            />
+          ) : (
+            <span aria-hidden="true">{await departmentName(product.category)}</span>
+          )}
+        </div>
+        <div className="product-card__body">
+          <span className="product-card__brand">{product.brand?.name ?? ' '}</span>
+          <span className="product-card__title">{product.title}</span>
+          {rating && rating.count > 0 && rating.average != null ? (
+            <span
+              className="card-rating"
+              aria-label={t('rating', { rating: f.number(rating.average), count: rating.count })}
+            >
+              <StarRow average={rating.average} />
+              <span className="muted">{t('reviewCount', { count: rating.count })}</span>
+            </span>
+          ) : null}
+          <Price
+            cents={product.priceFromCents}
+            compareAtCents={product.compareAtCents}
+            currency={product.currency}
+            prefix={product.defaultVariantId ? undefined : t('from')}
+            locale={INTL_LOCALE[locale]}
+            wasLabel={t('was')}
           />
-        ) : (
-          <span aria-hidden="true">{await departmentName(product.category)}</span>
-        )}
-      </div>
-      <div className="product-card__body">
-        <span className="product-card__brand">{product.brand?.name ?? ' '}</span>
-        <span className="product-card__title">{product.title}</span>
-        <Price
-          cents={product.priceFromCents}
-          compareAtCents={product.compareAtCents}
-          currency={product.currency}
-          prefix={t('from')}
-          locale={INTL_LOCALE[locale]}
-          wasLabel={t('was')}
+          <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
+            {product.inStock ? t('inStock') : t('soldOut')}
+          </span>
+        </div>
+      </Link>
+      {badge ? <span className={`card-badge card-badge--${badge.kind}`}>{badge.text}</span> : null}
+      <CardHeart productId={product.id} title={product.title} initial={wished} />
+      <div className="product-card__actions">
+        <CardAdd
+          variantId={product.defaultVariantId}
+          slug={product.slug}
+          title={product.title}
+          inStock={product.inStock}
         />
-        <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
-          {product.inStock ? t('inStock') : t('soldOut')}
-        </span>
       </div>
-    </Link>
+    </article>
   );
 }

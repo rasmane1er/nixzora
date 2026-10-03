@@ -14,12 +14,12 @@ test('a guest buys a product', async ({ page }) => {
   await expect(page).toHaveURL(/\/search\?q=laptop/);
   await page.getByLabel('In stock only').check();
   await page.getByRole('button', { name: 'Apply' }).click();
-  await page.locator('.product-card').first().click();
+  await page.locator('.product-card__link').first().click();
 
   // Product page → cart.
   await expect(page).toHaveURL(/\/p\//);
   const title = await page.getByRole('heading', { level: 1 }).innerText();
-  await page.getByRole('button', { name: /Add to cart/ }).click();
+  await page.getByRole('button', { name: /^Add to cart ·/ }).click();
   await expect(page.getByRole('status')).toContainText('Added to your cart');
   await page.getByRole('link', { name: 'View cart →' }).click();
   await expect(page.getByRole('link', { name: title })).toBeVisible();

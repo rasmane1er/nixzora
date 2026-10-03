@@ -1,9 +1,19 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
+import { ProductCard } from '@/components/ProductCard';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Totals } from '@/components/Totals';
+
+function withQueries({ children }: { children: ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
 
 describe('Price', () => {
   it('shows the sale price and the old one', () => {
@@ -66,15 +76,57 @@ describe('ProductRail', () => {
   });
 
   it('lists the products in a titled, sideways-scrolling row', () => {
-    render(<ProductRail title="Similar products" products={[card(1), card(2, false)]} />);
+    render(<ProductRail title="Similar products" products={[card(1), card(2, false)]} />, {
+      wrapper: withQueries,
+    });
     expect(screen.getByText('Similar products')).toBeTruthy();
     expect(screen.getByLabelText('Watch 1')).toBeTruthy();
     expect(screen.getByLabelText('Watch 2, sold out')).toBeTruthy();
   });
 
   it('renders nothing when there is nothing to show', () => {
-    render(<ProductRail title="Similar products" products={[]} />);
+    render(<ProductRail title="Similar products" products={[]} />, { wrapper: withQueries });
     expect(screen.queryByText('Similar products')).toBeNull();
+  });
+});
+
+describe('ProductCard', () => {
+  const base = {
+    id: '0190a5b2-0000-7000-8000-000000000009',
+    slug: 'arden-27',
+    title: 'Arden 27',
+    brand: { slug: 'arden', name: 'Arden' },
+    category: { slug: 'monitors', name: 'Monitors' },
+    priceFromCents: 38900,
+    compareAtCents: 42900,
+    currency: 'USD',
+    inStock: true,
+    image: null,
+  };
+
+  it('shows a sale badge, rating, save heart and add to cart for single-option products', () => {
+    render(
+      <ProductCard
+        product={{
+          ...base,
+          rating: { average: 4.6, count: 5 },
+          defaultVariantId: '0190a5b2-0000-7000-8000-0000000000aa',
+        }}
+      />,
+      { wrapper: withQueries },
+    );
+    expect(screen.getByText('Sale −9%')).toBeTruthy();
+    expect(screen.getByLabelText('Save Arden 27')).toBeTruthy();
+    expect(screen.getByLabelText('Add to cart: Arden 27')).toBeTruthy();
+    expect(screen.queryByText('From')).toBeNull();
+  });
+
+  it('sends products with options to their page and says "From"', () => {
+    render(<ProductCard product={{ ...base, compareAtCents: null, defaultVariantId: null }} />, {
+      wrapper: withQueries,
+    });
+    expect(screen.getByLabelText('Choose options: Arden 27')).toBeTruthy();
+    expect(screen.getByText('From')).toBeTruthy();
   });
 });
 

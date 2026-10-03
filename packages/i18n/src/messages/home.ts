@@ -26,6 +26,12 @@ export const home = defineMessages({
     shippingBody: 'Flat $9.99 below that. Tracking on every order.',
     secureTitle: 'Secure checkout',
     secureBody: 'Card details go straight to our payment provider, never to us.',
+    featured: 'Featured products',
+    viewAll: 'View all',
+    viewAllFeatured: 'View all products',
+    deliveryTitle: 'Fast, tracked delivery',
+    deliveryBody: 'Free over $99 · 30-day returns',
+    heroImageAlt: 'A desk with a laptop, monitor, headphones, phone and game controller',
   },
   fr: {
     eyebrow: 'Le commerce porté par l’IA',
@@ -53,6 +59,13 @@ export const home = defineMessages({
     secureTitle: 'Paiement sécurisé',
     secureBody:
       'Vos données de carte vont directement à notre prestataire de paiement, jamais à nous.',
+    featured: 'Produits à la une',
+    viewAll: 'Tout voir',
+    viewAllFeatured: 'Voir tous les produits',
+    deliveryTitle: 'Livraison rapide et suivie',
+    deliveryBody: 'Offerte dès 99 $ · retours sous 30 jours',
+    heroImageAlt:
+      'Un bureau avec un ordinateur portable, un écran, un casque, un téléphone et une manette',
   },
   es: {
     eyebrow: 'Comercio impulsado por IA',
@@ -80,5 +93,12 @@ export const home = defineMessages({
     secureTitle: 'Pago seguro',
     secureBody:
       'Los datos de tu tarjeta van directo a nuestro proveedor de pagos, nunca a nosotros.',
+    featured: 'Productos destacados',
+    viewAll: 'Ver todo',
+    viewAllFeatured: 'Ver todos los productos',
+    deliveryTitle: 'Envío rápido y con rastreo',
+    deliveryBody: 'Gratis desde $99 · devoluciones en 30 días',
+    heroImageAlt:
+      'Un escritorio con una laptop, un monitor, audífonos, un teléfono y un control de videojuegos',
   },
 });

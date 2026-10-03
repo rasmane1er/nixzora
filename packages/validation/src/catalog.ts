@@ -214,6 +214,10 @@ export const ProductCardSchema = z.object({
   currency: z.string(),
   inStock: z.boolean(),
   image: ImageSchema.nullable(),
+  /** Approved reviews; present on lists and detail pages. */
+  rating: z.object({ average: z.number().nullable(), count: z.number().int() }).optional(),
+  /** Set when the product has a single option, so a card can add it to the cart directly. */
+  defaultVariantId: z.uuid().nullable().optional(),
 });
 
 export const VariantSchema = z.object({
@@ -315,4 +319,28 @@ export function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
+}
+
+/** Demo-catalog artwork for each department tile on the home pages (web and app). */
+const DEPARTMENT_ART: Record<string, string> = {
+  computers: 'vela-15-studio',
+  laptops: 'vela-13-air',
+  desktops: 'kestrel-tower-x',
+  monitors: 'arden-27-4k-usb-c',
+  audio: 'halo-anc-headphones',
+  headphones: 'halo-anc-headphones',
+  speakers: 'lumen-desk-speakers',
+  phones: 'orbit-phone-256',
+  'smart-home': 'nimbus-smart-hub',
+  gaming: 'pulse-controller',
+  accessories: 'tactile-75',
+  keyboards: 'tactile-75',
+  mice: 'tactile-precision-mouse',
+  wearables: 'pulse-s-watch',
+};
+
+/** "/demo-products/vela-15-studio.webp" for a department slug (served by the storefront). */
+export function departmentArtPath(slug: string): string | null {
+  const name = DEPARTMENT_ART[slug];
+  return name ? `/demo-products/${name}.webp` : null;
 }

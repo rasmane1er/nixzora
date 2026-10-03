@@ -12,13 +12,13 @@ test('a customer uses a coupon, buys, and writes a review', async ({ page }) => 
 
   // A product over $50 so WELCOME10 applies.
   await page.goto('/search?q=monitor&inStock=true&sort=price_desc');
-  await page.locator('.product-card').first().click();
-  await expect(page.getByRole('button', { name: /Add to cart/ })).toBeVisible();
+  await page.locator('.product-card__link').first().click();
+  await expect(page.getByRole('button', { name: /^Add to cart ·/ })).toBeVisible();
   const productPath = new URL(page.url()).pathname;
 
   await page.getByRole('button', { name: '♡ Save' }).click();
   await expect(page.getByRole('button', { name: '♥ Saved' })).toBeVisible();
-  await page.getByRole('button', { name: /Add to cart/ }).click();
+  await page.getByRole('button', { name: /^Add to cart ·/ }).click();
   await expect(page.getByRole('status')).toContainText('Added to your cart');
 
   await page.goto('/cart');

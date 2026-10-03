@@ -9,17 +9,25 @@ export function Price({
   compareAtCents,
   currency = 'USD',
   size = 'md',
+  prefix,
 }: {
   cents: number;
   compareAtCents?: number | null;
   currency?: string;
   size?: 'md' | 'lg';
+  /** "From" when the product has options at different prices. */
+  prefix?: string;
 }) {
   const { money } = useFormatters();
   const t = useT('appShop');
   const onSale = compareAtCents != null && compareAtCents > cents;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+      {prefix ? (
+        <Text variant="small" muted>
+          {prefix}
+        </Text>
+      ) : null}
       <Text
         tone={onSale ? 'signal' : undefined}
         style={{ fontFamily: fonts.displayMedium, fontSize: size === 'lg' ? 24 : 16 }}

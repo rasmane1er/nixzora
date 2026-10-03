@@ -37,6 +37,14 @@ export function wholeMoney(
   return currencyFormat(locale, currency, cents % 100 === 0).format(cents / 100);
 }
 
+/** 0.09 → "9%" (fr: "9 %"); for sale badges. */
+export function percent(fraction: number, locale: Locale = language.get()): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(fraction);
+}
+
 /** "Oct 3, 2026" */
 export function shortDate(iso: string, locale: Locale = language.get()): string {
   return new Date(iso).toLocaleDateString(INTL_LOCALE[locale], {
@@ -125,6 +133,7 @@ export function useFormatters() {
       shortDate: (iso: string) => shortDate(iso, locale),
       dateTime: (iso: string) => dateTime(iso, locale),
       rating: (value: number) => rating(value, locale),
+      percent: (fraction: number) => percent(fraction, locale),
       statusLabel: (status: string) => statusLabel(status, locale),
       optionsText,
       departmentName: (slug: string, name: string) => departmentName(slug, name, locale),

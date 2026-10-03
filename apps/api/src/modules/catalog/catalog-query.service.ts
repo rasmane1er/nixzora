@@ -228,7 +228,9 @@ export class CatalogQueryService {
     const total = cards.length;
     const start = (query.page - 1) * query.pageSize;
     return {
-      items: cards.slice(start, start + query.pageSize).map(({ createdAt: _c, ...card }) => card),
+      items: await this.withRatings(
+        cards.slice(start, start + query.pageSize).map(({ createdAt: _c, ...card }) => card),
+      ),
       page: query.page,
       pageSize: query.pageSize,
       total,
@@ -339,11 +341,36 @@ export class CatalogQueryService {
       include: productInclude,
     });
     const byId = new Map(rows.map((row) => [row.id, row]));
-    return ids.flatMap((id) => {
-      const row = byId.get(id);
-      return row
-        ? [toCard({ ...row, variants: row.variants.filter((v) => v.isActive) }, this.url)]
-        : [];
+    return this.withRatings(
+      ids.flatMap((id) => {
+        const row = byId.get(id);
+        return row
+          ? [toCard({ ...row, variants: row.variants.filter((v) => v.isActive) }, this.url)]
+          : [];
+      }),
+    );
+  }
+
+  /** Adds each card's approved-review average and count, in one query. */
+  private async withRatings<C extends ProductCard>(cards: C[]): Promise<C[]> {
+    if (!cards.length) return cards;
+    const rows = await this.prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: cards.map((card) => card.id) }, status: 'APPROVED' },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    const byId = new Map(rows.map((row) => [row.productId, row]));
+    return cards.map((card) => {
+      const row = byId.get(card.id);
+      const average = row?._avg.rating;
+      return {
+        ...card,
+        rating: {
+          average: average == null ? null : Math.round(average * 10) / 10,
+          count: row?._count._all ?? 0,
+        },
+      };
     });
   }
 

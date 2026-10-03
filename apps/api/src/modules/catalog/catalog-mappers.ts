@@ -62,5 +62,6 @@ export function toCard(
     currency: cheapest?.currency ?? 'USD',
     inStock: active.some((variant) => availableOf(variant.inventory) > 0),
     image: firstImage ? toImage(firstImage, publicUrl) : null,
+    defaultVariantId: active.length === 1 ? active[0]!.id : null,
   };
 }
