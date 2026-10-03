@@ -1,3 +1,8 @@
+import { type ConfigService } from '@nestjs/config';
+import { type Env } from '../../config/env';
+import { AnthropicLanguageModel, LocalLanguageModel } from '../assistant/language-model';
+import { AiGatewayClient, RemoteEmbeddings, RemoteLanguageModel } from './ai-gateway';
+import { embeddingsFor, languageModelFor } from './providers';
 import { costMicros, priceOf } from './ai-usage.service';
 import { conceptOf, conceptsIn, editDistance, stem, tokenize } from './concepts';
 import {
@@ -115,5 +120,79 @@ describe('AI pricing', () => {
     expect(priceOf('claude-haiku-4-5-20251001')).toEqual([1, 5]);
     expect(costMicros('local', 5_000, 5_000)).toBe(0);
     expect(priceOf('some-future-model')).toEqual([2, 10]);
+  });
+});
+
+describe('provider selection (ADR-0016)', () => {
+  const config = (env: Record<string, unknown>) =>
+    ({ get: (key: string) => env[key] }) as unknown as ConfigService<Env, true>;
+  const remote = {
+    AI_SERVICE_URL: 'http://ai.internal:4200',
+    INTERNAL_API_KEY: 'k'.repeat(40),
+    AI_SERVICE_TIMEOUT_MS: 30_000,
+  };
+
+  it('keeps the free local drivers in-process, even with an AI service', () => {
+    const env = config({ ...remote, AI_DRIVER: 'local', EMBEDDINGS_DRIVER: 'local' });
+    expect(languageModelFor(env)).toBeInstanceOf(LocalLanguageModel);
+    expect(embeddingsFor(env)).toBeInstanceOf(LocalEmbeddings);
+  });
+
+  it('sends paid providers through the AI service, with the configured model names', () => {
+    const env = config({
+      ...remote,
+      AI_DRIVER: 'anthropic',
+      AI_MODEL: 'claude-haiku-4-5',
+      EMBEDDINGS_DRIVER: 'voyage',
+      VOYAGE_MODEL: 'voyage-4-lite',
+    });
+    const llm = languageModelFor(env);
+    const embeddings = embeddingsFor(env);
+    expect(llm).toBeInstanceOf(RemoteLanguageModel);
+    expect([llm.driver, llm.model]).toEqual(['anthropic', 'claude-haiku-4-5']);
+    expect(embeddings).toBeInstanceOf(RemoteEmbeddings);
+    expect([embeddings.driver, embeddings.model]).toEqual(['voyage', 'voyage-4-lite']);
+  });
+
+  it('calls providers directly without an AI service', () => {
+    const env = config({
+      AI_DRIVER: 'anthropic',
+      ANTHROPIC_API_KEY: 'sk-test-key',
+      AI_MODEL: 'claude-haiku-4-5',
+      EMBEDDINGS_DRIVER: 'voyage',
+      VOYAGE_API_KEY: 'pa-test-key',
+      VOYAGE_MODEL: 'voyage-4-lite',
+    });
+    expect(languageModelFor(env)).toBeInstanceOf(AnthropicLanguageModel);
+    expect(embeddingsFor(env)).toBeInstanceOf(VoyageEmbeddings);
+  });
+
+  it('passes remote tokens to the usage log and model mismatches to the caller', async () => {
+    const fetchImpl = jest.fn(async () =>
+      Response.json({ vectors: [[1, 0]], tokens: 7 }, { status: 200 }),
+    ) as unknown as typeof fetch;
+    const client = new AiGatewayClient('http://ai/', 'k', 1000, fetchImpl);
+    const embeddings = new RemoteEmbeddings(client, 'voyage', 'voyage-4-lite');
+    expect(await embeddings.embed(['a'], 'query')).toEqual([[1, 0]]);
+    expect(embeddings.lastTokens).toBe(7);
+    const [url, init] = (fetchImpl as jest.Mock).mock.calls[0];
+    expect(url).toBe('http://ai/internal/ai/embed');
+    expect(JSON.parse(init.body)).toMatchObject({ model: 'voyage-4-lite', purpose: 'query' });
+    expect(init.headers['x-internal-key']).toBe('k');
+
+    const refusing = new AiGatewayClient(
+      'http://ai',
+      'k',
+      1000,
+      (async () => new Response('{}', { status: 409 })) as unknown as typeof fetch,
+    );
+    await expect(
+      new RemoteLanguageModel(refusing, 'anthropic', 'x').explain({
+        request: 'r',
+        needSummary: 's',
+        picks: [],
+        relaxed: [],
+      }),
+    ).rejects.toThrow('409');
   });
 });

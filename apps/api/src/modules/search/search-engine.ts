@@ -4,13 +4,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AiUsageService } from '../ai/ai-usage.service';
-import {
-  EMBEDDINGS,
-  type EmbeddingsProvider,
-  VoyageEmbeddings,
-  contentHash,
-  toPgVector,
-} from '../ai/embeddings';
+import { EMBEDDINGS, type EmbeddingsProvider, contentHash, toPgVector } from '../ai/embeddings';
 import { buildSearchDocument, type IndexableProduct } from './search-documents';
 
 export type ScoredIds = Map<string, number>;
@@ -284,7 +278,7 @@ export class SearchEngine {
   /** Paid embedding calls are logged for the AI operations panel; local ones are free and not. */
   private async recordEmbeddingCall(feature: string, started: number): Promise<void> {
     if (this.embeddings.driver === 'local') return;
-    const tokens = this.embeddings instanceof VoyageEmbeddings ? this.embeddings.lastTokens : 0;
+    const tokens = this.embeddings.lastTokens ?? 0;
     await this.usage.record({
       feature: `embeddings:${feature}`,
       driver: this.embeddings.driver,

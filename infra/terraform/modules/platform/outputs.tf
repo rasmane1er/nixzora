@@ -10,6 +10,7 @@ output "services" {
   value = merge(
     { for k, s in aws_ecs_service.app : k => s.name },
     { for s in aws_ecs_service.search : "search" => s.name },
+    { for s in aws_ecs_service.ai : "ai" => s.name },
   )
 }
 

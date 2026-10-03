@@ -22,6 +22,10 @@ Check: `GET /api/v1/admin/search/stats` (Ops Center) reports `"service": "search
 the service is down, searches still work through keyword search; its logs are in
 `/nixzora/<env>/search`.
 
+The AI service (ADR-0016) is turned on the same way, with an `ai` entry in `services`. Check:
+its `/nixzora/<env>/ai` logs show `NIXZORA AI service listening`, and the API task definition
+no longer lists `ANTHROPIC_API_KEY` / `VOYAGE_API_KEY`.
+
 ## Automatic rollback
 
 Each ECS service has the deployment circuit breaker on. If new tasks fail health checks,

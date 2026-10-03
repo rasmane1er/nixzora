@@ -68,6 +68,8 @@ variable "services" {
     admin      = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
     # Remove to search inside the API instead of a separate service (ADR-0015).
     search = { cpu = 512, memory = 1024, desired_count = 2, max_count = 6 }
+    # Remove to call model providers from the API and search directly (ADR-0016).
+    ai = { cpu = 256, memory = 512, desired_count = 2, max_count = 4 }
   }
 }
 

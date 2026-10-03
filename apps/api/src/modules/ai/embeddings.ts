@@ -12,6 +12,8 @@ export interface EmbeddingsProvider {
   /** Recorded on each indexed row; a different model means the row is re-embedded. */
   readonly model: string;
   readonly driver: 'local' | 'voyage';
+  /** Tokens used by the last embed() call (paid providers), for the AI usage log. */
+  readonly lastTokens?: number;
   /** Unit-length vectors of EMBEDDING_DIMENSIONS numbers, one per input, in order. */
   embed(texts: string[], purpose: EmbeddingPurpose): Promise<number[][]>;
 }

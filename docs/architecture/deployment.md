@@ -10,6 +10,7 @@ flowchart LR
       sf[storefront · Fargate]
       api[api · Fargate]
       search[search · Fargate<br/>no load balancer]
+      ai[ai · Fargate<br/>model gateway]
       ops[admin · Fargate]
       rds[(RDS PostgreSQL 16)]
       redis[(ElastiCache Redis)]
@@ -25,7 +26,10 @@ flowchart LR
     search --> rds
     search --> redis
   end
-  search -->|embeddings| voyage[Voyage AI]
+  api -->|private DNS :4200| ai
+  search -->|embeddings| ai
+  ai --> voyage[Voyage AI]
+  ai --> anthropic[Anthropic]
   api -->|presigned PUT| s3
   api --> ses[Amazon SES]
   api --> stripe[Stripe]
@@ -39,6 +43,8 @@ flowchart LR
 - The search service ([ADR-0015](../adr/0015-search-service.md)) is the API image started with
   `dist/search-main.js`, found through Cloud Map DNS; remove `search` from `services` to run
   search inside the API again.
+- The AI service ([ADR-0016](../adr/0016-ai-service.md)) is the only task holding the model
+  provider keys (`dist/ai-main.js`, `ai.<env>.internal:4200`).
 - Release pipeline: `.github/workflows/deploy.yml` → `deploy-environment.yml` →
   `scripts/deploy/{migrate,roll-out,smoke-test}.sh`.
 - Runbooks: [first deploy](../runbooks/first-deploy.md) · [deploy and roll back](../runbooks/deploy-and-rollback.md) ·

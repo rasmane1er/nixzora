@@ -12,7 +12,7 @@ import {
 import { z } from 'zod';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { SearchEngine } from '../modules/search/search-engine';
-import { InternalKeyGuard } from './internal-key.guard';
+import { InternalKeyGuard } from '../common/internal-key.guard';
 
 const HybridRequestSchema = z.object({
   q: z.string().trim().min(1).max(500),

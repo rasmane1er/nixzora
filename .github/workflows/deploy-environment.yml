@@ -39,7 +39,7 @@ jobs:
         run: scripts/deploy/migrate.sh
 
       - name: Roll out services
-        run: scripts/deploy/roll-out.sh search=api api storefront admin
+        run: scripts/deploy/roll-out.sh ai=api search=api api storefront admin
 
       - name: Smoke test
         run: scripts/deploy/smoke-test.sh "${{ vars.STOREFRONT_URL }}" "${{ vars.API_URL }}"

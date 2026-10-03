@@ -189,6 +189,20 @@ export const EnvSchema = z
     /** Port of the search service itself (search-main.ts). */
     SEARCH_PORT: z.coerce.number().int().positive().default(4100),
 
+    // ── AI service (ADR-0016) ──
+    /**
+     * Where the AI service runs, e.g. http://ai.nixzora-staging.internal:4200. Set: paid model
+     * calls go through it and only it needs the provider keys. Unset: providers are called
+     * directly.
+     */
+    AI_SERVICE_URL: z.url().optional(),
+    /** How long callers wait for a model answer through the AI service. */
+    AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
+    /** Port of the AI service itself (ai-main.ts). */
+    AI_PORT: z.coerce.number().int().positive().default(4200),
+    /** Provider calls the AI service runs at once; more wait in line (protects rate limits). */
+    AI_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(8),
+
     // ── AI layer (ADR-0009) ──
     /** "local" works offline with no key (development, CI, demo); "voyage" calls Voyage AI. */
     EMBEDDINGS_DRIVER: z.enum(['local', 'voyage']).default('local'),
@@ -242,26 +256,27 @@ export const EnvSchema = z
         message: 'is required when SHIPPING_PROVIDER=easypost',
       });
     }
-    if (env.EMBEDDINGS_DRIVER === 'voyage' && !env.VOYAGE_API_KEY) {
+    // With an AI service, only that service holds the provider keys (ADR-0016).
+    if (env.EMBEDDINGS_DRIVER === 'voyage' && !env.VOYAGE_API_KEY && !env.AI_SERVICE_URL) {
       ctx.addIssue({
         code: 'custom',
         path: ['VOYAGE_API_KEY'],
         message: 'is required when EMBEDDINGS_DRIVER=voyage',
       });
     }
-    if (env.AI_DRIVER === 'anthropic' && !env.ANTHROPIC_API_KEY) {
+    if (env.AI_DRIVER === 'anthropic' && !env.ANTHROPIC_API_KEY && !env.AI_SERVICE_URL) {
       ctx.addIssue({
         code: 'custom',
         path: ['ANTHROPIC_API_KEY'],
         message: 'is required when AI_DRIVER=anthropic',
       });
     }
-    if (env.SEARCH_SERVICE_URL && !env.INTERNAL_API_KEY) {
+    if ((env.SEARCH_SERVICE_URL || env.AI_SERVICE_URL) && !env.INTERNAL_API_KEY) {
       ctx.addIssue({
         code: 'custom',
         path: ['INTERNAL_API_KEY'],
         message:
-          'is required with SEARCH_SERVICE_URL: the search service only answers callers that present it',
+          'is required with SEARCH_SERVICE_URL or AI_SERVICE_URL: internal services answer only callers that present it',
       });
     }
     if (env.NODE_ENV !== 'production') return;

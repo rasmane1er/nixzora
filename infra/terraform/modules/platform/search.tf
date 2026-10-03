@@ -12,7 +12,7 @@ locals {
 }
 
 resource "aws_service_discovery_private_dns_namespace" "internal" {
-  count       = local.search_enabled ? 1 : 0
+  count       = local.search_enabled || local.ai_enabled ? 1 : 0
   name        = "${local.prefix}.internal"
   description = "Private service names for ${local.prefix}"
   vpc         = aws_vpc.main.id

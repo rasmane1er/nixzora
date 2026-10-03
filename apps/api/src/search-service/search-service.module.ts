@@ -14,7 +14,7 @@ import { SearchEngine } from '../modules/search/search-engine';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisModule } from '../redis/redis.module';
-import { InternalKeyGuard } from './internal-key.guard';
+import { InternalKeyGuard } from '../common/internal-key.guard';
 import { SearchServiceController } from './search-service.controller';
 
 /** Load balancer / ECS health check: the database answers. */

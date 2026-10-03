@@ -136,18 +136,21 @@ locals {
       TRUST_PROXY_HOPS      = "1"
     },
     local.search_enabled ? { SEARCH_SERVICE_URL = local.search_url } : {},
+    local.ai_enabled ? { AI_SERVICE_URL = local.ai_url } : {},
     var.app_config,
   )
 
-  api_secrets = concat(
+  base_secrets = concat(
     [
       { name = "DATABASE_PASSWORD", valueFrom = "${local.db_secret}:password::" },
       { name = "REDIS_PASSWORD", valueFrom = aws_secretsmanager_secret.redis.arn },
     ],
     [for key in local.app_secret_keys : { name = key, valueFrom = "${aws_secretsmanager_secret.app.arn}:${key}::" }],
-    [for key in local.ai_secret_keys : { name = key, valueFrom = "${aws_secretsmanager_secret.ai.arn}:${key}::" }],
     [local.internal_key_secret],
   )
+  ai_secrets = [for key in local.ai_secret_keys : { name = key, valueFrom = "${aws_secretsmanager_secret.ai.arn}:${key}::" }]
+  # With the AI service, only it holds the model provider keys (ADR-0016).
+  api_secrets = local.ai_enabled ? local.base_secrets : concat(local.base_secrets, local.ai_secrets)
 
   internal_key_secret = { name = "INTERNAL_API_KEY", valueFrom = aws_secretsmanager_secret.internal.arn }
 

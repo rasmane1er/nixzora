@@ -14,6 +14,8 @@
     "start": "node dist/main.js",
     "start:search": "node dist/search-main.js",
     "dev:search": "prisma generate && nest start --watch --entryFile search-main",
+    "start:ai": "node dist/ai-main.js",
+    "dev:ai": "prisma generate && nest start --watch --entryFile ai-main",
     "lint": "eslint src test",
     "typecheck": "prisma generate && tsc --noEmit -p tsconfig.json",
     "test": "prisma generate && jest",

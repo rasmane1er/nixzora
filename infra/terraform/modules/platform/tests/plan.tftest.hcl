@@ -131,6 +131,14 @@ run "staging" {
     condition     = length(aws_ecs_service.search) == 1 && length(aws_lb_target_group.app) == 3
     error_message = "the search service runs without a load balancer target."
   }
+  assert {
+    condition     = output.api_environment["AI_SERVICE_URL"] == "http://ai.nixzora-staging.internal:4200"
+    error_message = "the API must reach the AI service by its private name."
+  }
+  assert {
+    condition     = !strcontains(aws_ecs_task_definition.app["api"].container_definitions, "ANTHROPIC_API_KEY") && strcontains(aws_ecs_task_definition.ai[0].container_definitions, "ANTHROPIC_API_KEY")
+    error_message = "only the AI service may hold the model provider keys."
+  }
 }
 
 run "search_in_process" {
@@ -147,6 +155,10 @@ run "search_in_process" {
   assert {
     condition     = length(aws_ecs_service.search) == 0 && !contains(keys(output.api_environment), "SEARCH_SERVICE_URL")
     error_message = "without a search entry, the API searches in-process."
+  }
+  assert {
+    condition     = length(aws_ecs_service.ai) == 0 && strcontains(aws_ecs_task_definition.app["api"].container_definitions, "ANTHROPIC_API_KEY")
+    error_message = "without an AI service, the API keeps the provider keys."
   }
 }
 
