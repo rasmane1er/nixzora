@@ -9,6 +9,6 @@ import { ReviewInsightsService } from './review-insights.service';
   imports: [AiModule],
   controllers: [InsightsController],
   providers: [ReviewInsightsService, ProductCopyService],
-  exports: [ReviewInsightsService],
+  exports: [ReviewInsightsService, ProductCopyService],
 })
 export class InsightsModule {}

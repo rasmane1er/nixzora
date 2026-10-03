@@ -62,6 +62,12 @@ drafts, known SKUs get the file's price and stock, and the whole file is checked
 is saved while any row has an error, and errors are reported by row and column. Images are not
 imported from URLs, so the server never fetches addresses supplied by sellers.
 
+**Seller tools.** The AI listing assistant (p7-09) reuses the staff copy generator (ADR-0011):
+a description drafted from the listing's own specs, with every number checked against them,
+never saved automatically, 30 drafts per store per day. Seller analytics (p7-08) show sales,
+earnings, orders, units, product views and conversion for 7, 30 or 90 days against the previous
+period, days counted in US Eastern time, from read-only queries over the store's own data.
+
 Store approval requires finished payout verification, and every decision (apply, approve,
 suspend, terms change, listing approved or sent back) is in the audit log. Staff need the new
 `sellers.manage` permission (admins, catalog managers) for stores and `catalog.write` for listing

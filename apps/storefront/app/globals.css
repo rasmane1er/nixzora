@@ -1585,3 +1585,68 @@ table.plain th {
 td.neg {
   color: var(--err-fg);
 }
+.seller-stats--six {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+.delta {
+  color: var(--muted);
+}
+.delta--good {
+  color: var(--ok-fg);
+}
+.delta--bad {
+  color: var(--err-fg);
+}
+/* Seller analytics chart: one series in the brand orange (validated against both surfaces). */
+.sales-chart {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.sales-chart__plot {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+/* Drawn at the measured width; max-width only matters for the first paint. */
+.sales-chart svg {
+  display: block;
+  overflow: visible;
+  max-width: 100%;
+  height: auto;
+}
+.sales-chart__bar {
+  fill: var(--color-signal);
+}
+.sales-chart__bar[data-active] {
+  fill: var(--color-signal-hover);
+}
+.sales-chart__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.sales-chart__tick {
+  fill: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.sales-chart__tip {
+  position: absolute;
+  top: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.08);
+}
+.sales-chart__table summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+}

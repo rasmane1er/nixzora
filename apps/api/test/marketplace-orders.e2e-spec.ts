@@ -17,6 +17,7 @@ import {
   type ListingImportResult,
   type OrderView,
   type PayoutView,
+  type SellerAnalytics,
   type SellerBalance,
   type SellerOrderView,
 } from '@nixzora/validation';
@@ -549,6 +550,61 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
       const csv = `sku,price,title,category,description\nCBL-${run},10,Cable,amps-${run},Desc`;
       const result = (await importCsv(csv, true)).body as ListingImportResult;
       expect(result.errors[0]).toMatchObject({ row: 2, column: 'sku' });
+    });
+  });
+
+  describe('AI listing assistant', () => {
+    it("drafts a description from the listing's specs, for its own store only", async () => {
+      const variant = await prisma.productVariant.findUniqueOrThrow({
+        where: { id: sellerVariant },
+      });
+      const draft = await http()
+        .post(`/api/v1/seller/products/${variant.productId}/copy-suggestion`)
+        .set(bearer(sellerToken))
+        .expect(200);
+      // CI uses the local driver: a draft from the specs, never saved.
+      expect(draft.body).toMatchObject({ aiWritten: false, model: 'local' });
+      expect(draft.body.description.length).toBeGreaterThan(20);
+      expect(
+        (await prisma.product.findUniqueOrThrow({ where: { id: variant.productId } })).description,
+      ).toBe('Test product.');
+      const outsider = await signUp(`mkt-outsider-${run}@example.com`);
+      await http()
+        .post(`/api/v1/seller/products/${variant.productId}/copy-suggestion`)
+        .set(bearer(outsider))
+        .expect(403);
+    });
+  });
+
+  describe('seller analytics', () => {
+    it('sums the store’s sales, earnings and best sellers, leaving out cancelled orders', async () => {
+      // One shopper views the amp's page.
+      const amp = await prisma.productVariant.findUniqueOrThrow({ where: { id: sellerVariant } });
+      await http()
+        .post('/api/v1/events/views')
+        .send({ productId: amp.productId, visitorId: `visitor-${run}-0000000000` });
+      const stats = (
+        await http().get('/api/v1/seller/analytics?days=30').set(bearer(sellerToken)).expect(200)
+      ).body as SellerAnalytics;
+      // Paid orders: 2 amps ($200, later $100 refunded) and 1 amp ($100); one cancelled order.
+      expect(stats.totals).toMatchObject({
+        salesCents: 30000,
+        orders: 2,
+        units: 3,
+        netCents: 17600 + 8800,
+        refundedCents: 10000,
+        views: 1,
+        conversionPct: 200, // 2 orders per 1 view: small numbers make odd ratios
+      });
+      expect(stats.previous.orders).toBe(0);
+      expect(stats.daily).toHaveLength(30);
+      expect(stats.daily.at(-1)).toMatchObject({ salesCents: 30000, orders: 2 });
+      expect(stats.topProducts[0]).toMatchObject({
+        title: 'Tube amp',
+        units: 3,
+        salesCents: 30000,
+      });
+      await http().get('/api/v1/seller/analytics?days=12').set(bearer(sellerToken)).expect(400);
     });
   });
 });

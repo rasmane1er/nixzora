@@ -16,6 +16,7 @@ import {
   updateVariant,
   withdrawListing,
 } from '../../actions';
+import { DescriptionAssistant } from './DescriptionAssistant';
 import { PhotoUpload } from './PhotoUpload';
 
 export const metadata: Metadata = { title: 'Edit listing', robots: { index: false } };
@@ -130,8 +131,15 @@ export default async function ListingPage({
           </label>
           <label>
             Description
-            <textarea name="description" rows={6} required defaultValue={product.description} />
+            <textarea
+              id="listing-description"
+              name="description"
+              rows={6}
+              required
+              defaultValue={product.description}
+            />
           </label>
+          <DescriptionAssistant productId={product.id} target="listing-description" />
           <label>
             Specs <span className="hint">One per line, “name: value”.</span>
             <textarea name="specs" rows={5} defaultValue={specsText(product.attributes)} />

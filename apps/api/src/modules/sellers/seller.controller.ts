@@ -24,6 +24,8 @@ import {
   ProductImageAttachSchema,
   type SellerApplication,
   SellerApplicationSchema,
+  type SellerAnalyticsQuery,
+  SellerAnalyticsQuerySchema,
   type SellerMeResponse,
   type SellerOrderListQuery,
   SellerOrderListQuerySchema,
@@ -51,6 +53,7 @@ import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { PayoutsService } from './payouts.service';
+import { SellerAnalyticsService } from './seller-analytics.service';
 import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
@@ -72,7 +75,16 @@ export class SellerController {
     private readonly orders: SellerOrdersService,
     private readonly payouts: PayoutsService,
     private readonly imports: SellerImportService,
+    private readonly analytics: SellerAnalyticsService,
   ) {}
+
+  @Get('analytics')
+  sellerAnalytics(
+    @Query(new ZodValidationPipe(SellerAnalyticsQuerySchema)) query: SellerAnalyticsQuery,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.analytics.forSeller(query.days, actor);
+  }
 
   // Bulk listings (CSV). Declared before products/:id so these paths are not read as ids.
   @Get('products/import/template')
@@ -207,6 +219,12 @@ export class SellerController {
     @Actor() actor: ActorContext,
   ) {
     return this.listings.update(id, body, actor);
+  }
+
+  @Post('products/:id/copy-suggestion')
+  @HttpCode(HttpStatus.OK)
+  suggestCopy(@Param('id', uuid) id: string, @Actor() actor: ActorContext) {
+    return this.listings.suggestCopy(id, actor);
   }
 
   @Post('products/:id/submit')

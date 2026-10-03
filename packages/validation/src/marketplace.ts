@@ -245,6 +245,48 @@ export type SellerLedgerEntryView = {
   createdAt: string;
 };
 
+export const SellerAnalyticsQuerySchema = z.object({
+  days: z.coerce
+    .number()
+    .int()
+    .refine((d) => [7, 30, 90].includes(d), { message: 'Choose 7, 30 or 90 days.' })
+    .default(30),
+});
+
+export type SellerAnalyticsTotals = {
+  /** The store's item sales (before commission), excluding cancelled orders. */
+  salesCents: number;
+  orders: number;
+  units: number;
+  /** What the store earns from those orders (after commission). */
+  netCents: number;
+  refundedCents: number;
+  /** Product page views of the store's listings. */
+  views: number;
+  /** Orders per 100 product views. */
+  conversionPct: number | null;
+};
+
+export type SellerAnalytics = {
+  days: number;
+  currency: string;
+  /** Days are counted in the store's time zone (US Eastern for now). */
+  timeZone: string;
+  totals: SellerAnalyticsTotals;
+  /** The same figures for the period just before, for comparison. */
+  previous: SellerAnalyticsTotals;
+  daily: { date: string; salesCents: number; orders: number }[];
+  topProducts: {
+    productId: string;
+    title: string;
+    units: number;
+    salesCents: number;
+    views: number;
+  }[];
+};
+
+export type SellerAnalyticsQuery = z.infer<typeof SellerAnalyticsQuerySchema>;
+
 export type PayoutView = {
   id: string;
   amountCents: number;

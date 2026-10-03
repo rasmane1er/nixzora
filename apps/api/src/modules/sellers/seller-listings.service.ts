@@ -2,12 +2,15 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import {
   type InventoryAdjust,
   type PagedResult,
+  type ProductCopySuggestion,
   type ProductDetail,
   type ProductImageAttach,
   type SellerProductCreate,
@@ -21,11 +24,13 @@ import {
 } from '@nixzora/validation';
 import { type ProductStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { CatalogAdminService } from '../catalog/catalog-admin.service';
 import { productInclude } from '../catalog/catalog-mappers';
 import { CatalogQueryService } from '../catalog/catalog-query.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
+import { ProductCopyService } from '../insights/product-copy.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { StorageService } from '../media/storage.service';
 import { toListingRow } from './seller-mappers';
@@ -62,7 +67,34 @@ export class SellerListingsService {
     private readonly query: CatalogQueryService,
     private readonly inventory: InventoryService,
     private readonly storage: StorageService,
+    private readonly copy: ProductCopyService,
+    private readonly redis: RedisService,
   ) {}
+
+  /**
+   * AI listing assistant (p7-09): a description drafted from the listing's own specs, with every
+   * number checked against them. Never saved; the seller edits and saves it. 30 drafts per store
+   * per day keep one store from spending the shared AI budget.
+   */
+  async suggestCopy(productId: string, actor: ActorContext): Promise<ProductCopySuggestion> {
+    const { seller } = await this.sellers.require(actor.user.id, { write: true });
+    await this.owned(productId, actor);
+    const key = `copy:seller:${seller.id}:${new Date().toISOString().slice(0, 10)}`;
+    const used = await this.redis.client
+      .multi()
+      .incr(key)
+      .expire(key, 2 * 86_400)
+      .exec()
+      .then((replies) => Number(replies?.[0]?.[1] ?? 0))
+      .catch(() => 0);
+    if (used > 30) {
+      throw new HttpException(
+        "You have used today's 30 description drafts. Try again tomorrow.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    return this.copy.suggest(productId);
+  }
 
   async list(
     query: SellerProductListQuery,

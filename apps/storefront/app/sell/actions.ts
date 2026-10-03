@@ -3,6 +3,7 @@
 import {
   type InventoryAdjust,
   type ListingImportResult,
+  type ProductCopySuggestion,
   type ProductDetail,
   type SellerView,
   type UploadTicket,
@@ -267,6 +268,24 @@ export async function importListings(
     return failure(error);
   } finally {
     if (!dryRun) revalidatePath('/sell/listings');
+  }
+}
+
+// ───── AI listing assistant ─────
+
+export async function suggestListingCopy(
+  productId: string,
+): Promise<Result<ProductCopySuggestion>> {
+  if (!UUID.test(productId)) return { ok: false, error: 'Unknown listing.' };
+  try {
+    return {
+      ok: true,
+      data: await api<ProductCopySuggestion>(`/seller/products/${productId}/copy-suggestion`, {
+        method: 'POST',
+      }),
+    };
+  } catch (error) {
+    return failure(error);
   }
 }
 
