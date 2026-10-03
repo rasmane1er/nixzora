@@ -50,6 +50,7 @@ export type AccountProfile = {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  avatarUrl: string | null;
   memberSince: string;
 };
 
@@ -128,4 +129,90 @@ export type AccountOverview = {
   buyAgain: BuyAgainItem[];
   security: { mfaEnabled: boolean; hasPassword: boolean; activeSessions: number };
   seller: { handle: string; displayName: string } | null;
+};
+
+// ───────────── Profile photo ─────────────
+
+export const AvatarSetSchema = z.object({
+  storageKey: z.string().regex(/^products\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.(jpg|png|webp|avif)$/),
+});
+export type AvatarSet = z.infer<typeof AvatarSetSchema>;
+
+// ───────────── Coupons in the account ─────────────
+
+export type AccountCoupon = {
+  code: string;
+  description: string | null;
+  type: 'PERCENT' | 'FIXED';
+  value: number;
+  minSubtotalCents: number;
+  endsAt: string | null;
+  /** The customer already used it on an order. */
+  used: boolean;
+};
+
+// ───────────── Customer support ─────────────
+
+export const SUPPORT_TOPICS = [
+  'ORDER',
+  'DELIVERY',
+  'RETURN',
+  'PAYMENT',
+  'ACCOUNT',
+  'PRODUCT',
+  'PROBLEM',
+  'OTHER',
+] as const;
+
+export const SUPPORT_TOPIC_LABEL: Record<(typeof SUPPORT_TOPICS)[number], string> = {
+  ORDER: 'An order',
+  DELIVERY: 'Delivery or tracking',
+  RETURN: 'A return or refund',
+  PAYMENT: 'Payment or billing',
+  ACCOUNT: 'My account',
+  PRODUCT: 'A product question',
+  PROBLEM: 'Report a problem with the site or app',
+  OTHER: 'Something else',
+};
+
+export const SupportRequestCreateSchema = z.object({
+  topic: z.enum(SUPPORT_TOPICS),
+  /** Required when signed out; signed-in customers use their account email. */
+  email: z.email().max(254).optional(),
+  name: z.string().trim().max(120).optional(),
+  orderNumber: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^NX-[A-Z0-9]{6}$/, 'Order numbers look like NX-7KQ4M2.')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  subject: z.string().trim().min(3).max(150),
+  message: z.string().trim().min(10).max(5000),
+  pageUrl: z.string().trim().max(500).optional(),
+});
+
+export const SupportReplySchema = z.object({
+  reply: z.string().trim().min(2).max(5000).optional(),
+  status: z.enum(['OPEN', 'ANSWERED', 'CLOSED']),
+});
+
+export type SupportRequestCreate = z.infer<typeof SupportRequestCreateSchema>;
+export type SupportReply = z.infer<typeof SupportReplySchema>;
+export type SupportTopic = (typeof SUPPORT_TOPICS)[number];
+
+export type SupportRequestView = {
+  id: string;
+  reference: string;
+  topic: SupportTopic;
+  email: string;
+  name: string | null;
+  orderNumber: string | null;
+  subject: string;
+  message: string;
+  status: 'OPEN' | 'ANSWERED' | 'CLOSED';
+  staffReply: string | null;
+  pageUrl: string | null;
+  createdAt: string;
+  answeredAt: string | null;
 };

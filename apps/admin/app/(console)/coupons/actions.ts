@@ -30,6 +30,7 @@ export async function createCoupon(form: FormData): Promise<void> {
           startsAt: isoDate(text(form, 'startsAt')),
           endsAt: isoDate(text(form, 'endsAt'), true),
           isActive: true,
+          isPublic: checked(form, 'isPublic'),
         },
       });
     },
@@ -44,5 +45,15 @@ export async function setCouponActive(form: FormData): Promise<void> {
     '/coupons',
     () => api(`/admin/coupons/${id}`, { method: 'PATCH', body: { isActive } }),
     isActive ? 'Coupon turned on.' : 'Coupon turned off.',
+  );
+}
+
+export async function setCouponPublic(form: FormData): Promise<void> {
+  const id = uuidField(form, 'id');
+  const isPublic = text(form, 'isPublic') === 'true';
+  await perform(
+    '/coupons',
+    () => api(`/admin/coupons/${id}`, { method: 'PATCH', body: { isPublic } }),
+    isPublic ? "Coupon listed in customers' accounts." : "Coupon hidden from customers' accounts.",
   );
 }

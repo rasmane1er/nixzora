@@ -4,7 +4,7 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, Empty, PageHeader, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
 import { money, param, type SearchParams } from '@/lib/format';
-import { createCoupon, setCouponActive } from './actions';
+import { createCoupon, setCouponActive, setCouponPublic } from './actions';
 
 export const metadata: Metadata = { title: 'Coupons' };
 
@@ -56,12 +56,18 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
                       </td>
                       <td>
                         <StatusPill value={c.isActive ? 'active' : 'archived'} />
+                        {c.isPublic ? <div className="muted">Listed in accounts</div> : null}
                       </td>
                       <td className="num">
                         <ActionButton
                           action={setCouponActive}
                           label={c.isActive ? 'Turn off' : 'Turn on'}
                           fields={{ id: c.id, isActive: String(!c.isActive) }}
+                        />{' '}
+                        <ActionButton
+                          action={setCouponPublic}
+                          label={c.isPublic ? 'Hide from accounts' : 'List in accounts'}
+                          fields={{ id: c.id, isPublic: String(!c.isPublic) }}
                         />
                       </td>
                     </tr>
@@ -126,6 +132,10 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
                 <input name="endsAt" type="date" />
               </label>
             </div>
+            <label className="check">
+              <input type="checkbox" name="isPublic" /> List in customers&apos; accounts (Coupons
+              &amp; promotions)
+            </label>
             <div>
               <SubmitButton>Create coupon</SubmitButton>
             </div>

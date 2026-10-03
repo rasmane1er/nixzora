@@ -69,4 +69,6 @@ export const keys = {
   preferences: ['me', 'preferences'] as const,
   sessions: ['me', 'sessions'] as const,
   profile: ['me', 'profile'] as const,
+  coupons: ['me', 'coupons'] as const,
+  supportRequests: ['me', 'support-requests'] as const,
 };

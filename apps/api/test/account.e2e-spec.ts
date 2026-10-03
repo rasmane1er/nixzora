@@ -226,6 +226,109 @@ describe('Your Account (e2e)', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|password_hash|refreshToken/);
   });
 
+  it('sets and removes a profile photo', async () => {
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    await http()
+      .post('/api/v1/me/avatar/upload')
+      .set(bearer(token))
+      .send({ contentType: 'image/png', sizeBytes: 6 * 1024 * 1024 })
+      .expect((res) => expect([400]).toContain(res.status));
+    const ticket = (
+      await http()
+        .post('/api/v1/me/avatar/upload')
+        .set(bearer(token))
+        .send({ contentType: 'image/png', sizeBytes: PNG.length })
+        .expect(201)
+    ).body;
+    const url = new URL(ticket.uploadUrl);
+    await http()
+      .put(url.pathname + url.search)
+      .set('Content-Type', 'image/png')
+      .send(PNG)
+      .expect(201);
+    const profile = (
+      await http()
+        .put('/api/v1/me/avatar')
+        .set(bearer(token))
+        .send({ storageKey: ticket.storageKey })
+        .expect(200)
+    ).body;
+    expect(profile.avatarUrl).toBe(ticket.publicUrl);
+    await http()
+      .put('/api/v1/me/avatar')
+      .set(bearer(token))
+      .send({ storageKey: 'products/2026/01/00000000-0000-0000-0000-000000000000.png' })
+      .expect(400);
+    expect(
+      (await http().delete('/api/v1/me/avatar').set(bearer(token)).expect(200)).body.avatarUrl,
+    ).toBeNull();
+  });
+
+  it('lists public promotions only, marking the ones already used', async () => {
+    const make = (code: string, isPublic: boolean) =>
+      prisma.coupon.create({
+        data: { code, type: 'PERCENT', value: 500, isPublic, description: `Test ${run}` },
+      });
+    await make(`PUB${run}`.toUpperCase().slice(0, 20), true);
+    await make(`HID${run}`.toUpperCase().slice(0, 20), false);
+    await prisma.order.update({
+      where: { id: second.orderId },
+      data: { couponCode: `PUB${run}`.toUpperCase().slice(0, 20) },
+    });
+    const coupons = (await http().get('/api/v1/me/coupons').set(bearer(token)).expect(200)).body;
+    const mine = coupons.filter((c: { description: string }) => c.description === `Test ${run}`);
+    expect(mine).toEqual([
+      expect.objectContaining({ code: `PUB${run}`.toUpperCase().slice(0, 20), used: true }),
+    ]);
+    await prisma.coupon.deleteMany({ where: { description: `Test ${run}` } });
+  });
+
+  it('takes support requests from customers and guests, and staff replies reach them', async () => {
+    const created = (
+      await http()
+        .post('/api/v1/support/requests')
+        .set(bearer(token))
+        .send({
+          topic: 'ORDER',
+          orderNumber: first.orderNumber.toLowerCase(),
+          subject: 'Lamp flickers',
+          message: 'The lamp flickers when dimmed below half.',
+        })
+        .expect(201)
+    ).body;
+    expect(created).toMatchObject({
+      reference: expect.stringMatching(/^S-[A-Z0-9]{6}$/),
+      email: `acct-${run}@example.com`,
+      orderNumber: first.orderNumber,
+      status: 'OPEN',
+    });
+    await http()
+      .post('/api/v1/support/requests')
+      .send({ topic: 'OTHER', subject: 'Hello', message: 'A question without an email.' })
+      .expect(400);
+    await http()
+      .post('/api/v1/support/requests')
+      .send({
+        topic: 'PROBLEM',
+        email: `guest-${run}@example.com`,
+        subject: 'Button broken',
+        message: 'The checkout button does nothing on my tablet.',
+        pageUrl: '/checkout',
+      })
+      .expect(201);
+    const mine = (await http().get('/api/v1/me/support-requests').set(bearer(token)).expect(200))
+      .body;
+    expect(mine.map((r: { reference: string }) => r.reference)).toEqual([created.reference]);
+    // Customers cannot read the inbox.
+    await http().get('/api/v1/admin/support').set(bearer(token)).expect(403);
+    await prisma.supportRequest.deleteMany({
+      where: { OR: [{ email: `acct-${run}@example.com` }, { email: `guest-${run}@example.com` }] },
+    });
+  });
+
   it('shows another customer nothing of this account', async () => {
     const theirs = (await http().get('/api/v1/me/overview').set(bearer(other)).expect(200))
       .body as AccountOverview;

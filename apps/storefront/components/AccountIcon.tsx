@@ -1,4 +1,4 @@
-const PATHS: Record<string, string> = {
+const PATHS = {
   orders: 'M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Zm0 0L12 12m0 0 9-4.5M12 12v9M7.5 5.25l9 4.5',
   security:
     'M12 3 4.5 6v5.25c0 4.5 3.2 8.1 7.5 9.75 4.3-1.65 7.5-5.25 7.5-9.75V6L12 3Zm-3 9 2 2 4-4',
@@ -16,14 +16,29 @@ const PATHS: Record<string, string> = {
     'M3.75 9 5.25 3.75h13.5L20.25 9M3.75 9h16.5M3.75 9v.75a2.75 2.75 0 0 0 5.5 0M9.25 9v.75a2.75 2.75 0 0 0 5.5 0M14.75 9v.75a2.75 2.75 0 0 0 5.5 0M5.25 12.5v7.75h13.5V12.5M10 20.25v-4.5h4v4.5',
   assistant:
     'M12 3v3m0 12v3M3 12h3m12 0h3M6.3 6.3l2.1 2.1m7.2 7.2 2.1 2.1m0-11.4-2.1 2.1m-7.2 7.2-2.1 2.1',
+  track:
+    'M2.25 6.75h11.25v9.75H2.25V6.75Zm11.25 3h4.5l3.75 3.75v3h-8.25M6.75 18.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm10.5 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
+  buyAgain: 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v3.75h-3.75',
+  payment: 'M3 6.75h18v10.5H3V6.75Zm0 3.75h18M6.75 14.25h3',
+  coupon: 'M3.75 7.5V4.5h6.4l9.6 9.6-6.15 6.15-9.6-9.6V7.5Zm4.5 0a.75.75 0 1 0 0 .01',
+  settings:
+    'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.55-2-3.45-2.35.95a7.4 7.4 0 0 0-2.1-1.2L14.5 3h-4l-.35 2.55a7.4 7.4 0 0 0-2.1 1.2L5.7 5.8l-2 3.45 2 1.55a7.4 7.4 0 0 0 0 2.4l-2 1.55 2 3.45 2.35-.95a7.4 7.4 0 0 0 2.1 1.2L10.5 21h4l.35-2.55a7.4 7.4 0 0 0 2.1-1.2l2.35.95 2-3.45-2-1.55c.07-.4.1-.8.1-1.2Z',
+  help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-2.6-11.4a2.7 2.7 0 1 1 3.6 2.55c-.6.25-1 .8-1 1.45v.65M12 17.25v.01',
+  chat: 'M4.5 5.25h15v10.5H9l-4.5 3.75V5.25ZM8.25 9.75h7.5M8.25 12.75h4.5',
+  flag: 'M5.25 21V3.75m0 0h12l-2.25 4.5 2.25 4.5h-12',
+  document: 'M14.25 3H6.75v18h10.5V6L14.25 3Zm0 0v3h3M9 11.25h6M9 14.25h6M9 17.25h3.75',
+  signout: 'M15 7.5V4.5H4.5v15H15v-3M9.75 12h11.25m0 0-3-3m3 3-3 3',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-10.5v6m0-9v.01',
 };
 
 /** Line icons for the account hub (24px grid, drawn for this project). */
-export function AccountIcon({ name }: { name: keyof typeof PATHS }) {
+export type AccountIconName = keyof typeof PATHS;
+
+export function AccountIcon({ name, size = 28 }: { name: AccountIconName; size?: number }) {
   return (
     <svg
-      width="28"
-      height="28"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

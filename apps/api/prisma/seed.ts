@@ -822,8 +822,10 @@ async function main(): Promise<void> {
       type: 'PERCENT',
       value: 1000,
       minSubtotalCents: 5000,
+      isPublic: true,
     },
-    update: {},
+    // Listed in customers' accounts (Coupons & promotions).
+    update: { isPublic: true },
   });
 
   const variantCount = products.reduce((sum, product) => sum + product.variants.length, 0);

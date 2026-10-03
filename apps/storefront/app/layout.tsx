@@ -10,7 +10,9 @@ import '@nixzora/ui/tokens.css';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { cookies } from 'next/headers';
 import { SITE_URL } from '@/lib/params';
+import { THEME_COOKIE } from '@/lib/session';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -20,9 +22,10 @@ export const metadata: Metadata = {
   openGraph: { siteName: 'NIXZORA', type: 'website' },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = (await cookies()).get(THEME_COOKIE)?.value;
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme === 'light' || theme === 'dark' ? theme : undefined}>
       <body>
         <a className="skip" href="#main">
           Skip to content

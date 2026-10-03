@@ -6,8 +6,18 @@ export function AddressFields({ address }: { address?: SavedAddress }) {
   return (
     <>
       <label>
-        Label <span className="hint">Optional, e.g. Home or Work.</span>
-        <input name="label" defaultValue={address?.label ?? ''} maxLength={40} />
+        Label <span className="hint">Optional: Home, Work, Other or your own.</span>
+        <input
+          name="label"
+          list={`address-labels-${id}`}
+          defaultValue={address?.label ?? ''}
+          maxLength={40}
+        />
+        <datalist id={`address-labels-${id}`}>
+          <option value="Home" />
+          <option value="Work" />
+          <option value="Other" />
+        </datalist>
       </label>
       <label>
         Full name

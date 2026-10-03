@@ -26,4 +26,5 @@ export const STAFF_PERMISSIONS = new Set([
   'orders.refund',
   'audit.read',
   'sellers.manage',
+  'support.manage',
 ]);

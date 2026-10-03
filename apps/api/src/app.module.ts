@@ -27,6 +27,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { OutboxModule } from './modules/outbox/outbox.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { SupportModule } from './modules/support/support.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -72,6 +73,7 @@ import { RedisModule } from './redis/redis.module';
     InsightsModule,
     SellersModule,
     NotificationsModule,
+    SupportModule,
     OutboxModule,
     // Feature modules, added phase by phase.
     IdentityModule,

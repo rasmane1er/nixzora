@@ -12,7 +12,11 @@ export function SiteFooter() {
         </div>
         <nav aria-label="Footer">
           <Link href="/search">All products</Link>
-          <Link href="/account">Your orders</Link>
+          <Link href="/account/orders">Your orders</Link>
+          <Link href="/help">Help</Link>
+          <Link href="/policies/shipping">Shipping</Link>
+          <Link href="/policies/returns">Returns</Link>
+          <Link href="/about">About</Link>
           <Link href="/sell">Sell on NIXZORA</Link>
           <Link href="/status">Platform status</Link>
           <Link href="/privacy">Privacy</Link>

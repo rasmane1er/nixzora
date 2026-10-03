@@ -40,6 +40,8 @@ model User {
   marketingEmails Boolean    @default(false) @map("marketing_emails")
   /// An email after delivery asking for a review.
   reviewRequests  Boolean    @default(true) @map("review_requests")
+  /// Profile photo (an uploaded image's storage key).
+  avatarKey       String?    @map("avatar_key")
   mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
   mfaSecretEnc    String?    @map("mfa_secret_enc")
@@ -59,6 +61,7 @@ model User {
   identities         UserIdentity[]
   productEvents      ProductEvent[]
   sellerMembership   SellerMember?
+  supportRequests    SupportRequest[]
 
   @@map("users")
 }
@@ -602,10 +605,56 @@ model Coupon {
   startsAt         DateTime?  @map("starts_at")
   endsAt           DateTime?  @map("ends_at")
   isActive         Boolean    @default(true) @map("is_active")
+  /// Listed in customers' accounts (Coupons & promotions). Others work only for those given the code.
+  isPublic         Boolean    @default(false) @map("is_public")
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   @@map("coupons")
+}
+
+enum SupportTopic {
+  ORDER
+  DELIVERY
+  RETURN
+  PAYMENT
+  ACCOUNT
+  PRODUCT
+  PROBLEM
+  OTHER
+}
+
+enum SupportStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+/// A message to customer support (Help → Contact us, or Report a problem).
+model SupportRequest {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  /// Short reference the customer can quote, e.g. "S-7KQ4M2".
+  reference   String        @unique
+  userId      String?       @map("user_id") @db.Uuid
+  email       String
+  name        String?
+  topic       SupportTopic
+  orderNumber String?       @map("order_number")
+  subject     String
+  message     String
+  status      SupportStatus @default(OPEN)
+  staffReply  String?       @map("staff_reply")
+  /// Page the customer was on when reporting a problem.
+  pageUrl     String?       @map("page_url")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  answeredAt  DateTime?     @map("answered_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("support_requests")
 }
 
 /// Private notes staff keep about a customer (support history).

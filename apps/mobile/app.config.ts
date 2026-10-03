@@ -121,6 +121,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-image',
     'expo-web-browser',
     ['expo-screen-orientation', { initialOrientation: 'DEFAULT' }],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Choose a profile photo for your NIXZORA account.',
+        cameraPermission: 'Take a profile photo for your NIXZORA account.',
+      },
+    ],
     'expo-apple-authentication',
     ['expo-secure-store', { faceIDPermission: 'Use Face ID to unlock your NIXZORA account.' }],
     [

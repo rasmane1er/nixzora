@@ -3,6 +3,8 @@
 import {
   type AddressCreate,
   type Cart,
+  type SupportRequestView,
+  type UploadTicket,
   type MfaEnabledResponse,
   type MfaSetupResponse,
 } from '@nixzora/validation';
@@ -10,7 +12,8 @@ import { revalidatePath } from 'next/cache';
 import QRCode from 'qrcode';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
-import { clearSession } from '@/lib/session';
+import { cookies } from 'next/headers';
+import { THEME_COOKIE, clearSession } from '@/lib/session';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,7 +47,7 @@ async function perform(path: string, call: () => Promise<unknown>, notice: strin
 
 export async function updateProfile(form: FormData): Promise<void> {
   await perform(
-    '/account/security',
+    '/account/profile',
     () =>
       api('/me/profile', {
         method: 'PATCH',
@@ -243,4 +246,81 @@ export async function closeAccount(form: FormData): Promise<void> {
   }
   await clearSession();
   redirect('/?notice=Your+account+is+closed.');
+}
+
+// ───── Profile photo (called from the browser component) ─────
+
+type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+
+export async function requestAvatarUpload(
+  contentType: string,
+  sizeBytes: number,
+): Promise<Result<UploadTicket>> {
+  try {
+    return {
+      ok: true,
+      data: await api<UploadTicket>('/me/avatar/upload', {
+        method: 'POST',
+        body: { contentType, sizeBytes },
+      }),
+    };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+export async function setAvatar(storageKey: string): Promise<Result<null>> {
+  try {
+    await api('/me/avatar', { method: 'PUT', body: { storageKey } });
+    revalidatePath('/account', 'layout');
+    return { ok: true, data: null };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+export async function removeAvatar(): Promise<void> {
+  await perform(
+    '/account/profile',
+    () => api('/me/avatar', { method: 'DELETE' }),
+    'Profile photo removed.',
+  );
+}
+
+// ───── Settings ─────
+
+export async function setTheme(form: FormData): Promise<void> {
+  const theme = String(form.get('theme') ?? 'system');
+  const store = await cookies();
+  if (theme === 'light' || theme === 'dark') {
+    store.set(THEME_COOKIE, theme, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  } else {
+    store.delete(THEME_COOKIE);
+  }
+  revalidatePath('/', 'layout');
+  redirect('/account/settings?notice=Appearance+saved.');
+}
+
+// ───── Support ─────
+
+export type SupportState = { ok?: { reference: string }; error?: string };
+
+export async function contactSupport(_: SupportState, form: FormData): Promise<SupportState> {
+  try {
+    const created = await api<SupportRequestView>('/support/requests', {
+      method: 'POST',
+      body: {
+        topic: String(form.get('topic') ?? 'OTHER'),
+        email: text(form, 'email'),
+        name: text(form, 'name'),
+        orderNumber: text(form, 'orderNumber'),
+        subject: String(form.get('subject') ?? ''),
+        message: String(form.get('message') ?? ''),
+        pageUrl: text(form, 'pageUrl'),
+      },
+    });
+    return { ok: { reference: created.reference } };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
 }

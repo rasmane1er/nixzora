@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  type AccountCoupon,
   type AccountOrder,
   type AccountOrderQuery,
   type AccountOverview,
@@ -13,6 +14,7 @@ import {
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { type ImageContentType } from '../media/image-type';
 import { StorageService } from '../media/storage.service';
 import { TRACKING_URLS, returnableUntil } from '../orders/order-links';
 
@@ -68,8 +70,68 @@ export class AccountHubService {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
+      avatarUrl: user.avatarKey ? this.storage.publicUrl(user.avatarKey) : null,
       memberSince: user.createdAt.toISOString(),
     };
+  }
+
+  /** Profile photo: a fresh upload link (images up to 5 MB). */
+  avatarUpload(contentType: ImageContentType, sizeBytes: number) {
+    if (sizeBytes > 5 * 1024 * 1024) {
+      throw new BadRequestException('Profile photos can be up to 5 MB.');
+    }
+    return this.storage.createUpload(contentType, sizeBytes);
+  }
+
+  async setAvatar(userId: string, storageKey: string): Promise<AccountProfile> {
+    if (!(await this.storage.exists(storageKey))) {
+      throw new BadRequestException('Upload the photo first.');
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { avatarKey: storageKey } });
+    return this.profile(userId);
+  }
+
+  async removeAvatar(userId: string): Promise<AccountProfile> {
+    await this.prisma.user.update({ where: { id: userId }, data: { avatarKey: null } });
+    return this.profile(userId);
+  }
+
+  /** Promotions listed in accounts, and whether the customer already used each. */
+  async coupons(userId: string): Promise<AccountCoupon[]> {
+    const now = new Date();
+    const [coupons, used] = await Promise.all([
+      this.prisma.coupon.findMany({
+        where: {
+          isPublic: true,
+          isActive: true,
+          AND: [
+            { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+            { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.findMany({
+        where: {
+          userId,
+          couponCode: { not: null },
+          status: { notIn: ['PENDING_PAYMENT', 'CANCELLED'] },
+        },
+        select: { couponCode: true },
+      }),
+    ]);
+    const usedCodes = new Set(used.map((o) => o.couponCode));
+    return coupons
+      .filter((c) => c.maxRedemptions === null || c.redemptionCount < c.maxRedemptions)
+      .map((c) => ({
+        code: c.code,
+        description: c.description,
+        type: c.type,
+        value: c.value,
+        minSubtotalCents: c.minSubtotalCents,
+        endsAt: c.endsAt?.toISOString() ?? null,
+        used: usedCodes.has(c.code),
+      }));
   }
 
   async updateProfile(userId: string, input: ProfileUpdate): Promise<AccountProfile> {

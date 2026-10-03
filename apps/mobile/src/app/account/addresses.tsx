@@ -2,11 +2,11 @@ import { errorMessage } from '@nixzora/api-client';
 import { type AddressCreate, type SavedAddress, US_STATES } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert, Switch, View } from 'react-native';
+import { Alert, Pressable, Switch, View } from 'react-native';
 import { Banner, Button, Card, EmptyState, Field, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query';
-import { fonts, space } from '@/lib/theme';
+import { fonts, space, usePalette } from '@/lib/theme';
 
 type Draft = Omit<AddressCreate, 'country' | 'region'> & { region: string };
 const EMPTY: Draft = { fullName: '', line1: '', line2: '', city: '', region: '', postalCode: '' };
@@ -38,6 +38,7 @@ function AddressForm({
   saving: boolean;
   error: unknown;
 }) {
+  const p = usePalette();
   const [d, setD] = useState<Draft>(initial);
   const set = (key: keyof Draft) => (value: string) => setD((prev) => ({ ...prev, [key]: value }));
   const stateOk = (US_STATES as readonly string[]).includes(d.region.toUpperCase());
@@ -50,6 +51,31 @@ function AddressForm({
         placeholder="Home, Work…"
         maxLength={40}
       />
+      <View style={{ flexDirection: 'row', gap: space.xs, marginTop: -space.xs }}>
+        {['Home', 'Work', 'Other'].map((label) => {
+          const selected = d.label === label;
+          return (
+            <Pressable
+              key={label}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              onPress={() => set('label')(selected ? '' : label)}
+              style={{
+                paddingHorizontal: space.sm,
+                paddingVertical: 6,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: selected ? p.fg : p.line,
+                backgroundColor: selected ? p.fg : 'transparent',
+              }}
+            >
+              <Text variant="small" style={{ color: selected ? p.bg : p.fg }}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <Field
         label="Full name"
         value={d.fullName}

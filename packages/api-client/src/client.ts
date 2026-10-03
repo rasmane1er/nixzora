@@ -1,4 +1,9 @@
 import type {
+  AccountCoupon,
+  SupportRequestCreate,
+  SupportRequestView,
+  UploadRequest,
+  UploadTicket,
   AccountOrder,
   AccountOrderQuery,
   AccountOverview,
@@ -319,6 +324,19 @@ export function createApiClient(options: ClientOptions) {
       updateAddress: (id: string, body: AddressUpdate) =>
         request<SavedAddress>('PATCH', `/me/addresses/${enc(id)}`, { body }),
       deleteAddress: (id: string) => request<void>('DELETE', `/me/addresses/${enc(id)}`),
+      coupons: () => request<AccountCoupon[]>('GET', '/me/coupons'),
+      avatarUpload: (body: UploadRequest) =>
+        request<UploadTicket>('POST', '/me/avatar/upload', { body }),
+      setAvatar: (storageKey: string) =>
+        request<AccountProfile>('PUT', '/me/avatar', { body: { storageKey } }),
+      removeAvatar: () => request<AccountProfile>('DELETE', '/me/avatar'),
+      supportRequests: () => request<SupportRequestView[]>('GET', '/me/support-requests'),
+    },
+
+    support: {
+      /** Contact us / Report a problem (signed in, or with an email). */
+      create: (body: SupportRequestCreate) =>
+        request<SupportRequestView>('POST', '/support/requests', { body }),
     },
 
     account: {

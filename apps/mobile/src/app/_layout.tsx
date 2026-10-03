@@ -20,6 +20,7 @@ import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LockScreen } from '@/components/LockScreen';
 import { OfflineToast } from '@/components/OfflineToast';
+import { applySavedTheme } from '@/lib/appearance';
 import { applyOrientationPolicy } from '@/lib/orientation';
 import { enablePush, useNotificationNavigation } from '@/lib/push';
 import { connectQueryToDevice, persistOptions, queryClient } from '@/lib/query';
@@ -59,6 +60,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void applyOrientationPolicy();
+    void applySavedTheme();
     void session.boot();
     return connectQueryToDevice();
   }, []);
@@ -105,7 +107,16 @@ export default function RootLayout() {
                 <Stack.Screen name="account/addresses" options={{ title: 'Your addresses' }} />
                 <Stack.Screen name="account/returns" options={{ title: 'Returns & refunds' }} />
                 <Stack.Screen name="account/reviews" options={{ title: 'Your reviews' }} />
-                <Stack.Screen name="account/preferences" options={{ title: 'Communication' }} />
+                <Stack.Screen name="account/preferences" options={{ title: 'Notifications' }} />
+                <Stack.Screen name="account/profile" options={{ title: 'Your profile' }} />
+                <Stack.Screen name="account/buy-again" options={{ title: 'Buy again' }} />
+                <Stack.Screen name="account/payments" options={{ title: 'Payment methods' }} />
+                <Stack.Screen name="account/coupons" options={{ title: 'Coupons & rewards' }} />
+                <Stack.Screen name="account/settings" options={{ title: 'Settings' }} />
+                <Stack.Screen name="account/policies" options={{ title: 'Terms & policies' }} />
+                <Stack.Screen name="account/support" options={{ title: 'Support requests' }} />
+                <Stack.Screen name="help/index" options={{ title: 'Help & support' }} />
+                <Stack.Screen name="help/contact" options={{ title: 'Contact support' }} />
                 <Stack.Screen
                   name="sign-in"
                   options={{ title: 'Sign in', presentation: 'modal' }}

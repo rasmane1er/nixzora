@@ -1,14 +1,15 @@
 import { errorMessage } from '@nixzora/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, View } from 'react-native';
+import { MenuList } from '@/components/MenuList';
 import { Banner, Button, Card, Divider, Field, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
 import { shortDate } from '@/lib/format';
 import { keys } from '@/lib/query';
-import { session, useSession } from '@/lib/session';
+import { useSession } from '@/lib/session';
 import { fonts, space } from '@/lib/theme';
 
 /** Login & security: name and phone, password, two-step verification and signed-in devices. */
@@ -17,32 +18,9 @@ export default function SecurityScreen() {
   const { user } = useSession();
   const profile = useQuery({ queryKey: keys.profile, queryFn: () => api.me.profile() });
   const sessions = useQuery({ queryKey: keys.sessions, queryFn: () => api.me.sessions() });
-  const [first, setFirst] = useState('');
-  const [last, setLast] = useState('');
-  const [phone, setPhone] = useState('');
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
 
-  useEffect(() => {
-    if (!profile.data) return;
-    setFirst(profile.data.firstName ?? '');
-    setLast(profile.data.lastName ?? '');
-    setPhone(profile.data.phone ?? '');
-  }, [profile.data]);
-
-  const saveProfile = useMutation({
-    mutationFn: () =>
-      api.me.updateProfile({
-        firstName: first.trim() || null,
-        lastName: last.trim() || null,
-        phone: phone.trim() || null,
-      }),
-    onSuccess: async (saved) => {
-      client.setQueryData(keys.profile, saved);
-      await client.invalidateQueries({ queryKey: keys.overview });
-      await session.refreshUser();
-    },
-  });
   const changePassword = useMutation({
     mutationFn: () => api.me.changePassword({ currentPassword: current, newPassword: next }),
     onSuccess: () => {
@@ -59,42 +37,6 @@ export default function SecurityScreen() {
 
   return (
     <Screen>
-      <Card>
-        <Text variant="heading">Name and phone</Text>
-        <Row style={{ alignItems: 'flex-start' }}>
-          <View style={{ flex: 1 }}>
-            <Field
-              label="First name"
-              value={first}
-              onChangeText={setFirst}
-              autoComplete="given-name"
-              maxLength={60}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Field
-              label="Last name"
-              value={last}
-              onChangeText={setLast}
-              autoComplete="family-name"
-              maxLength={60}
-            />
-          </View>
-        </Row>
-        <Field
-          label="Mobile number"
-          hint="For delivery questions only."
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          maxLength={20}
-        />
-        {saveProfile.error ? <Banner tone="error">{errorMessage(saveProfile.error)}</Banner> : null}
-        {saveProfile.isSuccess ? <Banner tone="ok">Saved.</Banner> : null}
-        <Button title="Save" loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
-      </Card>
-
       <Card>
         <Text variant="heading">Email</Text>
         <Row style={{ flexWrap: 'wrap' }}>
@@ -207,6 +149,26 @@ export default function SecurityScreen() {
           />
         ) : null}
       </Card>
+
+      <MenuList
+        title="Privacy & your data"
+        items={[
+          { icon: 'mail-outline', label: 'Email preferences', href: '/account/preferences' },
+          {
+            icon: 'download-outline',
+            label: 'Download your data',
+            hint: 'A copy of your account, orders and reviews',
+            url: `${WEB_URL}/account/privacy`,
+          },
+          { icon: 'lock-closed-outline', label: 'Privacy policy', url: `${WEB_URL}/privacy` },
+          {
+            icon: 'trash-outline',
+            label: 'Delete account',
+            tone: 'danger',
+            href: '/delete-account',
+          },
+        ]}
+      />
     </Screen>
   );
 }

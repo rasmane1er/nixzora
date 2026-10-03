@@ -92,6 +92,8 @@ export const CouponCreateSchema = z
     startsAt: z.iso.datetime().nullable().optional(),
     endsAt: z.iso.datetime().nullable().optional(),
     isActive: z.boolean().default(true),
+    /** Listed in customers' accounts under Coupons & promotions. */
+    isPublic: z.boolean().default(false),
   })
   .refine((c) => c.type !== 'PERCENT' || c.value <= 9000, {
     message: 'Percentage discounts can be at most 90%.',
@@ -107,6 +109,7 @@ export const CouponUpdateSchema = z.object({
   maxRedemptions: z.number().int().min(1).nullable().optional(),
   endsAt: z.iso.datetime().nullable().optional(),
   isActive: z.boolean().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 export const ApplyCouponSchema = z.object({ code: CouponCodeSchema });
@@ -123,6 +126,7 @@ export type CouponView = {
   startsAt: string | null;
   endsAt: string | null;
   isActive: boolean;
+  isPublic: boolean;
   createdAt: string;
 };
 

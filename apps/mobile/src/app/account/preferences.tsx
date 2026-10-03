@@ -1,13 +1,14 @@
 import { errorMessage } from '@nixzora/api-client';
 import type { AccountPreferences } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Switch, View } from 'react-native';
+import { Platform, Switch, View } from 'react-native';
+import { MenuList } from '@/components/MenuList';
 import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query';
 import { space } from '@/lib/theme';
 
-/** Which emails NIXZORA sends. Order and security emails are always on. */
+/** Which emails NIXZORA sends (push lives in Settings). Order and security emails are always on. */
 export default function PreferencesScreen() {
   const client = useQueryClient();
   const prefs = useQuery({ queryKey: keys.preferences, queryFn: () => api.me.preferences() });
@@ -64,9 +65,19 @@ export default function PreferencesScreen() {
           />,
         )}
       </Card>
-      <Text variant="small" muted>
-        Push notifications for order updates are set on the Account tab, under This phone.
-      </Text>
+      {Platform.OS !== 'web' ? (
+        <MenuList
+          title="Push notifications"
+          items={[
+            {
+              icon: 'notifications-outline',
+              label: 'Order updates on this phone',
+              hint: 'Settings → This phone',
+              href: '/account/settings',
+            },
+          ]}
+        />
+      ) : null}
     </Screen>
   );
 }

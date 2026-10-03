@@ -10,6 +10,8 @@ export const ACCESS_COOKIE = 'nx_at';
 export const REFRESH_COOKIE = 'nx_rt';
 export const MFA_COOKIE = 'nx_mfa';
 export const CART_COOKIE = 'nx_cart';
+/** Appearance chosen in Your Account → Settings: "light" or "dark"; absent = follow the system. */
+export const THEME_COOKIE = 'nx_theme';
 
 const secure = process.env.NODE_ENV === 'production';
 

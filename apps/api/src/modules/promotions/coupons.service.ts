@@ -26,6 +26,7 @@ export function toCouponView(coupon: Coupon): CouponView {
     startsAt: coupon.startsAt?.toISOString() ?? null,
     endsAt: coupon.endsAt?.toISOString() ?? null,
     isActive: coupon.isActive,
+    isPublic: coupon.isPublic,
     createdAt: coupon.createdAt.toISOString(),
   };
 }
@@ -103,6 +104,7 @@ export class CouponsService {
           startsAt: input.startsAt ? new Date(input.startsAt) : null,
           endsAt: input.endsAt ? new Date(input.endsAt) : null,
           isActive: input.isActive,
+          isPublic: input.isPublic,
         },
       });
       await this.record('promotions.coupon.created', coupon.id, actor, { code: coupon.code });
@@ -126,6 +128,7 @@ export class CouponsService {
           ? { endsAt: input.endsAt ? new Date(input.endsAt) : null }
           : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+        ...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
       },
     });
     await this.record('promotions.coupon.updated', id, actor, {

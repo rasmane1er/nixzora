@@ -164,6 +164,8 @@ export const EnvSchema = z
     /** "log" prints emails (development); "ses" sends with Amazon SES. */
     MAIL_DRIVER: z.enum(['log', 'ses']).default('log'),
     MAIL_FROM: z.string().default('NIXZORA <orders@nixzora.local>'),
+    /** Where new support requests are announced (a shared inbox); optional. */
+    SUPPORT_EMAIL: z.email().optional(),
     SES_REGION: z.string().default('us-east-1'),
 
     // ── Push notifications (mobile app) ──

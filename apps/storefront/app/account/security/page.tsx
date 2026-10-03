@@ -9,7 +9,6 @@ import {
   resendVerification,
   signOutDevice,
   signOutOtherDevices,
-  updateProfile,
 } from '../hub-actions';
 import { TwoStepSetup } from './TwoStep';
 
@@ -62,44 +61,16 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
 
       <div className="account-grid">
         <section className="card stack">
-          <h2>Name and phone</h2>
-          <form action={updateProfile} className="form">
-            <div className="form-row">
-              <label>
-                First name
-                <input
-                  name="firstName"
-                  defaultValue={profile.firstName ?? ''}
-                  maxLength={60}
-                  autoComplete="given-name"
-                />
-              </label>
-              <label>
-                Last name
-                <input
-                  name="lastName"
-                  defaultValue={profile.lastName ?? ''}
-                  maxLength={60}
-                  autoComplete="family-name"
-                />
-              </label>
-            </div>
-            <label>
-              Mobile number <span className="hint">For delivery questions only.</span>
-              <input
-                name="phone"
-                type="tel"
-                defaultValue={profile.phone ?? ''}
-                maxLength={20}
-                autoComplete="tel"
-              />
-            </label>
-            <div>
-              <button className="btn btn--primary" type="submit">
-                Save
-              </button>
-            </div>
-          </form>
+          <h2>Profile</h2>
+          <p style={{ margin: 0 }}>
+            {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'No name yet'}
+            {profile.phone ? ` · ${profile.phone}` : ''}
+          </p>
+          <div>
+            <a className="btn btn--secondary btn--sm" href="/account/profile">
+              Edit profile
+            </a>
+          </div>
         </section>
 
         <section className="card stack">

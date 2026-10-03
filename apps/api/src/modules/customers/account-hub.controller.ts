@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Header, Patch, Put, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -9,6 +20,10 @@ import {
   type ProfileUpdate,
   ProfileUpdateSchema,
   type ReturnView,
+  type AvatarSet,
+  AvatarSetSchema,
+  type UploadRequest,
+  UploadRequestSchema,
 } from '@nixzora/validation';
 import { type Response } from 'express';
 import { ApiZodBody } from '../../common/api-docs';
@@ -46,6 +61,31 @@ export class AccountHubController {
     @Body(new ZodValidationPipe(ProfileUpdateSchema)) body: ProfileUpdate,
   ) {
     return this.hub.updateProfile(user.id, body);
+  }
+
+  @Post('avatar/upload')
+  @ApiZodBody(UploadRequestSchema)
+  avatarUpload(@Body(new ZodValidationPipe(UploadRequestSchema)) body: UploadRequest) {
+    return this.hub.avatarUpload(body.contentType, body.sizeBytes);
+  }
+
+  @Put('avatar')
+  @ApiZodBody(AvatarSetSchema)
+  setAvatar(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(AvatarSetSchema)) body: AvatarSet,
+  ) {
+    return this.hub.setAvatar(user.id, body.storageKey);
+  }
+
+  @Delete('avatar')
+  removeAvatar(@CurrentUser() user: AuthUser) {
+    return this.hub.removeAvatar(user.id);
+  }
+
+  @Get('coupons')
+  coupons(@CurrentUser() user: AuthUser) {
+    return this.hub.coupons(user.id);
   }
 
   @Get('order-history')
