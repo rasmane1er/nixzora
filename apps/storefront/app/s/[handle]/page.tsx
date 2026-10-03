@@ -2,6 +2,7 @@ import { type PagedResult, type ProductCard as Card, type PublicSeller } from '@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
+import { SellerRating } from '@/components/SellerRating';
 import { api, ApiError } from '@/lib/api';
 
 const HANDLE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -48,6 +49,7 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
           Selling on NIXZORA since {since} · {store.productCount}{' '}
           {store.productCount === 1 ? 'product' : 'products'}
         </p>
+        <SellerRating rating={store.rating} />
         {store.description ? <p style={{ maxWidth: 680 }}>{store.description}</p> : null}
         <p className="muted" style={{ fontSize: 14 }}>
           Orders are covered by NIXZORA&apos;s secure checkout and 30-day returns.

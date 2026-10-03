@@ -1569,6 +1569,14 @@ table.plain th {
   border-top: 0;
   padding-top: 0;
 }
+.seller-rating {
+  margin-top: 6px;
+  font-size: 14px;
+}
+.seller-rating summary {
+  cursor: pointer;
+  font-weight: 600;
+}
 .pill--seller-order-paid {
   background: var(--warn-bg);
   color: var(--warn-fg);

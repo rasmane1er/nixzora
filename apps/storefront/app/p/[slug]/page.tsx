@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ProductRail } from '@/components/ProductRail';
+import { SellerRating } from '@/components/SellerRating';
 import { ReviewInsights } from '@/components/ReviewInsights';
 import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
@@ -225,7 +226,10 @@ export default async function ProductPage({ params }: Props) {
           <p className="sold-by">
             Sold by{' '}
             {product.seller ? (
-              <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>
+              <>
+                <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>{' '}
+                <SellerRating rating={product.seller.rating} />
+              </>
             ) : (
               <strong>NIXZORA</strong>
             )}

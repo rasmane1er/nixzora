@@ -3,6 +3,7 @@ import {
   type PagedResult,
   type PayoutView,
   type SellerBalance,
+  type SellerFeedback,
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -43,10 +44,14 @@ export default async function SellerPage({
   const { id } = await params;
   const search = await searchParams;
   const seller = await loadSeller(id);
-  const [balance, payoutHistory] = await Promise.all([
+  const [balance, payoutHistory, feedback] = await Promise.all([
     load<SellerBalance>(`/admin/sellers/${id}/balance`),
     load<PagedResult<PayoutView>>(`/admin/sellers/${id}/payouts`),
+    load<SellerFeedback>(`/admin/sellers/${id}/feedback`),
   ]);
+  const openReturns = feedback.returns.filter(
+    (r) => r.status === 'REQUESTED' || r.status === 'APPROVED',
+  ).length;
   const { payouts } = seller;
 
   return (
@@ -305,6 +310,32 @@ export default async function SellerPage({
             <SubmitButton>Save terms</SubmitButton>
           </div>
         </form>
+
+        <section className="card">
+          <h2>Customer feedback</h2>
+          <p>
+            {feedback.rating.average === null
+              ? 'No ratings yet.'
+              : `${feedback.rating.average.toFixed(1)} out of 5 from ${feedback.rating.count} ${feedback.rating.count === 1 ? 'order' : 'orders'}`}
+            {' · '}
+            {feedback.returns.length} {feedback.returns.length === 1 ? 'return' : 'returns'} of its
+            items ({openReturns} open) · <Link href="/returns">Returns queue</Link>
+          </p>
+          {feedback.ratings.length ? (
+            <table>
+              <tbody>
+                {feedback.ratings.slice(0, 10).map((r) => (
+                  <tr key={r.id}>
+                    <td className="mono">{r.orderNumber}</td>
+                    <td aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</td>
+                    <td>{r.comment ?? <span className="muted">No comment</span>}</td>
+                    <td className="muted">{dateTime(r.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+        </section>
       </div>
     </>
   );

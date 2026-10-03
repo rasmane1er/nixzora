@@ -801,6 +801,9 @@ model Seller {
   commissionBps    Int          @default(1200) @map("commission_bps")
   /// Days earnings are held before payout; longer for new sellers.
   payoutHoldDays   Int          @default(14) @map("payout_hold_days")
+  /// Running totals of customer ratings (p7-07), kept with each rating so pages need no aggregate.
+  ratingCount      Int          @default(0) @map("rating_count")
+  ratingTotal      Int          @default(0) @map("rating_total")
   approvedAt       DateTime?    @map("approved_at")
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
@@ -811,6 +814,7 @@ model Seller {
   orders     SellerOrder[]
   ledger     SellerLedgerEntry[]
   payouts    Payout[]
+  ratings    SellerRating[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -866,10 +870,29 @@ model SellerOrder {
   order  Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   seller Seller              @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   ledger SellerLedgerEntry[]
+  rating SellerRating?
 
   @@unique([orderId, sellerId])
   @@index([sellerId, status, createdAt])
   @@map("seller_orders")
+}
+
+/// A customer's 1–5 rating of one delivered seller shipment (p7-07). The comment is private:
+/// only the seller and staff see it.
+model SellerRating {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  sellerOrderId String   @unique @map("seller_order_id") @db.Uuid
+  sellerId      String   @map("seller_id") @db.Uuid
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  sellerOrder SellerOrder @relation(fields: [sellerOrderId], references: [id], onDelete: Cascade)
+  seller      Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId, createdAt])
+  @@map("seller_ratings")
 }
 
 enum SellerLedgerType {

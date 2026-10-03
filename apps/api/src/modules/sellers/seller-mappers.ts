@@ -1,3 +1,4 @@
+import { ratingSummary } from '../../common/rating';
 import { type SellerProductRow, type SellerView } from '@nixzora/validation';
 import { type Seller } from '../../generated/prisma/client';
 import { type PrismaService } from '../../prisma/prisma.service';
@@ -28,6 +29,7 @@ export function toSellerView(seller: Seller, listings: ListingCounts = NO_LISTIN
     commissionBps: seller.commissionBps,
     payoutHoldDays: seller.payoutHoldDays,
     listings,
+    rating: ratingSummary(seller),
     approvedAt: seller.approvedAt?.toISOString() ?? null,
     createdAt: seller.createdAt.toISOString(),
   };

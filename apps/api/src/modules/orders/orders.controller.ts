@@ -38,6 +38,8 @@ import {
   type ReturnDecision,
   ReturnDecisionSchema,
   type ReturnView,
+  type SellerRatingCreate,
+  SellerRatingCreateSchema,
 } from '@nixzora/validation';
 import { type Request } from 'express';
 import { z } from 'zod';
@@ -58,6 +60,7 @@ import { PAYMENT_GATEWAY, type PaymentGateway } from '../payments/payment-gatewa
 import { type OrderRow } from './order-links';
 import { OrdersService } from './orders.service';
 import { ReturnsService } from './returns.service';
+import { SellerRatingsService } from './seller-ratings.service';
 
 const ORDER_NUMBER = /^NX-[A-Z0-9]{6}$/;
 const TokenQuery = z.object({
@@ -82,6 +85,7 @@ export class CheckoutController {
   constructor(
     private readonly orders: OrdersService,
     private readonly returns: ReturnsService,
+    private readonly ratings: SellerRatingsService,
   ) {}
 
   /** Creates the order and a payment session. Totals are always recomputed here. */
@@ -147,6 +151,24 @@ export class CheckoutController {
   ): Promise<ReturnView[]> {
     const order = await this.find(orderNumber(number), query.token, user);
     return this.returns.forOrder(order.id);
+  }
+
+  /** Rate a delivered seller shipment 1–5 (or change the rating). Returns the updated order. */
+  @Post('orders/:number/seller-ratings')
+  @OptionalAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiQuery({ name: 'token', required: false })
+  @ApiZodBody(SellerRatingCreateSchema)
+  async rateSeller(
+    @Param('number') number: string,
+    @Query(new ZodValidationPipe(TokenQuery)) query: z.infer<typeof TokenQuery>,
+    @MaybeUser() user: AuthUser | undefined,
+    @Body(new ZodValidationPipe(SellerRatingCreateSchema)) body: SellerRatingCreate,
+  ): Promise<OrderView> {
+    const order = await this.find(orderNumber(number), query.token, user);
+    await this.ratings.rate(order, body);
+    return this.orders.view(await this.find(order.number, query.token, user));
   }
 
   private async find(

@@ -24,7 +24,7 @@ type ReturnWithOrder = Prisma.ReturnRequestGetPayload<{
   include: { order: { include: typeof orderInclude } };
 }>;
 
-const REASONS: Record<string, string> = {
+export const RETURN_REASONS: Record<string, string> = {
   DAMAGED: 'Arrived damaged',
   NOT_AS_DESCRIBED: 'Not as described',
   WRONG_ITEM: 'Wrong item sent',
@@ -184,7 +184,7 @@ export class ReturnsService {
         await this.refunds.refund(
           row.order,
           amount,
-          `Return: ${REASONS[row.reason] ?? row.reason}`,
+          `Return: ${RETURN_REASONS[row.reason] ?? row.reason}`,
           {
             returnId: id,
             restock: input.restock ? this.refunds.restockLines(row.order, lines) : [],
@@ -233,7 +233,7 @@ export class ReturnsService {
       orderId: row.orderId,
       orderNumber: row.order.number,
       status: row.status,
-      reason: REASONS[row.reason] ?? row.reason,
+      reason: RETURN_REASONS[row.reason] ?? row.reason,
       customerNote: row.customerNote,
       staffNote: row.staffNote,
       items: (row.items as ReturnLine[]).map((line) => {

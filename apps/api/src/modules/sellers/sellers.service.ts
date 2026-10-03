@@ -1,3 +1,4 @@
+import { ratingSummary } from '../../common/rating';
 import {
   ConflictException,
   ForbiddenException,
@@ -201,6 +202,7 @@ export class SellersService {
       description: seller.description,
       memberSince: (seller.approvedAt ?? seller.createdAt).toISOString(),
       productCount: seller._count.products,
+      rating: ratingSummary(seller),
     };
   }
 

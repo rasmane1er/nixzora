@@ -5,6 +5,7 @@ import { SELLER_STATUS_LABEL } from '@/lib/sell';
 const LINKS = [
   { href: '/sell', label: 'Overview' },
   { href: '/sell/orders', label: 'Orders' },
+  { href: '/sell/feedback', label: 'Returns & ratings' },
   { href: '/sell/listings', label: 'Listings' },
   { href: '/sell/analytics', label: 'Analytics' },
   { href: '/sell/earnings', label: 'Earnings' },

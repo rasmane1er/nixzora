@@ -209,7 +209,25 @@ export type ShipmentView = {
   tracking: { carrier: string; number: string; url: string | null } | null;
   /** Order item ids in this shipment. */
   itemIds: string[];
+  /** The customer's rating of a seller shipment (p7-07). */
+  rating: { value: number; comment: string | null } | null;
+  /** Until when the customer can rate or change it: delivered seller shipments only. */
+  ratableUntil: string | null;
 };
+
+/** Customers rate a delivered seller shipment 1–5; the comment goes to the seller and staff only. */
+export const SELLER_RATING_WINDOW_DAYS = 60;
+export const SellerRatingCreateSchema = z.object({
+  seller: z.string().min(1).max(60),
+  rating: z.coerce.number().int().min(1).max(5),
+  comment: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .transform((v) => v || undefined),
+});
+export type SellerRatingCreate = z.infer<typeof SellerRatingCreateSchema>;
 
 export type OrderView = {
   id: string;

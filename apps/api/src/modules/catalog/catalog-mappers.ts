@@ -5,7 +5,7 @@ import { type Prisma } from '../../generated/prisma/client';
 export const productInclude = {
   brand: true,
   category: true,
-  seller: { select: { handle: true, displayName: true } },
+  seller: { select: { handle: true, displayName: true, ratingCount: true, ratingTotal: true } },
   images: { orderBy: { position: 'asc' } },
   variants: { include: { inventory: true }, orderBy: { priceCents: 'asc' } },
 } satisfies Prisma.ProductInclude;

@@ -30,6 +30,7 @@ import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { RequirePermissions } from '../identity/guards/decorators';
 import { PayoutsService } from './payouts.service';
 import { SellerOrdersService } from './seller-orders.service';
+import { SellerFeedbackService } from './seller-feedback.service';
 import { SellersAdminService } from './sellers-admin.service';
 
 const uuid = new ParseUUIDPipe();
@@ -43,6 +44,7 @@ export class SellersAdminController {
     private readonly admin: SellersAdminService,
     private readonly orders: SellerOrdersService,
     private readonly payouts: PayoutsService,
+    private readonly feedbackService: SellerFeedbackService,
   ) {}
 
   @Get('sellers/:id/payouts')
@@ -56,6 +58,12 @@ export class SellersAdminController {
   @RequirePermissions('sellers.manage')
   payOut(@Param('id', uuid) id: string, @Actor() actor: ActorContext) {
     return this.payouts.payOut(id, actor);
+  }
+
+  @Get('sellers/:id/feedback')
+  @RequirePermissions('sellers.manage')
+  feedback(@Param('id', uuid) id: string) {
+    return this.feedbackService.build(id);
   }
 
   @Get('sellers/:id/balance')

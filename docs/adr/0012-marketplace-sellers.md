@@ -3,7 +3,7 @@
 - Status: accepted
 - Date: 2026-10-03
 - Roadmap: p7-01 (seller registration and verification), p7-02 (seller portal), p7-03 (listings),
-  p7-10 (admin seller management and moderation)
+  p7-07 (seller returns and ratings), p7-10 (admin seller management and moderation)
 
 ## Context
 
@@ -67,6 +67,16 @@ a description drafted from the listing's own specs, with every number checked ag
 never saved automatically, 30 drafts per store per day. Seller analytics (p7-08) show sales,
 earnings, orders, units, product views and conversion for 7, 30 or 90 days against the previous
 period, days counted in US Eastern time, from read-only queries over the store's own data.
+
+**Returns and ratings (p7-07).** NIXZORA keeps one returns policy and one queue for every
+order: staff decide returns, and a refund of a seller's items is deducted from that seller's
+earnings (commission returned). Sellers see return requests that include their items, only
+their own lines, under "Returns & ratings". After a seller's parcel is delivered, the customer
+can rate that seller 1–5 for 60 days (and change it); one rating per seller shipment, never
+per product, so it measures the seller, not the item (product reviews stay separate). The
+average and count are public on the store page and product pages; the optional comment is
+seen only by the seller and staff, so it can be candid without moderation. Running totals on
+the seller are updated in the rating's transaction with the shipment row locked.
 
 Store approval requires finished payout verification, and every decision (apply, approve,
 suspend, terms change, listing approved or sent back) is in the audit log. Staff need the new

@@ -13,6 +13,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { param, type SearchParams } from '@/lib/params';
 import { isSignedIn } from '@/lib/session';
+import { RateSellerForm } from './RateSellerForm';
 import { ReturnForm } from './ReturnForm';
 
 const RETURN_LABEL: Record<string, string> = {
@@ -81,7 +82,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <section className="card stack">
           <OrderTimeline order={order} />
           {order.shipments.length ? (
-            <Shipments order={order} />
+            <Shipments order={order} token={token} />
           ) : order.tracking ? (
             <p>
               {order.tracking.carrier} tracking{' '}
@@ -161,7 +162,7 @@ const SHIPMENT_LABEL: Record<OrderView['shipments'][number]['status'], string> =
 };
 
 /** Marketplace orders arrive in parcels: NIXZORA's own items and one per seller. */
-function Shipments({ order }: { order: OrderView }) {
+function Shipments({ order, token }: { order: OrderView; token?: string }) {
   return (
     <ul className="shipments">
       {order.shipments.map((shipment) => {
@@ -195,6 +196,13 @@ function Shipments({ order }: { order: OrderView }) {
                     </a>
                   </>
                 ) : null}
+              </div>
+            ) : null}
+            {shipment.seller && shipment.ratableUntil ? (
+              <RateSellerForm number={order.number} token={token} shipment={shipment} />
+            ) : shipment.rating ? (
+              <div className="muted" style={{ fontSize: 14 }}>
+                You rated this seller {shipment.rating.value} out of 5.
               </div>
             ) : null}
           </li>

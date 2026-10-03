@@ -93,6 +93,7 @@ export const SellerViewSchema = z.object({
   commissionBps: z.number().int(),
   payoutHoldDays: z.number().int(),
   listings: SellerListingCountsSchema,
+  rating: z.object({ average: z.number().nullable(), count: z.number().int() }),
   approvedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
 });
@@ -359,7 +360,40 @@ export const PublicSellerSchema = z.object({
   description: z.string().nullable(),
   memberSince: z.iso.datetime(),
   productCount: z.number().int(),
+  rating: z.object({ average: z.number().nullable(), count: z.number().int() }),
 });
+
+// ───────────── Ratings and returns in the seller portal (p7-07) ─────────────
+
+export type SellerRatingView = {
+  id: string;
+  orderNumber: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SellerFeedback = {
+  rating: {
+    average: number | null;
+    count: number;
+    breakdown: Record<'1' | '2' | '3' | '4' | '5', number>;
+  };
+  ratings: SellerRatingView[];
+  /** Return requests that include this store's items, newest first; only its own lines. */
+  returns: {
+    id: string;
+    orderNumber: string;
+    status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'REFUNDED';
+    reason: string;
+    customerNote: string | null;
+    staffNote: string | null;
+    items: { orderItemId: string; quantity: number; productTitle: string; sku: string }[];
+    createdAt: string;
+    resolvedAt: string | null;
+  }[];
+};
 
 export type SellerStatus = z.infer<typeof SellerStatusSchema>;
 export type SellerApplication = z.infer<typeof SellerApplicationSchema>;

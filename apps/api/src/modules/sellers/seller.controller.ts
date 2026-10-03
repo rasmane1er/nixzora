@@ -54,6 +54,7 @@ import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { PayoutsService } from './payouts.service';
 import { SellerAnalyticsService } from './seller-analytics.service';
+import { SellerFeedbackService } from './seller-feedback.service';
 import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
@@ -76,7 +77,14 @@ export class SellerController {
     private readonly payouts: PayoutsService,
     private readonly imports: SellerImportService,
     private readonly analytics: SellerAnalyticsService,
+    private readonly feedback: SellerFeedbackService,
   ) {}
+
+  /** Ratings with their private comments, and return requests that include this store's items. */
+  @Get('feedback')
+  feedbackView(@Actor() actor: ActorContext) {
+    return this.feedback.forSeller(actor);
+  }
 
   @Get('analytics')
   sellerAnalytics(

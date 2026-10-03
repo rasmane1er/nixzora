@@ -19,6 +19,7 @@ import {
   type PayoutView,
   type SellerAnalytics,
   type SellerBalance,
+  type SellerFeedback,
   type SellerOrderView,
 } from '@nixzora/validation';
 import request from 'supertest';
@@ -328,6 +329,107 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
         })
         .expect(200);
       expect((await balance()).availableCents).toBe(-8800);
+    });
+
+    it('lets the customer rate the delivered seller shipment, with the comment kept private', async () => {
+      const view = (
+        await http().get(`/api/v1/orders/${order.orderNumber}`).set(bearer(customerToken))
+      ).body as OrderView;
+      const shipment = view.shipments.find((s) => s.seller)!;
+      expect(shipment).toMatchObject({ rating: null });
+      expect(shipment.ratableUntil).not.toBeNull();
+      expect(view.shipments.find((s) => !s.seller)!.ratableUntil).toBeNull();
+      const handle = shipment.seller!.handle;
+      const rate = (body: object, status = 200) =>
+        http()
+          .post(`/api/v1/orders/${order.orderNumber}/seller-ratings`)
+          .set(bearer(customerToken))
+          .send(body)
+          .expect(status);
+
+      await rate({ seller: 'nixzora', rating: 5 }, 404);
+      await rate({ seller: handle, rating: 6 }, 400);
+      await http()
+        .post(`/api/v1/orders/${order.orderNumber}/seller-ratings`)
+        .send({ seller: handle, rating: 5 })
+        .expect(400);
+
+      const rated = (await rate({ seller: handle, rating: 4, comment: 'Well packed, a bit slow' }))
+        .body as OrderView;
+      expect(rated.shipments.find((s) => s.seller)!.rating).toEqual({
+        value: 4,
+        comment: 'Well packed, a bit slow',
+      });
+      // Changing it replaces the rating rather than adding another.
+      await rate({ seller: handle, rating: 2, comment: 'Box was crushed' });
+
+      const feedback = (
+        await http().get('/api/v1/seller/feedback').set(bearer(sellerToken)).expect(200)
+      ).body as SellerFeedback;
+      expect(feedback.rating).toEqual({
+        average: 2,
+        count: 1,
+        breakdown: { '1': 0, '2': 1, '3': 0, '4': 0, '5': 0 },
+      });
+      expect(feedback.ratings).toEqual([
+        expect.objectContaining({
+          orderNumber: order.orderNumber,
+          rating: 2,
+          comment: 'Box was crushed',
+        }),
+      ]);
+
+      const store = (await http().get(`/api/v1/catalog/sellers/${handle}`).expect(200)).body;
+      expect(store.rating).toEqual({ average: 2, count: 1 });
+      expect(JSON.stringify(store)).not.toContain('crushed');
+      const me = (await http().get('/api/v1/seller/me').set(bearer(sellerToken))).body;
+      expect(me.seller.rating).toEqual({ average: 2, count: 1 });
+    });
+
+    it('shows the seller return requests for its own items, and only those lines', async () => {
+      const items = (await adminOrder(order.orderId)).items;
+      const amp = items.find((i) => i.sku.startsWith('AMP'))!;
+      const cable = items.find((i) => i.sku.startsWith('CBL'))!;
+      await http()
+        .post(`/api/v1/orders/${order.orderNumber}/returns`)
+        .set(bearer(customerToken))
+        .send({
+          reason: 'NOT_AS_DESCRIBED',
+          note: 'Hums at volume',
+          items: [
+            { orderItemId: amp.id, quantity: 1 },
+            { orderItemId: cable.id, quantity: 1 },
+          ],
+        })
+        .expect(201);
+      await http()
+        .post(`/api/v1/orders/${order.orderNumber}/returns`)
+        .set(bearer(customerToken))
+        .send({ reason: 'NO_LONGER_NEEDED', items: [{ orderItemId: cable.id, quantity: 1 }] })
+        .expect(400); // the cable is already in a return
+
+      const feedback = (
+        await http().get('/api/v1/seller/feedback').set(bearer(sellerToken)).expect(200)
+      ).body as SellerFeedback;
+      expect(feedback.returns).toHaveLength(1);
+      expect(feedback.returns[0]).toMatchObject({
+        orderNumber: order.orderNumber,
+        status: 'REQUESTED',
+        reason: 'Not as described',
+        customerNote: 'Hums at volume',
+      });
+      expect(feedback.returns[0]!.items.map((i) => [i.orderItemId, i.quantity])).toEqual([
+        [amp.id, 1],
+      ]);
+
+      // Staff see the same feedback on the store's admin page.
+      const admin = (
+        await http()
+          .get(`/api/v1/admin/sellers/${sellerId}/feedback`)
+          .set(bearer(staffToken))
+          .expect(200)
+      ).body as SellerFeedback;
+      expect(admin.returns.map((r) => r.id)).toEqual(feedback.returns.map((r) => r.id));
     });
   });
 

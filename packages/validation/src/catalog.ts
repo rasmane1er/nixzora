@@ -229,7 +229,16 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   breadcrumb: z.array(z.object({ slug: z.string(), name: z.string() })),
   /** The marketplace seller; null when NIXZORA sells it. */
-  seller: z.object({ handle: z.string(), displayName: z.string() }).nullable().default(null),
+  seller: z
+    .object({
+      handle: z.string(),
+      displayName: z.string(),
+      rating: z
+        .object({ average: z.number().nullable(), count: z.number().int() })
+        .default({ average: null, count: 0 }),
+    })
+    .nullable()
+    .default(null),
   /** Staff feedback on a seller's listing (only on staff and seller views). */
   reviewNote: z.string().nullable().default(null),
   images: z.array(ImageSchema),

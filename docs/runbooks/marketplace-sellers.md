@@ -27,6 +27,17 @@ Oldest first. Approve when:
 Otherwise **Send back** with a specific note ("Add the driver size to the specs"). Price and stock
 changes on live listings do not come back to this queue; text, spec and photo changes do.
 
+## Returns and ratings
+
+- Returns of seller items go through the normal returns queue (Ops Center → Returns). The
+  seller sees the request and its status in the portal; receiving the return refunds the
+  customer and posts a REFUND entry to the seller's ledger.
+- A seller's rating and the private comments behind it are on the seller's page under
+  "Customer feedback". A falling average or repeated complaints (damage, slow shipping) are a
+  reason to contact the store, lengthen its payout hold, or suspend it.
+- Ratings are not edited by staff. If one is abusive, delete the row in `seller_ratings` and
+  subtract it from the seller's `rating_count` / `rating_total` in the same transaction.
+
 ## Payouts
 
 Available balances are sent automatically once a day (minimum $10). To pay a store now, open it in

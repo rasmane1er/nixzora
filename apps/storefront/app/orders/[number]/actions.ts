@@ -30,3 +30,30 @@ export async function requestReturn(_: ReturnState, form: FormData): Promise<Ret
     return { error: errorMessage(error) };
   }
 }
+
+export type RatingState = { ok?: boolean; error?: string };
+
+export async function rateSeller(_: RatingState, form: FormData): Promise<RatingState> {
+  const number = String(form.get('number') ?? '');
+  const token = String(form.get('token') ?? '');
+  if (!/^NX-[A-Z0-9]{6}$/.test(number)) return { error: 'Unknown order.' };
+  const rating = Number(form.get('rating'));
+  if (!(rating >= 1 && rating <= 5)) return { error: 'Choose 1 to 5 stars.' };
+  try {
+    await api(
+      `/orders/${number}/seller-ratings${token ? `?token=${encodeURIComponent(token)}` : ''}`,
+      {
+        method: 'POST',
+        body: {
+          seller: String(form.get('seller') ?? ''),
+          rating,
+          comment: String(form.get('comment') ?? '').trim() || undefined,
+        },
+      },
+    );
+    revalidatePath(`/orders/${number}`);
+    return { ok: true };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+}

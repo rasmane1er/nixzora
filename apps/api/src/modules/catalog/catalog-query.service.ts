@@ -14,6 +14,7 @@ import { type Category, Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchIndexService } from '../search/search-index.service';
 import { StorageService } from '../media/storage.service';
+import { ratingSummary } from '../../common/rating';
 import {
   productInclude,
   type ProductWithRelations,
@@ -368,7 +369,13 @@ export class CatalogQueryService {
       status: product.status,
       attributes: (product.attributes ?? {}) as Record<string, string | number | boolean>,
       breadcrumb: await this.breadcrumb(product.category),
-      seller: product.seller,
+      seller: product.seller
+        ? {
+            handle: product.seller.handle,
+            displayName: product.seller.displayName,
+            rating: ratingSummary(product.seller),
+          }
+        : null,
       // Review feedback is between staff and the seller; the storefront never shows it.
       reviewNote: activeVariantsOnly ? null : product.reviewNote,
       images: product.images.map((image) => toImage(image, this.url)),

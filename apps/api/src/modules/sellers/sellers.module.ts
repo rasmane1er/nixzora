@@ -6,6 +6,7 @@ import { MediaModule } from '../media/media.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PayoutsService } from './payouts.service';
 import { SellerAnalyticsService } from './seller-analytics.service';
+import { SellerFeedbackService } from './seller-feedback.service';
 import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
@@ -27,6 +28,7 @@ import { SellersService } from './sellers.service';
     PayoutsService,
     SellerImportService,
     SellerAnalyticsService,
+    SellerFeedbackService,
   ],
   exports: [SellersService],
 })

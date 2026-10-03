@@ -1,5 +1,10 @@
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
-import { type OrderStatus, type OrderView, RETURN_WINDOW_DAYS } from '@nixzora/validation';
+import {
+  type OrderStatus,
+  type OrderView,
+  RETURN_WINDOW_DAYS,
+  SELLER_RATING_WINDOW_DAYS,
+} from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 
 /** Guest order links carry HMAC(secret, order id): nothing to store, and it can't be guessed. */
@@ -31,6 +36,13 @@ export const TRACKING_URLS: Record<string, (n: string) => string> = {
 
 const RETURN_WINDOW_MS = RETURN_WINDOW_DAYS * 86_400_000;
 
+/** Customers can rate a seller shipment from delivery until the window closes. */
+export function ratableUntil(part: { status: string; deliveredAt: Date | null }): Date | null {
+  if (part.status !== 'DELIVERED' || !part.deliveredAt) return null;
+  const until = new Date(part.deliveredAt.getTime() + SELLER_RATING_WINDOW_DAYS * 86_400_000);
+  return until > new Date() ? until : null;
+}
+
 function returnableUntil(order: { status: string; deliveredAt: Date | null }): string | null {
   if (!order.deliveredAt || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status))
     return null;
@@ -40,7 +52,12 @@ function returnableUntil(order: { status: string; deliveredAt: Date | null }): s
 
 export const orderInclude = {
   items: true,
-  sellerOrders: { include: { seller: { select: { handle: true, displayName: true } } } },
+  sellerOrders: {
+    include: {
+      seller: { select: { handle: true, displayName: true } },
+      rating: { select: { rating: true, comment: true } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 export type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
@@ -67,6 +84,8 @@ function shipments(order: OrderRow): OrderView['shipments'] {
             : 'PROCESSING',
       tracking: tracking(order.trackingCarrier, order.trackingNumber),
       itemIds: own.map((item) => item.id),
+      rating: null,
+      ratableUntil: null,
     });
   }
   for (const part of order.sellerOrders) {
@@ -75,6 +94,8 @@ function shipments(order: OrderRow): OrderView['shipments'] {
       status: part.status === 'PAID' ? 'PROCESSING' : part.status,
       tracking: tracking(part.trackingCarrier, part.trackingNumber),
       itemIds: order.items.filter((item) => item.sellerId === part.sellerId).map((item) => item.id),
+      rating: part.rating ? { value: part.rating.rating, comment: part.rating.comment } : null,
+      ratableUntil: ratableUntil(part)?.toISOString() ?? null,
     });
   }
   return out;

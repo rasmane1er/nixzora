@@ -14,6 +14,7 @@ import {
 import { OrdersService } from './orders.service';
 import { RefundsService } from './refunds.service';
 import { ReturnsService } from './returns.service';
+import { SellerRatingsService } from './seller-ratings.service';
 
 @Module({
   imports: [CartModule, InventoryModule, PaymentsModule, PromotionsModule],
@@ -24,7 +25,7 @@ import { ReturnsService } from './returns.service';
     AdminOrdersController,
     AdminReturnsController,
   ],
-  providers: [OrdersService, OrderEmails, RefundsService, ReturnsService],
+  providers: [OrdersService, OrderEmails, RefundsService, ReturnsService, SellerRatingsService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
