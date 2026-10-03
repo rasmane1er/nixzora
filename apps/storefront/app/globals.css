@@ -1248,3 +1248,20 @@ table.plain th {
 .compare thead th:first-child {
   min-width: 0;
 }
+
+/* Privacy policy and terms. */
+.legal {
+  max-width: 72ch;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+.legal h2 {
+  margin-top: 28px;
+  font-size: 20px;
+}
+.legal ul {
+  padding-left: 20px;
+}
+.legal li + li {
+  margin-top: 6px;
+}

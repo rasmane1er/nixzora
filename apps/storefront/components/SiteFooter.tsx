@@ -14,6 +14,8 @@ export function SiteFooter() {
           <Link href="/search">All products</Link>
           <Link href="/account">Your orders</Link>
           <Link href="/status">Platform status</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
         </nav>
       </div>
       <div className="wrap muted" style={{ marginTop: 16, fontSize: 13 }}>

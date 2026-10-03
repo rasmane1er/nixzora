@@ -117,9 +117,13 @@ output "platform" {
 }
 
 variable "sign_in_client_ids" {
-  description = "Public client ids for Sign in with Google / Apple: GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, APPLE_SERVICES_ID. Empty hides the buttons."
+  description = "Public client ids for Sign in with Google / Apple (Google Cloud project nexora-66e0b, Apple team 7HD2Z858BV). Empty hides the buttons."
   type        = map(string)
-  default     = {}
+  default = {
+    GOOGLE_WEB_CLIENT_ID = "609981749805-vhsh4a48shs56tetot1oqqufgcsdg73b.apps.googleusercontent.com"
+    GOOGLE_IOS_CLIENT_ID = "609981749805-783ngqagd0q5kn06st0h3cqkna4atsi5.apps.googleusercontent.com"
+    APPLE_SERVICES_ID    = "com.nixzora.shop.web"
+  }
   validation {
     condition = alltrue([for key in keys(var.sign_in_client_ids) : contains(
       ["GOOGLE_WEB_CLIENT_ID", "GOOGLE_IOS_CLIENT_ID", "GOOGLE_ANDROID_CLIENT_ID", "APPLE_SERVICES_ID", "APPLE_BUNDLE_IDS"], key
