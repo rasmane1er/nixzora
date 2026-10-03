@@ -36,6 +36,10 @@ model User {
   lastName        String?    @map("last_name")
   phone           String?
   status          UserStatus @default(ACTIVE)
+  /// Deals and new arrivals by email: off until the customer opts in.
+  marketingEmails Boolean    @default(false) @map("marketing_emails")
+  /// An email after delivery asking for a review.
+  reviewRequests  Boolean    @default(true) @map("review_requests")
   mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
   mfaSecretEnc    String?    @map("mfa_secret_enc")

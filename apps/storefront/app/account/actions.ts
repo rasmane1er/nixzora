@@ -103,10 +103,3 @@ export async function resetPassword(form: FormData): Promise<void> {
   }
   redirect('/account/login?reset=1');
 }
-
-export async function deleteAddress(form: FormData): Promise<void> {
-  const id = String(form.get('id') ?? '');
-  if (/^[0-9a-f-]{36}$/i.test(id))
-    await api(`/me/addresses/${id}`, { method: 'DELETE' }).catch(() => undefined);
-  redirect('/account');
-}

@@ -138,6 +138,7 @@ export default function CheckoutScreen() {
     if (result.outcome === 'paid') {
       await client.invalidateQueries({ queryKey: keys.cart });
       await client.invalidateQueries({ queryKey: keys.orders });
+      await client.invalidateQueries({ queryKey: ['me'] });
       router.replace({
         pathname: '/orders/[number]',
         params: { number: order.number, token: order.token, placed: '1' },

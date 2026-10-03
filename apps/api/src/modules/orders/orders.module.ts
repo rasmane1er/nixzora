@@ -26,6 +26,6 @@ import { SellerRatingsService } from './seller-ratings.service';
     AdminReturnsController,
   ],
   providers: [OrdersService, OrderEmails, RefundsService, ReturnsService, SellerRatingsService],
-  exports: [OrdersService],
+  exports: [OrdersService, ReturnsService],
 })
 export class OrdersModule {}

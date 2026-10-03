@@ -22,7 +22,7 @@ export function ReturnForm({ order, token }: { order: OrderView; token?: string 
     );
   }
   return (
-    <details className="card">
+    <details className="card" id="return">
       <summary>Start a return</summary>
       <form action={action} className="form" style={{ marginTop: 14 }}>
         <input type="hidden" name="number" value={order.number} />

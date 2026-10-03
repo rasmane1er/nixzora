@@ -497,6 +497,8 @@ export class AuthService {
           phone: null,
           mfaEnabled: false,
           mfaSecretEnc: null,
+          marketingEmails: false,
+          reviewRequests: false,
         },
       }),
     ]);

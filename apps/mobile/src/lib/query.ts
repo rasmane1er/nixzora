@@ -61,4 +61,12 @@ export const keys = {
   wishlist: ['wishlist'] as const,
   wishlistIds: ['wishlist', 'ids'] as const,
   addresses: ['addresses'] as const,
+  overview: ['me', 'overview'] as const,
+  orderHistory: (filter: string) => ['me', 'order-history', filter] as const,
+  buyAgain: ['me', 'buy-again'] as const,
+  returns: ['me', 'returns'] as const,
+  reviews: ['me', 'reviews'] as const,
+  preferences: ['me', 'preferences'] as const,
+  sessions: ['me', 'sessions'] as const,
+  profile: ['me', 'profile'] as const,
 };

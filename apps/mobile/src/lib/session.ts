@@ -147,6 +147,16 @@ export const session = {
     set({ status: 'signedOut', user: null });
   },
 
+  /** Reloads the signed-in user (after a profile change), keeping the session as it is. */
+  async refreshUser(): Promise<void> {
+    if (state.status !== 'signedIn' || !accessToken) return;
+    try {
+      set({ user: await loadUser(accessToken) });
+    } catch {
+      // Keep the current details; the next app start reloads them.
+    }
+  },
+
   async setBiometricLock(enabled: boolean): Promise<boolean> {
     if (enabled && !(await confirmIdentity('Turn on Face ID / fingerprint unlock'))) return false;
     await (enabled ? secureStorage.set(KEYS.biometric, '1') : secureStorage.remove(KEYS.biometric));

@@ -101,6 +101,11 @@ export default function RootLayout() {
                 <Stack.Screen name="orders/index" options={{ title: 'Your orders' }} />
                 <Stack.Screen name="orders/[number]" options={{ title: 'Order' }} />
                 <Stack.Screen name="wishlist" options={{ title: 'Saved for later' }} />
+                <Stack.Screen name="account/security" options={{ title: 'Login & security' }} />
+                <Stack.Screen name="account/addresses" options={{ title: 'Your addresses' }} />
+                <Stack.Screen name="account/returns" options={{ title: 'Returns & refunds' }} />
+                <Stack.Screen name="account/reviews" options={{ title: 'Your reviews' }} />
+                <Stack.Screen name="account/preferences" options={{ title: 'Communication' }} />
                 <Stack.Screen
                   name="sign-in"
                   options={{ title: 'Sign in', presentation: 'modal' }}

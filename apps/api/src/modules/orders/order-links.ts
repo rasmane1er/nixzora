@@ -43,7 +43,10 @@ export function ratableUntil(part: { status: string; deliveredAt: Date | null })
   return until > new Date() ? until : null;
 }
 
-function returnableUntil(order: { status: string; deliveredAt: Date | null }): string | null {
+export function returnableUntil(order: {
+  status: string;
+  deliveredAt: Date | null;
+}): string | null {
   if (!order.deliveredAt || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status))
     return null;
   const until = new Date(order.deliveredAt.getTime() + RETURN_WINDOW_MS);

@@ -1,0 +1,131 @@
+import { z } from 'zod';
+import { type OrderStatus } from './commerce';
+
+// ───────────── The customer's account hub (Your Account) ─────────────
+
+export const ProfileUpdateSchema = z.object({
+  firstName: z.string().trim().min(1).max(60).nullable().optional(),
+  lastName: z.string().trim().min(1).max(60).nullable().optional(),
+  /** E.164-ish: digits, spaces, dashes, parentheses and a leading +. */
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9 ()-]{7,20}$/, 'Enter a phone number with 7 to 20 digits.')
+    .nullable()
+    .optional(),
+});
+
+export const AccountPreferencesSchema = z.object({
+  /** Deals, new arrivals and the occasional newsletter. Off until the customer opts in. */
+  marketingEmails: z.boolean(),
+  /** An email after delivery asking how the product is. */
+  reviewRequests: z.boolean(),
+});
+
+export const ORDER_FILTERS = ['all', 'open', 'delivered', 'cancelled', 'returns'] as const;
+
+export const AccountOrderQuerySchema = z.object({
+  filter: z.enum(ORDER_FILTERS).default('all'),
+  /** Order number, or words from a product title. */
+  q: z.string().trim().max(100).optional(),
+  /** Placed within the last N days (30, 90 or 365); omitted = any time. */
+  days: z.coerce
+    .number()
+    .int()
+    .refine((d) => [30, 90, 365].includes(d))
+    .optional(),
+  page: z.coerce.number().int().min(1).max(200).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>;
+export type AccountPreferences = z.infer<typeof AccountPreferencesSchema>;
+export type AccountOrderQuery = z.infer<typeof AccountOrderQuerySchema>;
+export type OrderFilter = (typeof ORDER_FILTERS)[number];
+
+export type AccountProfile = {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  memberSince: string;
+};
+
+/** One line of an order in the order history, with what is needed to act on it. */
+export type AccountOrderLine = {
+  orderItemId: string;
+  productTitle: string;
+  variantTitle: string;
+  quantity: number;
+  totalCents: number;
+  imageUrl: string | null;
+  /** Null when the product is no longer sold. */
+  productSlug: string | null;
+  /** The product can be bought again (still on sale with this variant active). */
+  variantId: string | null;
+  canBuyAgain: boolean;
+  /** Delivered and not reviewed yet. */
+  canReview: boolean;
+  seller: { handle: string; displayName: string } | null;
+};
+
+export type AccountOrder = {
+  id: string;
+  number: string;
+  status: OrderStatus;
+  currency: string;
+  totalCents: number;
+  itemCount: number;
+  placedAt: string | null;
+  createdAt: string;
+  deliveredAt: string | null;
+  shipTo: string;
+  tracking: { carrier: string; number: string; url: string | null } | null;
+  returnableUntil: string | null;
+  openReturns: number;
+  lines: AccountOrderLine[];
+};
+
+export type BuyAgainItem = {
+  productId: string;
+  slug: string;
+  title: string;
+  variantId: string;
+  variantTitle: string;
+  priceCents: number;
+  currency: string;
+  imageUrl: string | null;
+  inStock: boolean;
+  lastOrderedAt: string;
+};
+
+export type AccountReview = {
+  id: string;
+  rating: number;
+  title: string;
+  body: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  verifiedPurchase: boolean;
+  createdAt: string;
+  product: { title: string; slug: string; imageUrl: string | null };
+};
+
+export type AccountOverview = {
+  profile: AccountProfile;
+  counts: {
+    openOrders: number;
+    orders: number;
+    openReturns: number;
+    wishlist: number;
+    reviews: number;
+    addresses: number;
+    /** Delivered products not reviewed yet. */
+    toReview: number;
+  };
+  recentOrders: AccountOrder[];
+  buyAgain: BuyAgainItem[];
+  security: { mfaEnabled: boolean; hasPassword: boolean; activeSessions: number };
+  seller: { handle: string; displayName: string } | null;
+};

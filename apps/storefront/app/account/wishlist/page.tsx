@@ -1,22 +1,20 @@
 import { type ProductCard as Card } from '@nixzora/validation';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
-import { api } from '@/lib/api';
+import { AccountHeader } from '@/components/AccountHeader';
+import { accountApi } from '@/lib/account';
 import { removeWish } from './actions';
 
 export const metadata: Metadata = { title: 'Wishlist', robots: { index: false } };
 
 export default async function WishlistPage() {
-  const items = await api<Card[]>('/me/wishlist');
+  const items = await accountApi<Card[]>('/me/wishlist', '/account/wishlist');
   return (
     <div className="wrap section stack" style={{ gap: 20 }}>
-      <div className="stack" style={{ gap: 6 }}>
-        <p className="eyebrow">
-          <Link href="/account">Your account</Link>
-        </p>
-        <h1>Wishlist</h1>
-      </div>
+      <AccountHeader
+        title="Your wishlist"
+        description={`${items.length} saved ${items.length === 1 ? 'item' : 'items'}.`}
+      />
       {items.length === 0 ? (
         <div className="empty card">
           <p>Nothing saved yet. Tap “Save” on any product to keep it here.</p>

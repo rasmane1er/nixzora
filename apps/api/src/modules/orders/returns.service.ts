@@ -112,6 +112,17 @@ export class ReturnsService {
     return rows.map((row) => this.view(row));
   }
 
+  /** Every return the customer asked for, newest first (Your Account → Returns). */
+  async forUser(userId: string): Promise<ReturnView[]> {
+    const rows = await this.prisma.returnRequest.findMany({
+      where: { order: { userId } },
+      include: { order: { include: orderInclude } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return rows.map((row) => this.view(row));
+  }
+
   async list(status?: ReturnStatus): Promise<ReturnView[]> {
     const rows = await this.prisma.returnRequest.findMany({
       where: status ? { status } : {},

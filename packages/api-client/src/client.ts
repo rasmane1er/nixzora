@@ -1,4 +1,15 @@
 import type {
+  AccountOrder,
+  AccountOrderQuery,
+  AccountOverview,
+  AccountPreferences,
+  AccountProfile,
+  AccountReview,
+  AddressCreate,
+  AddressUpdate,
+  BuyAgainItem,
+  ProfileUpdate,
+  SessionSummary,
   SellerRatingCreate,
   Address,
   AssistantChatResponse,
@@ -280,6 +291,34 @@ export function createApiClient(options: ClientOptions) {
           query: { token },
           auth: token ? 'none' : 'auto',
         }),
+    },
+
+    /** Your Account (the account hub). */
+    me: {
+      overview: () => request<AccountOverview>('GET', '/me/overview'),
+      profile: () => request<AccountProfile>('GET', '/me/profile'),
+      updateProfile: (body: ProfileUpdate) =>
+        request<AccountProfile>('PATCH', '/me/profile', { body }),
+      orderHistory: (query: Partial<AccountOrderQuery> = {}) =>
+        request<PagedResult<AccountOrder>>('GET', '/me/order-history', {
+          query: query as Record<string, string | number | undefined>,
+        }),
+      buyAgain: () => request<BuyAgainItem[]>('GET', '/me/buy-again'),
+      returns: () => request<ReturnView[]>('GET', '/me/returns'),
+      reviews: () => request<AccountReview[]>('GET', '/me/reviews'),
+      preferences: () => request<AccountPreferences>('GET', '/me/preferences'),
+      setPreferences: (body: AccountPreferences) =>
+        request<AccountPreferences>('PUT', '/me/preferences', { body }),
+      sessions: () => request<SessionSummary[]>('GET', '/me/sessions'),
+      revokeSession: (id: string) => request<void>('DELETE', `/me/sessions/${enc(id)}`),
+      revokeOtherSessions: () => request<void>('DELETE', '/me/sessions'),
+      changePassword: (body: { currentPassword: string; newPassword: string }) =>
+        request<void>('POST', '/auth/password/change', { body }),
+      createAddress: (body: AddressCreate) =>
+        request<SavedAddress>('POST', '/me/addresses', { body }),
+      updateAddress: (id: string, body: AddressUpdate) =>
+        request<SavedAddress>('PATCH', `/me/addresses/${enc(id)}`, { body }),
+      deleteAddress: (id: string) => request<void>('DELETE', `/me/addresses/${enc(id)}`),
     },
 
     account: {

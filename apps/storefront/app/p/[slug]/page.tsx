@@ -271,7 +271,9 @@ export default async function ProductPage({ params }: Props) {
               <p className="muted">No reviews yet.</p>
             )}
             {signedIn ? (
-              <ReviewForm slug={product.slug} existing={mine} />
+              <div id="write-review" style={{ scrollMarginTop: 'calc(var(--header-h) + 60px)' }}>
+                <ReviewForm slug={product.slug} existing={mine} />
+              </div>
             ) : (
               <p className="muted">
                 <Link href={`/account/login?next=/p/${product.slug}%23reviews`}>Sign in</Link> to
