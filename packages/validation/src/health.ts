@@ -8,6 +8,22 @@ export const DependencyCheckSchema = z.object({
   error: z.string().optional(),
 });
 
+/**
+ * Background jobs (outbox delivery: emails, push, search indexing; sweepers; payouts). They run
+ * in the API process ("inline") or in the separate notifications worker ("worker", ADR-0017).
+ * Informational: a stalled worker does not take the API out of its load balancer.
+ */
+export const JobsCheckSchema = z.object({
+  mode: z.enum(['inline', 'worker']),
+  status: z.enum(['up', 'down', 'unknown']),
+  /** When the outbox was last drained. */
+  lastRunAt: z.iso.datetime().optional(),
+  /** Outbox events waiting to be delivered. */
+  backlog: z.number().int().nonnegative(),
+  /** Events that failed every retry and need a look. */
+  failed: z.number().int().nonnegative(),
+});
+
 /** Response of GET /api/v1/health — shared by the API and every client. */
 export const HealthResponseSchema = z.object({
   status: z.enum(['ok', 'degraded']),
@@ -19,7 +35,9 @@ export const HealthResponseSchema = z.object({
     database: DependencyCheckSchema,
     redis: DependencyCheckSchema,
   }),
+  jobs: JobsCheckSchema.optional(),
 });
 
 export type DependencyCheck = z.infer<typeof DependencyCheckSchema>;
+export type JobsCheck = z.infer<typeof JobsCheckSchema>;
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;

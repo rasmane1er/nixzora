@@ -26,6 +26,7 @@ import {
   type Theme,
   templateSummary,
 } from './review-analysis';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 /**
  * Keeps each product's "what customers say" current (p6-04). The analysis is computed from the
@@ -52,7 +53,7 @@ export class ReviewInsightsService implements OnModuleInit, OnApplicationBootstr
   }
 
   onApplicationBootstrap(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     // Picks up a new analysis version or model; unchanged products are skipped by their hash.
     void this.refreshAll()
       .then(({ updated, scanned }) => {

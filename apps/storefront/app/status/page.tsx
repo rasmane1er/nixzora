@@ -30,6 +30,20 @@ export default async function StatusPage() {
                 </tr>
                 {row('PostgreSQL', result.health.checks.database)}
                 {row('Redis', result.health.checks.redis)}
+                {result.health.jobs ? (
+                  <tr>
+                    <td>Emails and notifications</td>
+                    <td>
+                      {result.health.jobs.status === 'up'
+                        ? result.health.jobs.backlog
+                          ? `Sending · ${result.health.jobs.backlog} waiting`
+                          : 'Up to date'
+                        : result.health.jobs.status === 'down'
+                          ? 'Delayed'
+                          : 'Starting'}
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
 import { OutboxService } from '../outbox/outbox.service';
 import { SearchIndexService } from './search-index.service';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 /**
  * Keeps the search index current: catalog outbox events re-index one product, and a background
@@ -27,7 +28,7 @@ export class SearchIndexer implements OnModuleInit, OnApplicationBootstrap {
   }
 
   onApplicationBootstrap(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     // A separate search service runs this pass itself when it starts.
     if (this.index.remote) return;
     // Not awaited: the API starts serving at once; search falls back to keywords meanwhile.

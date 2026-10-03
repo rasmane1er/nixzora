@@ -53,6 +53,7 @@ import {
   toOrderView,
   verifyOrderAccessToken,
 } from './order-links';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 const STALE_ORDER_HOURS = 24;
 const SWEEP_MS = 10 * 60_000;
@@ -83,7 +84,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     this.sweeper = setInterval(() => void this.cancelStaleOrders(), SWEEP_MS);
     this.sweeper.unref();
   }

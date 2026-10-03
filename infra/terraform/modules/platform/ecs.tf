@@ -137,6 +137,8 @@ locals {
     },
     local.search_enabled ? { SEARCH_SERVICE_URL = local.search_url } : {},
     local.ai_enabled ? { AI_SERVICE_URL = local.ai_url } : {},
+    # With the notifications worker, the API leaves the background jobs to it (ADR-0017).
+    local.worker_enabled ? { BACKGROUND_JOBS = "false" } : {},
     var.app_config,
   )
 

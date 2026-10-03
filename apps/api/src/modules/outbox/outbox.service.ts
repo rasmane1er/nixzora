@@ -2,6 +2,8 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@ne
 import { ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 export type OutboxHandler = (event: {
   id: string;
@@ -13,11 +15,16 @@ export type OutboxHandler = (event: {
 const POLL_MS = 3_000;
 const BATCH = 20;
 const MAX_ATTEMPTS = 10;
+/** When the outbox was last drained, for the health check (any process that drains sets it). */
+const LAST_DRAIN_KEY = 'outbox:last-drain';
+
+export type OutboxStats = { backlog: number; failed: number; lastRunAt?: string };
 
 /**
- * Delivers transactional-outbox events to in-process handlers (emails today; a message
- * broker in Phase 8). Rows are claimed with FOR UPDATE SKIP LOCKED, so several API
- * instances can run the worker without sending anything twice. Failures retry, up to 10 times.
+ * Delivers transactional-outbox events to in-process handlers: emails, push, search indexing,
+ * review insights. It runs in the notifications worker (ADR-0017), or in the API when
+ * BACKGROUND_JOBS is on. Rows are claimed with FOR UPDATE SKIP LOCKED, so several processes can
+ * drain at once without sending anything twice. Failures retry, up to 10 times.
  */
 @Injectable()
 export class OutboxService implements OnModuleInit, OnModuleDestroy {
@@ -29,6 +36,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<Env, true>,
+    private readonly redis: RedisService,
   ) {}
 
   on(type: string, handler: OutboxHandler): void {
@@ -36,7 +44,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     this.timer = setInterval(() => void this.drain(), POLL_MS);
     this.timer.unref();
   }
@@ -56,6 +64,9 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
         processed += done;
         if (done < BATCH) break;
       }
+      await this.redis.client
+        .set(LAST_DRAIN_KEY, new Date().toISOString(), 'EX', 3600)
+        .catch(() => undefined);
     } catch (error) {
       this.logger.error(`Outbox drain failed: ${(error as Error).message}`);
     } finally {
@@ -105,5 +116,21 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       },
       { timeout: 60_000 },
     );
+  }
+
+  /** Waiting and given-up events, and when the outbox was last drained. */
+  async stats(): Promise<OutboxStats> {
+    // Only events something listens to: other types are recorded for a future broker (p8-04).
+    const type = { in: [...this.handlers.keys()] };
+    const [backlog, failed, lastRunAt] = await Promise.all([
+      this.prisma.outboxEvent.count({
+        where: { type, publishedAt: null, attempts: { lt: MAX_ATTEMPTS } },
+      }),
+      this.prisma.outboxEvent.count({
+        where: { type, publishedAt: null, attempts: { gte: MAX_ATTEMPTS } },
+      }),
+      this.redis.client.get(LAST_DRAIN_KEY).catch(() => null),
+    ]);
+    return { backlog, failed, lastRunAt: lastRunAt ?? undefined };
   }
 }

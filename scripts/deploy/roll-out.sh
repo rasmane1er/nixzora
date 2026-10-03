@@ -3,7 +3,7 @@
 # The services use the deployment circuit breaker: a release that fails health checks is
 # rolled back automatically, and this script then fails.
 #
-# Usage: roll-out.sh search=api api storefront admin   Needs: CLUSTER, PREFIX, REGISTRY, TAG.
+# Usage: roll-out.sh search=api worker=api api storefront admin   Needs: CLUSTER, PREFIX, REGISTRY, TAG.
 # "service=repository" runs another repository's image (the search service is the API image
 # started with a different command, ADR-0015). Services not created in this environment yet
 # are skipped with a notice.

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Empty, PageHeader } from '@/components/ui';
-import { load } from '@/lib/api';
+import type { JobsCheck } from '@nixzora/validation';
+import { api, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { dateTime, money } from '@/lib/format';
 
@@ -25,7 +26,14 @@ type Summary = {
 };
 
 export default async function DashboardPage() {
-  const [me, summary] = await Promise.all([currentStaff(), load<Summary>('/admin/summary')]);
+  const [me, summary, jobs] = await Promise.all([
+    currentStaff(),
+    load<Summary>('/admin/summary'),
+    // Informational: the dashboard still loads when the health check cannot be read.
+    api<{ jobs?: JobsCheck }>('/health')
+      .then((health) => health.jobs)
+      .catch(() => undefined),
+  ]);
   const name = me.firstName ?? me.email.split('@')[0];
 
   return (
@@ -51,6 +59,7 @@ export default async function DashboardPage() {
           value={summary.lowStockCount}
           alert={summary.lowStockCount > 0}
         />
+        {jobs ? <JobsStat jobs={jobs} /> : null}
         <Stat label="Customers" value={summary.customers} />
         <Stat label="Staff accounts" value={summary.staff} />
       </section>
@@ -125,6 +134,27 @@ function Stat({ label, value, alert = false }: { label: string; value: number; a
     <div className={`stat${alert ? ' stat--alert' : ''}`}>
       <div className="stat__label">{label}</div>
       <div className="stat__value">{value.toLocaleString('en-US')}</div>
+    </div>
+  );
+}
+
+/** Emails, push and indexing waiting in the outbox, and whether the worker is draining it. */
+function JobsStat({ jobs }: { jobs: JobsCheck }) {
+  const stalled = jobs.status === 'down' || jobs.failed > 0;
+  const where = jobs.mode === 'worker' ? 'notifications worker' : 'API';
+  const state =
+    jobs.status === 'up'
+      ? `${where} running`
+      : jobs.status === 'down'
+        ? `${where} stalled${jobs.lastRunAt ? ` since ${dateTime(jobs.lastRunAt)}` : ''}`
+        : `${where} not started yet`;
+  return (
+    <div className={`stat${stalled ? ' stat--alert' : ''}`}>
+      <div className="stat__label">Notifications waiting ({state})</div>
+      <div className="stat__value">{jobs.backlog.toLocaleString('en-US')}</div>
+      {jobs.failed ? (
+        <div className="stat__label">{jobs.failed} failed after every retry</div>
+      ) : null}
     </div>
   );
 }

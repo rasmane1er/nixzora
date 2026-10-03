@@ -205,6 +205,16 @@ export const EnvSchema = z
     /** Provider calls the AI service runs at once; more wait in line (protects rate limits). */
     AI_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(8),
 
+    // ── Notifications worker (ADR-0017) ──
+    /**
+     * Whether this process runs the background jobs: outbox delivery (emails, push, search
+     * indexing), sweepers and payouts. True for a single-task deployment; false on the API once
+     * the notifications worker (worker-main.ts) runs them.
+     */
+    BACKGROUND_JOBS: booleanString.default(true),
+    /** Health endpoint port of the notifications worker. */
+    WORKER_PORT: z.coerce.number().int().positive().default(4300),
+
     // ── AI layer (ADR-0009) ──
     /** "local" works offline with no key (development, CI, demo); "voyage" calls Voyage AI. */
     EMBEDDINGS_DRIVER: z.enum(['local', 'voyage']).default('local'),

@@ -98,6 +98,7 @@ module "platform" {
     admin      = { cpu = 256, memory = 512, desired_count = 1, max_count = 1 }
     search     = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
     ai         = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
+    worker     = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
   }
   app_config = merge({
     TAX_RATES_BPS     = "MD:600"

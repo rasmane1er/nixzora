@@ -139,6 +139,10 @@ run "staging" {
     condition     = !contains(output.secret_names.api, "ANTHROPIC_API_KEY") && contains(output.secret_names.ai, "ANTHROPIC_API_KEY")
     error_message = "only the AI service may hold the model provider keys."
   }
+  assert {
+    condition     = length(aws_ecs_service.worker) == 1 && output.api_environment["BACKGROUND_JOBS"] == "false"
+    error_message = "with the notifications worker, the API must leave background jobs to it."
+  }
 }
 
 run "search_in_process" {
@@ -159,6 +163,10 @@ run "search_in_process" {
   assert {
     condition     = length(aws_ecs_service.ai) == 0 && contains(output.secret_names.api, "ANTHROPIC_API_KEY")
     error_message = "without an AI service, the API keeps the provider keys."
+  }
+  assert {
+    condition     = length(aws_ecs_service.worker) == 0 && !contains(keys(output.api_environment), "BACKGROUND_JOBS")
+    error_message = "without a worker entry, the API runs the background jobs itself."
   }
 }
 

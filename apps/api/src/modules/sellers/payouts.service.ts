@@ -18,6 +18,7 @@ import { type ActorContext } from '../identity/guards/actor.decorator';
 import { MailService } from '../notifications/mail.service';
 import { PAYOUT_GATEWAY, type PayoutGateway } from '../payments/payout-gateway';
 import { SellersService } from './sellers.service';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -50,10 +51,7 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit(): void {
-    if (
-      this.config.get('NODE_ENV', { infer: true }) === 'test' ||
-      !this.config.get('PAYOUTS_AUTO', { infer: true })
-    ) {
+    if (!runsBackgroundJobs(this.config) || !this.config.get('PAYOUTS_AUTO', { infer: true })) {
       return;
     }
     // Checked hourly; each store is paid at most once a day.

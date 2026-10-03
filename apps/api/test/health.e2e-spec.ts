@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { HealthResponseSchema } from '@nixzora/validation';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { OutboxService } from '../src/modules/outbox/outbox.service';
 import { configureApp } from '../src/app.setup';
 
 // Requires PostgreSQL and Redis (pnpm db:up locally; service containers in CI).
@@ -30,6 +31,15 @@ describe('GET /api/v1/health (e2e)', () => {
     expect(body.status).toBe('ok');
     expect(body.checks.database.status).toBe('up');
     expect(body.checks.redis.status).toBe('up');
+  });
+
+  it('reports the background jobs: last outbox run and what is waiting', async () => {
+    await app.get(OutboxService).drain();
+    const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+    const { jobs } = HealthResponseSchema.parse(res.body);
+    expect(jobs).toMatchObject({ mode: 'inline', status: 'up' });
+    expect(jobs?.failed).toBeGreaterThanOrEqual(0);
+    expect(Date.now() - Date.parse(jobs!.lastRunAt!)).toBeLessThan(10_000);
   });
 
   it('sends security headers from helmet', async () => {

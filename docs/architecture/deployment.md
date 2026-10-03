@@ -45,6 +45,9 @@ flowchart LR
   search inside the API again.
 - The AI service ([ADR-0016](../adr/0016-ai-service.md)) is the only task holding the model
   provider keys (`dist/ai-main.js`, `ai.<env>.internal:4200`).
+- The notifications worker ([ADR-0017](../adr/0017-notifications-worker.md)) delivers the
+  outbox (emails, push, indexing) and runs the sweepers and payouts (`dist/worker-main.js`, no
+  inbound traffic); the API then runs with `BACKGROUND_JOBS=false`.
 - Release pipeline: `.github/workflows/deploy.yml` → `deploy-environment.yml` →
   `scripts/deploy/{migrate,roll-out,smoke-test}.sh`.
 - Runbooks: [first deploy](../runbooks/first-deploy.md) · [deploy and roll back](../runbooks/deploy-and-rollback.md) ·

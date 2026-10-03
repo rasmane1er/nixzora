@@ -9,6 +9,7 @@ import { type ProductCard, type Recommendations, type RelatedProducts } from '@n
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogQueryService } from '../catalog/catalog-query.service';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 /** Who is shopping: a signed-in user, a guest's random visitor id, or both (just signed in). */
 export type Shopper = { userId?: string; visitorId?: string };
@@ -45,7 +46,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     this.sweeper = setInterval(() => void this.purgeOldEvents(), SWEEP_MS);
     this.sweeper.unref();
   }

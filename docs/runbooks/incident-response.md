@@ -20,6 +20,19 @@
 | `redis-memory`  | Carts are kept 30 days: consider a larger node or shorter TTL.                                |
 | `waf-blocks`    | Possible attack or a bot. WAF console → sampled requests. Tighten `waf_rate_limit` if needed. |
 
+## Emails or push notifications not arriving
+
+1. `GET /api/v1/health` → `jobs`: `status` "down" means the outbox has not been drained for a
+   minute; `backlog` is what is waiting; `failed` counts events that gave up after 10 tries.
+   Ops Center shows the same on its dashboard.
+2. Worker logs: CloudWatch group `/nixzora/<env>/worker`. A crash-looping worker usually means a
+   missing secret or an unreachable database, like the API.
+3. Nothing is lost while the worker is down: events wait in `outbox_events` and go out when it
+   is back. To get them out sooner, remove `worker` from `services` and apply: the API runs the
+   jobs itself again.
+4. Failed events: `SELECT type, last_error FROM outbox_events WHERE published_at IS NULL AND
+attempts >= 10`. Fix the cause, then `UPDATE … SET attempts = 0` to retry them.
+
 ## Payments
 
 Stripe dashboard → Developers → Webhooks shows failed deliveries; Stripe retries for 3 days and

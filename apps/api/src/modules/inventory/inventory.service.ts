@@ -15,6 +15,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
+import { runsBackgroundJobs } from '../../common/background-jobs';
 
 export type ReservationRequest = { variantId: string; quantity: number };
 
@@ -53,7 +54,7 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    if (!runsBackgroundJobs(this.config)) return;
     this.sweeper = setInterval(() => void this.sweepExpired(), SWEEP_INTERVAL_MS);
     this.sweeper.unref();
   }
