@@ -107,6 +107,10 @@ export default function RootLayout() {
                   name="register"
                   options={{ title: 'Create account', presentation: 'modal' }}
                 />
+                <Stack.Screen
+                  name="forgot-password"
+                  options={{ title: 'Forgot password', presentation: 'modal' }}
+                />
                 <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
                 <Stack.Screen name="stripe-redirect" options={{ headerShown: false }} />
               </Stack>

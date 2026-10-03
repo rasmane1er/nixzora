@@ -98,7 +98,14 @@ export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
 
   // Expo Go runs under its own bundle id, which Google and Apple reject for NIXZORA: the buttons
   // only work in a development or store build (npx expo run:ios / EAS).
-  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return null;
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    return __DEV__ ? (
+      <Text muted variant="small" style={{ textAlign: 'center' }}>
+        Sign in with Apple and Google appear in the NIXZORA app build (npx expo run:ios), not in
+        Expo Go.
+      </Text>
+    ) : null;
+  }
   if (!showApple && !googleClientId) return null;
 
   return (

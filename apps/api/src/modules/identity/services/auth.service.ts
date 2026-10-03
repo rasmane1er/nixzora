@@ -68,7 +68,7 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) {
       // Tell the real owner by email instead of confirming the account exists in the response.
-      await this.mail.send({
+      await this.mail.trySend({
         to: input.email,
         subject: 'Someone tried to create a NIXZORA account with your email',
         text: `If this was you, sign in or reset your password at ${this.webAppUrl}/account/forgot-password.`,
@@ -355,7 +355,7 @@ export class AuthService {
       EMAIL_VERIFICATION_TTL_MS,
     );
     const link = `${this.webAppUrl}/account/verify-email?token=${token}`;
-    await this.mail.send({
+    await this.mail.trySend({
       to: email,
       subject: 'Confirm your email for NIXZORA',
       text: `Confirm your email address: ${link}\nThis link expires in 24 hours.`,
@@ -396,7 +396,7 @@ export class AuthService {
       PASSWORD_RESET_TTL_MS,
     );
     const link = `${this.webAppUrl}/account/reset-password?token=${token}`;
-    await this.mail.send({
+    await this.mail.trySend({
       to: user.email,
       subject: 'Reset your NIXZORA password',
       text: `Reset your password: ${link}\nThis link expires in 30 minutes. If you did not ask for this, ignore this email.`,

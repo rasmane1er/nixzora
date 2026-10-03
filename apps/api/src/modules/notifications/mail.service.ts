@@ -31,6 +31,22 @@ export class MailService {
     }
   }
 
+  /**
+   * Sends, but never throws: for account emails (verification, password reset) where a delivery
+   * problem must not fail sign-up or reveal anything. Returns whether the provider accepted it.
+   */
+  async trySend(message: MailMessage): Promise<boolean> {
+    try {
+      await this.send(message);
+      return true;
+    } catch (error) {
+      // No address or body in the log: the template and the provider's reason are enough.
+      const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      this.logger.error(`Email "${message.template}" was not delivered (${reason.slice(0, 300)})`);
+      return false;
+    }
+  }
+
   async send(message: MailMessage): Promise<void> {
     this.recent.push(message);
     if (this.recent.length > 50) this.recent.shift();

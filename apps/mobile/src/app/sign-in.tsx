@@ -15,7 +15,6 @@ export default function SignInScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/account'));
 
@@ -42,17 +41,6 @@ export default function SignInScreen() {
       setError(errorMessage(e));
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function forgot() {
-    setError(null);
-    if (!email.trim()) return setError('Enter your email first.');
-    try {
-      await api.auth.forgotPassword(email.trim());
-      setNotice('If that email has an account, a reset link is on its way.');
-    } catch (e) {
-      setError(errorMessage(e));
     }
   }
 
@@ -104,7 +92,6 @@ export default function SignInScreen() {
         </>
       )}
       {error ? <Banner tone="error">{error}</Banner> : null}
-      {notice ? <Banner tone="ok">{notice}</Banner> : null}
       <Button
         title={mfaToken ? 'Verify' : 'Sign in'}
         loading={busy}
@@ -112,7 +99,13 @@ export default function SignInScreen() {
       />
       {!mfaToken ? (
         <>
-          <Button title="Forgot password?" tone="ghost" onPress={() => void forgot()} />
+          <Button
+            title="Forgot password?"
+            tone="ghost"
+            onPress={() =>
+              router.push({ pathname: '/forgot-password', params: { email: email.trim() } })
+            }
+          />
           <Text muted style={{ textAlign: 'center' }}>
             New to NIXZORA?{' '}
             <Link
