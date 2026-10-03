@@ -79,7 +79,9 @@ export function CardAdd({
   }
   if (!variantId) {
     return (
-      <Link className="btn btn--secondary btn--sm card-add" href={`/p/${slug}`}
+      <Link
+        className="btn btn--secondary btn--sm card-add"
+        href={`/p/${slug}`}
         aria-label={t('chooseOptionsFor', { title })}
       >
         {t('chooseOptions')}

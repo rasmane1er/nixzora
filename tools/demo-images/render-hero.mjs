@@ -21,7 +21,10 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 for (const file of (await readdir(join(dir, 'sprites'))).filter((f) => f.endsWith('.svg'))) {
   const svg = await readFile(join(dir, 'sprites', file), 'utf8');
   await page.setContent(`<body style="margin:0;background:transparent">${svg}</body>`);
-  await page.screenshot({ path: join(dir, 'sprites', file.replace('.svg', '.png')), omitBackground: true });
+  await page.screenshot({
+    path: join(dir, 'sprites', file.replace('.svg', '.png')),
+    omitBackground: true,
+  });
 }
 await browser.close();
 console.log('rendered backdrop and sprites');
