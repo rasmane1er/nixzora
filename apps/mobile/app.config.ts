@@ -44,7 +44,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'nixzora',
   owner,
   version: '1.0.0',
-  orientation: 'portrait',
+  // Phones are locked upright at start-up and tablets turn freely (src/lib/orientation.ts).
+  orientation: 'default',
   icon: './assets/icon.png',
   // Extra schemes for Google sign-in: Android returns to "<package>:/oauthredirect", iOS to the
   // iOS client's reversed id.
@@ -119,6 +120,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-image',
     'expo-web-browser',
+    ['expo-screen-orientation', { initialOrientation: 'DEFAULT' }],
     'expo-apple-authentication',
     ['expo-secure-store', { faceIDPermission: 'Use Face ID to unlock your NIXZORA account.' }],
     [

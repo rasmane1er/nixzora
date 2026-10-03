@@ -137,29 +137,31 @@ function Answer({
       ) : null}
       {response.comparison && response.picks.length > 1 ? (
         <div className="compare">
-          <table className="plain">
-            <caption className="sr-only">Comparison of the picks</caption>
-            <thead>
-              <tr>
-                <th scope="col">Compare</th>
-                {response.picks.map((pick) => (
-                  <th key={pick.product.id} scope="col">
-                    {pick.product.title}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {response.comparison.rows.map((row) => (
-                <tr key={row.label}>
-                  <th scope="row">{row.label}</th>
-                  {row.values.map((value, i) => (
-                    <td key={i}>{value ?? '—'}</td>
+          <div className="table-scroll">
+            <table className="plain">
+              <caption className="sr-only">Comparison of the picks</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Compare</th>
+                  {response.picks.map((pick) => (
+                    <th key={pick.product.id} scope="col">
+                      {pick.product.title}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {response.comparison.rows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row">{row.label}</th>
+                    {row.values.map((value, i) => (
+                      <td key={i}>{value ?? '—'}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
       {response.suggestions.length ? (

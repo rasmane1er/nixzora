@@ -59,35 +59,37 @@ export default async function AccountPage() {
             No orders yet. <Link href="/search">Start shopping →</Link>
           </p>
         ) : (
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th className="num">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <Link href={`/orders/${order.number}`} className="mono">
-                      {order.number}
-                    </Link>
-                    <div className="muted" style={{ fontSize: 13 }}>
-                      {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
-                    </div>
-                  </td>
-                  <td>{date(order.placedAt ?? order.createdAt)}</td>
-                  <td>
-                    <StatusPill status={order.status} />
-                  </td>
-                  <td className="num">{formatMoney(order.totalCents, order.currency)}</td>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th className="num">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr key={order.id}>
+                    <td>
+                      <Link href={`/orders/${order.number}`} className="mono">
+                        {order.number}
+                      </Link>
+                      <div className="muted" style={{ fontSize: 13 }}>
+                        {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
+                      </div>
+                    </td>
+                    <td>{date(order.placedAt ?? order.createdAt)}</td>
+                    <td>
+                      <StatusPill status={order.status} />
+                    </td>
+                    <td className="num">{formatMoney(order.totalCents, order.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

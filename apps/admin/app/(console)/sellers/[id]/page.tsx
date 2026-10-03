@@ -75,117 +75,123 @@ export default async function SellerPage({
           {seller.statusReason ? (
             <p className="banner banner--error">{seller.statusReason}</p>
           ) : null}
-          <table>
-            <tbody>
-              <tr>
-                <th scope="row">Legal name</th>
-                <td>{seller.legalName}</td>
-              </tr>
-              <tr>
-                <th scope="row">Store page</th>
-                <td>
-                  {seller.status === 'ACTIVE' ? (
-                    <a
-                      href={`${STOREFRONT}/s/${seller.handle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      /s/{seller.handle}
-                    </a>
-                  ) : (
-                    `/s/${seller.handle}`
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">Contact</th>
-                <td>{seller.contactEmail}</td>
-              </tr>
-              <tr>
-                <th scope="row">Owner account</th>
-                <td>
-                  {seller.owner ? (
-                    <Link href={`/users/${seller.owner.id}`}>{seller.owner.email}</Link>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">Country</th>
-                <td>{seller.country}</td>
-              </tr>
-              <tr>
-                <th scope="row">Applied</th>
-                <td>{dateTime(seller.createdAt)}</td>
-              </tr>
-              <tr>
-                <th scope="row">Approved</th>
-                <td>{seller.approvedAt ? dateTime(seller.approvedAt) : '—'}</td>
-              </tr>
-              <tr>
-                <th scope="row">Listings</th>
-                <td>
-                  {seller.listings.active} live · {seller.listings.pendingReview} in review ·{' '}
-                  {seller.listings.draft} draft
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                <tr>
+                  <th scope="row">Legal name</th>
+                  <td>{seller.legalName}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Store page</th>
+                  <td>
+                    {seller.status === 'ACTIVE' ? (
+                      <a
+                        href={`${STOREFRONT}/s/${seller.handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        /s/{seller.handle}
+                      </a>
+                    ) : (
+                      `/s/${seller.handle}`
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Contact</th>
+                  <td>{seller.contactEmail}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Owner account</th>
+                  <td>
+                    {seller.owner ? (
+                      <Link href={`/users/${seller.owner.id}`}>{seller.owner.email}</Link>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Country</th>
+                  <td>{seller.country}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Applied</th>
+                  <td>{dateTime(seller.createdAt)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Approved</th>
+                  <td>{seller.approvedAt ? dateTime(seller.approvedAt) : '—'}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Listings</th>
+                  <td>
+                    {seller.listings.active} live · {seller.listings.pendingReview} in review ·{' '}
+                    {seller.listings.draft} draft
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           {seller.description ? <p className="muted">{seller.description}</p> : null}
         </section>
 
         <section className="card">
           <h2>Payout verification</h2>
-          <table>
-            <tbody>
-              <tr>
-                <th scope="row">Provider</th>
-                <td>
-                  {payouts.provider === 'FAKE'
-                    ? 'Test mode (no money moves)'
-                    : payouts.provider === 'STRIPE'
-                      ? 'Stripe Connect'
-                      : 'Not started'}
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">Details submitted</th>
-                <td>{payouts.detailsSubmitted ? 'Yes' : 'No'}</td>
-              </tr>
-              <tr>
-                <th scope="row">Payouts enabled</th>
-                <td>{payouts.payoutsEnabled ? 'Yes' : 'No'}</td>
-              </tr>
-              {payouts.requirementsDue.length ? (
+          <div className="table-wrap">
+            <table>
+              <tbody>
                 <tr>
-                  <th scope="row">Still needed</th>
-                  <td className="mono">{payouts.requirementsDue.join(', ')}</td>
+                  <th scope="row">Provider</th>
+                  <td>
+                    {payouts.provider === 'FAKE'
+                      ? 'Test mode (no money moves)'
+                      : payouts.provider === 'STRIPE'
+                        ? 'Stripe Connect'
+                        : 'Not started'}
+                  </td>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+                <tr>
+                  <th scope="row">Details submitted</th>
+                  <td>{payouts.detailsSubmitted ? 'Yes' : 'No'}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Payouts enabled</th>
+                  <td>{payouts.payoutsEnabled ? 'Yes' : 'No'}</td>
+                </tr>
+                {payouts.requirementsDue.length ? (
+                  <tr>
+                    <th scope="row">Still needed</th>
+                    <td className="mono">{payouts.requirementsDue.join(', ')}</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
           <h3>Earnings</h3>
-          <table>
-            <tbody>
-              <tr>
-                <th scope="row">Available</th>
-                <td>{money(balance.availableCents)}</td>
-              </tr>
-              <tr>
-                <th scope="row">On hold</th>
-                <td>{money(balance.onHoldCents)}</td>
-              </tr>
-              <tr>
-                <th scope="row">Waiting to ship</th>
-                <td>{money(balance.pendingCents)}</td>
-              </tr>
-              <tr>
-                <th scope="row">Lifetime net</th>
-                <td>{money(balance.lifetimeNetCents)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                <tr>
+                  <th scope="row">Available</th>
+                  <td>{money(balance.availableCents)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">On hold</th>
+                  <td>{money(balance.onHoldCents)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Waiting to ship</th>
+                  <td>{money(balance.pendingCents)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Lifetime net</th>
+                  <td>{money(balance.lifetimeNetCents)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           {balance.availableCents >= 1000 &&
           seller.status === 'ACTIVE' &&
           payouts.payoutsEnabled ? (
@@ -199,23 +205,25 @@ export default async function SellerPage({
           {payoutHistory.items.length ? (
             <>
               <h3>Recent payouts</h3>
-              <table>
-                <tbody>
-                  {payoutHistory.items.slice(0, 10).map((payout) => (
-                    <tr key={payout.id}>
-                      <td>{dateTime(payout.paidAt ?? payout.createdAt)}</td>
-                      <td>
-                        <StatusPill value={payout.status} />
-                        {payout.failureReason ? (
-                          <div className="muted">{payout.failureReason}</div>
-                        ) : null}
-                      </td>
-                      <td>{payout.automatic ? 'Daily run' : 'Staff'}</td>
-                      <td className="num">{money(payout.amountCents)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table>
+                  <tbody>
+                    {payoutHistory.items.slice(0, 10).map((payout) => (
+                      <tr key={payout.id}>
+                        <td>{dateTime(payout.paidAt ?? payout.createdAt)}</td>
+                        <td>
+                          <StatusPill value={payout.status} />
+                          {payout.failureReason ? (
+                            <div className="muted">{payout.failureReason}</div>
+                          ) : null}
+                        </td>
+                        <td>{payout.automatic ? 'Daily run' : 'Staff'}</td>
+                        <td className="num">{money(payout.amountCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           ) : null}
           {payouts.accountConnected ? (
@@ -322,18 +330,20 @@ export default async function SellerPage({
             items ({openReturns} open) · <Link href="/returns">Returns queue</Link>
           </p>
           {feedback.ratings.length ? (
-            <table>
-              <tbody>
-                {feedback.ratings.slice(0, 10).map((r) => (
-                  <tr key={r.id}>
-                    <td className="mono">{r.orderNumber}</td>
-                    <td aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</td>
-                    <td>{r.comment ?? <span className="muted">No comment</span>}</td>
-                    <td className="muted">{dateTime(r.updatedAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrap">
+              <table>
+                <tbody>
+                  {feedback.ratings.slice(0, 10).map((r) => (
+                    <tr key={r.id}>
+                      <td className="mono">{r.orderNumber}</td>
+                      <td aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</td>
+                      <td>{r.comment ?? <span className="muted">No comment</span>}</td>
+                      <td className="muted">{dateTime(r.updatedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : null}
         </section>
       </div>

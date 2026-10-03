@@ -77,7 +77,7 @@ export default async function SellerFeedbackPage() {
         {feedback.returns.length === 0 ? (
           <p className="muted">No returns of your items.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll">
             <table className="plain">
               <thead>
                 <tr>

@@ -63,24 +63,26 @@ export function ImportForm() {
                   : `${result.errors.length} things to fix`}{' '}
                 before importing. Nothing was saved.
               </p>
-              <table className="plain">
-                <thead>
-                  <tr>
-                    <th>Row</th>
-                    <th>Column</th>
-                    <th>Problem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.errors.slice(0, 200).map((issue, i) => (
-                    <tr key={i}>
-                      <td className="mono">{issue.row}</td>
-                      <td className="mono">{issue.column ?? '—'}</td>
-                      <td>{issue.message}</td>
+              <div className="table-scroll">
+                <table className="plain">
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Column</th>
+                      <th>Problem</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {result.errors.slice(0, 200).map((issue, i) => (
+                      <tr key={i}>
+                        <td className="mono">{issue.row}</td>
+                        <td className="mono">{issue.column ?? '—'}</td>
+                        <td>{issue.message}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           ) : nothing ? (
             <p className="banner banner--info">

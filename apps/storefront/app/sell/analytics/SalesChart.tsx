@@ -151,24 +151,26 @@ export function SalesChart({ daily }: { daily: Day[] }) {
       </div>
       <details className="sales-chart__table">
         <summary>Show as a table</summary>
-        <table className="plain">
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th className="num">Orders</th>
-              <th className="num">Sales</th>
-            </tr>
-          </thead>
-          <tbody>
-            {daily.map((day) => (
-              <tr key={day.date}>
-                <td>{shortDate(day.date)}</td>
-                <td className="num">{day.orders}</td>
-                <td className="num">{dollars(day.salesCents)}</td>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th className="num">Orders</th>
+                <th className="num">Sales</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {daily.map((day) => (
+                <tr key={day.date}>
+                  <td>{shortDate(day.date)}</td>
+                  <td className="num">{day.orders}</td>
+                  <td className="num">{dollars(day.salesCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </details>
     </figure>
   );

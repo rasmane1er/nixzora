@@ -67,31 +67,33 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
         {payouts.items.length === 0 ? (
           <p className="muted">No payouts yet.</p>
         ) : (
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th className="num">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payouts.items.map((payout) => (
-                <tr key={payout.id}>
-                  <td>{day(payout.paidAt ?? payout.createdAt)}</td>
-                  <td>
-                    {PAYOUT_LABEL[payout.status]}
-                    {payout.status === 'FAILED' ? (
-                      <div className="muted" style={{ fontSize: 13 }}>
-                        Returned to your balance. Check your payout details in Store settings.
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="num">{money(payout.amountCents)}</td>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th className="num">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payouts.items.map((payout) => (
+                  <tr key={payout.id}>
+                    <td>{day(payout.paidAt ?? payout.createdAt)}</td>
+                    <td>
+                      {PAYOUT_LABEL[payout.status]}
+                      {payout.status === 'FAILED' ? (
+                        <div className="muted" style={{ fontSize: 13 }}>
+                          Returned to your balance. Check your payout details in Store settings.
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="num">{money(payout.amountCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
@@ -100,32 +102,34 @@ export default async function EarningsPage({ searchParams }: { searchParams: Sea
         {ledger.items.length === 0 ? (
           <p className="muted">Nothing yet. Ship your first order to start earning.</p>
         ) : (
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Activity</th>
-                <th>Available</th>
-                <th className="num">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.items.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{day(entry.createdAt)}</td>
-                  <td>
-                    <strong>{TYPE_LABEL[entry.type]}</strong>{' '}
-                    <span className="muted">{entry.description}</span>
-                  </td>
-                  <td>{isFuture(entry.availableAt) ? day(entry.availableAt) : 'Now'}</td>
-                  <td className={`num ${entry.amountCents < 0 ? 'neg' : ''}`}>
-                    {entry.amountCents > 0 ? '+' : ''}
-                    {money(entry.amountCents)}
-                  </td>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activity</th>
+                  <th>Available</th>
+                  <th className="num">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ledger.items.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{day(entry.createdAt)}</td>
+                    <td>
+                      <strong>{TYPE_LABEL[entry.type]}</strong>{' '}
+                      <span className="muted">{entry.description}</span>
+                    </td>
+                    <td>{isFuture(entry.availableAt) ? day(entry.availableAt) : 'Now'}</td>
+                    <td className={`num ${entry.amountCents < 0 ? 'neg' : ''}`}>
+                      {entry.amountCents > 0 ? '+' : ''}
+                      {money(entry.amountCents)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
       {ledger.totalPages > 1 ? (

@@ -1,10 +1,14 @@
 import type { ProductCard as Card } from '@nixzora/validation';
 import { type ReactElement } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import { useLayout } from '@/lib/layout';
 import { space, usePalette } from '@/lib/theme';
 import { ProductCard } from './ProductCard';
 
-/** Two-column product list with pull-to-refresh and endless scrolling. */
+/**
+ * Product list with pull-to-refresh and endless scrolling: two columns on phones, up to five on
+ * a large tablet in landscape.
+ */
 export function ProductGrid({
   products,
   header,
@@ -23,11 +27,15 @@ export function ProductGrid({
   onRefresh?: () => void;
 }) {
   const p = usePalette();
+  const { width, columns } = useLayout();
+  const cardWidth = (width - space.lg * 2 - space.md * (columns - 1)) / columns;
   return (
     <FlatList
+      // FlatList cannot change its column count in place: remount when the screen size does.
+      key={columns}
       data={products}
       keyExtractor={(item) => item.id}
-      numColumns={2}
+      numColumns={columns}
       style={{ backgroundColor: p.bg }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
@@ -43,14 +51,9 @@ export function ProductGrid({
       ListFooterComponent={
         loadingMore ? <ActivityIndicator style={{ marginVertical: space.lg }} /> : null
       }
-      renderItem={({ item, index }) => (
-        // Keep a lone last card at half width.
-        <View
-          style={{
-            flex: 1,
-            maxWidth: products.length % 2 && index === products.length - 1 ? '50%' : undefined,
-          }}
-        >
+      renderItem={({ item }) => (
+        // A fixed width keeps cards in a short last row the same size as the rest.
+        <View style={{ width: cardWidth }}>
           <ProductCard product={item} />
         </View>
       )}

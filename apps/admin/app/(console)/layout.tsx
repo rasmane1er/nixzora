@@ -1,5 +1,6 @@
 import { Logo } from '@nixzora/ui';
 import { Nav, type NavItem } from '@/components/Nav';
+import { SideMenu } from '@/components/SideMenu';
 import { SubmitButton } from '@/components/SubmitButton';
 import { can, currentStaff } from '@/lib/auth';
 import { signOut } from '../login/actions';
@@ -33,18 +34,20 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
     <div className="shell">
       <aside className="side">
         <Logo size={32} />
-        <div>
-          <p className="side__label">Ops Center</p>
-          <Nav items={items} />
-        </div>
-        <div className="side__foot">
-          <span className="env">{env}</span>
-          <span title={me.email}>{me.email}</span>
-          <span className="muted">{me.roles.join(', ')}</span>
-          <form action={signOut}>
-            <SubmitButton tone="secondary">Sign out</SubmitButton>
-          </form>
-        </div>
+        <SideMenu>
+          <div>
+            <p className="side__label">Ops Center</p>
+            <Nav items={items} />
+          </div>
+          <div className="side__foot">
+            <span className="env">{env}</span>
+            <span title={me.email}>{me.email}</span>
+            <span className="muted">{me.roles.join(', ')}</span>
+            <form action={signOut}>
+              <SubmitButton tone="secondary">Sign out</SubmitButton>
+            </form>
+          </div>
+        </SideMenu>
       </aside>
       <main className="main">{children}</main>
     </div>

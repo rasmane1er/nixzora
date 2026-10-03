@@ -71,25 +71,27 @@ export default async function UserPage({
           <p className="muted">
             Staff roles unlock the Ops Center. Every change is recorded in the audit log.
           </p>
-          <table>
-            <tbody>
-              {user.roles.map((key) => (
-                <tr key={key}>
-                  <td>{ROLE_LABELS[key] ?? key}</td>
-                  <td className="num">
-                    {can(me, 'roles.manage') && !(self && key === 'admin') ? (
-                      <ActionButton
-                        action={revokeRole}
-                        label="Remove"
-                        tone="danger"
-                        fields={{ id: user.id, roleKey: key }}
-                      />
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                {user.roles.map((key) => (
+                  <tr key={key}>
+                    <td>{ROLE_LABELS[key] ?? key}</td>
+                    <td className="num">
+                      {can(me, 'roles.manage') && !(self && key === 'admin') ? (
+                        <ActionButton
+                          action={revokeRole}
+                          label="Remove"
+                          tone="danger"
+                          fields={{ id: user.id, roleKey: key }}
+                        />
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {can(me, 'roles.manage') && missing.length > 0 ? (
             <form action={grantRole} className="inline-form" style={{ marginTop: 16 }}>
               <input type="hidden" name="id" value={user.id} />
@@ -154,31 +156,33 @@ export default async function UserPage({
             {orders.length === 0 ? (
               <p className="muted">No orders yet.</p>
             ) : (
-              <table>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td>
-                        <Link className="mono" href={`/orders/${order.id}`}>
-                          {order.number}
-                        </Link>
-                      </td>
-                      <td>{dateTime(order.createdAt)}</td>
-                      <td>
-                        <StatusPill value={order.status} />
-                      </td>
-                      <td className="num">
-                        {money(order.totalCents, order.currency)}
-                        {order.refundedCents ? (
-                          <div className="muted">
-                            −{money(order.refundedCents, order.currency)} refunded
-                          </div>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id}>
+                        <td>
+                          <Link className="mono" href={`/orders/${order.id}`}>
+                            {order.number}
+                          </Link>
+                        </td>
+                        <td>{dateTime(order.createdAt)}</td>
+                        <td>
+                          <StatusPill value={order.status} />
+                        </td>
+                        <td className="num">
+                          {money(order.totalCents, order.currency)}
+                          {order.refundedCents ? (
+                            <div className="muted">
+                              −{money(order.refundedCents, order.currency)} refunded
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
         ) : null}

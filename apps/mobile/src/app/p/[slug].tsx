@@ -30,6 +30,7 @@ import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
 import { attributeLabel } from '@/lib/format';
+import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
@@ -46,7 +47,7 @@ function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' 
  * Product photos: swipe through them, tap a thumbnail to jump, or tap a photo to see it full
  * screen (swipe there too). A counter shows where you are, however many photos there are.
  */
-function Gallery({ product }: { product: ProductDetail }) {
+function Gallery({ product, size }: { product: ProductDetail; size: number }) {
   const p = usePalette();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -54,7 +55,6 @@ function Gallery({ product }: { product: ProductDetail }) {
   const [full, setFull] = useState<number | null>(null);
   const pager = useRef<ScrollView>(null);
   const thumbs = useRef<ScrollView>(null);
-  const size = Math.min(width, 640);
   const photos = product.images;
 
   const show = (to: number, animated = true) => {
@@ -211,6 +211,11 @@ function Gallery({ product }: { product: ProductDetail }) {
 
 export default function ProductScreen() {
   const p = usePalette();
+  const layout = useLayout();
+  // Side by side, the photos take a bit over half of the page (up to 760pt).
+  const galleryWidth = layout.wide
+    ? Math.min(760, Math.round((Math.min(layout.width, 1400) - space.xl * 3) * 0.55))
+    : Math.min(layout.width, READABLE_WIDTH);
   const { slug, variant: variantParam } = useLocalSearchParams<{
     slug: string;
     variant?: string;
@@ -330,172 +335,177 @@ export default function ProductScreen() {
           ),
         }}
       />
-      <Screen contentContainerStyle={{ padding: 0, gap: 0 }}>
-        <Gallery product={item} />
-        <View style={{ padding: space.lg, gap: space.lg }}>
-          <View style={{ gap: space.xs }}>
-            {item.brand ? (
-              <Text variant="label" muted>
-                {item.brand.name}
-              </Text>
-            ) : null}
-            <Text variant="title">{item.title}</Text>
-            <Stars average={item.rating.average} count={item.rating.count} />
-            <Text variant="small" muted>
-              Sold by{' '}
-              {item.seller ? (
-                <Text
-                  variant="small"
-                  style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
-                  accessibilityRole="link"
-                  onPress={() =>
-                    void WebBrowser.openBrowserAsync(`${WEB_URL}/s/${item.seller!.handle}`)
-                  }
-                >
-                  {item.seller.displayName}
-                </Text>
-              ) : (
-                <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
-                  NIXZORA
-                </Text>
-              )}
-              {item.seller?.rating.count && item.seller.rating.average !== null
-                ? ` · ★ ${item.seller.rating.average.toFixed(1)} seller rating (${item.seller.rating.count})`
-                : ''}
-            </Text>
+      <Screen wide contentContainerStyle={{ padding: 0, gap: 0 }}>
+        {/* Tablets: photos beside the details. Phones: photos on top, at a readable width. */}
+        <View style={layout.wide ? styles.panes : styles.single}>
+          <View style={layout.wide ? { width: galleryWidth } : undefined}>
+            <Gallery product={item} size={galleryWidth} />
           </View>
-
-          {variant ? (
-            <Price
-              cents={variant.priceCents}
-              compareAtCents={variant.compareAtCents}
-              currency={variant.currency}
-              size="lg"
-            />
-          ) : null}
-
-          {sellable.length > 1 ? (
-            <View style={{ gap: space.sm }}>
-              <Text variant="label" muted>
-                Choose
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                {sellable.map((v) => {
-                  const active = v.id === variant?.id;
-                  const out = v.available <= 0;
-                  return (
-                    <Pressable
-                      key={v.id}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${v.title}${out ? ', sold out' : ''}`}
-                      onPress={() => {
-                        setChosen(v.id);
-                        setQuantity(1);
-                        setAdded(false);
-                      }}
-                      style={[
-                        styles.option,
-                        {
-                          borderColor: active ? p.fg : p.line,
-                          backgroundColor: active ? p.card : 'transparent',
-                          opacity: out ? 0.5 : 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        variant="small"
-                        style={{
-                          fontFamily: active ? fonts.bodyBold : fonts.body,
-                          textDecorationLine: out ? 'line-through' : 'none',
-                        }}
-                      >
-                        {v.title}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ) : null}
-
-          <Text variant="small" tone={stock.tone}>
-            {stock.text}
-          </Text>
-
-          {canBuy ? (
-            <Row style={{ gap: space.lg }}>
-              <QuantityStepper
-                value={quantity}
-                max={variant.available}
-                onChange={(next) => setQuantity(Math.max(1, next))}
-              />
-              <Button
-                title="Add to cart"
-                style={{ flex: 1 }}
-                loading={add.isPending}
-                onPress={onAdd}
-              />
-            </Row>
-          ) : null}
-          {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
-          {added ? (
-            <Banner tone="ok">
-              Added to your cart.{' '}
-              <Link
-                href="/cart"
-                style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
-              >
-                View cart
-              </Link>
-            </Banner>
-          ) : null}
-
-          <Divider />
-          <View style={{ gap: space.sm }}>
-            <Text variant="heading">About this item</Text>
-            <Text>{item.description}</Text>
-          </View>
-
-          {specs.length ? (
-            <Card style={{ gap: 0, paddingVertical: space.sm }}>
-              {specs.map(([key, value], i) => (
-                <Row
-                  key={key}
-                  style={{
-                    justifyContent: 'space-between',
-                    paddingVertical: space.sm,
-                    borderTopWidth: i ? StyleSheet.hairlineWidth : 0,
-                    borderColor: p.line,
-                  }}
-                >
-                  <Text variant="small" muted>
-                    {attributeLabel(key)}
-                  </Text>
+          <View style={[{ padding: space.lg, gap: space.lg }, layout.wide && styles.detailsPane]}>
+            <View style={{ gap: space.xs }}>
+              {item.brand ? (
+                <Text variant="label" muted>
+                  {item.brand.name}
+                </Text>
+              ) : null}
+              <Text variant="title">{item.title}</Text>
+              <Stars average={item.rating.average} count={item.rating.count} />
+              <Text variant="small" muted>
+                Sold by{' '}
+                {item.seller ? (
                   <Text
                     variant="small"
-                    style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, textAlign: 'right' }}
+                    style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
+                    accessibilityRole="link"
+                    onPress={() =>
+                      void WebBrowser.openBrowserAsync(`${WEB_URL}/s/${item.seller!.handle}`)
+                    }
                   >
-                    {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                    {item.seller.displayName}
                   </Text>
-                </Row>
-              ))}
-            </Card>
-          ) : null}
-          {variant ? (
-            <Text variant="mono" muted>
-              SKU {variant.sku}
+                ) : (
+                  <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
+                    NIXZORA
+                  </Text>
+                )}
+                {item.seller?.rating.count && item.seller.rating.average !== null
+                  ? ` · ★ ${item.seller.rating.average.toFixed(1)} seller rating (${item.seller.rating.count})`
+                  : ''}
+              </Text>
+            </View>
+
+            {variant ? (
+              <Price
+                cents={variant.priceCents}
+                compareAtCents={variant.compareAtCents}
+                currency={variant.currency}
+                size="lg"
+              />
+            ) : null}
+
+            {sellable.length > 1 ? (
+              <View style={{ gap: space.sm }}>
+                <Text variant="label" muted>
+                  Choose
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                  {sellable.map((v) => {
+                    const active = v.id === variant?.id;
+                    const out = v.available <= 0;
+                    return (
+                      <Pressable
+                        key={v.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`${v.title}${out ? ', sold out' : ''}`}
+                        onPress={() => {
+                          setChosen(v.id);
+                          setQuantity(1);
+                          setAdded(false);
+                        }}
+                        style={[
+                          styles.option,
+                          {
+                            borderColor: active ? p.fg : p.line,
+                            backgroundColor: active ? p.card : 'transparent',
+                            opacity: out ? 0.5 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          variant="small"
+                          style={{
+                            fontFamily: active ? fonts.bodyBold : fonts.body,
+                            textDecorationLine: out ? 'line-through' : 'none',
+                          }}
+                        >
+                          {v.title}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            <Text variant="small" tone={stock.tone}>
+              {stock.text}
             </Text>
-          ) : null}
 
-          {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
+            {canBuy ? (
+              <Row style={{ gap: space.lg }}>
+                <QuantityStepper
+                  value={quantity}
+                  max={variant.available}
+                  onChange={(next) => setQuantity(Math.max(1, next))}
+                />
+                <Button
+                  title="Add to cart"
+                  style={{ flex: 1 }}
+                  loading={add.isPending}
+                  onPress={onAdd}
+                />
+              </Row>
+            ) : null}
+            {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
+            {added ? (
+              <Banner tone="ok">
+                Added to your cart.{' '}
+                <Link
+                  href="/cart"
+                  style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
+                >
+                  View cart
+                </Link>
+              </Banner>
+            ) : null}
 
-          <ProductRail
-            title="Often bought together"
-            products={related.data?.boughtTogether ?? []}
-          />
-          <ProductRail title="Similar products" products={related.data?.similar ?? []} />
-          <ProductRail title="Customers also viewed" products={related.data?.alsoViewed ?? []} />
+            <Divider />
+            <View style={{ gap: space.sm }}>
+              <Text variant="heading">About this item</Text>
+              <Text>{item.description}</Text>
+            </View>
+
+            {specs.length ? (
+              <Card style={{ gap: 0, paddingVertical: space.sm }}>
+                {specs.map(([key, value], i) => (
+                  <Row
+                    key={key}
+                    style={{
+                      justifyContent: 'space-between',
+                      paddingVertical: space.sm,
+                      borderTopWidth: i ? StyleSheet.hairlineWidth : 0,
+                      borderColor: p.line,
+                    }}
+                  >
+                    <Text variant="small" muted>
+                      {attributeLabel(key)}
+                    </Text>
+                    <Text
+                      variant="small"
+                      style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, textAlign: 'right' }}
+                    >
+                      {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                    </Text>
+                  </Row>
+                ))}
+              </Card>
+            ) : null}
+            {variant ? (
+              <Text variant="mono" muted>
+                SKU {variant.sku}
+              </Text>
+            ) : null}
+
+            {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
+
+            <ProductRail
+              title="Often bought together"
+              products={related.data?.boughtTogether ?? []}
+            />
+            <ProductRail title="Similar products" products={related.data?.similar ?? []} />
+            <ProductRail title="Customers also viewed" products={related.data?.alsoViewed ?? []} />
+          </View>
         </View>
       </Screen>
     </>
@@ -504,6 +514,17 @@ export default function ProductScreen() {
 
 const styles = StyleSheet.create({
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
+  panes: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.xl,
+    padding: space.xl,
+    width: '100%',
+    maxWidth: 1400,
+    alignSelf: 'center',
+  },
+  single: { width: '100%', maxWidth: READABLE_WIDTH, alignSelf: 'center' },
+  detailsPane: { flex: 1, padding: 0 },
   counter: {
     position: 'absolute',
     right: space.md,

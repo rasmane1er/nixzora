@@ -39,6 +39,8 @@ h3 {
   font-family: var(--font-display), system-ui, sans-serif;
   line-height: 1.15;
   margin: 0;
+  /* Long store or product names wrap instead of widening the page on small phones. */
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 h1 {
@@ -81,6 +83,7 @@ code,
 }
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .eyebrow {
@@ -121,11 +124,14 @@ code,
 }
 .site-search {
   flex: 1;
+  min-width: 0;
   display: flex;
   max-width: 560px;
 }
 .site-search input {
   flex: 1;
+  min-width: 0;
+  width: 0; /* grows with flex; never forces the header wider on small phones */
   border-radius: 999px 0 0 999px;
   border-right: 0;
   padding-inline: 16px;
@@ -303,7 +309,7 @@ input[type='checkbox'] {
 .form-row {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
 }
 .field-error {
   color: var(--err-fg);
@@ -407,6 +413,7 @@ input[type='checkbox'] {
 }
 .section-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: end;
   gap: 16px;
@@ -415,7 +422,7 @@ input[type='checkbox'] {
 .tiles {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr));
 }
 .tile {
   background: var(--card);
@@ -437,7 +444,7 @@ input[type='checkbox'] {
 .promises {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }
 .promise {
   border-top: 3px solid var(--color-signal);
@@ -448,7 +455,7 @@ input[type='checkbox'] {
 .grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
 }
 .product-card {
   background: var(--card);
@@ -546,7 +553,7 @@ input[type='checkbox'] {
 }
 @media (max-width: 860px) {
   .listing {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .filters {
     position: static;
@@ -587,7 +594,7 @@ input[type='checkbox'] {
 }
 @media (max-width: 860px) {
   .pdp {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
 }
@@ -842,7 +849,7 @@ input[type='checkbox'] {
 }
 @media (max-width: 900px) {
   .cart {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .cart-line {
@@ -987,6 +994,11 @@ table.plain {
   width: 100%;
   border-collapse: collapse;
 }
+/* A wide table scrolls sideways inside its card instead of widening the page (phones). */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
 table.plain th,
 table.plain td {
   text-align: left;
@@ -1013,7 +1025,7 @@ table.plain th {
 }
 @media (max-width: 860px) {
   .two {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .auth {
@@ -1096,7 +1108,7 @@ table.plain th {
 }
 @media (max-width: 860px) {
   .reviews {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .histogram {
@@ -1176,6 +1188,7 @@ table.plain th {
 }
 .assistant {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   max-width: 1280px;
 }
@@ -1202,6 +1215,7 @@ table.plain th {
 }
 .assistant__form input {
   flex: 1;
+  min-width: 0;
   border: 0;
   background: transparent;
   font-size: 16px;
@@ -1272,7 +1286,7 @@ table.plain th {
 }
 .picks {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 14px;
 }
 .pick {
@@ -1364,6 +1378,8 @@ table.plain th {
   gap: 8px;
 }
 .suggestion {
+  max-width: 100%;
+  text-align: left;
   font: inherit;
   font-size: 14px;
   color: inherit;
@@ -1562,7 +1578,7 @@ table.plain th {
   margin: 0;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
 }
 .seller-steps li {
   display: grid;
@@ -1578,7 +1594,7 @@ table.plain th {
 .seller-stats {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
 }
 .seller-stats .card {
   display: grid;
@@ -1644,7 +1660,7 @@ table.plain th {
 .two-col-sell {
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   align-items: start;
 }
 .listing-cell {
@@ -1710,9 +1726,18 @@ table.plain th {
 }
 .facts {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px 16px;
   margin: 0;
+}
+@media (max-width: 480px) {
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .facts dd {
+    margin-bottom: 8px;
+  }
 }
 .facts dt {
   color: var(--muted);
@@ -1720,6 +1745,7 @@ table.plain th {
 }
 .facts dd {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .shipments {
   list-style: none;
@@ -1763,7 +1789,7 @@ td.neg {
   color: var(--err-fg);
 }
 .seller-stats--six {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
 }
 .delta {
   color: var(--muted);

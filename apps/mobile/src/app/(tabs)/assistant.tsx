@@ -19,6 +19,7 @@ import { Banner, Button, Card, Row, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { money } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
+import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
 type Turn =
@@ -244,6 +245,7 @@ function Answer({
 
 /** The AI shopping assistant. Answers are grounded in the live catalog (ADR-0009). */
 export default function AssistantScreen() {
+  const { width } = useLayout();
   const p = usePalette();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -285,7 +287,13 @@ export default function AssistantScreen() {
         <ScrollView
           ref={scroll}
           onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
-          contentContainerStyle={{ padding: space.lg, gap: space.lg }}
+          contentContainerStyle={{
+            padding: space.lg,
+            gap: space.lg,
+            width: '100%',
+            maxWidth: READABLE_WIDTH,
+            alignSelf: 'center',
+          }}
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ gap: space.xs }}>
@@ -336,6 +344,8 @@ export default function AssistantScreen() {
         <Row
           style={{
             margin: space.md,
+            width: Math.min(width - space.md * 2, READABLE_WIDTH - space.md * 2),
+            alignSelf: 'center',
             borderWidth: 1.5,
             borderColor: p.fg,
             borderRadius: radius,

@@ -81,27 +81,29 @@ export default async function CategoriesPage({ searchParams }: { searchParams: S
             {brands.length === 0 ? (
               <Empty>No brands yet.</Empty>
             ) : (
-              <table>
-                <tbody>
-                  {brands.map((brand) => (
-                    <tr key={brand.id}>
-                      <td>
-                        <form action={renameBrand} className="inline-form">
-                          <input type="hidden" name="id" value={brand.id} />
-                          <input
-                            name="name"
-                            defaultValue={brand.name}
-                            aria-label={`Name for ${brand.name}`}
-                            style={{ width: 180 }}
-                          />
-                          <SubmitButton tone="secondary">Rename</SubmitButton>
-                        </form>
-                      </td>
-                      <td className="mono muted">{brand.slug}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table>
+                  <tbody>
+                    {brands.map((brand) => (
+                      <tr key={brand.id}>
+                        <td>
+                          <form action={renameBrand} className="inline-form">
+                            <input type="hidden" name="id" value={brand.id} />
+                            <input
+                              name="name"
+                              defaultValue={brand.name}
+                              aria-label={`Name for ${brand.name}`}
+                              style={{ width: 180 }}
+                            />
+                            <SubmitButton tone="secondary">Rename</SubmitButton>
+                          </form>
+                        </td>
+                        <td className="mono muted">{brand.slug}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
         </div>

@@ -112,6 +112,21 @@ All three can be installed side by side. `app.config.ts` reads `APP_VARIANT`, `A
 `APPLE_MERCHANT_ID` and `EAS_PROJECT_ID`; the API and web URLs come from
 `EXPO_PUBLIC_API_URL` / `EXPO_PUBLIC_WEB_URL` (EAS environment variables per profile).
 
+## Screen sizes
+
+The app runs on every iPhone and Android phone, and on iPads and Android tablets
+(`supportsTablet`). `src/lib/layout.ts` gives screens their size class:
+
+- Product grids show 2 columns on phones, 3 from 560pt, 4 from 840pt and 5 from 1100pt.
+- From 840pt (iPad landscape, large tablets) the product page puts photos beside the details.
+- Text, forms, the cart and the assistant stay centred at a readable 760pt on wide screens.
+- Phones are locked upright at start-up; tablets turn freely, including Split View and Slide
+  Over on iPad (`src/lib/orientation.ts`, `expo-screen-orientation`).
+
+The storefront and Ops Center are responsive web apps checked at 320, 375, 768, 834, 1024, 1366
+and 1920px wide: no page scrolls sideways, wide tables scroll inside their card, and the Ops
+Center menu folds behind a Menu button below 860px.
+
 ## Tests
 
 - `pnpm --filter @nixzora/mobile test`: session and token rotation, scanner rules, formatting,

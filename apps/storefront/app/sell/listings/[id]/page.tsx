@@ -168,75 +168,77 @@ export default async function ListingPage({
 
       <section className="card stack">
         <h2>Options, prices and stock</h2>
-        <table className="plain">
-          <thead>
-            <tr>
-              <th>Option</th>
-              <th>Price</th>
-              <th className="num">Available</th>
-              <th>Add or remove stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            {product.variants.map((variant) => (
-              <tr key={variant.id}>
-                <td>
-                  <strong>{variant.title}</strong>
-                  <div className="muted mono" style={{ fontSize: 13 }}>
-                    {variant.sku}
-                    {variant.isActive ? '' : ' · hidden'}
-                  </div>
-                </td>
-                <td>
-                  <form action={updateVariant} className="inline-form">
-                    <input type="hidden" name="productId" value={product.id} />
-                    <input type="hidden" name="variantId" value={variant.id} />
-                    <input
-                      name="price"
-                      aria-label={`Price of ${variant.title}`}
-                      defaultValue={dollars(variant.priceCents)}
-                      inputMode="decimal"
-                      size={8}
-                    />
-                    <input
-                      name="compareAt"
-                      aria-label={`Was price of ${variant.title}`}
-                      placeholder="Was"
-                      defaultValue={dollars(variant.compareAtCents)}
-                      inputMode="decimal"
-                      size={8}
-                    />
-                    <label className="check" style={{ fontSize: 14 }}>
-                      <input type="checkbox" name="isActive" defaultChecked={variant.isActive} />
-                      On sale
-                    </label>
-                    <button className="btn btn--secondary btn--sm" type="submit">
-                      Save
-                    </button>
-                  </form>
-                </td>
-                <td className="num">{variant.available}</td>
-                <td>
-                  <form action={adjustStock} className="inline-form">
-                    <input type="hidden" name="productId" value={product.id} />
-                    <input type="hidden" name="variantId" value={variant.id} />
-                    <input
-                      name="delta"
-                      type="number"
-                      aria-label={`Units to add or remove for ${variant.title}`}
-                      placeholder="+10 or -2"
-                      required
-                      style={{ width: 110 }}
-                    />
-                    <button className="btn btn--secondary btn--sm" type="submit">
-                      Update
-                    </button>
-                  </form>
-                </td>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Price</th>
+                <th className="num">Available</th>
+                <th>Add or remove stock</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {product.variants.map((variant) => (
+                <tr key={variant.id}>
+                  <td>
+                    <strong>{variant.title}</strong>
+                    <div className="muted mono" style={{ fontSize: 13 }}>
+                      {variant.sku}
+                      {variant.isActive ? '' : ' · hidden'}
+                    </div>
+                  </td>
+                  <td>
+                    <form action={updateVariant} className="inline-form">
+                      <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="variantId" value={variant.id} />
+                      <input
+                        name="price"
+                        aria-label={`Price of ${variant.title}`}
+                        defaultValue={dollars(variant.priceCents)}
+                        inputMode="decimal"
+                        size={8}
+                      />
+                      <input
+                        name="compareAt"
+                        aria-label={`Was price of ${variant.title}`}
+                        placeholder="Was"
+                        defaultValue={dollars(variant.compareAtCents)}
+                        inputMode="decimal"
+                        size={8}
+                      />
+                      <label className="check" style={{ fontSize: 14 }}>
+                        <input type="checkbox" name="isActive" defaultChecked={variant.isActive} />
+                        On sale
+                      </label>
+                      <button className="btn btn--secondary btn--sm" type="submit">
+                        Save
+                      </button>
+                    </form>
+                  </td>
+                  <td className="num">{variant.available}</td>
+                  <td>
+                    <form action={adjustStock} className="inline-form">
+                      <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="variantId" value={variant.id} />
+                      <input
+                        name="delta"
+                        type="number"
+                        aria-label={`Units to add or remove for ${variant.title}`}
+                        placeholder="+10 or -2"
+                        required
+                        style={{ width: 110 }}
+                      />
+                      <button className="btn btn--secondary btn--sm" type="submit">
+                        Update
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="muted" style={{ fontSize: 14 }}>
           Lowest price shown to shoppers: {formatMoney(product.priceFromCents, product.currency)}
         </p>

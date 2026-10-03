@@ -71,23 +71,25 @@ export default async function SellerOrderPage({
       <div className="two-col-sell">
         <section className="card stack">
           <h2>Items to ship</h2>
-          <table className="plain">
-            <tbody>
-              {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <strong>
-                      {item.quantity} × {item.productTitle}
-                    </strong>
-                    <div className="muted mono" style={{ fontSize: 13 }}>
-                      {item.variantTitle} · {item.sku}
-                    </div>
-                  </td>
-                  <td className="num">{money(item.totalCents)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="plain">
+              <tbody>
+                {order.items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <strong>
+                        {item.quantity} × {item.productTitle}
+                      </strong>
+                      <div className="muted mono" style={{ fontSize: 13 }}>
+                        {item.variantTitle} · {item.sku}
+                      </div>
+                    </td>
+                    <td className="num">{money(item.totalCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <h3>Ship to</h3>
           <address style={{ fontStyle: 'normal' }}>
             {a.fullName}

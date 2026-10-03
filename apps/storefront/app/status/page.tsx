@@ -21,16 +21,18 @@ export default async function StatusPage() {
           {healthy ? 'All systems normal' : result.reachable ? 'Degraded' : 'API unreachable'}
         </p>
         {result.reachable ? (
-          <table className="plain">
-            <tbody>
-              <tr>
-                <td>API version</td>
-                <td>{result.health.version}</td>
-              </tr>
-              {row('PostgreSQL', result.health.checks.database)}
-              {row('Redis', result.health.checks.redis)}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="plain">
+              <tbody>
+                <tr>
+                  <td>API version</td>
+                  <td>{result.health.version}</td>
+                </tr>
+                {row('PostgreSQL', result.health.checks.database)}
+                {row('Redis', result.health.checks.redis)}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p className="muted">{result.error}</p>
         )}

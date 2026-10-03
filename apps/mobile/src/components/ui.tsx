@@ -15,6 +15,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { READABLE_WIDTH } from '@/lib/layout';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
 type Variant = 'display' | 'title' | 'heading' | 'body' | 'small' | 'label' | 'mono';
@@ -178,7 +179,16 @@ export function Banner({
   );
 }
 
-export function Screen({ children, contentContainerStyle, ...props }: ScrollViewProps) {
+/**
+ * A scrolling page. On tablets its content is centred at a readable width; pass `wide` for
+ * pages that lay out their own columns (the product page).
+ */
+export function Screen({
+  children,
+  contentContainerStyle,
+  wide,
+  ...props
+}: ScrollViewProps & { wide?: boolean }) {
   const p = usePalette();
   return (
     <ScrollView
@@ -186,7 +196,7 @@ export function Screen({ children, contentContainerStyle, ...props }: ScrollView
       contentInsetAdjustmentBehavior="automatic"
       {...props}
       style={[{ flex: 1, backgroundColor: p.bg }, props.style]}
-      contentContainerStyle={[styles.screen, contentContainerStyle]}
+      contentContainerStyle={[styles.screen, !wide && styles.readable, contentContainerStyle]}
     >
       {children}
     </ScrollView>
@@ -273,6 +283,7 @@ const styles = StyleSheet.create({
   },
   banner: { borderRadius: 10, borderWidth: 1, padding: space.md },
   screen: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl * 2 },
+  readable: { width: '100%', maxWidth: READABLE_WIDTH, alignSelf: 'center' },
   empty: {
     alignItems: 'center',
     gap: space.md,

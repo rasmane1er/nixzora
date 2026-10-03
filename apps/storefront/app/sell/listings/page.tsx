@@ -60,50 +60,52 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
         </div>
       ) : (
         <section className="card">
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Status</th>
-                <th className="num">Price</th>
-                <th className="num">Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.items.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <div className="listing-cell">
-                      {row.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={row.image.url} alt="" width={44} height={44} />
-                      ) : (
-                        <span className="listing-cell__blank" aria-hidden="true" />
-                      )}
-                      <div>
-                        <Link href={`/sell/listings/${row.id}`}>{row.title}</Link>
-                        <div className="muted" style={{ fontSize: 13 }}>
-                          {row.category.name}
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Status</th>
+                  <th className="num">Price</th>
+                  <th className="num">Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.items.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <div className="listing-cell">
+                        {row.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={row.image.url} alt="" width={44} height={44} />
+                        ) : (
+                          <span className="listing-cell__blank" aria-hidden="true" />
+                        )}
+                        <div>
+                          <Link href={`/sell/listings/${row.id}`}>{row.title}</Link>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            {row.category.name}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`pill pill--listing-${row.status.toLowerCase()}`}>
-                      {LISTING_STATUS_LABEL[row.status]}
-                    </span>
-                    {row.reviewNote ? (
-                      <div className="muted" style={{ fontSize: 13 }}>
-                        Changes requested
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="num">{formatMoney(row.priceFromCents, row.currency)}</td>
-                  <td className="num">{row.inStock ? 'In stock' : 'Out of stock'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td>
+                      <span className={`pill pill--listing-${row.status.toLowerCase()}`}>
+                        {LISTING_STATUS_LABEL[row.status]}
+                      </span>
+                      {row.reviewNote ? (
+                        <div className="muted" style={{ fontSize: 13 }}>
+                          Changes requested
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="num">{formatMoney(row.priceFromCents, row.currency)}</td>
+                    <td className="num">{row.inStock ? 'In stock' : 'Out of stock'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
       {result.totalPages > 1 ? (

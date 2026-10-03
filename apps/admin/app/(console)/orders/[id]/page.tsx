@@ -139,36 +139,38 @@ export default async function OrderPage({
                 Marketplace order: each seller ships its own items. The order is shipped when every
                 part has shipped.
               </p>
-              <table>
-                <tbody>
-                  {order.shipments.map((part) => (
-                    <tr key={part.seller?.handle ?? 'nixzora'}>
-                      <td>
-                        <strong>{part.seller?.displayName ?? 'NIXZORA'}</strong>
-                        <div className="muted">
-                          {order.items
-                            .filter((item) => part.itemIds.includes(item.id))
-                            .map((item) => `${item.quantity} × ${item.sku}`)
-                            .join(', ')}
-                        </div>
-                      </td>
-                      <td>
-                        <StatusPill value={part.status} />
-                      </td>
-                      <td>
-                        {part.tracking ? (
-                          <>
-                            {part.tracking.carrier}{' '}
-                            <span className="mono">{part.tracking.number}</span>
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table>
+                  <tbody>
+                    {order.shipments.map((part) => (
+                      <tr key={part.seller?.handle ?? 'nixzora'}>
+                        <td>
+                          <strong>{part.seller?.displayName ?? 'NIXZORA'}</strong>
+                          <div className="muted">
+                            {order.items
+                              .filter((item) => part.itemIds.includes(item.id))
+                              .map((item) => `${item.quantity} × ${item.sku}`)
+                              .join(', ')}
+                          </div>
+                        </td>
+                        <td>
+                          <StatusPill value={part.status} />
+                        </td>
+                        <td>
+                          {part.tracking ? (
+                            <>
+                              {part.tracking.carrier}{' '}
+                              <span className="mono">{part.tracking.number}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ) : null}
 

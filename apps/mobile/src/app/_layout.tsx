@@ -20,6 +20,7 @@ import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LockScreen } from '@/components/LockScreen';
 import { OfflineToast } from '@/components/OfflineToast';
+import { applyOrientationPolicy } from '@/lib/orientation';
 import { enablePush, useNotificationNavigation } from '@/lib/push';
 import { connectQueryToDevice, persistOptions, queryClient } from '@/lib/query';
 import { session, useSession } from '@/lib/session';
@@ -57,6 +58,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    void applyOrientationPolicy();
     void session.boot();
     return connectQueryToDevice();
   }, []);

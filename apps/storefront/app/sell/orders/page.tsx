@@ -53,41 +53,43 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
         </div>
       ) : (
         <section className="card">
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Items</th>
-                <th>Status</th>
-                <th className="num">You earn</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.items.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <Link href={`/sell/orders/${order.id}`} className="mono">
-                      {order.orderNumber}
-                    </Link>
-                    <div className="muted" style={{ fontSize: 13 }}>
-                      {date(order.placedAt)}
-                    </div>
-                  </td>
-                  <td>
-                    {order.items
-                      .map((item) => `${item.quantity} × ${item.productTitle}`)
-                      .join(', ')}
-                  </td>
-                  <td>
-                    <span className={`pill pill--seller-order-${order.status.toLowerCase()}`}>
-                      {SELLER_ORDER_LABEL[order.status]}
-                    </span>
-                  </td>
-                  <td className="num">{formatMoney(order.netCents, order.currency)}</td>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Items</th>
+                  <th>Status</th>
+                  <th className="num">You earn</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {result.items.map((order) => (
+                  <tr key={order.id}>
+                    <td>
+                      <Link href={`/sell/orders/${order.id}`} className="mono">
+                        {order.orderNumber}
+                      </Link>
+                      <div className="muted" style={{ fontSize: 13 }}>
+                        {date(order.placedAt)}
+                      </div>
+                    </td>
+                    <td>
+                      {order.items
+                        .map((item) => `${item.quantity} × ${item.productTitle}`)
+                        .join(', ')}
+                    </td>
+                    <td>
+                      <span className={`pill pill--seller-order-${order.status.toLowerCase()}`}>
+                        {SELLER_ORDER_LABEL[order.status]}
+                      </span>
+                    </td>
+                    <td className="num">{formatMoney(order.netCents, order.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
       {result.totalPages > 1 ? (

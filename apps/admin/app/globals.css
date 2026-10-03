@@ -116,7 +116,7 @@ code,
 /* ───── Shell ───── */
 .shell {
   display: grid;
-  grid-template-columns: 232px 1fr;
+  grid-template-columns: 232px minmax(0, 1fr);
   min-height: 100vh;
   /* Keeps the navy rail full height on long pages. */
   background: linear-gradient(to right, var(--side-bg) 232px, transparent 232px);
@@ -166,6 +166,15 @@ code,
   color: #fff;
   box-shadow: inset 3px 0 0 var(--color-signal);
 }
+.side__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+.side__toggle {
+  display: none;
+}
 .side__foot {
   margin-top: auto;
   font-size: 13px;
@@ -193,12 +202,40 @@ code,
 
 @media (max-width: 860px) {
   .shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     background: none;
   }
+  /* A slim top bar: logo and a Menu button; the links open below it. */
   .side {
-    position: static;
+    position: sticky;
+    z-index: 10;
     height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+  }
+  .side__toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid #3a4658;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .side__body {
+    flex-basis: 100%;
+    padding-bottom: 8px;
+  }
+  .side__body[data-open='false'] {
+    display: none;
   }
   .side nav {
     flex-direction: row;
@@ -245,7 +282,7 @@ code,
 .grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   margin-bottom: 20px;
 }
 .two-col {
@@ -255,8 +292,11 @@ code,
 }
 @media (max-width: 1100px) {
   .two-col {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+.two-col > * {
+  min-width: 0;
 }
 .stat {
   background: var(--card);
@@ -405,7 +445,7 @@ th.num {
 .form-row {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
 }
 label {
   display: grid;
@@ -543,7 +583,7 @@ input[type='checkbox'] {
 /* ───── Misc ───── */
 .thumbs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
   gap: 12px;
 }
 .thumb {
@@ -571,7 +611,7 @@ input[type='checkbox'] {
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
   gap: 12px;
 }
 .photo-order[aria-busy='true'] {

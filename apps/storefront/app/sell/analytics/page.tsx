@@ -116,28 +116,30 @@ export default async function SellerAnalyticsPage({
             <Link href="/sell/listings">Check your listings →</Link>
           </p>
         ) : (
-          <table className="plain">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th className="num">Views</th>
-                <th className="num">Units</th>
-                <th className="num">Sales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.topProducts.map((product) => (
-                <tr key={product.productId}>
-                  <td>
-                    <Link href={`/sell/listings/${product.productId}`}>{product.title}</Link>
-                  </td>
-                  <td className="num">{count(product.views)}</td>
-                  <td className="num">{count(product.units)}</td>
-                  <td className="num">{money(product.salesCents)}</td>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th className="num">Views</th>
+                  <th className="num">Units</th>
+                  <th className="num">Sales</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {stats.topProducts.map((product) => (
+                  <tr key={product.productId}>
+                    <td>
+                      <Link href={`/sell/listings/${product.productId}`}>{product.title}</Link>
+                    </td>
+                    <td className="num">{count(product.views)}</td>
+                    <td className="num">{count(product.units)}</td>
+                    <td className="num">{money(product.salesCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>
