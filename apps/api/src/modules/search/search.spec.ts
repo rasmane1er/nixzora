@@ -1,5 +1,5 @@
 import { buildSearchDocument, derivedTraits, specPhrases } from './search-documents';
-import { reciprocalRankFusion } from './search-index.service';
+import { reciprocalRankFusion } from './search-engine';
 
 describe('search documents', () => {
   const product = {

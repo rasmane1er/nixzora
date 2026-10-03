@@ -55,6 +55,9 @@ mock_provider "aws" {
   mock_resource "aws_iam_role" {
     defaults = { arn = "arn:aws:iam::123456789012:role/x" }
   }
+  mock_resource "aws_service_discovery_service" {
+    defaults = { arn = "arn:aws:servicediscovery:us-east-1:123456789012:service/srv-search" }
+  }
   mock_resource "aws_ecs_task_definition" {
     defaults = { arn = "arn:aws:ecs:us-east-1:123456789012:task-definition/x:1" }
   }
@@ -119,6 +122,31 @@ run "staging" {
   assert {
     condition     = length(aws_nat_gateway.main) == 1
     error_message = "staging uses one NAT gateway."
+  }
+  assert {
+    condition     = output.api_environment["SEARCH_SERVICE_URL"] == "http://search.nixzora-staging.internal:4100"
+    error_message = "the API must call the search service by its private name."
+  }
+  assert {
+    condition     = length(aws_ecs_service.search) == 1 && length(aws_lb_target_group.app) == 3
+    error_message = "the search service runs without a load balancer target."
+  }
+}
+
+run "search_in_process" {
+  command = plan
+  variables {
+    environment         = "staging"
+    deletion_protection = false
+    services = {
+      api        = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
+      storefront = { cpu = 256, memory = 512, desired_count = 1, max_count = 2 }
+      admin      = { cpu = 256, memory = 512, desired_count = 1, max_count = 1 }
+    }
+  }
+  assert {
+    condition     = length(aws_ecs_service.search) == 0 && !contains(keys(output.api_environment), "SEARCH_SERVICE_URL")
+    error_message = "without a search entry, the API searches in-process."
   }
 }
 

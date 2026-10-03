@@ -135,6 +135,7 @@ locals {
       PASSWORD_BREACH_CHECK = "true"
       TRUST_PROXY_HOPS      = "1"
     },
+    local.search_enabled ? { SEARCH_SERVICE_URL = local.search_url } : {},
     var.app_config,
   )
 

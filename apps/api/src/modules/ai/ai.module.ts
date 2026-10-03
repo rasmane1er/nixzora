@@ -7,25 +7,13 @@ import {
   LocalLanguageModel,
 } from '../assistant/language-model';
 import { AiAdminController } from './ai-admin.controller';
-import { AiUsageService } from './ai-usage.service';
-import { EMBEDDINGS, LocalEmbeddings, VoyageEmbeddings } from './embeddings';
+import { EmbeddingsModule } from './embeddings.module';
 
 /** Model providers, chosen by configuration (ADR-0009). */
 @Module({
+  imports: [EmbeddingsModule],
   controllers: [AiAdminController],
   providers: [
-    AiUsageService,
-    {
-      provide: EMBEDDINGS,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) =>
-        config.get('EMBEDDINGS_DRIVER', { infer: true }) === 'voyage'
-          ? new VoyageEmbeddings(
-              config.get('VOYAGE_API_KEY', { infer: true })!,
-              config.get('VOYAGE_MODEL', { infer: true }),
-            )
-          : new LocalEmbeddings(),
-    },
     {
       provide: LANGUAGE_MODEL,
       inject: [ConfigService],
@@ -38,6 +26,6 @@ import { EMBEDDINGS, LocalEmbeddings, VoyageEmbeddings } from './embeddings';
           : new LocalLanguageModel(),
     },
   ],
-  exports: [AiUsageService, EMBEDDINGS, LANGUAGE_MODEL],
+  exports: [EmbeddingsModule, LANGUAGE_MODEL],
 })
 export class AiModule {}

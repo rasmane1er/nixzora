@@ -28,6 +28,8 @@ export class SearchIndexer implements OnModuleInit, OnApplicationBootstrap {
 
   onApplicationBootstrap(): void {
     if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
+    // A separate search service runs this pass itself when it starts.
+    if (this.index.remote) return;
     // Not awaited: the API starts serving at once; search falls back to keywords meanwhile.
     void this.index
       .reindexAll()

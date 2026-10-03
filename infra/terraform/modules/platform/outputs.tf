@@ -7,7 +7,10 @@ output "cluster_name" {
 }
 
 output "services" {
-  value = { for k, s in aws_ecs_service.app : k => s.name }
+  value = merge(
+    { for k, s in aws_ecs_service.app : k => s.name },
+    { for s in aws_ecs_service.search : "search" => s.name },
+  )
 }
 
 output "migrate_task_definition" {

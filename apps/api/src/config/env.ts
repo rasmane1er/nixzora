@@ -178,6 +178,17 @@ export const EnvSchema = z
     /** Shared with the storefront and Ops Center so they can relay the shopper's IP. */
     INTERNAL_API_KEY: z.string().min(32).optional(),
 
+    // ── Search service (ADR-0015) ──
+    /**
+     * Where the search service runs, e.g. http://search.nixzora-staging.internal:4100. Unset:
+     * the API searches in-process (development, tests and single-task deployments).
+     */
+    SEARCH_SERVICE_URL: z.url().optional(),
+    /** How long the API waits for the search service before falling back to keyword search. */
+    SEARCH_SERVICE_TIMEOUT_MS: z.coerce.number().int().min(100).max(10_000).default(1500),
+    /** Port of the search service itself (search-main.ts). */
+    SEARCH_PORT: z.coerce.number().int().positive().default(4100),
+
     // ── AI layer (ADR-0009) ──
     /** "local" works offline with no key (development, CI, demo); "voyage" calls Voyage AI. */
     EMBEDDINGS_DRIVER: z.enum(['local', 'voyage']).default('local'),
@@ -243,6 +254,14 @@ export const EnvSchema = z
         code: 'custom',
         path: ['ANTHROPIC_API_KEY'],
         message: 'is required when AI_DRIVER=anthropic',
+      });
+    }
+    if (env.SEARCH_SERVICE_URL && !env.INTERNAL_API_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['INTERNAL_API_KEY'],
+        message:
+          'is required with SEARCH_SERVICE_URL: the search service only answers callers that present it',
       });
     }
     if (env.NODE_ENV !== 'production') return;
