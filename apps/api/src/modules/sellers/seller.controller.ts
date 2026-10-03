@@ -26,7 +26,11 @@ import {
   type ProductImageOrder,
   ProductImageOrderSchema,
   type SellerApplication,
+  type SellerApplicationDraft,
+  SellerApplicationDraftSchema,
   SellerApplicationSchema,
+  type SellerBrandingUpload,
+  SellerBrandingUploadSchema,
   type SellerAnalyticsQuery,
   SellerAnalyticsQuerySchema,
   type SellerMeResponse,
@@ -60,6 +64,7 @@ import { SellerAnalyticsService } from './seller-analytics.service';
 import { SellerFeedbackService } from './seller-feedback.service';
 import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
+import { SellerOnboardingService } from './seller-onboarding.service';
 import { SellerOrdersService } from './seller-orders.service';
 import { SellersService } from './sellers.service';
 
@@ -78,6 +83,7 @@ export class SellerController {
     private readonly listings: SellerListingsService,
     private readonly orders: SellerOrdersService,
     private readonly payouts: PayoutsService,
+    private readonly applications: SellerOnboardingService,
     private readonly imports: SellerImportService,
     private readonly analytics: SellerAnalyticsService,
     private readonly feedback: SellerFeedbackService,
@@ -165,6 +171,37 @@ export class SellerController {
     return this.sellers.me(actor.user.id);
   }
 
+  // Onboarding (p8-13)
+  /** `{ draft: null }` when the caller has nothing saved. */
+  @Get('application')
+  async application(@Actor() actor: ActorContext) {
+    return { draft: await this.applications.draft(actor.user.id) };
+  }
+
+  @Put('application')
+  @ApiZodBody(SellerApplicationDraftSchema)
+  saveApplication(
+    @Body(new ZodValidationPipe(SellerApplicationDraftSchema)) body: SellerApplicationDraft,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.applications.saveDraft(actor.user.id, body);
+  }
+
+  @Delete('application')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async discardApplication(@Actor() actor: ActorContext): Promise<void> {
+    await this.applications.discardDraft(actor.user.id);
+  }
+
+  /** Logo or banner, for the application or the store settings. */
+  @Post('branding/upload')
+  @ApiZodBody(SellerBrandingUploadSchema)
+  brandingUpload(
+    @Body(new ZodValidationPipe(SellerBrandingUploadSchema)) body: SellerBrandingUpload,
+  ) {
+    return this.applications.brandingUpload(body);
+  }
+
   @Post('apply')
   @ApiZodBody(SellerApplicationSchema)
   @ApiZodResponse(SellerViewSchema, 201)
@@ -172,7 +209,7 @@ export class SellerController {
     @Body(new ZodValidationPipe(SellerApplicationSchema)) body: SellerApplication,
     @Actor() actor: ActorContext,
   ) {
-    return this.sellers.apply(body, actor);
+    return this.applications.apply(body, actor);
   }
 
   @Patch('me')

@@ -83,26 +83,12 @@ async function perform(path: string, call: () => Promise<unknown>, notice: strin
 
 // ───── Store ─────
 
-export async function applyToSell(form: FormData): Promise<void> {
-  await perform(
-    '/sell',
-    () =>
-      api<SellerView>('/seller/apply', {
-        method: 'POST',
-        body: {
-          displayName: text(form, 'displayName'),
-          legalName: text(form, 'legalName'),
-          handle: text(form, 'handle')?.toLowerCase(),
-          contactEmail: text(form, 'contactEmail'),
-          description: text(form, 'description'),
-          acceptTerms: form.get('acceptTerms') === 'on',
-        },
-      }),
-    'Application received. Next, verify your business for payouts.',
-  );
-}
-
 export async function updateStore(form: FormData): Promise<void> {
+  // "keep" marks an unchanged image; an empty value removes it.
+  const image = (name: string) => {
+    const value = text(form, name);
+    return value === 'keep' ? undefined : (value ?? null);
+  };
   await perform(
     '/sell/settings',
     () =>
@@ -112,6 +98,15 @@ export async function updateStore(form: FormData): Promise<void> {
           displayName: text(form, 'displayName'),
           contactEmail: text(form, 'contactEmail'),
           description: text(form, 'description') ?? null,
+          category: text(form, 'category'),
+          website: text(form, 'website') ?? null,
+          supportEmail: text(form, 'supportEmail') ?? null,
+          supportPhone: text(form, 'supportPhone') ?? null,
+          logoKey: image('logoKey'),
+          bannerKey: image('bannerKey'),
+          handlingDays: Number(text(form, 'handlingDays') ?? 2),
+          carriers: form.getAll('carriers').map(String),
+          shipRegions: form.getAll('shipRegions').map(String),
         },
       }),
     'Store details saved.',

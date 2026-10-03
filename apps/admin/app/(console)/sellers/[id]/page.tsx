@@ -1,5 +1,9 @@
 import {
   type AdminSellerView,
+  BUSINESS_TYPE_LABEL,
+  type BusinessType,
+  SELLER_CATEGORY_LABEL,
+  type SellerCategory,
   type PagedResult,
   type PayoutView,
   type SellerBalance,
@@ -66,6 +70,8 @@ export default async function SellerPage({
         }
       />
       <Banner notice={param(search, 'notice')} error={param(search, 'error')} />
+
+      <ApplicationDetails seller={seller} />
 
       <div className="two-col">
         <section className="card">
@@ -348,5 +354,94 @@ export default async function SellerPage({
         </section>
       </div>
     </>
+  );
+}
+
+/** What the seller entered in the application (p8-13); the owner's details are private. */
+function ApplicationDetails({ seller }: { seller: AdminSellerView }) {
+  const v = seller.verification;
+  const rows: [string, React.ReactNode][] = [
+    [
+      'Business type',
+      seller.businessType ? BUSINESS_TYPE_LABEL[seller.businessType as BusinessType] : null,
+    ],
+    ['Category', seller.category ? SELLER_CATEGORY_LABEL[seller.category as SellerCategory] : null],
+    ['What they sell', seller.whatYouSell],
+    [
+      'Website',
+      seller.website ? (
+        <a href={seller.website} target="_blank" rel="noopener noreferrer nofollow">
+          {seller.website}
+        </a>
+      ) : null,
+    ],
+    [
+      'Business address',
+      seller.address
+        ? `${seller.address.line1}${seller.address.line2 ? `, ${seller.address.line2}` : ''}, ${seller.address.city}, ${seller.address.region} ${seller.address.postalCode}`
+        : null,
+    ],
+    ['Owner', v ? `${v.firstName} ${v.lastName}` : null],
+    ['Date of birth', v ? (v.dateOfBirth ?? 'Unreadable (encryption key changed)') : null],
+    ['Owner phone', v?.phone],
+    [
+      'Support contact',
+      [seller.supportEmail, seller.supportPhone].filter(Boolean).join(' · ') || null,
+    ],
+    [
+      'Shipping',
+      `Within ${seller.shipping.handlingDays} business day${seller.shipping.handlingDays === 1 ? '' : 's'}${
+        seller.shipping.carriers.length ? ` · ${seller.shipping.carriers.join(', ')}` : ''
+      }`,
+    ],
+    [
+      'Agreements accepted',
+      seller.agreementsAcceptedAt ? dateTime(seller.agreementsAcceptedAt) : null,
+    ],
+  ];
+  const shown = rows.filter(([, value]) => value);
+  if (!v && !seller.businessType) return null;
+  return (
+    <section className="card">
+      <h2>Application</h2>
+      <p className="muted">
+        Private: owner details are for verification only and never shown on the store.
+      </p>
+      {seller.logoUrl || seller.bannerUrl ? (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          {seller.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- seller upload preview
+            <img
+              src={seller.logoUrl}
+              alt="Store logo"
+              width={72}
+              height={72}
+              style={{ borderRadius: 12, objectFit: 'cover' }}
+            />
+          ) : null}
+          {seller.bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- seller upload preview
+            <img
+              src={seller.bannerUrl}
+              alt="Store banner"
+              height={72}
+              style={{ borderRadius: 12, objectFit: 'cover', maxWidth: '100%' }}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      <div className="table-wrap">
+        <table>
+          <tbody>
+            {shown.map(([label, value]) => (
+              <tr key={label}>
+                <th scope="row">{label}</th>
+                <td>{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

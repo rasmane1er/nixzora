@@ -1,6 +1,6 @@
 import {
-  type MeResponse,
   type PagedResult,
+  type SellerApplicationDraftView,
   type SellerBalance,
   type SellerOrderView,
   type SellerView,
@@ -8,12 +8,13 @@ import {
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SellerBalanceCards } from '@/components/SellerBalanceCards';
+import { FeeSummary, SellerFaq, WhySell } from '@/components/SellerLanding';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api } from '@/lib/api';
 import { param, type SearchParams } from '@/lib/params';
 import { isSignedIn } from '@/lib/session';
 import { sellerMe } from '@/lib/sell';
-import { applyToSell } from './actions';
+import { percentDone } from '@/lib/seller-onboarding';
 
 export const metadata: Metadata = {
   title: 'Sell on NIXZORA',
@@ -28,8 +29,16 @@ export default async function SellPage({ searchParams }: { searchParams: SearchP
   if (!(await isSignedIn())) return <Pitch />;
   const { seller } = await sellerMe('/sell');
   if (!seller) {
-    const me = await api<MeResponse>('/auth/me');
-    return <Apply email={me.email} notice={notice} error={error} />;
+    const draft = await api<{ draft: SellerApplicationDraftView | null }>(
+      '/seller/application',
+    ).then((r) => r.draft);
+    return (
+      <Pitch
+        draft={draft}
+        signedIn
+        notice={param(params, 'saved') ? 'Saved. Continue your application any time.' : notice}
+      />
+    );
   }
   const [balance, toShip] = await Promise.all([
     api<SellerBalance>('/seller/balance'),
@@ -40,41 +49,71 @@ export default async function SellPage({ searchParams }: { searchParams: SearchP
       seller={seller}
       balance={balance}
       toShip={toShip.total}
-      notice={notice}
+      notice={
+        param(params, 'applied')
+          ? 'Application submitted. Next, connect Stripe so we can verify your business.'
+          : notice
+      }
       error={error}
     />
   );
 }
 
 const STEPS = [
-  ['Apply', 'Tell us about your business. It takes two minutes.'],
+  ['Apply', 'Six short steps: your business, you, your store, shipping, fees and review.'],
   ['Verify', 'Stripe confirms your identity and bank account. NIXZORA never sees them.'],
   ['List', 'Add products with photos and specs. We review each listing before it goes live.'],
-  ['Get paid', 'You keep 88% of each sale, paid out to your bank after delivery.'],
+  ['Get paid', 'You keep 88% of the item price, plus shipping, paid out to your bank.'],
 ] as const;
 
-function Pitch() {
+function Pitch({
+  draft = null,
+  signedIn = false,
+  notice,
+}: {
+  draft?: SellerApplicationDraftView | null;
+  signedIn?: boolean;
+  notice?: string;
+}) {
+  const percent = percentDone(draft);
   return (
     <div className="wrap section stack" style={{ gap: 28 }}>
+      <Notices notice={notice} />
       <section className="hero">
         <p className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
           Sell on NIXZORA
         </p>
-        <h1>Reach shoppers who compare before they buy.</h1>
+        <h1>Open your store on NIXZORA.</h1>
         <p style={{ maxWidth: 560 }}>
-          Our assistant matches shoppers to products by their specs, so well-described listings get
-          found. List computers, audio and accessories alongside the NIXZORA catalog.
+          Reach shoppers who compare before they buy. List computers, audio and accessories
+          alongside the NIXZORA catalog; our team reviews every store and listing.
         </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Link className="btn btn--primary" href="/account/register?next=/sell">
-            Create an account to start
-          </Link>
-          <Link className="btn btn--secondary" href="/account/login?next=/sell">
-            Sign in
-          </Link>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          {signedIn ? (
+            <Link className="btn btn--primary" href="/sell/apply">
+              {draft
+                ? `Continue your application (${percent}% complete)`
+                : 'Start your application'}
+            </Link>
+          ) : (
+            <>
+              <Link className="btn btn--primary" href="/account/register?next=/sell/apply">
+                Create an account to start
+              </Link>
+              <Link className="btn btn--secondary" href="/account/login?next=/sell/apply">
+                Sign in
+              </Link>
+            </>
+          )}
+          <span style={{ opacity: 0.85, fontSize: 14 }}>
+            About 10 minutes. Save and finish later.
+          </span>
         </div>
       </section>
       <Steps />
+      <WhySell />
+      <FeeSummary />
+      <SellerFaq />
     </div>
   );
 }
@@ -93,69 +132,6 @@ function Steps() {
   );
 }
 
-function Apply({ email, notice, error }: { email: string; notice?: string; error?: string }) {
-  return (
-    <div className="wrap section stack" style={{ gap: 24, maxWidth: 760 }}>
-      <div className="stack" style={{ gap: 6 }}>
-        <p className="eyebrow">Sell on NIXZORA</p>
-        <h1>Open your store</h1>
-        <p className="muted">
-          Applications are reviewed by our team, usually within one business day. You can prepare
-          listings while you wait.
-        </p>
-      </div>
-      <Notices notice={notice} error={error} />
-      <form action={applyToSell} className="card form">
-        <div className="form-row">
-          <label>
-            Store name
-            <input name="displayName" required minLength={2} maxLength={60} />
-          </label>
-          <label>
-            Store address <span className="hint">Optional. Letters, numbers and hyphens.</span>
-            <input
-              name="handle"
-              placeholder="brightline-audio"
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
-              minLength={3}
-              maxLength={40}
-            />
-          </label>
-        </div>
-        <label>
-          Legal business name{' '}
-          <span className="hint">As registered, e.g. “Brightline Audio LLC”.</span>
-          <input name="legalName" required minLength={2} maxLength={120} />
-        </label>
-        <label>
-          Contact email <span className="hint">For orders and payouts.</span>
-          <input name="contactEmail" type="email" placeholder={email} />
-        </label>
-        <label>
-          About your store <span className="hint">Optional. Shown on your store page.</span>
-          <textarea name="description" rows={3} maxLength={1000} />
-        </label>
-        <p className="muted" style={{ fontSize: 14 }}>
-          NIXZORA supports US businesses for now. Payouts go through Stripe Connect.
-        </p>
-        <label className="check">
-          <input type="checkbox" name="acceptTerms" required />
-          <span>
-            I agree to the <Link href="/terms">seller terms</Link>: accurate listings, shipping
-            within 2 business days, a 12% commission on each sale, and NIXZORA&apos;s 30-day return
-            policy.
-          </span>
-        </label>
-        <div>
-          <button className="btn btn--primary" type="submit">
-            Apply to sell
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 function Overview({
   seller,
   balance,
@@ -169,33 +145,56 @@ function Overview({
   notice?: string;
   error?: string;
 }) {
-  const verified = seller.payouts.detailsSubmitted;
+  const identity = seller.payouts.detailsSubmitted;
+  const payouts = seller.payouts.payoutsEnabled;
+  const approved = seller.status === 'ACTIVE';
+  const stripeAction = (
+    <a className="btn btn--primary btn--sm" href="/sell/payouts/start">
+      {seller.payouts.accountConnected ? 'Continue with Stripe' : 'Connect Stripe'}
+    </a>
+  );
+  const application = [
+    { done: true, title: 'Business information', body: `${seller.legalName}` },
+    { done: true, title: 'Store information', body: `${seller.displayName} · /s/${seller.handle}` },
+    {
+      done: identity,
+      title: 'Identity verification',
+      body: identity
+        ? 'Submitted to Stripe.'
+        : 'Stripe confirms who you are. NIXZORA never sees your ID.',
+      action: identity ? null : stripeAction,
+    },
+    {
+      done: payouts,
+      title: 'Payment verification',
+      body: payouts
+        ? 'Bank account verified. Payouts are switched on.'
+        : identity
+          ? 'Stripe is checking your bank details.'
+          : 'Add your bank account on Stripe to receive payouts.',
+      action: payouts || !identity ? null : stripeAction,
+    },
+    {
+      done: approved,
+      title: 'Final review',
+      body: approved
+        ? 'Approved. Your store is open.'
+        : seller.status === 'PENDING'
+          ? 'Our team reviews your store once Stripe verification is complete, usually within one business day.'
+          : (seller.statusReason ?? 'Contact seller support.'),
+    },
+  ];
+  const statusLabel = approved
+    ? 'Approved'
+    : seller.status === 'PENDING'
+      ? identity
+        ? 'Under review'
+        : 'Waiting for verification'
+      : seller.status === 'SUSPENDED'
+        ? 'Suspended'
+        : 'Not approved';
   const checklist = [
-    { done: true, title: 'Application sent', body: 'Thanks for applying.' },
-    {
-      done: verified,
-      title: 'Verify your business for payouts',
-      body: verified
-        ? seller.payouts.payoutsEnabled
-          ? 'Verified. Payouts are switched on.'
-          : 'Submitted. Stripe is still checking your details.'
-        : 'Stripe confirms your identity and bank account. NIXZORA never sees them.',
-      action: verified ? null : (
-        <a className="btn btn--primary btn--sm" href="/sell/payouts/start">
-          {seller.payouts.accountConnected ? 'Continue verification' : 'Start verification'}
-        </a>
-      ),
-    },
-    {
-      done: seller.status === 'ACTIVE',
-      title: 'Store approved',
-      body:
-        seller.status === 'ACTIVE'
-          ? 'Your store is open.'
-          : seller.status === 'PENDING'
-            ? 'We review stores once verification is complete.'
-            : (seller.statusReason ?? 'Contact seller support.'),
-    },
+    ...application,
     {
       done: seller.listings.active > 0,
       title: 'First listing live',
@@ -209,6 +208,7 @@ function Overview({
       ),
     },
   ];
+  const showApplication = !approved || !payouts || seller.listings.active === 0;
 
   return (
     <div className="wrap section stack" style={{ gap: 24 }}>
@@ -236,26 +236,41 @@ function Overview({
         {seller.commissionBps / 100}% commission
       </p>
 
-      <section className="card stack">
-        <h2>Getting started</h2>
-        <ol className="checklist">
-          {checklist.map((step) => (
-            <li key={step.title} data-done={step.done}>
-              <span className="checklist__mark" aria-hidden="true">
-                {step.done ? '✓' : ''}
-              </span>
-              <div className="stack" style={{ gap: 2 }}>
-                <strong>
-                  {step.title}
-                  <span className="sr-only">{step.done ? ' (done)' : ' (to do)'}</span>
-                </strong>
-                <span className="muted">{step.body}</span>
-              </div>
-              {step.action && !step.done ? step.action : null}
-            </li>
-          ))}
-        </ol>
-      </section>
+      {showApplication ? (
+        <section className="card stack application-status">
+          <header className="application-status__head">
+            <h2>{approved ? 'Getting started' : 'Seller application'}</h2>
+            <span
+              className={`status-badge status-badge--${approved ? 'ok' : seller.status === 'PENDING' ? 'wait' : 'error'}`}
+            >
+              {statusLabel}
+            </span>
+          </header>
+          {!approved && seller.status === 'PENDING' ? (
+            <p className="muted" style={{ margin: 0 }}>
+              We&apos;ll email {seller.contactEmail} when your application has been reviewed. You
+              can prepare listings meanwhile.
+            </p>
+          ) : null}
+          <ol className="checklist">
+            {checklist.map((step) => (
+              <li key={step.title} data-done={step.done}>
+                <span className="checklist__mark" aria-hidden="true">
+                  {step.done ? '✓' : ''}
+                </span>
+                <div className="stack" style={{ gap: 2 }}>
+                  <strong>
+                    {step.title}
+                    <span className="sr-only">{step.done ? ' (done)' : ' (to do)'}</span>
+                  </strong>
+                  <span className="muted">{step.body}</span>
+                </div>
+                {step.action && !step.done ? step.action : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
     </div>
   );
 }

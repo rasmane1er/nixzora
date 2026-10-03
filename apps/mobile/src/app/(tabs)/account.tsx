@@ -163,8 +163,13 @@ export default function AccountScreen() {
           { icon: 'card-outline', label: 'Payment methods', href: '/account/payments' },
           { icon: 'pricetag-outline', label: 'Coupons & rewards', href: '/account/coupons' },
           overview.data?.seller
-            ? { icon: 'storefront-outline', label: 'Your store', url: `${WEB_URL}/sell` }
-            : { icon: 'storefront-outline', label: 'Sell on NIXZORA', url: `${WEB_URL}/sell` },
+            ? { icon: 'storefront-outline', label: 'Seller dashboard', url: `${WEB_URL}/sell` }
+            : {
+                icon: 'storefront-outline',
+                label: 'Sell on NIXZORA',
+                hint: 'Open your store',
+                url: `${WEB_URL}/sell`,
+              },
         ]}
       />
 

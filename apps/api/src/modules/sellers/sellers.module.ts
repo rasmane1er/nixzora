@@ -14,6 +14,8 @@ import { SellerController } from './seller.controller';
 import { SellersAdminController } from './sellers-admin.controller';
 import { SellersAdminService } from './sellers-admin.service';
 import { SellersPublicController } from './sellers-public.controller';
+import { SellerOnboardingService } from './seller-onboarding.service';
+import { SellerPii } from './seller-pii';
 import { SellersService } from './sellers.service';
 
 /** Marketplace sellers (Phase 7, ADR-0012). */
@@ -29,6 +31,8 @@ import { SellersService } from './sellers.service';
     SellerImportService,
     SellerAnalyticsService,
     SellerFeedbackService,
+    SellerOnboardingService,
+    SellerPii,
   ],
   exports: [SellersService],
 })

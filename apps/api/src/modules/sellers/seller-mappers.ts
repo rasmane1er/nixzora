@@ -8,7 +8,11 @@ export type ListingCounts = SellerView['listings'];
 
 export const NO_LISTINGS: ListingCounts = { draft: 0, pendingReview: 0, active: 0, archived: 0 };
 
-export function toSellerView(seller: Seller, listings: ListingCounts = NO_LISTINGS): SellerView {
+export function toSellerView(
+  seller: Seller,
+  publicUrl: (key: string) => string,
+  listings: ListingCounts = NO_LISTINGS,
+): SellerView {
   return {
     id: seller.id,
     handle: seller.handle,
@@ -32,6 +36,29 @@ export function toSellerView(seller: Seller, listings: ListingCounts = NO_LISTIN
     rating: ratingSummary(seller),
     approvedAt: seller.approvedAt?.toISOString() ?? null,
     createdAt: seller.createdAt.toISOString(),
+    businessType: seller.businessType,
+    category: seller.category,
+    website: seller.website,
+    logoUrl: seller.logoKey ? publicUrl(seller.logoKey) : null,
+    bannerUrl: seller.bannerKey ? publicUrl(seller.bannerKey) : null,
+    supportEmail: seller.supportEmail,
+    supportPhone: seller.supportPhone,
+    address:
+      seller.addressLine1 && seller.addressCity && seller.addressRegion && seller.addressPostalCode
+        ? {
+            line1: seller.addressLine1,
+            line2: seller.addressLine2,
+            city: seller.addressCity,
+            region: seller.addressRegion,
+            postalCode: seller.addressPostalCode,
+            country: seller.country,
+          }
+        : null,
+    shipping: {
+      handlingDays: seller.handlingDays,
+      carriers: seller.carriers,
+      shipRegions: seller.shipRegions,
+    },
   };
 }
 

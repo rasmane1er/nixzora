@@ -1,6 +1,6 @@
 import { ratingSummary } from '../../common/rating';
 import {
-  ConflictException,
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -10,7 +10,6 @@ import { ConfigService } from '@nestjs/config';
 import {
   type PayoutOnboardingLink,
   type PublicSeller,
-  type SellerApplication,
   SellerHandleSchema,
   type SellerMeResponse,
   type SellerProfileUpdate,
@@ -18,12 +17,12 @@ import {
   slugify,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
-import { isUniqueViolation } from '../../common/prisma-errors';
 import { type Seller, type SellerMemberRole } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { PAYOUT_GATEWAY, type PayoutGateway } from '../payments/payout-gateway';
+import { StorageService } from '../media/storage.service';
 import { listingCounts, NO_LISTINGS, toSellerView } from './seller-mappers';
 
 export type SellerContext = { seller: Seller; role: SellerMemberRole };
@@ -40,6 +39,7 @@ export class SellersService {
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
     @Inject(PAYOUT_GATEWAY) private readonly payouts: PayoutGateway,
+    private readonly storage: StorageService,
   ) {}
 
   /** The caller's seller membership, or null. */
@@ -80,50 +80,18 @@ export class SellersService {
     return { seller: await this.view(ctx.seller), role: ctx.role };
   }
 
-  async apply(input: SellerApplication, actor: ActorContext): Promise<SellerView> {
-    if (await this.context(actor.user.id)) {
-      throw new ConflictException('You already have a seller account.');
-    }
-    const handle = input.handle ?? (await this.availableHandle(input.displayName));
-    try {
-      const seller = await this.prisma.$transaction(async (tx) => {
-        const created = await tx.seller.create({
-          data: {
-            handle,
-            displayName: input.displayName,
-            legalName: input.legalName,
-            contactEmail: input.contactEmail ?? actor.user.email,
-            country: input.country,
-            description: input.description ?? null,
-            members: { create: { userId: actor.user.id, role: 'OWNER' } },
-          },
-        });
-        await tx.outboxEvent.create({
-          data: {
-            aggregateType: 'seller',
-            aggregateId: created.id,
-            type: 'seller.applied',
-            payload: { sellerId: created.id, handle },
-          },
-        });
-        return created;
-      });
-      await this.record('seller.applied', seller.id, actor, { handle });
-      return this.view(seller);
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new ConflictException(
-          input.handle
-            ? 'That store address is taken. Choose another.'
-            : 'You already have a seller account.',
-        );
-      }
-      throw error;
-    }
-  }
-
   async updateProfile(input: SellerProfileUpdate, actor: ActorContext): Promise<SellerView> {
     const { seller } = await this.require(actor.user.id, { owner: true });
+    for (const key of [input.logoKey, input.bannerKey]) {
+      if (
+        key &&
+        key !== seller.logoKey &&
+        key !== seller.bannerKey &&
+        !(await this.storage.exists(key))
+      ) {
+        throw new BadRequestException('Upload the image again: we could not find it.');
+      }
+    }
     const updated = await this.prisma.seller.update({ where: { id: seller.id }, data: input });
     await this.record('seller.profile.updated', seller.id, actor, { changes: Object.keys(input) });
     return this.view(updated);
@@ -193,9 +161,17 @@ export class SellersService {
   async publicProfile(handle: string): Promise<PublicSeller> {
     const seller = await this.prisma.seller.findFirst({
       where: { handle, status: 'ACTIVE' },
-      include: { _count: { select: { products: { where: { status: 'ACTIVE' } } } } },
+      include: {
+        _count: {
+          select: {
+            products: { where: { status: 'ACTIVE' } },
+            orders: { where: { status: { in: ['SHIPPED', 'DELIVERED'] } } },
+          },
+        },
+      },
     });
     if (!seller) throw new NotFoundException('We could not find that store.');
+    const url = (key: string | null) => (key ? this.storage.publicUrl(key) : null);
     return {
       handle: seller.handle,
       displayName: seller.displayName,
@@ -203,16 +179,27 @@ export class SellersService {
       memberSince: (seller.approvedAt ?? seller.createdAt).toISOString(),
       productCount: seller._count.products,
       rating: ratingSummary(seller),
+      category: seller.category,
+      website: seller.website,
+      logoUrl: url(seller.logoKey),
+      bannerUrl: url(seller.bannerKey),
+      supportEmail: seller.supportEmail,
+      salesCount: seller._count.orders,
+      handlingDays: seller.handlingDays,
     };
   }
 
   async view(seller: Seller): Promise<SellerView> {
     const counts = await listingCounts(this.prisma, [seller.id]);
-    return toSellerView(seller, counts.get(seller.id) ?? NO_LISTINGS);
+    return toSellerView(
+      seller,
+      (key) => this.storage.publicUrl(key),
+      counts.get(seller.id) ?? NO_LISTINGS,
+    );
   }
 
   /** "Brightline Audio Co." → "brightline-audio-co", or the next free variant of it. */
-  private async availableHandle(name: string): Promise<string> {
+  async availableHandle(name: string): Promise<string> {
     let base = slugify(name).slice(0, 34).replace(/-+$/, '');
     if (!SellerHandleSchema.safeParse(base).success) base = `${base || 'store'}-shop`.slice(0, 34);
     if (!SellerHandleSchema.safeParse(base).success) base = 'my-shop';

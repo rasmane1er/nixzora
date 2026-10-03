@@ -57,6 +57,16 @@ export const EnvSchema = z
         message: 'must be 32 bytes, base64-encoded',
       })
       .optional(),
+    /**
+     * 32 random bytes, base64. Encrypts personal data at rest (seller owners' dates of birth).
+     * Falls back to MFA_ENCRYPTION_KEY when unset.
+     */
+    DATA_ENCRYPTION_KEY: z
+      .string()
+      .refine((value) => Buffer.from(value, 'base64').length === 32, {
+        message: 'must be 32 bytes, base64-encoded',
+      })
+      .optional(),
     /** Check new passwords against Have I Been Pwned (k-anonymity, no password leaves the server). */
     PASSWORD_BREACH_CHECK: booleanString.default(false),
     LOGIN_MAX_FAILURES: z.coerce.number().int().min(3).max(50).default(10),

@@ -10,6 +10,7 @@ import {
   AdminSellerViewSchema,
   AuthTokensSchema,
   ProductDetailSchema,
+  PublicSellerSchema,
   SellerMeResponseSchema,
   SellerViewSchema,
   UploadTicketSchema,
@@ -41,6 +42,37 @@ describe('Marketplace sellers and listing review (e2e)', () => {
   let productId: string;
   let variantId: string;
   const handle = `brightline-${run}`;
+  /** A complete seller application (p8-13); tests override what they check. */
+  const application = (overrides: Record<string, unknown> = {}) => ({
+    businessType: 'LLC',
+    legalName: 'Brightline Audio LLC',
+    displayName: 'Brightline Audio',
+    category: 'audio',
+    whatYouSell: 'Desk speakers and amplifiers',
+    address: {
+      line1: '1 Harbor St',
+      city: 'Baltimore',
+      region: 'MD',
+      postalCode: '21202',
+      country: 'US',
+    },
+    owner: {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      dateOfBirth: '1990-05-02',
+      phone: '+1 410 555 0100',
+      residenceCountry: 'US',
+    },
+    description: 'Desk speakers, tuned in Baltimore.',
+    handlingDays: 2,
+    carriers: ['USPS', 'UPS'],
+    shipRegions: ['US_CONTIGUOUS'],
+    acknowledgeFees: true,
+    acceptAgreement: true,
+    acceptReturnPolicy: true,
+    confirmAccurate: true,
+    ...overrides,
+  });
 
   async function signUp(email: string): Promise<string> {
     const res = await http()
@@ -109,6 +141,34 @@ describe('Marketplace sellers and listing review (e2e)', () => {
     await app.close();
   }, 30_000);
 
+  it('saves an unfinished application to continue later', async () => {
+    await http()
+      .get('/api/v1/seller/application')
+      .set(bearer(sellerToken))
+      .expect(200, { draft: null });
+    const saved = await http()
+      .put('/api/v1/seller/application')
+      .set(bearer(sellerToken))
+      .send({ step: 2, completed: ['business'], data: { business: { displayName: 'Brightline' } } })
+      .expect(200);
+    expect(saved.body).toMatchObject({ step: 2, completed: ['business'] });
+    const back = await http()
+      .get('/api/v1/seller/application')
+      .set(bearer(sellerToken))
+      .expect(200);
+    expect(back.body.draft.data).toEqual({ business: { displayName: 'Brightline' } });
+    await http()
+      .put('/api/v1/seller/application')
+      .set(bearer(sellerToken))
+      .send({ step: 9, completed: [], data: {} })
+      .expect(400);
+    // Other customers never see it.
+    await http()
+      .get('/api/v1/seller/application')
+      .set(bearer(otherToken))
+      .expect(200, { draft: null });
+  });
+
   it('lets a customer apply to sell, once', async () => {
     const before = SellerMeResponseSchema.parse(
       (await http().get('/api/v1/seller/me').set(bearer(sellerToken)).expect(200)).body,
@@ -118,12 +178,17 @@ describe('Marketplace sellers and listing review (e2e)', () => {
     await http()
       .post('/api/v1/seller/apply')
       .set(bearer(sellerToken))
-      .send({ displayName: 'Brightline Audio', legalName: 'Brightline Audio LLC', handle })
-      .expect(400); // terms not accepted
+      .send(application({ handle, acceptAgreement: false }))
+      .expect(400); // agreement not accepted
     await http()
       .post('/api/v1/seller/apply')
       .set(bearer(sellerToken))
-      .send({ displayName: 'Shop', legalName: 'X LLC', handle: 'nixzora-deals', acceptTerms: true })
+      .send(application({ handle, owner: { ...application().owner, dateOfBirth: '2015-01-01' } }))
+      .expect(400); // owner under 18
+    await http()
+      .post('/api/v1/seller/apply')
+      .set(bearer(sellerToken))
+      .send(application({ handle: 'nixzora-deals' }))
       .expect(400); // reserved address
 
     const seller = SellerViewSchema.parse(
@@ -131,13 +196,7 @@ describe('Marketplace sellers and listing review (e2e)', () => {
         await http()
           .post('/api/v1/seller/apply')
           .set(bearer(sellerToken))
-          .send({
-            displayName: 'Brightline Audio',
-            legalName: 'Brightline Audio LLC',
-            handle,
-            description: 'Desk speakers, tuned in Baltimore.',
-            acceptTerms: true,
-          })
+          .send(application({ handle }))
           .expect(201)
       ).body,
     );
@@ -148,17 +207,34 @@ describe('Marketplace sellers and listing review (e2e)', () => {
       commissionBps: 1200,
       payouts: { accountConnected: false, payoutsEnabled: false },
     });
+    expect(seller).toMatchObject({
+      businessType: 'LLC',
+      category: 'audio',
+      address: { city: 'Baltimore', region: 'MD' },
+      shipping: { handlingDays: 2, carriers: ['USPS', 'UPS'] },
+    });
+    // The owner's personal details stay out of the store's own view.
+    expect(JSON.stringify(seller)).not.toContain('1990-05-02');
+    expect(JSON.stringify(seller)).not.toContain('Lovelace');
+    const stored = await prisma.sellerOwner.findUniqueOrThrow({ where: { sellerId: seller.id } });
+    expect(stored.dateOfBirthEnc).not.toContain('1990');
+    // Submitting removes the draft.
+    expect(
+      await prisma.sellerApplicationDraft.count({
+        where: { user: { email: `mkt-seller-${run}@example.com` } },
+      }),
+    ).toBe(0);
 
     await http()
       .post('/api/v1/seller/apply')
       .set(bearer(sellerToken))
-      .send({ displayName: 'Again', legalName: 'Again LLC', acceptTerms: true })
+      .send(application({ displayName: 'Again' }))
       .expect(409);
     // Another customer cannot take the same store address.
     await http()
       .post('/api/v1/seller/apply')
       .set(bearer(otherToken))
-      .send({ displayName: 'Copy', legalName: 'Copy LLC', handle, acceptTerms: true })
+      .send(application({ displayName: 'Copy', handle }))
       .expect(409);
     // The pending store is not public yet.
     await http().get(`/api/v1/catalog/sellers/${handle}`).expect(404);
@@ -267,7 +343,20 @@ describe('Marketplace sellers and listing review (e2e)', () => {
       .set(bearer(staffToken))
       .expect(200);
     expect(list.body.items.map((s: { id: string }) => s.id)).toEqual([sellerId]);
-    await http().get(`/api/v1/catalog/sellers/${handle}`).expect(200);
+    const store = PublicSellerSchema.parse(
+      (await http().get(`/api/v1/catalog/sellers/${handle}`).expect(200)).body,
+    );
+    expect(store).toMatchObject({ category: 'audio', salesCount: 0, handlingDays: 2 });
+    // Staff see the private verification details; the public page never does.
+    const reviewed = (
+      await http().get(`/api/v1/admin/sellers/${sellerId}`).set(bearer(staffToken)).expect(200)
+    ).body;
+    expect(reviewed.verification).toMatchObject({
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      dateOfBirth: '1990-05-02',
+    });
+    expect(JSON.stringify(store)).not.toContain('Lovelace');
   });
 
   it('reviews listings before they go live', async () => {
@@ -356,12 +445,7 @@ describe('Marketplace sellers and listing review (e2e)', () => {
     await http()
       .post('/api/v1/seller/apply')
       .set(bearer(otherToken))
-      .send({
-        displayName: 'Other',
-        legalName: 'Other LLC',
-        handle: `other-${run}`,
-        acceptTerms: true,
-      })
+      .send(application({ displayName: 'Other', handle: `other-${run}` }))
       .expect(201);
     await http()
       .patch(`/api/v1/seller/variants/${variantId}`)

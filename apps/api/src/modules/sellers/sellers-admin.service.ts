@@ -10,7 +10,7 @@ import {
   type PagedResult,
   type ProductDetail,
 } from '@nixzora/validation';
-import { type Prisma, type Seller } from '../../generated/prisma/client';
+import { type Prisma, type Seller, type SellerOwner } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { productInclude } from '../catalog/catalog-mappers';
@@ -18,6 +18,7 @@ import { CatalogQueryService } from '../catalog/catalog-query.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { StorageService } from '../media/storage.service';
 import { listingCounts, NO_LISTINGS, toListingRow, toSellerView } from './seller-mappers';
+import { SellerPii } from './seller-pii';
 import { SellersService } from './sellers.service';
 
 const SUSPENDED_NOTE = 'Unpublished while the store is suspended.';
@@ -34,6 +35,7 @@ export class SellersAdminService {
     private readonly sellers: SellersService,
     private readonly query: CatalogQueryService,
     private readonly storage: StorageService,
+    private readonly pii: SellerPii,
   ) {}
 
   async list(query: AdminSellerListQuery): Promise<PagedResult<AdminSellerView>> {
@@ -263,14 +265,33 @@ export class SellersAdminService {
       take: 1,
       include: { user: { select: { id: true, email: true } } },
     },
+    owner: true,
   } satisfies Prisma.SellerInclude;
 
   private adminView(
-    seller: Seller & { members: { user: { id: string; email: string } }[] },
+    seller: Seller & {
+      members: { user: { id: string; email: string } }[];
+      owner: SellerOwner | null;
+    },
     counts = NO_LISTINGS,
   ): AdminSellerView {
     const owner = seller.members[0]?.user ?? null;
-    return { ...toSellerView(seller, counts), owner };
+    const person = seller.owner;
+    return {
+      ...toSellerView(seller, (key) => this.storage.publicUrl(key), counts),
+      owner,
+      verification: person
+        ? {
+            firstName: person.firstName,
+            lastName: person.lastName,
+            dateOfBirth: this.pii.open(person.dateOfBirthEnc),
+            phone: person.phone,
+            residenceCountry: person.residenceCountry,
+          }
+        : null,
+      whatYouSell: seller.whatYouSell,
+      agreementsAcceptedAt: seller.agreementsAcceptedAt?.toISOString() ?? null,
+    };
   }
 
   private async require(id: string): Promise<Seller> {

@@ -1,4 +1,16 @@
+import {
+  BUSINESS_TYPE_LABEL,
+  type BusinessType,
+  HANDLING_DAYS,
+  SELLER_CARRIER_LABEL,
+  SELLER_CARRIERS,
+  SELLER_CATEGORIES,
+  SELLER_CATEGORY_LABEL,
+  SHIP_REGION_LABEL,
+  SHIP_REGIONS,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
+import { BrandingUpload } from '@/components/BrandingUpload';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { param, type SearchParams } from '@/lib/params';
 import { requireSeller } from '@/lib/sell';
@@ -34,6 +46,87 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
               defaultValue={seller.description ?? ''}
             />
           </label>
+          <div className="form-row">
+            <label>
+              Category
+              <select name="category" defaultValue={seller.category ?? ''}>
+                <option value="">Not set</option>
+                {SELLER_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {SELLER_CATEGORY_LABEL[c]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Website <span className="hint">Optional.</span>
+              <input name="website" type="url" defaultValue={seller.website ?? ''} />
+            </label>
+          </div>
+          <div className="form-row">
+            <label>
+              Support email <span className="hint">Public.</span>
+              <input name="supportEmail" type="email" defaultValue={seller.supportEmail ?? ''} />
+            </label>
+            <label>
+              Support phone <span className="hint">Public.</span>
+              <input name="supportPhone" type="tel" defaultValue={seller.supportPhone ?? ''} />
+            </label>
+          </div>
+          <h3>Branding</h3>
+          <BrandingUpload
+            kind="logo"
+            urlValue={seller.logoUrl ?? undefined}
+            keyValue={seller.logoUrl ? 'keep' : undefined}
+          />
+          <BrandingUpload
+            kind="banner"
+            urlValue={seller.bannerUrl ?? undefined}
+            keyValue={seller.bannerUrl ? 'keep' : undefined}
+          />
+          <h3>Shipping</h3>
+          <label>
+            Orders shipped within
+            <select name="handlingDays" defaultValue={String(seller.shipping.handlingDays)}>
+              {HANDLING_DAYS.map((d) => (
+                <option key={d} value={d}>
+                  {d} business {d === 1 ? 'day' : 'days'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <fieldset>
+            <legend>Carriers</legend>
+            <div className="check-grid">
+              {SELLER_CARRIERS.map((c) => (
+                <label key={c} className="check">
+                  <input
+                    type="checkbox"
+                    name="carriers"
+                    value={c}
+                    defaultChecked={seller.shipping.carriers.includes(c)}
+                  />
+                  <span>{SELLER_CARRIER_LABEL[c]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Shipping regions</legend>
+            <div className="check-grid">
+              {SHIP_REGIONS.map((r) => (
+                <label key={r} className="check">
+                  <input
+                    type="checkbox"
+                    name="shipRegions"
+                    value={r}
+                    defaultChecked={seller.shipping.shipRegions.includes(r)}
+                  />
+                  <span>{SHIP_REGION_LABEL[r]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div>
             <button className="btn btn--primary" type="submit">
               Save
@@ -46,12 +139,28 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
           <dl className="facts">
             <dt>Legal name</dt>
             <dd>{seller.legalName}</dd>
+            {seller.businessType ? (
+              <>
+                <dt>Business type</dt>
+                <dd>{BUSINESS_TYPE_LABEL[seller.businessType as BusinessType]}</dd>
+              </>
+            ) : null}
+            {seller.address ? (
+              <>
+                <dt>Business address</dt>
+                <dd>
+                  {seller.address.line1}
+                  {seller.address.line2 ? `, ${seller.address.line2}` : ''}, {seller.address.city},{' '}
+                  {seller.address.region} {seller.address.postalCode}
+                </dd>
+              </>
+            ) : null}
             <dt>Store address</dt>
             <dd className="mono">nixzora.com/s/{seller.handle}</dd>
             <dt>Commission</dt>
             <dd>{seller.commissionBps / 100}% of each sale</dd>
             <dt>Payout hold</dt>
-            <dd>{seller.payoutHoldDays} days after delivery</dd>
+            <dd>{seller.payoutHoldDays} days after shipping</dd>
             <dt>Payouts</dt>
             <dd>
               {seller.payouts.payoutsEnabled
@@ -72,7 +181,7 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
             </a>
           </div>
           <p className="muted" style={{ fontSize: 13 }}>
-            Legal name and store address changes go through seller support.
+            Legal name, business address and store address changes go through seller support.
           </p>
         </section>
       </div>

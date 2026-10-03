@@ -11,3 +11,4 @@ export * from './operations';
 export * from './pagination';
 export * from './recommendations';
 export * from './account';
+export * from './seller-onboarding';

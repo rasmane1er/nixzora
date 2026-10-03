@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { EmailSchema } from './auth';
 import { CARRIERS } from './commerce';
 import {
   ProductCardSchema,
@@ -43,26 +42,6 @@ export const SellerStatusSchema = z.enum(['PENDING', 'ACTIVE', 'SUSPENDED', 'REJ
 /** Payouts go through Stripe Connect, which NIXZORA supports for US businesses first. */
 export const SellerCountrySchema = z.enum(['US']);
 
-export const SellerApplicationSchema = z.object({
-  displayName: z.string().trim().min(2).max(60),
-  /** Generated from the store name when left out. */
-  handle: SellerHandleSchema.optional(),
-  legalName: z.string().trim().min(2).max(120),
-  /** Defaults to the applicant's account email. */
-  contactEmail: EmailSchema.optional(),
-  country: SellerCountrySchema.default('US'),
-  description: z.string().trim().max(1000).optional(),
-  acceptTerms: z.literal(true, { message: 'Accept the seller terms to continue.' }),
-});
-
-export const SellerProfileUpdateSchema = z
-  .object({
-    displayName: z.string().trim().min(2).max(60),
-    description: z.string().trim().max(1000).nullable(),
-    contactEmail: EmailSchema,
-  })
-  .partial();
-
 export const SellerPayoutsSchema = z.object({
   /** "FAKE" (test mode, no money moves) or "STRIPE"; null until onboarding starts. */
   provider: z.enum(['FAKE', 'STRIPE']).nullable(),
@@ -96,6 +75,29 @@ export const SellerViewSchema = z.object({
   rating: z.object({ average: z.number().nullable(), count: z.number().int() }),
   approvedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
+  // Onboarding (p8-13). Null for stores that applied before it.
+  businessType: z.string().nullable(),
+  category: z.string().nullable(),
+  website: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  bannerUrl: z.string().nullable(),
+  supportEmail: z.string().nullable(),
+  supportPhone: z.string().nullable(),
+  address: z
+    .object({
+      line1: z.string(),
+      line2: z.string().nullable(),
+      city: z.string(),
+      region: z.string(),
+      postalCode: z.string(),
+      country: z.string(),
+    })
+    .nullable(),
+  shipping: z.object({
+    handlingDays: z.number().int(),
+    carriers: z.array(z.string()),
+    shipRegions: z.array(z.string()),
+  }),
 });
 
 /** GET /seller/me: the caller's store, or null if they have not applied. */
@@ -314,6 +316,18 @@ export const AdminSellerListQuerySchema = z.object({
 
 export const AdminSellerViewSchema = SellerViewSchema.extend({
   owner: z.object({ id: z.uuid(), email: z.string() }).nullable(),
+  /** From the application; private, for staff review (p8-13). */
+  verification: z
+    .object({
+      firstName: z.string(),
+      lastName: z.string(),
+      dateOfBirth: z.string().nullable(),
+      phone: z.string(),
+      residenceCountry: z.string(),
+    })
+    .nullable(),
+  whatYouSell: z.string().nullable(),
+  agreementsAcceptedAt: z.iso.datetime().nullable(),
 });
 
 export const AdminSellerStatusChangeSchema = z
@@ -361,6 +375,14 @@ export const PublicSellerSchema = z.object({
   memberSince: z.iso.datetime(),
   productCount: z.number().int(),
   rating: z.object({ average: z.number().nullable(), count: z.number().int() }),
+  category: z.string().nullable(),
+  website: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  bannerUrl: z.string().nullable(),
+  supportEmail: z.string().nullable(),
+  /** Orders the store has shipped. */
+  salesCount: z.number().int(),
+  handlingDays: z.number().int(),
 });
 
 // ───────────── Ratings and returns in the seller portal (p7-07) ─────────────
@@ -396,8 +418,6 @@ export type SellerFeedback = {
 };
 
 export type SellerStatus = z.infer<typeof SellerStatusSchema>;
-export type SellerApplication = z.infer<typeof SellerApplicationSchema>;
-export type SellerProfileUpdate = z.infer<typeof SellerProfileUpdateSchema>;
 export type SellerView = z.infer<typeof SellerViewSchema>;
 export type SellerMeResponse = z.infer<typeof SellerMeResponseSchema>;
 export type PayoutOnboardingLink = z.infer<typeof PayoutOnboardingLinkSchema>;

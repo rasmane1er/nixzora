@@ -1,6 +1,7 @@
 import { Logo } from '@nixzora/ui';
 import Link from 'next/link';
-import { catalog, currentCart } from '@/lib/api';
+import { type SellerMeResponse } from '@nixzora/validation';
+import { api, catalog, currentCart } from '@/lib/api';
 import { isSignedIn } from '@/lib/session';
 
 export async function SiteHeader() {
@@ -10,6 +11,12 @@ export async function SiteHeader() {
     isSignedIn(),
   ]);
   const count = cart?.itemCount ?? 0;
+  // Sellers get their dashboard; everyone else is invited to sell.
+  const hasStore = signedIn
+    ? await api<SellerMeResponse>('/seller/me')
+        .then((me) => Boolean(me.seller))
+        .catch(() => false)
+    : false;
 
   return (
     <header className="site-header">
@@ -34,6 +41,9 @@ export async function SiteHeader() {
           </Link>
           <Link href={signedIn ? '/account' : '/account/login'}>
             {signedIn ? 'Account' : 'Sign in'}
+          </Link>
+          <Link href="/sell" className="hide-sm">
+            {hasStore ? 'Seller dashboard' : 'Sell'}
           </Link>
           <Link href="/cart" className="cart-link">
             Cart
