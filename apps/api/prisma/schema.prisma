@@ -261,7 +261,7 @@ model Product {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  seller        Seller?           @relation(fields: [sellerId], references: [id])
+  seller        Seller?           @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   category      Category          @relation(fields: [categoryId], references: [id])
   brand         Brand?            @relation(fields: [brandId], references: [id])
   variants      ProductVariant[]
