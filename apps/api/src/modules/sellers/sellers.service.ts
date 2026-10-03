@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { type Locale } from '@nixzora/i18n';
 import {
   type PayoutOnboardingLink,
   type PublicSeller,
@@ -16,6 +17,7 @@ import {
   type SellerView,
   slugify,
 } from '@nixzora/validation';
+import { toLocale } from '../../common/locale';
 import { type Env } from '../../config/env';
 import { type Seller, type SellerMemberRole } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -41,6 +43,16 @@ export class SellersService {
     @Inject(PAYOUT_GATEWAY) private readonly payouts: PayoutGateway,
     private readonly storage: StorageService,
   ) {}
+
+  /** The language for emails to the store: its owner's account language. */
+  async ownerLocale(sellerId: string): Promise<Locale> {
+    const owner = await this.prisma.sellerMember.findFirst({
+      where: { sellerId, role: 'OWNER' },
+      orderBy: { createdAt: 'asc' },
+      select: { user: { select: { language: true } } },
+    });
+    return toLocale(owner?.user.language);
+  }
 
   /** The caller's seller membership, or null. */
   async context(userId: string): Promise<SellerContext | null> {

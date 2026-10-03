@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { brand, space } from '@/lib/theme';
 import { Button, Field, Text } from './ui';
@@ -26,6 +27,8 @@ export function RateSeller({
   shipment: Shipment;
 }) {
   const queryClient = useQueryClient();
+  const t = useT('appAccount');
+  const tc = useT('common');
   const current = shipment.rating;
   const [open, setOpen] = useState(false);
   const [stars, setStars] = useState(current?.value ?? 0);
@@ -50,7 +53,9 @@ export function RateSeller({
       <Button
         tone="ghost"
         title={
-          current ? `Your rating: ${current.value} of 5 · Change` : `Rate ${seller.displayName}`
+          current
+            ? t('rateYourRating', { value: current.value })
+            : t('rateSeller', { seller: seller.displayName })
         }
         icon={<Ionicons name={current ? 'star' : 'star-outline'} size={18} color={brand.signal} />}
         onPress={() => setOpen(true)}
@@ -61,7 +66,7 @@ export function RateSeller({
   return (
     <View style={{ gap: space.sm }}>
       <Text variant="small" muted>
-        How was this seller? Packing, speed and the item matching its listing.
+        {t('rateIntro')}
       </Text>
       <View style={{ flexDirection: 'row', gap: space.xs }} accessibilityRole="radiogroup">
         {[1, 2, 3, 4, 5].map((n) => (
@@ -70,7 +75,7 @@ export function RateSeller({
             onPress={() => setStars(n)}
             accessibilityRole="radio"
             accessibilityState={{ checked: stars === n }}
-            accessibilityLabel={`${n} ${n === 1 ? 'star' : 'stars'}`}
+            accessibilityLabel={t('rateStars', { count: n })}
             hitSlop={6}
           >
             <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={32} color={brand.signal} />
@@ -78,8 +83,8 @@ export function RateSeller({
         ))}
       </View>
       <Field
-        label="Comment for the seller (optional)"
-        hint="Not shown publicly."
+        label={t('rateComment')}
+        hint={t('rateCommentHint')}
         value={comment}
         onChangeText={setComment}
         maxLength={1000}
@@ -92,12 +97,12 @@ export function RateSeller({
       ) : null}
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <Button
-          title={current ? 'Update rating' : 'Send rating'}
+          title={current ? t('rateUpdate') : t('rateSend')}
           disabled={!stars || save.isPending}
           loading={save.isPending}
           onPress={() => save.mutate()}
         />
-        <Button title="Cancel" tone="ghost" onPress={() => setOpen(false)} />
+        <Button title={tc('cancel')} tone="ghost" onPress={() => setOpen(false)} />
       </View>
     </View>
   );

@@ -6,6 +6,7 @@ import {
   type Usage,
 } from '../assistant/language-model';
 import { type CategoryRef, type ParsedNeed } from '../assistant/need';
+import { type Locale } from '../assistant/replies';
 import { type EmbeddingPurpose, type EmbeddingsProvider } from './embeddings';
 
 /** The AI service's private routes (ADR-0016), shared by client and server. */
@@ -53,11 +54,13 @@ export class RemoteLanguageModel implements LanguageModel {
     readonly model: string,
   ) {}
 
-  understand(userTurns: string[], categories: CategoryRef[]) {
+  understand(userTurns: string[], categories: CategoryRef[], locale?: Locale) {
+    // An AI service that predates `locale` ignores it and answers in English.
     return this.client.post<{ need: ParsedNeed; usage: Usage }>(AI_ROUTES.understand, {
       model: this.model,
       userTurns,
       categories,
+      ...(locale ? { locale } : {}),
     });
   }
 

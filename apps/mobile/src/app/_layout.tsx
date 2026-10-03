@@ -21,6 +21,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LockScreen } from '@/components/LockScreen';
 import { OfflineToast } from '@/components/OfflineToast';
 import { applySavedTheme } from '@/lib/appearance';
+import { language, useT } from '@/lib/i18n';
 import { applyOrientationPolicy } from '@/lib/orientation';
 import { enablePush, useNotificationNavigation } from '@/lib/push';
 import { connectQueryToDevice, persistOptions, queryClient } from '@/lib/query';
@@ -49,6 +50,7 @@ function navigationTheme(dark: boolean): Theme {
 export default function RootLayout() {
   const dark = useColorScheme() === 'dark';
   const { status } = useSession();
+  const t = useT('appShop');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -61,6 +63,7 @@ export default function RootLayout() {
   useEffect(() => {
     void applyOrientationPolicy();
     void applySavedTheme();
+    void language.load();
     void session.boot();
     return connectQueryToDevice();
   }, []);
@@ -99,37 +102,40 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="p/[slug]" options={{ title: '' }} />
                 <Stack.Screen name="c/[slug]" options={{ title: '' }} />
-                <Stack.Screen name="checkout" options={{ title: 'Checkout' }} />
-                <Stack.Screen name="orders/index" options={{ title: 'Your orders' }} />
-                <Stack.Screen name="orders/[number]" options={{ title: 'Order' }} />
-                <Stack.Screen name="wishlist" options={{ title: 'Saved for later' }} />
-                <Stack.Screen name="account/security" options={{ title: 'Login & security' }} />
-                <Stack.Screen name="account/addresses" options={{ title: 'Your addresses' }} />
-                <Stack.Screen name="account/returns" options={{ title: 'Returns & refunds' }} />
-                <Stack.Screen name="account/reviews" options={{ title: 'Your reviews' }} />
-                <Stack.Screen name="account/preferences" options={{ title: 'Notifications' }} />
-                <Stack.Screen name="account/profile" options={{ title: 'Your profile' }} />
-                <Stack.Screen name="account/buy-again" options={{ title: 'Buy again' }} />
-                <Stack.Screen name="account/payments" options={{ title: 'Payment methods' }} />
-                <Stack.Screen name="account/coupons" options={{ title: 'Coupons & rewards' }} />
-                <Stack.Screen name="account/settings" options={{ title: 'Settings' }} />
-                <Stack.Screen name="account/policies" options={{ title: 'Terms & policies' }} />
-                <Stack.Screen name="account/support" options={{ title: 'Support requests' }} />
-                <Stack.Screen name="help/index" options={{ title: 'Help & support' }} />
-                <Stack.Screen name="help/contact" options={{ title: 'Contact support' }} />
+                <Stack.Screen name="checkout" options={{ title: t('titleCheckout') }} />
+                <Stack.Screen name="orders/index" options={{ title: t('titleOrders') }} />
+                <Stack.Screen name="orders/[number]" options={{ title: t('titleOrder') }} />
+                <Stack.Screen name="wishlist" options={{ title: t('titleWishlist') }} />
+                <Stack.Screen name="account/security" options={{ title: t('titleSecurity') }} />
+                <Stack.Screen name="account/addresses" options={{ title: t('titleAddresses') }} />
+                <Stack.Screen name="account/returns" options={{ title: t('titleReturns') }} />
+                <Stack.Screen name="account/reviews" options={{ title: t('titleReviews') }} />
+                <Stack.Screen
+                  name="account/preferences"
+                  options={{ title: t('titlePreferences') }}
+                />
+                <Stack.Screen name="account/profile" options={{ title: t('titleProfile') }} />
+                <Stack.Screen name="account/buy-again" options={{ title: t('titleBuyAgain') }} />
+                <Stack.Screen name="account/payments" options={{ title: t('titlePayments') }} />
+                <Stack.Screen name="account/coupons" options={{ title: t('titleCoupons') }} />
+                <Stack.Screen name="account/settings" options={{ title: t('titleSettings') }} />
+                <Stack.Screen name="account/policies" options={{ title: t('titlePolicies') }} />
+                <Stack.Screen name="account/support" options={{ title: t('titleSupport') }} />
+                <Stack.Screen name="help/index" options={{ title: t('titleHelp') }} />
+                <Stack.Screen name="help/contact" options={{ title: t('titleContact') }} />
                 <Stack.Screen
                   name="sign-in"
-                  options={{ title: 'Sign in', presentation: 'modal' }}
+                  options={{ title: t('titleSignIn'), presentation: 'modal' }}
                 />
                 <Stack.Screen
                   name="register"
-                  options={{ title: 'Create account', presentation: 'modal' }}
+                  options={{ title: t('titleRegister'), presentation: 'modal' }}
                 />
                 <Stack.Screen
                   name="forgot-password"
-                  options={{ title: 'Forgot password', presentation: 'modal' }}
+                  options={{ title: t('titleForgotPassword'), presentation: 'modal' }}
                 />
-                <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
+                <Stack.Screen name="delete-account" options={{ title: t('titleDeleteAccount') }} />
                 <Stack.Screen name="stripe-redirect" options={{ headerShown: false }} />
               </Stack>
               <OfflineToast />

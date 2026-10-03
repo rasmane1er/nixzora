@@ -1,5 +1,6 @@
 import type { AuthTokens } from '@nixzora/validation';
 import { api } from './api';
+import { language } from './i18n';
 import { queryClient } from './query';
 import { enablePush, forgetDevice } from './push';
 import { session } from './session';
@@ -14,6 +15,23 @@ export async function completeSignIn(tokens: AuthTokens): Promise<void> {
   }
   await queryClient.invalidateQueries({ queryKey: ['cart'] });
   void enablePush(false).catch(() => undefined);
+  void syncLanguage();
+}
+
+/**
+ * One language everywhere: a language chosen on this phone is saved on the account; otherwise
+ * the account's language is used here.
+ */
+async function syncLanguage(): Promise<void> {
+  try {
+    if (language.isChosen()) {
+      await api.me.setLanguage(language.get());
+    } else {
+      language.adopt((await api.me.profile()).language);
+    }
+  } catch {
+    // A convenience: never block signing in.
+  }
 }
 
 export async function signOut(options: { serverEnded?: boolean } = {}): Promise<void> {

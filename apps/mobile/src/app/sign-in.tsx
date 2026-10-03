@@ -6,6 +6,7 @@ import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { completeSignIn } from '@/lib/account-actions';
 import { api } from '@/lib/api';
 import { deviceName } from '@/lib/device';
+import { useT } from '@/lib/i18n';
 import { fonts } from '@/lib/theme';
 
 export default function SignInScreen() {
@@ -15,6 +16,8 @@ export default function SignInScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT('appAccount');
+  const tc = useT('common');
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/account'));
 
@@ -48,10 +51,10 @@ export default function SignInScreen() {
     <Screen>
       {mfaToken ? (
         <>
-          <Text variant="title">Two-step verification</Text>
-          <Text muted>Enter the 6-digit code from your authenticator app, or a recovery code.</Text>
+          <Text variant="title">{t('twoStepTitle')}</Text>
+          <Text muted>{t('signInMfaIntro')}</Text>
           <Field
-            label="Code"
+            label={t('fieldCode')}
             value={code}
             onChangeText={setCode}
             keyboardType="number-pad"
@@ -63,7 +66,7 @@ export default function SignInScreen() {
         </>
       ) : (
         <>
-          <Text variant="title">Welcome back</Text>
+          <Text variant="title">{t('signInWelcome')}</Text>
           <SocialSignIn
             onResult={async (result) => {
               if ('mfaRequired' in result) return setMfaToken(result.mfaToken);
@@ -72,7 +75,7 @@ export default function SignInScreen() {
             }}
           />
           <Field
-            label="Email"
+            label={t('fieldEmail')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -81,7 +84,7 @@ export default function SignInScreen() {
             textContentType="username"
           />
           <Field
-            label="Password"
+            label={t('fieldPassword')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -93,27 +96,27 @@ export default function SignInScreen() {
       )}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <Button
-        title={mfaToken ? 'Verify' : 'Sign in'}
+        title={mfaToken ? t('verify') : tc('signIn')}
         loading={busy}
         onPress={() => void submit()}
       />
       {!mfaToken ? (
         <>
           <Button
-            title="Forgot password?"
+            title={t('forgotPasswordLink')}
             tone="ghost"
             onPress={() =>
               router.push({ pathname: '/forgot-password', params: { email: email.trim() } })
             }
           />
           <Text muted style={{ textAlign: 'center' }}>
-            New to NIXZORA?{' '}
+            {t('newToNixzora')}{' '}
             <Link
               href="/register"
               replace
               style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
             >
-              Create an account
+              {tc('createAccount')}
             </Link>
           </Text>
         </>

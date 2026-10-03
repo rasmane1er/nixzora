@@ -2,17 +2,22 @@ import type { ProductCard as Card } from '@nixzora/validation';
 import { PressableLink } from './PressableLink';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
+import { useT } from '@/lib/i18n';
 import { radius, space, usePalette } from '@/lib/theme';
 import { Price } from './Price';
 import { Text } from './ui';
 
 export function ProductCard({ product }: { product: Card }) {
   const p = usePalette();
+  const t = useT('appShop');
+  const tp = useT('product');
   return (
     <PressableLink
       href={`/p/${product.slug}`}
       accessibilityRole="link"
-      accessibilityLabel={`${product.title}${product.inStock ? '' : ', sold out'}`}
+      accessibilityLabel={
+        product.inStock ? product.title : t('itemSoldOut', { title: product.title })
+      }
       style={({ pressed }) => [
         styles.card,
         { backgroundColor: p.card, borderColor: p.line, opacity: pressed ? 0.85 : 1 },
@@ -30,7 +35,7 @@ export function ProductCard({ product }: { product: Card }) {
           />
         ) : (
           <Text variant="label" muted>
-            No photo
+            {t('noPhoto')}
           </Text>
         )}
       </View>
@@ -50,7 +55,7 @@ export function ProductCard({ product }: { product: Card }) {
         />
         {!product.inStock ? (
           <Text variant="small" tone="error">
-            Sold out
+            {tp('soldOut')}
           </Text>
         ) : null}
       </View>

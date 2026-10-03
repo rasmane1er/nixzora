@@ -382,6 +382,8 @@ model Order {
   taxCents        Int         @default(0) @map("tax_cents")
   discountCents   Int         @default(0) @map("discount_cents")
   couponCode      String?     @map("coupon_code")
+  /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
+  language        String      @default("en")
   /// Total refunded so far (partial refunds and returns).
   refundedCents   Int         @default(0) @map("refunded_cents")
   /// Postage paid for the label, and where to print it.
@@ -798,6 +800,9 @@ model ProductEvent {
 model ReviewInsight {
   productId     String   @id @map("product_id") @db.Uuid
   summary       String
+  /// { fr, es }: the model's summary in other languages (none for template rows, which are
+  /// translated when read). Readers fall back to the translated template.
+  summaries     Json     @default("{}")
   /// [{ label, mentions }]: aspects reviewers praise, by number of reviews.
   pros          Json
   /// [{ label, mentions }]: aspects reviewers complain about.

@@ -5,6 +5,7 @@ import { Linking } from 'react-native';
 import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
+import { useT } from '@/lib/i18n';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,10 +16,11 @@ export default function ForgotPasswordScreen() {
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useT('appAccount');
 
   async function send() {
     const address = email.trim();
-    if (!EMAIL.test(address)) return setError('Enter the email you signed up with.');
+    if (!EMAIL.test(address)) return setError(t('forgotInvalidEmail'));
     setBusy(true);
     setError(null);
     try {
@@ -34,27 +36,26 @@ export default function ForgotPasswordScreen() {
   if (sentTo) {
     return (
       <Screen>
-        <Text variant="title">Check your email</Text>
-        <Text>
-          If {sentTo} has a NIXZORA account, a link to choose a new password is on its way. It works
-          for 30 minutes.
-        </Text>
-        <Text muted>
-          Nothing after a few minutes? Check spam, or make sure this is the address you used. If you
-          signed up with Apple or Google, use that button to sign in instead.
-        </Text>
-        <Button title="Back to sign in" onPress={() => router.back()} />
-        <Button title="Send again" tone="ghost" loading={busy} onPress={() => void send()} />
+        <Text variant="title">{t('forgotSentTitle')}</Text>
+        <Text>{t('forgotSentBody', { email: sentTo })}</Text>
+        <Text muted>{t('forgotSentHelp')}</Text>
+        <Button title={t('forgotBackToSignIn')} onPress={() => router.back()} />
+        <Button
+          title={t('forgotSendAgain')}
+          tone="ghost"
+          loading={busy}
+          onPress={() => void send()}
+        />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text variant="title">Reset your password</Text>
-      <Text muted>Enter your email and we'll send you a link to choose a new password.</Text>
+      <Text variant="title">{t('forgotTitle')}</Text>
+      <Text muted>{t('forgotIntro')}</Text>
       <Field
-        label="Email"
+        label={t('fieldEmail')}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -66,9 +67,9 @@ export default function ForgotPasswordScreen() {
         onSubmitEditing={() => void send()}
       />
       {error ? <Banner tone="error">{error}</Banner> : null}
-      <Button title="Send reset link" loading={busy} onPress={() => void send()} />
+      <Button title={t('forgotSendButton')} loading={busy} onPress={() => void send()} />
       <Button
-        title="Open the website instead"
+        title={t('forgotOpenWebsite')}
         tone="ghost"
         onPress={() => void Linking.openURL(`${WEB_URL}/account/forgot-password`)}
       />

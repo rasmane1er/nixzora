@@ -18,10 +18,14 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useCart, useCartMutation } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { space } from '@/lib/theme';
 
 export default function CartScreen() {
   const online = useIsOnline();
+  const t = useT('appShop');
+  const tc = useT('common');
+  const tcart = useT('cart');
   const cart = useCart();
   const [code, setCode] = useState('');
   const update = useCartMutation(
@@ -42,9 +46,9 @@ export default function CartScreen() {
         {cart.error ? <Banner tone="error">{errorMessage(cart.error)}</Banner> : null}
         {cart.isLoading ? null : (
           <EmptyState
-            title="Your cart is empty"
-            body="Browse the shop, or scan a barcode in a store to find a product here."
-            action={<Button title="Start shopping" onPress={() => router.navigate('/')} />}
+            title={t('cartEmpty')}
+            body={t('cartEmptyBody')}
+            action={<Button title={t('startShopping')} onPress={() => router.navigate('/')} />}
           />
         )}
       </Screen>
@@ -76,11 +80,11 @@ export default function CartScreen() {
             <View style={{ flex: 1, gap: 2 }}>
               <Text variant="mono">{data.coupon.code}</Text>
               <Text variant="small" tone={data.coupon.problem ? 'error' : 'ok'}>
-                {data.coupon.problem ?? data.coupon.description ?? 'Applied'}
+                {data.coupon.problem ?? data.coupon.description ?? t('couponApplied')}
               </Text>
             </View>
             <Button
-              title="Remove"
+              title={tc('remove')}
               tone="ghost"
               loading={removeCoupon.isPending}
               onPress={() => removeCoupon.mutate(undefined)}
@@ -90,7 +94,7 @@ export default function CartScreen() {
           <Row style={{ alignItems: 'flex-end' }}>
             <View style={{ flex: 1 }}>
               <Field
-                label="Promo code"
+                label={t('promoCode')}
                 value={code}
                 onChangeText={setCode}
                 autoCapitalize="characters"
@@ -100,7 +104,7 @@ export default function CartScreen() {
               />
             </View>
             <Button
-              title="Apply"
+              title={tcart('apply')}
               tone="secondary"
               disabled={!code.trim()}
               loading={applyCoupon.isPending}
@@ -113,15 +117,15 @@ export default function CartScreen() {
       <Card>
         <Totals totals={data.totals} taxKnown={false} />
       </Card>
-      {blocked ? <Banner tone="warn">Fix the items marked above to check out.</Banner> : null}
-      {!online ? <Banner tone="warn">Connect to the internet to check out.</Banner> : null}
+      {blocked ? <Banner tone="warn">{t('fixItemsAbove')}</Banner> : null}
+      {!online ? <Banner tone="warn">{t('connectToCheckOut')}</Banner> : null}
       <Button
-        title="Check out"
+        title={t('checkOut')}
         disabled={blocked || !online}
         onPress={() => router.push('/checkout')}
       />
       <Text variant="small" muted style={{ textAlign: 'center' }}>
-        Secure payment · Apple Pay and Google Pay accepted
+        {t('securePayment')}
       </Text>
       <View style={{ height: space.lg }} />
     </Screen>

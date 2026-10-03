@@ -4,27 +4,29 @@ import { Logo } from '@nixzora/ui';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Banner } from '@/components/ui';
 import { param, type SearchParams } from '@/lib/format';
+import { getT } from '@/lib/i18n';
 import { verifyCode } from '../actions';
 
-export const metadata: Metadata = { title: 'Two-step verification' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('verifyTitle') };
+}
 
 export default async function VerifyPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  const t = await getT('ops');
   return (
     <main className="auth">
       <div className="auth__card">
         <Logo size={40} />
         <div>
-          <h1>Enter your code</h1>
-          <p className="muted">
-            Open your authenticator app and enter the 6-digit code, or use one of your recovery
-            codes.
-          </p>
+          <h1>{t('enterCode')}</h1>
+          <p className="muted">{t('verifyIntro')}</p>
         </div>
         <Banner error={param(params, 'error')} />
         <form action={verifyCode} className="form">
           <label>
-            Code
+            {t('code')}
             <input
               name="code"
               inputMode="text"
@@ -34,10 +36,10 @@ export default async function VerifyPage({ searchParams }: { searchParams: Searc
               autoFocus
             />
           </label>
-          <SubmitButton>Verify</SubmitButton>
+          <SubmitButton>{t('verify')}</SubmitButton>
         </form>
         <Link href="/login" className="muted">
-          ← Use a different account
+          {t('differentAccount')}
         </Link>
       </div>
     </main>

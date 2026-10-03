@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useT } from './I18nProvider';
 
 /**
  * On phones and small tablets the Ops Center menu folds behind a button, so each page starts
@@ -9,6 +10,8 @@ import { useEffect, useState } from 'react';
  */
 export function SideMenu({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useT('ops');
+  const common = useT('common');
   const [open, setOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
   // Close after navigating (state derived from the route, no effect needed).
@@ -32,7 +35,7 @@ export function SideMenu({ children }: { children: React.ReactNode }) {
         aria-controls="side-menu"
         onClick={() => setOpen((value) => !value)}
       >
-        {open ? 'Close' : 'Menu'}
+        {open ? common('close') : t('menu')}
       </button>
       <div id="side-menu" className="side__body" data-open={open}>
         {children}

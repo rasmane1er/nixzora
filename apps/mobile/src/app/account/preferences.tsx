@@ -5,12 +5,14 @@ import { Platform, Switch, View } from 'react-native';
 import { MenuList } from '@/components/MenuList';
 import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { space } from '@/lib/theme';
 
 /** Which emails NIXZORA sends (push lives in Settings). Order and security emails are always on. */
 export default function PreferencesScreen() {
   const client = useQueryClient();
+  const t = useT('appAccount');
   const prefs = useQuery({ queryKey: keys.preferences, queryFn: () => api.me.preferences() });
   const save = useMutation({
     mutationFn: (next: AccountPreferences) => api.me.setPreferences(next),
@@ -38,41 +40,41 @@ export default function PreferencesScreen() {
       {save.error ? <Banner tone="error">{errorMessage(save.error)}</Banner> : null}
       <Card>
         {row(
-          'Orders and account',
-          'Confirmations, shipping, refunds and security alerts. Always on.',
-          <Switch value disabled accessibilityLabel="Orders and account emails, always on" />,
+          t('prefsOrdersTitle'),
+          t('prefsOrdersBody'),
+          <Switch value disabled accessibilityLabel={t('prefsOrdersA11y')} />,
         )}
         <Divider />
         {row(
-          'Review requests',
-          'One email after delivery asking how the product is.',
+          t('prefsReviewsTitle'),
+          t('prefsReviewsBody'),
           <Switch
             value={current?.reviewRequests ?? false}
             disabled={!current}
             onValueChange={toggle('reviewRequests')}
-            accessibilityLabel="Review request emails"
+            accessibilityLabel={t('prefsReviewsA11y')}
           />,
         )}
         <Divider />
         {row(
-          'Deals and new arrivals',
-          'Occasional offers and new products. Unsubscribe any time.',
+          t('prefsDealsTitle'),
+          t('prefsDealsBody'),
           <Switch
             value={current?.marketingEmails ?? false}
             disabled={!current}
             onValueChange={toggle('marketingEmails')}
-            accessibilityLabel="Deals and new arrivals emails"
+            accessibilityLabel={t('prefsDealsA11y')}
           />,
         )}
       </Card>
       {Platform.OS !== 'web' ? (
         <MenuList
-          title="Push notifications"
+          title={t('prefsPushTitle')}
           items={[
             {
               icon: 'notifications-outline',
-              label: 'Order updates on this phone',
-              hint: 'Settings → This phone',
+              label: t('prefsPushLabel'),
+              hint: t('prefsPushHint'),
               href: '/account/settings',
             },
           ]}

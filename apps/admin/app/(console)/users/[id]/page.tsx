@@ -16,11 +16,15 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
-import { dateTime, money, param, query, type SearchParams } from '@/lib/format';
-import { ROLE_LABELS } from '@/lib/roles';
+import { param, query, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
+import { ROLE_KEYS, roleLabel } from '@/lib/roles';
 import { addNote, grantRole, revokeRole, setStatus } from '../actions';
 
-export const metadata: Metadata = { title: 'Account' };
+export async function generateMetadata(): Promise<Metadata> {
+  const common = await getT('common');
+  return { title: common('account') };
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,18 +52,24 @@ export default async function UserPage({
     can(me, 'orders.read.all') ? load<CustomerOrder[]>(`/admin/users/${user.id}/orders`) : null,
     can(me, 'customers.notes') ? load<CustomerNoteView[]>(`/admin/users/${user.id}/notes`) : null,
   ]);
+  const [t, ops, common, f] = await Promise.all([
+    getT('opsPeople'),
+    getT('ops'),
+    getT('common'),
+    getFormat(),
+  ]);
   const self = me.id === user.id;
-  const missing = Object.keys(ROLE_LABELS).filter((key) => !user.roles.includes(key));
+  const missing = ROLE_KEYS.filter((key) => !user.roles.includes(key));
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
 
   return (
     <>
       <PageHeader
-        eyebrow="Account"
+        eyebrow={common('account')}
         title={user.email}
         actions={
           <Link className="btn btn--secondary" href="/users">
-            All users
+            {t('allUsers')}
           </Link>
         }
       />
@@ -67,21 +77,19 @@ export default async function UserPage({
 
       <div className="two-col">
         <section className="card">
-          <h2>Roles</h2>
-          <p className="muted">
-            Staff roles unlock the Ops Center. Every change is recorded in the audit log.
-          </p>
+          <h2>{t('roles')}</h2>
+          <p className="muted">{t('rolesIntro')}</p>
           <div className="table-wrap">
             <table>
               <tbody>
                 {user.roles.map((key) => (
                   <tr key={key}>
-                    <td>{ROLE_LABELS[key] ?? key}</td>
+                    <td>{roleLabel(ops, key)}</td>
                     <td className="num">
                       {can(me, 'roles.manage') && !(self && key === 'admin') ? (
                         <ActionButton
                           action={revokeRole}
-                          label="Remove"
+                          label={common('remove')}
                           tone="danger"
                           fields={{ id: user.id, roleKey: key }}
                         />
@@ -95,55 +103,55 @@ export default async function UserPage({
           {can(me, 'roles.manage') && missing.length > 0 ? (
             <form action={grantRole} className="inline-form" style={{ marginTop: 16 }}>
               <input type="hidden" name="id" value={user.id} />
-              <select name="roleKey" aria-label="Role to grant">
+              <select name="roleKey" aria-label={t('roleToGrant')}>
                 {missing.map((key) => (
                   <option key={key} value={key}>
-                    {ROLE_LABELS[key]}
+                    {roleLabel(ops, key)}
                   </option>
                 ))}
               </select>
-              <SubmitButton>Grant role</SubmitButton>
+              <SubmitButton>{t('grantRole')}</SubmitButton>
             </form>
           ) : null}
         </section>
 
         <section className="card">
-          <h2>Account</h2>
+          <h2>{common('account')}</h2>
           <dl>
-            <dt className="muted">Name</dt>
+            <dt className="muted">{t('name')}</dt>
             <dd>{name || '—'}</dd>
-            <dt className="muted">Status</dt>
+            <dt className="muted">{t('status')}</dt>
             <dd>
               <StatusPill value={user.status} />
             </dd>
-            <dt className="muted">Email verified</dt>
-            <dd>{user.emailVerified ? 'Yes' : 'No'}</dd>
-            <dt className="muted">Two-step verification</dt>
-            <dd>{user.mfaEnabled ? 'On' : 'Off'}</dd>
-            <dt className="muted">Signed-in devices</dt>
-            <dd>{user.activeSessions}</dd>
-            <dt className="muted">Joined</dt>
-            <dd>{dateTime(user.createdAt)}</dd>
+            <dt className="muted">{t('emailVerified')}</dt>
+            <dd>{user.emailVerified ? common('yes') : common('no')}</dd>
+            <dt className="muted">{ops('twoStep')}</dt>
+            <dd>{user.mfaEnabled ? ops('on') : ops('off')}</dd>
+            <dt className="muted">{ops('signedInDevices')}</dt>
+            <dd>{f.number(user.activeSessions)}</dd>
+            <dt className="muted">{t('joined')}</dt>
+            <dd>{f.dateTime(user.createdAt)}</dd>
           </dl>
           {can(me, 'users.manage') && !self && user.status !== 'DELETED' ? (
             user.status === 'ACTIVE' ? (
               <ActionButton
                 action={setStatus}
-                label="Suspend account"
+                label={t('suspendAccount')}
                 tone="danger"
                 fields={{ id: user.id, action: 'suspend' }}
               />
             ) : (
               <ActionButton
                 action={setStatus}
-                label="Reactivate account"
+                label={t('reactivateAccount')}
                 fields={{ id: user.id, action: 'reactivate' }}
               />
             )
           ) : null}
           {can(me, 'audit.read') ? (
             <p>
-              <Link href={`/audit${query({ actorId: user.id })}`}>Activity by this account →</Link>
+              <Link href={`/audit${query({ actorId: user.id })}`}>{t('activityByAccount')}</Link>
             </p>
           ) : null}
         </section>
@@ -152,9 +160,9 @@ export default async function UserPage({
       <div className="two-col">
         {orders ? (
           <section className="card">
-            <h2>Orders</h2>
+            <h2>{t('orders')}</h2>
             {orders.length === 0 ? (
-              <p className="muted">No orders yet.</p>
+              <p className="muted">{t('noOrders')}</p>
             ) : (
               <div className="table-wrap">
                 <table>
@@ -166,15 +174,17 @@ export default async function UserPage({
                             {order.number}
                           </Link>
                         </td>
-                        <td>{dateTime(order.createdAt)}</td>
+                        <td>{f.dateTime(order.createdAt)}</td>
                         <td>
                           <StatusPill value={order.status} />
                         </td>
                         <td className="num">
-                          {money(order.totalCents, order.currency)}
+                          {f.money(order.totalCents, order.currency)}
                           {order.refundedCents ? (
                             <div className="muted">
-                              −{money(order.refundedCents, order.currency)} refunded
+                              {t('refunded', {
+                                amount: f.money(order.refundedCents, order.currency),
+                              })}
                             </div>
                           ) : null}
                         </td>
@@ -189,8 +199,8 @@ export default async function UserPage({
 
         {notes ? (
           <section className="card">
-            <h2>Support notes</h2>
-            <p className="muted">Private to staff. Never shown to the customer.</p>
+            <h2>{t('supportNotes')}</h2>
+            <p className="muted">{t('notesPrivate')}</p>
             <form action={addNote} className="form" style={{ marginBottom: 16 }}>
               <input type="hidden" name="id" value={user.id} />
               <textarea
@@ -199,11 +209,11 @@ export default async function UserPage({
                 minLength={2}
                 maxLength={4000}
                 rows={3}
-                placeholder="What happened, what you did"
-                aria-label="New note"
+                placeholder={t('notePlaceholder')}
+                aria-label={t('newNote')}
               />
               <div>
-                <SubmitButton>Add note</SubmitButton>
+                <SubmitButton>{t('addNote')}</SubmitButton>
               </div>
             </form>
             <ul className="activity">
@@ -211,7 +221,7 @@ export default async function UserPage({
                 <li key={note.id} style={{ display: 'block' }}>
                   <div style={{ whiteSpace: 'pre-line' }}>{note.body}</div>
                   <div className="muted" style={{ fontSize: 12 }}>
-                    {note.authorEmail} · {dateTime(note.createdAt)}
+                    {note.authorEmail} · {f.dateTime(note.createdAt)}
                   </div>
                 </li>
               ))}

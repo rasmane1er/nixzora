@@ -7,8 +7,10 @@ import {
   type SupportRequestCreate,
   SupportRequestCreateSchema,
 } from '@nixzora/validation';
+import { type Locale } from '@nixzora/i18n';
 import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
+import { ReqLocale } from '../../common/locale';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
@@ -35,8 +37,9 @@ export class SupportController {
   create(
     @Body(new ZodValidationPipe(SupportRequestCreateSchema)) body: SupportRequestCreate,
     @MaybeUser() user: AuthUser | undefined,
+    @ReqLocale() locale: Locale,
   ) {
-    return this.support.create(body, user);
+    return this.support.create(body, user, locale);
   }
 
   @Get('me/support-requests')

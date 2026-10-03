@@ -1,8 +1,10 @@
 import { type INestApplication, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HttpAdapterHost } from '@nestjs/core';
 import { type NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { LocalizedErrorsFilter } from './common/localized-errors.filter';
 import { setInternalApiKey } from './common/request-meta';
 import { type Env } from './config/env';
 import { IMAGE_TYPES } from './modules/media/image-type';
@@ -28,6 +30,8 @@ export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();
+  // Error messages in French or Spanish when the caller's Accept-Language asks for them.
+  app.useGlobalFilters(new LocalizedErrorsFilter(app.get(HttpAdapterHost).httpAdapter));
 
   if (config.get('NODE_ENV', { infer: true }) !== 'production') {
     const document = SwaggerModule.createDocument(

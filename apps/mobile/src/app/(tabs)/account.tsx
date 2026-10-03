@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 import { keys } from '@/lib/query';
 import { signOut } from '@/lib/account-actions';
 import { API_URL, APP_VARIANT, APP_VERSION, WEB_URL } from '@/lib/config';
+import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fonts, radius, space, usePalette } from '@/lib/theme';
 
@@ -50,24 +51,24 @@ export default function AccountScreen() {
   });
   const { deleted } = useLocalSearchParams<{ deleted?: string }>();
   const [busy, setBusy] = useState(false);
+  const t = useT('appAccount');
+  const tc = useT('common');
 
   if (status !== 'signedIn' || !user) {
     return (
       <Screen>
-        {deleted ? (
-          <Banner tone="ok">Your account was deleted. Thanks for shopping with us.</Banner>
-        ) : null}
+        {deleted ? <Banner tone="ok">{t('hubDeleted')}</Banner> : null}
         <View style={{ alignItems: 'center', gap: space.md, paddingVertical: space.xl }}>
           <Logo size={40} wordmark={false} />
           <Text variant="title" style={{ textAlign: 'center' }}>
-            Your NIXZORA account
+            {t('hubGuestTitle')}
           </Text>
           <Text muted style={{ textAlign: 'center' }}>
-            Sign in to track orders, get delivery updates and save products for later.
+            {t('hubGuestIntro')}
           </Text>
         </View>
-        <Button title="Sign in" onPress={() => router.push('/sign-in')} />
-        <Button title="Create an account" tone="ghost" onPress={() => router.push('/register')} />
+        <Button title={tc('signIn')} onPress={() => router.push('/sign-in')} />
+        <Button title={tc('createAccount')} tone="ghost" onPress={() => router.push('/register')} />
         <Footer />
       </Screen>
     );
@@ -89,14 +90,14 @@ export default function AccountScreen() {
       <Card style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.lg }}>
         <Avatar url={profile?.avatarUrl} name={name} email={user.email} size={76} />
         <Text variant="title" style={{ textAlign: 'center' }}>
-          {name || 'Your account'}
+          {name || t('hubYourAccount')}
         </Text>
         <Text muted style={{ textAlign: 'center' }}>
           {user.email}
           {profile?.phone ? `\n${profile.phone}` : ''}
         </Text>
         <Button
-          title="Edit profile"
+          title={t('hubEditProfile')}
           tone="ghost"
           onPress={() => router.push('/account/profile')}
           style={{ alignSelf: 'center', paddingHorizontal: space.xl }}
@@ -104,37 +105,37 @@ export default function AccountScreen() {
       </Card>
 
       {profile && !profile.emailVerified ? (
-        <Banner tone="warn">Confirm your email address: check your inbox for our link.</Banner>
+        <Banner tone="warn">{t('hubConfirmEmail')}</Banner>
       ) : null}
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Stat href="/orders?filter=open" value={c?.openOrders} label="On the way" />
-        <Stat href="/account/reviews" value={c?.toReview} label="To review" />
-        <Stat href="/wishlist" value={c?.wishlist} label="Saved" />
+        <Stat href="/orders?filter=open" value={c?.openOrders} label={t('statOnTheWay')} />
+        <Stat href="/account/reviews" value={c?.toReview} label={t('statToReview')} />
+        <Stat href="/wishlist" value={c?.wishlist} label={t('statSaved')} />
       </View>
 
       <MenuList
-        title="Orders"
+        title={t('groupOrders')}
         items={[
           {
             icon: 'receipt-outline',
-            label: 'Orders',
+            label: t('menuOrders'),
             href: '/orders',
-            badge: c?.openOrders ? `${c.openOrders} on the way` : undefined,
+            badge: c?.openOrders ? t('badgeOnTheWay', { count: c.openOrders }) : undefined,
           },
-          { icon: 'heart-outline', label: 'Wishlist', href: '/wishlist' },
-          { icon: 'refresh-outline', label: 'Buy again', href: '/account/buy-again' },
+          { icon: 'heart-outline', label: t('menuWishlist'), href: '/wishlist' },
+          { icon: 'refresh-outline', label: t('menuBuyAgain'), href: '/account/buy-again' },
           {
             icon: 'return-down-back-outline',
-            label: 'Returns & refunds',
+            label: t('menuReturns'),
             href: '/account/returns',
-            badge: c?.openReturns ? `${c.openReturns} open` : undefined,
+            badge: c?.openReturns ? t('badgeOpen', { count: c.openReturns }) : undefined,
           },
           {
             icon: 'star-outline',
-            label: 'Your reviews',
+            label: t('menuReviews'),
             href: '/account/reviews',
-            badge: c?.toReview ? `${c.toReview} to review` : undefined,
+            badge: c?.toReview ? t('badgeToReview', { count: c.toReview }) : undefined,
           },
         ]}
       />
@@ -152,50 +153,54 @@ export default function AccountScreen() {
       ) : null}
 
       <MenuList
-        title="Shopping & payments"
+        title={t('groupShopping')}
         items={[
           {
             icon: 'location-outline',
-            label: 'Addresses',
+            label: t('menuAddresses'),
             href: '/account/addresses',
-            hint: c ? `${c.addresses} saved` : undefined,
+            hint: c ? t('hintAddressesSaved', { count: c.addresses }) : undefined,
           },
-          { icon: 'card-outline', label: 'Payment methods', href: '/account/payments' },
-          { icon: 'pricetag-outline', label: 'Coupons & rewards', href: '/account/coupons' },
+          { icon: 'card-outline', label: t('menuPayments'), href: '/account/payments' },
+          { icon: 'pricetag-outline', label: t('menuCoupons'), href: '/account/coupons' },
           overview.data?.seller
-            ? { icon: 'storefront-outline', label: 'Seller dashboard', url: `${WEB_URL}/sell` }
+            ? { icon: 'storefront-outline', label: tc('sellerDashboard'), url: `${WEB_URL}/sell` }
             : {
                 icon: 'storefront-outline',
-                label: 'Sell on NIXZORA',
-                hint: 'Open your store',
+                label: t('menuSellOn'),
+                hint: t('hintOpenStore'),
                 url: `${WEB_URL}/sell`,
               },
         ]}
       />
 
       <MenuList
-        title="Account"
+        title={tc('account')}
         items={[
-          { icon: 'notifications-outline', label: 'Notifications', href: '/account/preferences' },
+          {
+            icon: 'notifications-outline',
+            label: t('menuNotifications'),
+            href: '/account/preferences',
+          },
           {
             icon: 'shield-checkmark-outline',
-            label: 'Security & privacy',
+            label: t('menuSecurity'),
             href: '/account/security',
           },
           {
             icon: 'settings-outline',
-            label: 'Settings',
+            label: t('menuSettings'),
             href: '/account/settings',
-            hint: 'Appearance, this phone',
+            hint: t('hintSettings'),
           },
         ]}
       />
 
       <MenuList
-        title="Help"
+        title={t('groupHelp')}
         items={[
-          { icon: 'chatbubble-ellipses-outline', label: 'Help & support', href: '/help' },
-          { icon: 'document-text-outline', label: 'Terms & policies', href: '/account/policies' },
+          { icon: 'chatbubble-ellipses-outline', label: t('menuHelp'), href: '/help' },
+          { icon: 'document-text-outline', label: t('menuPolicies'), href: '/account/policies' },
         ]}
       />
 
@@ -203,7 +208,7 @@ export default function AccountScreen() {
         items={[
           {
             icon: 'log-out-outline',
-            label: busy ? 'Signing out…' : 'Sign out',
+            label: busy ? t('signingOut') : tc('signOut'),
             tone: 'danger',
             onPress: () => {
               if (busy) return;

@@ -7,11 +7,13 @@ import { useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Banner, Button, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { scanTarget } from '@/lib/scan';
 import { brand, radius, space, usePalette } from '@/lib/theme';
 
 export default function ScanScreen() {
   const p = usePalette();
+  const t = useT('appShop');
   const focused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const [manual, setManual] = useState('');
@@ -22,7 +24,7 @@ export default function ScanScreen() {
   async function open(raw: string) {
     const target = scanTarget(raw);
     if (!target) {
-      setMessage({ tone: 'error', text: 'That code is not a product barcode.' });
+      setMessage({ tone: 'error', text: t('notABarcode') });
       return;
     }
     if (target.kind === 'product') {
@@ -30,7 +32,7 @@ export default function ScanScreen() {
       return;
     }
     setBusy(true);
-    setMessage({ tone: 'info', text: `Looking up ${target.code}…` });
+    setMessage({ tone: 'info', text: t('lookingUp', { code: target.code }) });
     try {
       const found = await api.catalog.lookup(target.code);
       if (Platform.OS !== 'web')
@@ -46,7 +48,7 @@ export default function ScanScreen() {
         tone: 'error',
         text:
           error instanceof ApiError && error.status === 404
-            ? `We don’t sell ${target.code} yet. Try searching instead.`
+            ? t('notSoldYet', { code: target.code })
             : errorMessage(error),
       });
     } finally {
@@ -81,28 +83,32 @@ export default function ScanScreen() {
       >
         <Ionicons name="camera-outline" size={36} color={p.muted} />
         <Text muted style={{ textAlign: 'center' }}>
-          Allow the camera to scan barcodes on boxes and shelf labels.
+          {t('allowCameraHelp')}
         </Text>
         {permission.canAskAgain ? (
-          <Button title="Allow camera" onPress={() => void requestPermission()} />
+          <Button title={t('allowCamera')} onPress={() => void requestPermission()} />
         ) : (
-          <Button title="Open Settings" tone="ghost" onPress={() => void Linking.openSettings()} />
+          <Button
+            title={t('openSettings')}
+            tone="ghost"
+            onPress={() => void Linking.openSettings()}
+          />
         )}
       </View>
     );
 
   return (
     <Screen>
-      <Text muted>Point at the barcode on a box, or the QR code on a NIXZORA label.</Text>
+      <Text muted>{t('scanIntro')}</Text>
       {camera}
       {message ? <Banner tone={message.tone}>{message.text}</Banner> : null}
       <Row style={{ alignItems: 'flex-end' }}>
         <View style={{ flex: 1 }}>
           <Field
-            label="Or type the code"
+            label={t('typeCode')}
             value={manual}
             onChangeText={setManual}
-            placeholder="EAN, UPC or SKU"
+            placeholder={t('codePlaceholder')}
             autoCapitalize="characters"
             autoCorrect={false}
             keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
@@ -111,7 +117,7 @@ export default function ScanScreen() {
           />
         </View>
         <Button
-          title="Find"
+          title={t('find')}
           tone="secondary"
           loading={busy}
           disabled={!manual.trim()}

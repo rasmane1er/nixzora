@@ -66,6 +66,8 @@ export type ClientOptions = {
   session?: SessionHooks;
   /** Sent as User-Agent context, e.g. "nixzora-ios/1.0.0". */
   clientName?: string;
+  /** The reader's language ("en", "fr", "es"), sent as Accept-Language. */
+  language?: () => string | undefined;
   timeoutMs?: number;
   fetch?: typeof fetch;
 };
@@ -130,6 +132,8 @@ export function createApiClient(options: ClientOptions) {
     const cartId = opts.cart && !token ? session?.cartId?.() : null;
     if (cartId) headers['X-Cart-Id'] = cartId;
     if (options.clientName) headers['X-Client'] = options.clientName;
+    const language = options.language?.();
+    if (language) headers['Accept-Language'] = language;
     try {
       return await doFetch(`${base}${path}${queryString(opts.query)}`, {
         method,
@@ -175,6 +179,7 @@ export function createApiClient(options: ClientOptions) {
         firstName?: string;
         lastName?: string;
         deviceName?: string;
+        language?: 'en' | 'fr' | 'es';
       }) => request<AuthTokens>('POST', '/auth/register', { body, auth: 'none' }),
       completeMfa: (mfaToken: string, code: string) =>
         request<AuthTokens>('POST', '/auth/mfa/challenge', {
@@ -302,6 +307,8 @@ export function createApiClient(options: ClientOptions) {
     me: {
       overview: () => request<AccountOverview>('GET', '/me/overview'),
       profile: () => request<AccountProfile>('GET', '/me/profile'),
+      setLanguage: (language: 'en' | 'fr' | 'es') =>
+        request<AccountProfile>('PUT', '/me/language', { body: { language } }),
       updateProfile: (body: ProfileUpdate) =>
         request<AccountProfile>('PATCH', '/me/profile', { body }),
       orderHistory: (query: Partial<AccountOrderQuery> = {}) =>

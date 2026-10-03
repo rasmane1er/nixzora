@@ -3,6 +3,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { useSyncExternalStore } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '@/lib/i18n';
 import { brand, fonts } from '@/lib/theme';
 import { Text } from './ui';
 
@@ -18,6 +19,7 @@ export function useIsOnline(): boolean {
 export function OfflineToast() {
   const online = useIsOnline();
   const insets = useSafeAreaInsets();
+  const t = useT('appShop');
   if (online) return null;
   return (
     <View
@@ -39,7 +41,7 @@ export function OfflineToast() {
     >
       <Ionicons name="cloud-offline-outline" size={16} color={brand.paper} />
       <Text variant="small" style={{ color: brand.paper, fontFamily: fonts.bodyMedium }}>
-        Offline — showing saved products
+        {t('offline')}
       </Text>
     </View>
   );

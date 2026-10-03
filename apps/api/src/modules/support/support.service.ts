@@ -1,12 +1,14 @@
 import { randomInt } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_LOCALE, type Locale, translator } from '@nixzora/i18n';
 import {
   SUPPORT_TOPIC_LABEL,
   type SupportReply,
   type SupportRequestCreate,
   type SupportRequestView,
 } from '@nixzora/validation';
+import { toLocale } from '../../common/locale';
 import { type Env } from '../../config/env';
 import { type SupportRequest, type SupportStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -53,11 +55,16 @@ export class SupportService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  async create(input: SupportRequestCreate, user?: AuthUser): Promise<SupportRequestView> {
+  /** `locale` is the caller's language (Accept-Language), used when they are not signed in. */
+  async create(
+    input: SupportRequestCreate,
+    user?: AuthUser,
+    locale: Locale = DEFAULT_LOCALE,
+  ): Promise<SupportRequestView> {
     const account = user
       ? await this.prisma.user.findUnique({
           where: { id: user.id },
-          select: { email: true, firstName: true, lastName: true },
+          select: { email: true, firstName: true, lastName: true, language: true },
         })
       : null;
     const email = account?.email ?? input.email;
@@ -86,21 +93,17 @@ export class SupportService {
       }
     }
 
+    const t = translator(account ? toLocale(account.language) : locale)('email');
     await this.mail
       .send({
         to: email,
-        subject: `We got your message (${row!.reference})`,
+        subject: t('support_received_subject', { reference: row!.reference }),
         template: 'support.received',
         data: { reference: row!.reference, subject: row!.subject },
         text: [
-          `Hi${name ? ` ${name.split(' ')[0]}` : ''},`,
+          name ? t('support_greetingName', { name: name.split(' ')[0]! }) : t('support_greeting'),
           '',
-          `Thanks for writing to NIXZORA. Your reference is ${row!.reference}.`,
-          'We answer within one business day, by email to this address.',
-          '',
-          `Your message: ${row!.subject}`,
-          '',
-          '— NIXZORA customer support',
+          t('support_received_text', { reference: row!.reference, subject: row!.subject }),
         ].join('\n'),
       })
       .catch(() => undefined);
@@ -159,12 +162,21 @@ export class SupportService {
       },
     });
     if (input.reply) {
+      // The customer's account language; requests sent without an account get English.
+      const customer = row.userId
+        ? await this.prisma.user.findUnique({
+            where: { id: row.userId },
+            select: { language: true },
+          })
+        : null;
+      const t = translator(toLocale(customer?.language))('email');
+      const vars = { subject: row.subject, reference: row.reference };
       await this.mail.send({
         to: row.email,
-        subject: `Re: ${row.subject} (${row.reference})`,
+        subject: t('support_reply_subject', vars),
         template: 'support.reply',
         data: { reference: row.reference },
-        text: `${input.reply}\n\n— NIXZORA customer support\nReference ${row.reference}`,
+        text: t('support_reply_text', { ...vars, reply: input.reply }),
       });
     }
     await this.audit.record({

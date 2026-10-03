@@ -792,3 +792,17 @@ pre.meta {
 .copy-suggest__draft p {
   margin: 0;
 }
+
+/* Language picker (sidebar) */
+.language-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+.language-picker select {
+  width: auto;
+  min-width: 0;
+  padding: 4px 28px 4px 8px;
+  font-size: 13px;
+}

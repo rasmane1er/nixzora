@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 import { Banner, Button, Card, EmptyState, Field, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { fonts, space, usePalette } from '@/lib/theme';
 
@@ -39,20 +40,22 @@ function AddressForm({
   error: unknown;
 }) {
   const p = usePalette();
+  const t = useT('appAccount');
+  const tc = useT('common');
   const [d, setD] = useState<Draft>(initial);
   const set = (key: keyof Draft) => (value: string) => setD((prev) => ({ ...prev, [key]: value }));
   const stateOk = (US_STATES as readonly string[]).includes(d.region.toUpperCase());
   return (
     <View style={{ gap: space.sm }}>
       <Field
-        label="Label (optional)"
+        label={t('addrLabel')}
         value={d.label ?? ''}
         onChangeText={set('label')}
-        placeholder="Home, Work…"
+        placeholder={t('addrLabelPlaceholder')}
         maxLength={40}
       />
       <View style={{ flexDirection: 'row', gap: space.xs, marginTop: -space.xs }}>
-        {['Home', 'Work', 'Other'].map((label) => {
+        {[t('addrHome'), t('addrWork'), t('addrOther')].map((label) => {
           const selected = d.label === label;
           return (
             <Pressable
@@ -77,24 +80,20 @@ function AddressForm({
         })}
       </View>
       <Field
-        label="Full name"
+        label={t('addrFullName')}
         value={d.fullName}
         onChangeText={set('fullName')}
         autoComplete="name"
       />
       <Field
-        label="Street address"
+        label={t('addrStreet')}
         value={d.line1}
         onChangeText={set('line1')}
         autoComplete="street-address"
       />
+      <Field label={t('addrLine2')} value={d.line2 ?? ''} onChangeText={set('line2')} />
       <Field
-        label="Apartment, suite (optional)"
-        value={d.line2 ?? ''}
-        onChangeText={set('line2')}
-      />
-      <Field
-        label="City"
+        label={t('addrCity')}
         value={d.city}
         onChangeText={set('city')}
         autoComplete="postal-address-locality"
@@ -102,18 +101,18 @@ function AddressForm({
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
           <Field
-            label="State"
+            label={t('addrState')}
             value={d.region}
             onChangeText={(v) => set('region')(v.toUpperCase())}
             autoCapitalize="characters"
             maxLength={2}
             placeholder="MD"
-            error={d.region.length === 2 && !stateOk ? 'Use a US state code.' : undefined}
+            error={d.region.length === 2 && !stateOk ? t('addrStateError') : undefined}
           />
         </View>
         <View style={{ flex: 1 }}>
           <Field
-            label="ZIP code"
+            label={t('addrZip')}
             value={d.postalCode}
             onChangeText={set('postalCode')}
             keyboardType="number-pad"
@@ -123,29 +122,29 @@ function AddressForm({
         </View>
       </Row>
       <Field
-        label="Phone (optional)"
+        label={t('addrPhone')}
         value={d.phone ?? ''}
         onChangeText={set('phone')}
         keyboardType="phone-pad"
       />
       <Row style={{ justifyContent: 'space-between' }}>
-        <Text style={{ flex: 1 }}>Default delivery address</Text>
+        <Text style={{ flex: 1 }}>{t('addrDefault')}</Text>
         <Switch
           value={d.isDefaultShipping ?? false}
           onValueChange={(v) => setD((prev) => ({ ...prev, isDefaultShipping: v }))}
-          accessibilityLabel="Default delivery address"
+          accessibilityLabel={t('addrDefault')}
         />
       </Row>
       {error ? <Banner tone="error">{errorMessage(error)}</Banner> : null}
       <Row>
         <Button
-          title="Save address"
+          title={t('addrSave')}
           loading={saving}
           disabled={!stateOk}
           onPress={() => onSave(d)}
           style={{ flex: 1 }}
         />
-        <Button title="Cancel" tone="ghost" onPress={onCancel} />
+        <Button title={tc('cancel')} tone="ghost" onPress={onCancel} />
       </Row>
     </View>
   );
@@ -156,6 +155,8 @@ export default function AddressesScreen() {
   const client = useQueryClient();
   const addresses = useQuery({ queryKey: keys.addresses, queryFn: () => api.account.addresses() });
   const [editing, setEditing] = useState<string | 'new' | null>(null);
+  const t = useT('appAccount');
+  const tc = useT('common');
   const refresh = () => {
     void client.invalidateQueries({ queryKey: keys.addresses });
     void client.invalidateQueries({ queryKey: keys.overview });
@@ -190,7 +191,7 @@ export default function AddressesScreen() {
     <Screen>
       {editing === 'new' ? (
         <Card>
-          <Text variant="heading">New address</Text>
+          <Text variant="heading">{t('addrNew')}</Text>
           <AddressForm
             initial={EMPTY}
             saving={save.isPending}
@@ -201,7 +202,7 @@ export default function AddressesScreen() {
         </Card>
       ) : (
         <Button
-          title="Add an address"
+          title={t('addrAdd')}
           onPress={() => {
             save.reset();
             setEditing('new');
@@ -209,7 +210,7 @@ export default function AddressesScreen() {
         />
       )}
       {addresses.data && !addresses.data.length && editing !== 'new' ? (
-        <EmptyState title="No saved addresses" body="Add one and checkout fills it in for you." />
+        <EmptyState title={t('addrEmptyTitle')} body={t('addrEmptyBody')} />
       ) : null}
       {addresses.data?.map((a) => (
         <Card key={a.id}>
@@ -227,7 +228,7 @@ export default function AddressesScreen() {
                 <Text style={{ fontFamily: fonts.bodyMedium, flex: 1 }}>
                   {a.label || a.fullName}
                 </Text>
-                {a.isDefaultShipping ? <Pill label="Default" tone="ok" /> : null}
+                {a.isDefaultShipping ? <Pill label={t('addrDefaultPill')} tone="ok" /> : null}
               </Row>
               <Text muted>
                 {a.fullName}
@@ -239,7 +240,7 @@ export default function AddressesScreen() {
               </Text>
               <Row style={{ flexWrap: 'wrap' }}>
                 <Button
-                  title="Edit"
+                  title={tc('edit')}
                   tone="ghost"
                   onPress={() => {
                     save.reset();
@@ -248,19 +249,23 @@ export default function AddressesScreen() {
                 />
                 {!a.isDefaultShipping ? (
                   <Button
-                    title="Make default"
+                    title={t('addrMakeDefault')}
                     tone="ghost"
                     loading={makeDefault.isPending && makeDefault.variables === a.id}
                     onPress={() => makeDefault.mutate(a.id)}
                   />
                 ) : null}
                 <Button
-                  title="Remove"
+                  title={tc('remove')}
                   tone="danger"
                   onPress={() =>
-                    Alert.alert('Remove this address?', undefined, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Remove', style: 'destructive', onPress: () => remove.mutate(a.id) },
+                    Alert.alert(t('addrRemoveConfirm'), undefined, [
+                      { text: tc('cancel'), style: 'cancel' },
+                      {
+                        text: tc('remove'),
+                        style: 'destructive',
+                        onPress: () => remove.mutate(a.id),
+                      },
                     ])
                   }
                 />

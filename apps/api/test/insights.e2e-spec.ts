@@ -26,6 +26,8 @@ class FakeModel implements LanguageModel {
   readonly driver = 'anthropic' as const;
   readonly model = 'claude-haiku-4-5';
   reply = '';
+  /** What it writes in other languages; `reply` when absent. */
+  translations: Partial<Record<string, string>> = {};
   private readonly local = new LocalLanguageModel();
   understand(...args: Parameters<LanguageModel['understand']>) {
     return this.local.understand(...args);
@@ -33,8 +35,9 @@ class FakeModel implements LanguageModel {
   explain(input: Parameters<LanguageModel['explain']>[0]) {
     return this.local.explain(input);
   }
-  summarizeReviews() {
-    return Promise.resolve({ text: this.reply, usage: { inputTokens: 900, outputTokens: 60 } });
+  summarizeReviews(input: Parameters<LanguageModel['summarizeReviews']>[0]) {
+    const text = (input.locale && this.translations[input.locale]) ?? this.reply;
+    return Promise.resolve({ text, usage: { inputTokens: 900, outputTokens: 60 } });
   }
   writeProductCopy() {
     return Promise.resolve({ text: this.reply, usage: { inputTokens: 500, outputTokens: 80 } });
@@ -158,6 +161,46 @@ describe('Review insights (e2e)', () => {
       model: 'claude-haiku-4-5',
       notes: [],
     });
+  });
+
+  it('serves French and Spanish readers, from stored model text or the translated template', async () => {
+    fake.reply = 'Reviewers love the sound and comfort.';
+    fake.translations = {
+      fr: 'Les clients adorent le son et le confort ; 1 avis signale des coupures Bluetooth.',
+      es: '9 de cada 10 clientes aman el sonido.', // invented number: rejected
+    };
+    await addReview(5, 5, 'Comfortable and the sound is fantastic.');
+    await reviewsChanged();
+    fake.translations = {};
+
+    const english = ReviewInsightsSchema.parse((await insights()).insights);
+    expect(english).toMatchObject({ summary: fake.reply, aiWritten: true });
+
+    const french = ReviewInsightsSchema.parse(
+      (await http().get(`/api/v1/catalog/products/${slug}/reviews/insights?lang=fr`).expect(200))
+        .body.insights,
+    );
+    expect(french).toMatchObject({
+      summary: 'Les clients adorent le son et le confort ; 1 avis signale des coupures Bluetooth.',
+      aiWritten: true,
+      reviewCount: 5,
+    });
+    expect(french.pros.map((p) => p.label)).toEqual(expect.arrayContaining(['Son', 'Confort']));
+    expect(french.cons).toEqual([{ label: 'Connectivité', mentions: 1 }]);
+
+    const spanish = ReviewInsightsSchema.parse(
+      (
+        await http()
+          .get(`/api/v1/catalog/products/${slug}/reviews/insights`)
+          .set('Accept-Language', 'es-MX,es;q=0.9')
+          .expect(200)
+      ).body.insights,
+    );
+    expect(spanish.aiWritten).toBe(false);
+    expect(spanish.summary).toMatch(/^El 80\s% de 5 reseñas da 4 o 5 estrellas\./);
+    expect(spanish.pros.map((p) => p.label)).toEqual(
+      expect.arrayContaining(['Sonido', 'Comodidad']),
+    );
   });
 
   it('skips work when nothing changed', async () => {

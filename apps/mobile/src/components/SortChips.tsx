@@ -1,15 +1,16 @@
 import { Pressable, ScrollView } from 'react-native';
+import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 import { Text } from './ui';
 
 export type Sort = 'relevance' | 'price_asc' | 'price_desc' | 'newest';
 
-const LABELS: Record<Sort, string> = {
-  relevance: 'Best match',
-  newest: 'Newest',
-  price_asc: 'Price: low to high',
-  price_desc: 'Price: high to low',
-};
+const LABELS = {
+  relevance: 'sortRelevance',
+  newest: 'sortNewest',
+  price_asc: 'sortPriceAsc',
+  price_desc: 'sortPriceDesc',
+} as const satisfies Record<Sort, string>;
 
 export function SortChips({
   value,
@@ -21,6 +22,7 @@ export function SortChips({
   options?: Sort[];
 }) {
   const p = usePalette();
+  const t = useT('catalog');
   return (
     <ScrollView
       horizontal
@@ -48,7 +50,7 @@ export function SortChips({
               variant="small"
               style={{ fontFamily: fonts.bodyMedium, color: active ? p.bg : p.fg }}
             >
-              {LABELS[sort]}
+              {t(LABELS[sort])}
             </Text>
           </Pressable>
         );

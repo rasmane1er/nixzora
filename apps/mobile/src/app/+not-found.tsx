@@ -1,15 +1,17 @@
 import { router, Stack } from 'expo-router';
 import { Button, EmptyState, Screen } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 
 export default function NotFound() {
+  const t = useT('appShop');
   return (
     <>
-      <Stack.Screen options={{ title: 'Not found' }} />
+      <Stack.Screen options={{ title: t('titleNotFound') }} />
       <Screen>
         <EmptyState
-          title="This page isn’t in the app"
-          body="The link may be old, or the page only exists on the website."
-          action={<Button title="Go to the shop" onPress={() => router.replace('/')} />}
+          title={t('notFoundTitle')}
+          body={t('notFoundBody')}
+          action={<Button title={t('goToShop')} onPress={() => router.replace('/')} />}
         />
       </Screen>
     </>

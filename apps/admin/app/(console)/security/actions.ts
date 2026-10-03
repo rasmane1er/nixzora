@@ -3,8 +3,9 @@
 import { type MfaEnabledResponse, type MfaSetupResponse } from '@nixzora/validation';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { api, errorMessage } from '@/lib/api';
-import { perform, text, uuidField, withMessage } from '@/lib/forms';
+import { api } from '@/lib/api';
+import { perform, problemMessage, text, uuidField, withMessage } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 import { SETUP_COOKIE, cookieOptions } from '@/lib/session';
 
 export async function startSetup(): Promise<void> {
@@ -12,7 +13,7 @@ export async function startSetup(): Promise<void> {
   try {
     setup = await api<MfaSetupResponse>('/me/mfa/setup', { method: 'POST' });
   } catch (error) {
-    redirect(withMessage('/security/setup', 'error', errorMessage(error)));
+    redirect(withMessage('/security/setup', 'error', await problemMessage(error)));
   }
   (await cookies()).set(SETUP_COOKIE, setup.otpauthUrl, {
     ...cookieOptions(10 * 60),
@@ -34,23 +35,21 @@ export async function enableMfa(_: EnableState, form: FormData): Promise<EnableS
     // the page and hide the recovery codes before staff can save them.
     return { recoveryCodes: result.recoveryCodes };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: await problemMessage(error) };
   }
 }
 
 export async function revokeSession(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('ops');
   await perform(
     '/security',
     () => api(`/me/sessions/${id}`, { method: 'DELETE' }),
-    'Device signed out.',
+    t('deviceSignedOut'),
   );
 }
 
 export async function revokeOthers(): Promise<void> {
-  await perform(
-    '/security',
-    () => api('/me/sessions', { method: 'DELETE' }),
-    'All other devices signed out.',
-  );
+  const t = await getT('ops');
+  await perform('/security', () => api('/me/sessions', { method: 'DELETE' }), t('othersSignedOut'));
 }

@@ -10,7 +10,9 @@ import { ProductRail } from '@/components/ProductRail';
 import { Banner, Button, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { errorMessage } from '@nixzora/api-client';
+import { useFormatters } from '@/lib/format';
 import { useCategories } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
@@ -20,6 +22,9 @@ const NEW_IN = { sort: 'newest', pageSize: 12 } as const;
 
 export default function HomeScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const tc = useT('common');
+  const { departmentName, wholeMoney } = useFormatters();
   const categories = useCategories();
   const products = useQuery({
     queryKey: keys.products(NEW_IN),
@@ -39,37 +44,37 @@ export default function HomeScreen() {
       <Logo size={30} />
       <Pressable
         accessibilityRole="search"
-        accessibilityLabel="Search products"
+        accessibilityLabel={tc('searchLabel')}
         onPress={() => router.push('/search')}
         style={[styles.search, { backgroundColor: p.input, borderColor: p.line }]}
       >
         <Ionicons name="search" size={18} color={p.muted} />
-        <Text muted>Laptops, monitors, audio…</Text>
+        <Text muted>{t('homeSearchHint')}</Text>
       </Pressable>
 
       <View style={[styles.hero, { backgroundColor: brand.ink }]}>
         <Text variant="label" style={{ color: '#6FD1C7' }}>
-          AI shopping assistant
+          {t('aiAssistantEyebrow')}
         </Text>
         <Text variant="title" style={{ color: brand.paper }}>
-          What do you need today?
+          {t('whatDoYouNeed')}
         </Text>
         <PressableLink
           href="/assistant"
           accessibilityRole="button"
-          accessibilityLabel="Ask the shopping assistant"
+          accessibilityLabel={t('homeAskLabel')}
           style={styles.askBox}
         >
           <Text variant="small" style={{ color: '#B8C2D3' }}>
-            “Headphones for flights under $250”
+            {t('homeAskExample', { amount: wholeMoney(25000) })}
           </Text>
         </PressableLink>
         <Text variant="small" style={{ color: '#C9CED6' }}>
-          Free shipping over $99 · 30-day returns
+          {t('homePerks', { amount: wholeMoney(9900) })}
         </Text>
         <PressableLink href="/scan" accessibilityRole="button" style={styles.heroAction}>
           <Ionicons name="barcode-outline" size={18} color={brand.ink} />
-          <Text style={{ color: brand.ink, fontFamily: fonts.bodyBold }}>Scan a barcode</Text>
+          <Text style={{ color: brand.ink, fontFamily: fonts.bodyBold }}>{t('scanBarcode')}</Text>
         </PressableLink>
       </View>
 
@@ -90,7 +95,7 @@ export default function HomeScreen() {
               ]}
             >
               <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
-                {department.name}
+                {departmentName(department.slug, department.name)}
               </Text>
             </PressableLink>
           ))}
@@ -98,15 +103,15 @@ export default function HomeScreen() {
       ) : null}
 
       <ProductRail
-        title={picks.data?.basis === 'history' ? 'Recommended for you' : 'Popular right now'}
+        title={picks.data?.basis === 'history' ? t('recommendedForYou') : t('popularNow')}
         products={picks.data?.products ?? []}
       />
-      <ProductRail title="Recently viewed" products={picks.data?.recentlyViewed ?? []} />
+      <ProductRail title={t('recentlyViewed')} products={picks.data?.recentlyViewed ?? []} />
 
       {products.error && !products.data ? (
         <Banner tone="error">{errorMessage(products.error)}</Banner>
       ) : null}
-      <Text variant="heading">New in</Text>
+      <Text variant="heading">{t('newIn')}</Text>
     </View>
   );
 
@@ -124,10 +129,14 @@ export default function HomeScreen() {
         empty={
           products.isLoading ? undefined : (
             <EmptyState
-              title="Nothing to show yet"
-              body="Pull down to try again."
+              title={t('nothingToShow')}
+              body={t('pullToRetry')}
               action={
-                <Button title="Try again" tone="ghost" onPress={() => void products.refetch()} />
+                <Button
+                  title={tc('tryAgain')}
+                  tone="ghost"
+                  onPress={() => void products.refetch()}
+                />
               }
             />
           )

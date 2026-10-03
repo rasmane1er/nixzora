@@ -1,12 +1,16 @@
+import { type Formatters, type Translate } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Empty, PageHeader } from '@/components/ui';
 import type { JobsCheck } from '@nixzora/validation';
 import { api, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
-import { dateTime, money } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Dashboard' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('nav_dashboard') };
+}
 
 type Summary = {
   products: Partial<Record<'DRAFT' | 'ACTIVE' | 'ARCHIVED', number>>;
@@ -35,48 +39,49 @@ export default async function DashboardPage() {
       .catch(() => undefined),
   ]);
   const name = me.firstName ?? me.email.split('@')[0];
+  const [t, f] = await Promise.all([getT('ops'), getFormat()]);
 
   return (
     <>
-      <PageHeader eyebrow="Ops Center" title={`Hello, ${name}`} />
+      <PageHeader eyebrow={t('opsCenter')} title={t('hello', { name: name ?? '' })} />
 
-      <section className="grid" aria-label="Key numbers">
+      <section className="grid" aria-label={t('keyNumbers')}>
         <Stat
-          label="Orders to ship"
-          value={summary.ordersToShip}
+          label={t('ordersToShip')}
+          value={f.number(summary.ordersToShip)}
           alert={summary.ordersToShip > 0}
         />
         <div className="stat">
           <div className="stat__label">
-            Sales, last 7 days ({summary.salesLast7Days.orders} orders)
+            {t('salesLast7Days', { count: summary.salesLast7Days.orders })}
           </div>
-          <div className="stat__value">{money(summary.salesLast7Days.cents)}</div>
+          <div className="stat__value">{f.money(summary.salesLast7Days.cents)}</div>
         </div>
-        <Stat label="Live products" value={summary.products.ACTIVE ?? 0} />
-        <Stat label="Drafts" value={summary.products.DRAFT ?? 0} />
+        <Stat label={t('liveProducts')} value={f.number(summary.products.ACTIVE ?? 0)} />
+        <Stat label={t('drafts')} value={f.number(summary.products.DRAFT ?? 0)} />
         <Stat
-          label="Low-stock variants"
-          value={summary.lowStockCount}
+          label={t('lowStockVariants')}
+          value={f.number(summary.lowStockCount)}
           alert={summary.lowStockCount > 0}
         />
-        {jobs ? <JobsStat jobs={jobs} /> : null}
-        <Stat label="Customers" value={summary.customers} />
-        <Stat label="Staff accounts" value={summary.staff} />
+        {jobs ? <JobsStat jobs={jobs} t={t} f={f} /> : null}
+        <Stat label={t('customers')} value={f.number(summary.customers)} />
+        <Stat label={t('staffAccounts')} value={f.number(summary.staff)} />
       </section>
 
       <div className="two-col">
         <section className="card">
-          <h2>Running low (5 or fewer available)</h2>
+          <h2>{t('runningLow')}</h2>
           {summary.lowStock.length === 0 ? (
-            <Empty>Everything is well stocked.</Empty>
+            <Empty>{t('wellStocked')}</Empty>
           ) : (
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>SKU</th>
-                    <th>Product</th>
-                    <th className="num">Available</th>
+                    <th>{t('colSku')}</th>
+                    <th>{t('colProduct')}</th>
+                    <th className="num">{t('colAvailable')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -99,28 +104,30 @@ export default async function DashboardPage() {
           )}
           {can(me, 'inventory.write') && summary.lowStockCount > 0 ? (
             <p>
-              <Link href="/inventory?lowStock=5">See all {summary.lowStockCount} →</Link>
+              <Link href="/inventory?lowStock=5">
+                {t('seeAllCount', { count: f.number(summary.lowStockCount) })}
+              </Link>
             </p>
           ) : null}
         </section>
 
         <section className="card">
-          <h2>Recent activity</h2>
+          <h2>{t('recentActivity')}</h2>
           {summary.recentActivity.length === 0 ? (
-            <Empty>No activity yet.</Empty>
+            <Empty>{t('noActivity')}</Empty>
           ) : (
             <ul className="activity">
               {summary.recentActivity.map((entry) => (
                 <li key={entry.id}>
                   <span className="mono">{entry.action}</span>
-                  <span className="muted">{dateTime(entry.createdAt)}</span>
+                  <span className="muted">{f.dateTime(entry.createdAt)}</span>
                 </li>
               ))}
             </ul>
           )}
           {can(me, 'audit.read') ? (
             <p>
-              <Link href="/audit">Open audit log →</Link>
+              <Link href="/audit">{t('openAuditLog')}</Link>
             </p>
           ) : null}
         </section>
@@ -129,31 +136,33 @@ export default async function DashboardPage() {
   );
 }
 
-function Stat({ label, value, alert = false }: { label: string; value: number; alert?: boolean }) {
+function Stat({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
   return (
     <div className={`stat${alert ? ' stat--alert' : ''}`}>
       <div className="stat__label">{label}</div>
-      <div className="stat__value">{value.toLocaleString('en-US')}</div>
+      <div className="stat__value">{value}</div>
     </div>
   );
 }
 
 /** Emails, push and indexing waiting in the outbox, and whether the worker is draining it. */
-function JobsStat({ jobs }: { jobs: JobsCheck }) {
+function JobsStat({ jobs, t, f }: { jobs: JobsCheck; t: Translate<'ops'>; f: Formatters }) {
   const stalled = jobs.status === 'down' || jobs.failed > 0;
-  const where = jobs.mode === 'worker' ? 'notifications worker' : 'API';
+  const where = t(jobs.mode === 'worker' ? 'jobsWorker' : 'jobsApi');
   const state =
     jobs.status === 'up'
-      ? `${where} running`
+      ? t('jobsRunning', { where })
       : jobs.status === 'down'
-        ? `${where} stalled${jobs.lastRunAt ? ` since ${dateTime(jobs.lastRunAt)}` : ''}`
-        : `${where} not started yet`;
+        ? jobs.lastRunAt
+          ? t('jobsStalledSince', { where, date: f.dateTime(jobs.lastRunAt) })
+          : t('jobsStalled', { where })
+        : t('jobsNotStarted', { where });
   return (
     <div className={`stat${stalled ? ' stat--alert' : ''}`}>
-      <div className="stat__label">Notifications waiting ({state})</div>
-      <div className="stat__value">{jobs.backlog.toLocaleString('en-US')}</div>
+      <div className="stat__label">{t('notificationsWaiting', { state })}</div>
+      <div className="stat__value">{f.number(jobs.backlog)}</div>
       {jobs.failed ? (
-        <div className="stat__label">{jobs.failed} failed after every retry</div>
+        <div className="stat__label">{t('jobsFailed', { count: jobs.failed })}</div>
       ) : null}
     </div>
   );

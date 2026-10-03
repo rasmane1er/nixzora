@@ -3,6 +3,7 @@ import {
   groundSummary,
   type ReviewInput,
   templateSummary,
+  themeLabel,
 } from './review-analysis';
 
 let n = 0;
@@ -90,5 +91,35 @@ describe('groundSummary', () => {
     expect(groundSummary('Worth every penny at $229.', analysis)).toBeNull();
     expect(groundSummary('See https://example.com for more.', analysis)).toBeNull();
     expect(groundSummary('x'.repeat(600), analysis)).toBeNull();
+  });
+});
+
+describe('in French and Spanish', () => {
+  const analysis = analyzeReviews(headphones)!;
+  const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ');
+
+  it('writes the template summary from the same counts', () => {
+    expect(plain(templateSummary(analysis, 'fr'))).toBe(
+      '80 % des 5 avis donnent 4 ou 5 étoiles. Points les plus appréciés : confort et son. Quelques réserves sur : connectivité.',
+    );
+    expect(plain(templateSummary(analysis, 'es'))).toBe(
+      'El 80 % de 5 reseñas da 4 o 5 estrellas. Lo más elogiado: comodidad y sonido. Algunos mencionan inconvenientes con: conectividad.',
+    );
+    expect(templateSummary(analysis, 'en')).toBe(templateSummary(analysis));
+  });
+
+  it('translates theme labels, keeping unknown ones as stored', () => {
+    expect(themeLabel('Quiet operation', 'fr')).toBe('Fonctionnement silencieux');
+    expect(themeLabel('Value for money', 'es')).toBe('Relación calidad-precio');
+    expect(themeLabel('Sound', 'en')).toBe('Sound');
+    expect(themeLabel('Something new', 'fr')).toBe('Something new');
+  });
+
+  it('grounds model summaries written with local number formats', () => {
+    expect(
+      groundSummary('Note moyenne de 4,0 : 80 % des 5 clients aiment le son.', analysis, 'fr'),
+    ).not.toBeNull();
+    expect(groundSummary('9 clientes de cada 10 aman el sonido.', analysis, 'es')).toBeNull();
+    expect(groundSummary('Une moyenne de 4,7 étoiles.', analysis, 'fr')).toBeNull();
   });
 });

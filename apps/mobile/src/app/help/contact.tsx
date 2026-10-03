@@ -1,10 +1,5 @@
 import { errorMessage } from '@nixzora/api-client';
-import {
-  SUPPORT_TOPICS,
-  SUPPORT_TOPIC_LABEL,
-  SupportRequestCreateSchema,
-  type SupportTopic,
-} from '@nixzora/validation';
+import { SUPPORT_TOPICS, SupportRequestCreateSchema, type SupportTopic } from '@nixzora/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -12,6 +7,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { Banner, Button, Card, Field, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { APP_VERSION } from '@/lib/config';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 import { fonts, space, usePalette } from '@/lib/theme';
@@ -22,6 +18,9 @@ export default function ContactScreen() {
   const client = useQueryClient();
   const { status, user } = useSession();
   const signedIn = status === 'signedIn';
+  const t = useT('appAccount');
+  const th = useT('help');
+  const tc = useT('common');
   const params = useLocalSearchParams<{ topic?: string; order?: string }>();
   const [topic, setTopic] = useState<SupportTopic>(
     (SUPPORT_TOPICS as readonly string[]).includes(params.topic ?? '')
@@ -49,7 +48,7 @@ export default function ContactScreen() {
         const next: Record<string, string> = {};
         for (const issue of parsed.error.issues) next[String(issue.path[0])] ??= issue.message;
         setErrors(next);
-        throw new Error('Check the highlighted fields.');
+        throw new Error(t('contactCheckFields'));
       }
       setErrors({});
       return api.support.create(parsed.data);
@@ -58,22 +57,22 @@ export default function ContactScreen() {
   });
 
   const problem = topic === 'PROBLEM';
-  const title = problem ? 'Report a problem' : 'Contact support';
+  const title = problem ? th('reportProblem') : th('contactSupport');
 
   if (send.data) {
     return (
       <Screen>
         <Stack.Screen options={{ title }} />
         <Banner tone="ok">
-          {`Thanks, we got it. Your reference is ${send.data.reference}. We reply to ${send.data.email} within one business day.`}
+          {t('contactThanks', { reference: send.data.reference, email: send.data.email })}
         </Banner>
         {signedIn ? (
           <Button
-            title="Your support requests"
+            title={t('yourSupportRequests')}
             onPress={() => router.replace('/account/support')}
           />
         ) : null}
-        <Button title="Back to help" tone="ghost" onPress={() => router.back()} />
+        <Button title={t('backToHelp')} tone="ghost" onPress={() => router.back()} />
       </Screen>
     );
   }
@@ -82,8 +81,7 @@ export default function ContactScreen() {
     <Screen>
       <Stack.Screen options={{ title }} />
       <Text muted>
-        We answer by email within one business day
-        {signedIn && user ? `, at ${user.email}` : ''}.
+        {signedIn && user ? t('contactIntroAt', { email: user.email }) : t('contactIntro')}
       </Text>
       {send.error && !Object.keys(errors).length ? (
         <Banner tone="error">{errorMessage(send.error)}</Banner>
@@ -91,17 +89,17 @@ export default function ContactScreen() {
 
       <Card style={{ gap: space.sm }}>
         <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
-          What is it about?
+          {th('topicLabel')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
-          {SUPPORT_TOPICS.map((t) => {
-            const selected = t === topic;
+          {SUPPORT_TOPICS.map((value) => {
+            const selected = value === topic;
             return (
               <Pressable
-                key={t}
+                key={value}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                onPress={() => setTopic(t)}
+                onPress={() => setTopic(value)}
                 style={{
                   paddingHorizontal: space.sm,
                   paddingVertical: 8,
@@ -112,7 +110,7 @@ export default function ContactScreen() {
                 }}
               >
                 <Text variant="small" style={{ color: selected ? p.bg : p.fg }}>
-                  {SUPPORT_TOPIC_LABEL[t]}
+                  {th(`topic_${value}`)}
                 </Text>
               </Pressable>
             );
@@ -123,28 +121,26 @@ export default function ContactScreen() {
       {!signedIn ? (
         <>
           <Field
-            label="Your name (optional)"
+            label={t('contactName')}
             value={name}
             onChangeText={setName}
             autoComplete="name"
             error={errors.name}
           />
           <Field
-            label="Email"
+            label={t('fieldEmail')}
             value={email}
             onChangeText={setEmail}
             autoComplete="email"
             keyboardType="email-address"
             autoCapitalize="none"
-            error={
-              errors.email ?? (errors.topic && !email ? 'We need an email to reply.' : undefined)
-            }
+            error={errors.email ?? (errors.topic && !email ? t('contactNeedEmail') : undefined)}
           />
         </>
       ) : null}
       {['ORDER', 'DELIVERY', 'RETURN', 'PAYMENT'].includes(topic) ? (
         <Field
-          label="Order number (optional)"
+          label={t('contactOrder')}
           value={orderNumber}
           onChangeText={setOrderNumber}
           autoCapitalize="characters"
@@ -153,24 +149,24 @@ export default function ContactScreen() {
         />
       ) : null}
       <Field
-        label="Subject"
+        label={th('subject')}
         value={subject}
         onChangeText={setSubject}
         maxLength={150}
         error={errors.subject}
       />
       <Field
-        label={problem ? 'What happened?' : 'Message'}
+        label={problem ? t('contactWhatHappened') : t('contactMessage')}
         value={message}
         onChangeText={setMessage}
         multiline
         maxLength={5000}
         textAlignVertical="top"
         style={{ minHeight: 140 }}
-        hint={problem ? 'What you did, what you expected, and what you saw instead.' : undefined}
+        hint={problem ? t('contactProblemHint') : undefined}
         error={errors.message}
       />
-      <Button title="Send" loading={send.isPending} onPress={() => send.mutate()} />
+      <Button title={tc('send')} loading={send.isPending} onPress={() => send.mutate()} />
     </Screen>
   );
 }

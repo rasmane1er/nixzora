@@ -2,14 +2,16 @@
 
 import { api } from '@/lib/api';
 import { integer, perform, text, uuidField } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 
 export async function changeSellerStatus(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const status = text(form, 'status');
+  const t = await getT('opsOrders');
   const labels: Record<string, string> = {
-    ACTIVE: 'Store approved.',
-    SUSPENDED: 'Store suspended. Its listings were taken off sale.',
-    REJECTED: 'Application rejected.',
+    ACTIVE: t('noticeStoreApproved'),
+    SUSPENDED: t('noticeStoreSuspended'),
+    REJECTED: t('noticeApplicationRejected'),
   };
   await perform(
     `/sellers/${id}`,
@@ -18,13 +20,14 @@ export async function changeSellerStatus(form: FormData): Promise<void> {
         method: 'POST',
         body: { status, reason: text(form, 'reason') },
       }),
-    labels[status ?? ''] ?? 'Saved.',
+    labels[status ?? ''] ?? t('noticeSaved'),
   );
 }
 
 export async function updateSellerTerms(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const percent = Number(text(form, 'commissionPercent'));
+  const t = await getT('opsOrders');
   await perform(
     `/sellers/${id}`,
     () =>
@@ -35,22 +38,24 @@ export async function updateSellerTerms(form: FormData): Promise<void> {
           payoutHoldDays: integer(form, 'payoutHoldDays'),
         },
       }),
-    'Terms saved.',
+    t('noticeTermsSaved'),
   );
 }
 
 export async function refreshSellerPayouts(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsOrders');
   await perform(
     `/sellers/${id}`,
     () => api(`/admin/sellers/${id}/payouts/refresh`, { method: 'POST' }),
-    'Payout status refreshed.',
+    t('noticePayoutRefreshed'),
   );
 }
 
 export async function reviewListing(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const decision = text(form, 'decision') === 'APPROVE' ? 'APPROVE' : 'REJECT';
+  const t = await getT('opsOrders');
   await perform(
     text(form, 'back') ?? '/listings',
     () =>
@@ -58,15 +63,16 @@ export async function reviewListing(form: FormData): Promise<void> {
         method: 'POST',
         body: { decision, note: text(form, 'note') },
       }),
-    decision === 'APPROVE' ? 'Listing approved and live.' : 'Sent back to the seller.',
+    decision === 'APPROVE' ? t('noticeListingApproved') : t('noticeListingSentBack'),
   );
 }
 
 export async function payOutSeller(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsOrders');
   await perform(
     `/sellers/${id}`,
     () => api(`/admin/sellers/${id}/payouts`, { method: 'POST' }),
-    'Payout sent.',
+    t('noticePayoutSent'),
   );
 }

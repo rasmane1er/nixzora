@@ -7,7 +7,7 @@ import { MenuList } from '@/components/MenuList';
 import { Banner, Button, Card, Divider, Field, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
-import { shortDate } from '@/lib/format';
+import { useFormat, useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 import { fonts, space } from '@/lib/theme';
@@ -20,6 +20,9 @@ export default function SecurityScreen() {
   const sessions = useQuery({ queryKey: keys.sessions, queryFn: () => api.me.sessions() });
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
+  const t = useT('appAccount');
+  const tc = useT('common');
+  const f = useFormat();
 
   const changePassword = useMutation({
     mutationFn: () => api.me.changePassword({ currentPassword: current, newPassword: next }),
@@ -38,12 +41,12 @@ export default function SecurityScreen() {
   return (
     <Screen>
       <Card>
-        <Text variant="heading">Email</Text>
+        <Text variant="heading">{t('fieldEmail')}</Text>
         <Row style={{ flexWrap: 'wrap' }}>
           <Text style={{ fontFamily: fonts.bodyMedium }}>{profile.data?.email ?? user?.email}</Text>
           {profile.data ? (
             <Pill
-              label={profile.data.emailVerified ? 'Confirmed' : 'Not confirmed'}
+              label={profile.data.emailVerified ? t('confirmed') : t('notConfirmed')}
               tone={profile.data.emailVerified ? 'ok' : 'warn'}
             />
           ) : null}
@@ -52,17 +55,17 @@ export default function SecurityScreen() {
 
       {user?.hasPassword !== false ? (
         <Card>
-          <Text variant="heading">Password</Text>
+          <Text variant="heading">{t('fieldPassword')}</Text>
           <Field
-            label="Current password"
+            label={t('currentPassword')}
             value={current}
             onChangeText={setCurrent}
             secureTextEntry
             autoComplete="current-password"
           />
           <Field
-            label="New password"
-            hint="At least 12 characters. Other devices are signed out."
+            label={t('newPassword')}
+            hint={t('newPasswordHint')}
             value={next}
             onChangeText={setNext}
             secureTextEntry
@@ -71,9 +74,9 @@ export default function SecurityScreen() {
           {changePassword.error ? (
             <Banner tone="error">{errorMessage(changePassword.error)}</Banner>
           ) : null}
-          {changePassword.isSuccess ? <Banner tone="ok">Password changed.</Banner> : null}
+          {changePassword.isSuccess ? <Banner tone="ok">{t('passwordChanged')}</Banner> : null}
           <Button
-            title="Change password"
+            title={t('changePassword')}
             tone="secondary"
             disabled={!current || next.length < 12}
             loading={changePassword.isPending}
@@ -83,18 +86,18 @@ export default function SecurityScreen() {
       ) : null}
 
       <Card>
-        <Text variant="heading">Two-step verification</Text>
+        <Text variant="heading">{t('twoStepTitle')}</Text>
         <Row>
           <Text style={{ flex: 1 }} muted>
-            A code from an authenticator app at sign-in.
+            {t('twoStepBody')}
           </Text>
           <Pill
-            label={user?.mfaEnabled ? 'On' : 'Off'}
+            label={user?.mfaEnabled ? t('on') : t('off')}
             tone={user?.mfaEnabled ? 'ok' : 'neutral'}
           />
         </Row>
         <Button
-          title={user?.mfaEnabled ? 'Manage on the website' : 'Turn on (on the website)'}
+          title={user?.mfaEnabled ? t('manageOnWebsite') : t('turnOnOnWebsite')}
           tone="ghost"
           onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/account/security#two-step`)}
         />
@@ -102,7 +105,7 @@ export default function SecurityScreen() {
 
       <Card>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Text variant="heading">Where you are signed in</Text>
+          <Text variant="heading">{t('signedInTitle')}</Text>
         </Row>
         {sessions.data?.map((s, i) => (
           <View key={s.id} style={{ gap: space.xs }}>
@@ -110,16 +113,16 @@ export default function SecurityScreen() {
             <Row style={{ justifyContent: 'space-between', paddingVertical: space.xs }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ fontFamily: fonts.bodyMedium }}>
-                  {s.deviceName ?? 'Unknown device'}
-                  {s.current ? ' · this device' : ''}
+                  {s.deviceName ?? t('unknownDevice')}
+                  {s.current ? ` · ${t('thisDevice')}` : ''}
                 </Text>
                 <Text variant="small" muted>
-                  Last active {shortDate(s.lastUsedAt)}
+                  {t('lastActive', { date: f.date(s.lastUsedAt) })}
                 </Text>
               </View>
               {!s.current ? (
                 <Button
-                  title="Sign out"
+                  title={tc('signOut')}
                   tone="ghost"
                   loading={revoke.isPending && revoke.variables === s.id}
                   onPress={() => revoke.mutate(s.id)}
@@ -130,40 +133,36 @@ export default function SecurityScreen() {
         ))}
         {(sessions.data?.filter((s) => !s.current).length ?? 0) > 1 ? (
           <Button
-            title="Sign out everywhere else"
+            title={t('signOutOthers')}
             tone="danger"
             onPress={() =>
-              Alert.alert(
-                'Sign out everywhere else?',
-                'Your other devices will need to sign in again.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Sign out',
-                    style: 'destructive',
-                    onPress: () => revoke.mutate('others'),
-                  },
-                ],
-              )
+              Alert.alert(t('signOutOthersTitle'), t('signOutOthersBody'), [
+                { text: tc('cancel'), style: 'cancel' },
+                {
+                  text: tc('signOut'),
+                  style: 'destructive',
+                  onPress: () => revoke.mutate('others'),
+                },
+              ])
             }
           />
         ) : null}
       </Card>
 
       <MenuList
-        title="Privacy & your data"
+        title={t('privacyTitle')}
         items={[
-          { icon: 'mail-outline', label: 'Email preferences', href: '/account/preferences' },
+          { icon: 'mail-outline', label: t('emailPreferences'), href: '/account/preferences' },
           {
             icon: 'download-outline',
-            label: 'Download your data',
-            hint: 'A copy of your account, orders and reviews',
+            label: t('downloadData'),
+            hint: t('downloadDataHint'),
             url: `${WEB_URL}/account/privacy`,
           },
-          { icon: 'lock-closed-outline', label: 'Privacy policy', url: `${WEB_URL}/privacy` },
+          { icon: 'lock-closed-outline', label: t('privacyPolicy'), url: `${WEB_URL}/privacy` },
           {
             icon: 'trash-outline',
-            label: 'Delete account',
+            label: t('deleteAccount'),
             tone: 'danger',
             href: '/delete-account',
           },

@@ -12,7 +12,8 @@ import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
-import { dateTime, money, shortDate, statusLabel } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
+import { useT } from '@/lib/i18n';
 import { enablePush, type PushStatus } from '@/lib/push';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
@@ -23,6 +24,7 @@ const PATH = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED'] as const;
 
 function Timeline({ order }: { order: OrderView }) {
   const p = usePalette();
+  const { dateTime, statusLabel } = useFormatters();
   const reached = new Map(order.timeline.map((step) => [step.status, step.at]));
   const steps: string[] =
     order.status === 'CANCELLED' || order.status.endsWith('REFUNDED')
@@ -71,10 +73,10 @@ function Timeline({ order }: { order: OrderView }) {
 }
 
 const SHIPMENT_LABEL = {
-  PROCESSING: 'Preparing',
-  SHIPPED: 'Shipped',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
+  PROCESSING: 'shipment_PROCESSING',
+  SHIPPED: 'shipment_SHIPPED',
+  DELIVERED: 'shipment_DELIVERED',
+  CANCELLED: 'shipment_CANCELLED',
 } as const;
 
 export default function OrderScreen() {
@@ -84,6 +86,10 @@ export default function OrderScreen() {
     placed?: string;
   }>();
   const { status } = useSession();
+  const t = useT('appShop');
+  const to = useT('order');
+  const tc = useT('common');
+  const { money, shortDate } = useFormatters();
   const [push, setPush] = useState<PushStatus | null>(null);
   const order = useQuery({
     queryKey: keys.order(number),
@@ -100,8 +106,8 @@ export default function OrderScreen() {
     return (
       <Screen>
         <EmptyState
-          title="Sign in to see this order"
-          action={<Button title="Sign in" onPress={() => router.push('/sign-in')} />}
+          title={t('signInForOrder')}
+          action={<Button title={tc('signIn')} onPress={() => router.push('/sign-in')} />}
         />
       </Screen>
     );
@@ -111,7 +117,7 @@ export default function OrderScreen() {
     return (
       <Screen>
         <EmptyState
-          title="We could not open this order"
+          title={t('couldNotOpenOrder')}
           body={order.error ? errorMessage(order.error) : undefined}
         />
       </Screen>
@@ -139,21 +145,19 @@ export default function OrderScreen() {
         }
       >
         {placed ? (
-          <Banner tone="ok">
-            Thank you! Order {o.number} is placed. A receipt is on its way to {o.email}.
-          </Banner>
+          <Banner tone="ok">{t('orderPlaced', { number: o.number, email: o.email })}</Banner>
         ) : null}
         {placed && status === 'signedIn' && push !== 'on' && push !== 'unsupported' ? (
           <Card>
-            <Text variant="heading">Know when it ships</Text>
-            <Text muted>Get a notification when your order ships and when it arrives.</Text>
+            <Text variant="heading">{t('knowWhenShips')}</Text>
+            <Text muted>{t('notifyBody')}</Text>
             {push === 'blocked' ? (
               <Text variant="small" tone="error">
-                Notifications are off for NIXZORA. Turn them on in your phone’s Settings.
+                {t('notificationsOff')}
               </Text>
             ) : (
               <Button
-                title="Turn on order updates"
+                title={t('turnOnUpdates')}
                 tone="secondary"
                 onPress={() =>
                   void enablePush(true)
@@ -168,7 +172,7 @@ export default function OrderScreen() {
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ gap: 4 }}>
             <Text variant="label" muted>
-              Placed {shortDate(o.placedAt ?? o.createdAt)}
+              {t('placedOn', { date: shortDate(o.placedAt ?? o.createdAt) })}
             </Text>
             <OrderStatusPill status={o.status} />
           </View>
@@ -176,9 +180,7 @@ export default function OrderScreen() {
         </Row>
 
         {o.status === 'PENDING_PAYMENT' ? (
-          <Banner tone="warn">
-            We are confirming your payment. This usually takes a few seconds.
-          </Banner>
+          <Banner tone="warn">{t('confirmingPayment')}</Banner>
         ) : null}
 
         <Card>
@@ -192,7 +194,10 @@ export default function OrderScreen() {
               >
                 <Divider />
                 <Text style={{ fontFamily: fonts.bodyMedium }}>
-                  From {part.seller?.displayName ?? 'NIXZORA'} · {SHIPMENT_LABEL[part.status]}
+                  {t('shipmentFrom', {
+                    name: part.seller?.displayName ?? 'NIXZORA',
+                    status: t(SHIPMENT_LABEL[part.status]),
+                  })}
                 </Text>
                 <Text variant="small" muted>
                   {o.items
@@ -207,7 +212,7 @@ export default function OrderScreen() {
                 ) : null}
                 {part.tracking?.url ? (
                   <Button
-                    title="Track package"
+                    title={to('trackPackage')}
                     tone="ghost"
                     icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
                     onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
@@ -217,7 +222,7 @@ export default function OrderScreen() {
                   <RateSeller number={o.number} token={token} shipment={part} />
                 ) : part.rating ? (
                   <Text variant="small" muted>
-                    You rated this seller {part.rating.value} out of 5.
+                    {to('ratedSeller', { value: part.rating.value })}
                   </Text>
                 ) : null}
               </View>
@@ -230,7 +235,7 @@ export default function OrderScreen() {
               </Text>
               {o.tracking.url ? (
                 <Button
-                  title="Track package"
+                  title={to('trackPackage')}
                   tone="ghost"
                   icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
                   onPress={() => void WebBrowser.openBrowserAsync(o.tracking!.url!)}
@@ -241,7 +246,7 @@ export default function OrderScreen() {
         </Card>
 
         <Card>
-          <Text variant="heading">Items</Text>
+          <Text variant="heading">{to('items')}</Text>
           {o.items.map((item) => (
             <Row
               key={item.id}
@@ -250,7 +255,7 @@ export default function OrderScreen() {
               <View style={{ flex: 1, gap: 2 }}>
                 <Text>{item.productTitle}</Text>
                 <Text variant="small" muted>
-                  {item.variantTitle} · Qty {item.quantity}
+                  {t('lineQuantity', { variant: item.variantTitle, quantity: item.quantity })}
                 </Text>
               </View>
               <Text style={{ fontFamily: fonts.bodyMedium }}>
@@ -262,13 +267,13 @@ export default function OrderScreen() {
           <Totals totals={totals} />
           {o.refundedCents ? (
             <Text variant="small" tone="ok">
-              Refunded {money(o.refundedCents, o.currency)}
+              {t('refundedAmount', { amount: money(o.refundedCents, o.currency) })}
             </Text>
           ) : null}
         </Card>
 
         <Card>
-          <Text variant="heading">Shipping to</Text>
+          <Text variant="heading">{to('shippingTo')}</Text>
           <Text>
             {a.fullName}
             {'\n'}
@@ -281,7 +286,7 @@ export default function OrderScreen() {
 
         {o.returnableUntil ? (
           <Button
-            title={`Return an item (until ${shortDate(o.returnableUntil)})`}
+            title={t('returnItemUntil', { date: shortDate(o.returnableUntil) })}
             tone="ghost"
             onPress={() =>
               void WebBrowser.openBrowserAsync(

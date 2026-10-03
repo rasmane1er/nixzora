@@ -4,14 +4,19 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, Empty, PageHeader, Pager } from '@/components/ui';
 import { load } from '@/lib/api';
-import { dateTime, money, param, query, type SearchParams } from '@/lib/format';
+import { param, query, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 import { reviewListing } from '../sellers/actions';
 
-export const metadata: Metadata = { title: 'Listing review' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsCatalog');
+  return { title: t('metaListings') };
+}
 
 export default async function ListingReviewPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const page = Number(param(params, 'page') ?? 1) || 1;
+  const [t, f] = await Promise.all([getT('opsCatalog'), getFormat()]);
   const result = await load<PagedResult<ListingReviewRow>>(
     `/admin/listings/review${query({ page, pageSize: 10 })}`,
   );
@@ -23,15 +28,12 @@ export default async function ListingReviewPage({ searchParams }: { searchParams
 
   return (
     <>
-      <PageHeader eyebrow="Marketplace" title="Listing review" />
+      <PageHeader eyebrow={t('eyebrowMarketplace')} title={t('metaListings')} />
       <Banner notice={param(params, 'notice')} error={param(params, 'error')} />
-      <p className="muted">
-        Seller listings wait here before going live, and come back after content changes. Check that
-        photos match the product, specs are plausible, and nothing is counterfeit or banned.
-      </p>
+      <p className="muted">{t('listingsIntro')}</p>
       {result.items.length === 0 ? (
         <section className="card">
-          <Empty>Nothing waiting for review.</Empty>
+          <Empty>{t('nothingToReview')}</Empty>
         </section>
       ) : (
         result.items.map((row, index) => {
@@ -44,13 +46,13 @@ export default async function ListingReviewPage({ searchParams }: { searchParams
                   <h2 style={{ margin: 0 }}>{product.title}</h2>
                   <div className="muted">
                     <Link href={`/sellers/${row.seller.id}`}>{row.seller.displayName}</Link> ·{' '}
-                    {product.breadcrumb.map((c) => c.name).join(' › ')} · waiting since{' '}
-                    {dateTime(row.updatedAt)}
+                    {product.breadcrumb.map((c) => c.name).join(' › ')} ·{' '}
+                    {t('waitingSince', { date: f.dateTime(row.updatedAt) })}
                   </div>
                 </div>
                 <ActionButton
                   action={reviewListing}
-                  label="Approve"
+                  label={t('approve')}
                   tone="primary"
                   fields={{ id: row.id, decision: 'APPROVE', back }}
                 />
@@ -71,9 +73,13 @@ export default async function ListingReviewPage({ searchParams }: { searchParams
               ) : null}
               <p>
                 {product.variants
-                  .map(
-                    (v) =>
-                      `${v.title} (${v.sku}) ${money(v.priceCents, v.currency)}, ${v.available} available`,
+                  .map((v) =>
+                    t('variantSummary', {
+                      title: v.title,
+                      sku: v.sku,
+                      price: f.money(v.priceCents, v.currency),
+                      count: v.available,
+                    }),
                   )
                   .join(' · ')}
               </p>
@@ -82,11 +88,11 @@ export default async function ListingReviewPage({ searchParams }: { searchParams
                 <input type="hidden" name="decision" value="REJECT" />
                 <input type="hidden" name="back" value={back} />
                 <label>
-                  What should the seller change? <span className="hint">Shown to the seller.</span>
+                  {t('sellerChange')} <span className="hint">{t('shownToSeller')}</span>
                   <textarea name="note" rows={2} required minLength={5} maxLength={1000} />
                 </label>
                 <div>
-                  <SubmitButton tone="danger">Send back</SubmitButton>
+                  <SubmitButton tone="danger">{t('sendBack')}</SubmitButton>
                 </div>
               </form>
             </article>

@@ -7,7 +7,9 @@ import { ScrollView, View } from 'react-native';
 import { ProductGrid } from '@/components/ProductGrid';
 import { type Sort, SortChips } from '@/components/SortChips';
 import { Banner, EmptyState, Text } from '@/components/ui';
+import { useFormatters } from '@/lib/format';
 import { useCategories, useProductList } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { space, usePalette } from '@/lib/theme';
 
 function find(nodes: CategoryNode[], slug: string): CategoryNode | undefined {
@@ -21,16 +23,19 @@ function find(nodes: CategoryNode[], slug: string): CategoryNode | undefined {
 
 export default function CategoryScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const { departmentName } = useFormatters();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [sort, setSort] = useState<Sort>('newest');
   const categories = useCategories();
   const category = find(categories.data ?? [], slug);
   const results = useProductList({ category: slug, sort });
   const products = results.data?.pages.flatMap((page) => page.items) ?? [];
+  const name = category ? departmentName(category.slug, category.name) : undefined;
 
   const header = (
     <View style={{ gap: space.md, marginBottom: space.sm }}>
-      <Text variant="display">{category?.name ?? ' '}</Text>
+      <Text variant="display">{name ?? ' '}</Text>
       {category?.description ? <Text muted>{category.description}</Text> : null}
       {category?.children.length ? (
         <ScrollView
@@ -51,7 +56,7 @@ export default function CategoryScreen() {
                 paddingVertical: 7,
               }}
             >
-              <Text variant="small">{child.name}</Text>
+              <Text variant="small">{departmentName(child.slug, child.name)}</Text>
             </PressableLink>
           ))}
         </ScrollView>
@@ -65,7 +70,7 @@ export default function CategoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: category?.name ?? '' }} />
+      <Stack.Screen options={{ title: name ?? '' }} />
       <ProductGrid
         products={products}
         header={header}
@@ -77,7 +82,7 @@ export default function CategoryScreen() {
         }}
         empty={
           results.isLoading ? undefined : (
-            <EmptyState title="Nothing here yet" body="New stock arrives every week." />
+            <EmptyState title={t('nothingHereYet')} body={t('newStockWeekly')} />
           )
         }
       />

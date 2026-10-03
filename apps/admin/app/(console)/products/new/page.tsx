@@ -4,22 +4,30 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { Banner, PageHeader } from '@/components/ui';
 import { catalogOptions } from '@/lib/catalog';
 import { param, type SearchParams } from '@/lib/format';
+import { getT } from '@/lib/i18n';
 import { createProduct } from '../actions';
 
-export const metadata: Metadata = { title: 'New product' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsCatalog');
+  return { title: t('metaNewProduct') };
+}
 
 export default async function NewProductPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const { categories, brands } = await catalogOptions();
+  const [{ categories, brands }, t, tc] = await Promise.all([
+    catalogOptions(),
+    getT('opsCatalog'),
+    getT('common'),
+  ]);
 
   return (
     <>
       <PageHeader
-        eyebrow="Catalog"
-        title="New product"
+        eyebrow={t('eyebrowCatalog')}
+        title={t('metaNewProduct')}
         actions={
           <Link className="btn btn--secondary" href="/products">
-            Cancel
+            {tc('cancel')}
           </Link>
         }
       />
@@ -27,38 +35,39 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
 
       <form action={createProduct} className="form">
         <section className="card form">
-          <h2>Details</h2>
+          <h2>{t('details')}</h2>
           <label>
-            Title
+            {t('title')}
             <input name="title" required minLength={2} maxLength={200} />
           </label>
           <label>
-            URL slug <span className="hint">Leave empty to create one from the title.</span>
+            {t('urlSlug')} <span className="hint">{t('slugHint')}</span>
             <input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="kestrel-14-pro" />
           </label>
           <label>
-            Description
+            {t('description')}
             <textarea name="description" required rows={5} />
           </label>
           <div className="form-row">
             <label>
-              Category
+              {t('category')}
               <select name="categoryId" required defaultValue="">
                 <option value="" disabled>
-                  Choose…
+                  {t('choose')}
                 </option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.label}
-                    {category.isActive ? '' : ' (hidden)'}
+                    {category.isActive
+                      ? category.label
+                      : t('categoryHidden', { label: category.label })}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              Brand
+              {t('brand')}
               <select name="brandId" defaultValue="">
-                <option value="">No brand</option>
+                <option value="">{t('noBrand')}</option>
                 {brands.map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.name}
@@ -67,41 +76,32 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
               </select>
             </label>
             <label>
-              Status
+              {t('status')}
               <select name="status" defaultValue="DRAFT">
-                <option value="DRAFT">Draft — not visible</option>
-                <option value="ACTIVE">Active — live on the store</option>
+                <option value="DRAFT">{t('statusDraftHint')}</option>
+                <option value="ACTIVE">{t('statusActiveHint')}</option>
               </select>
             </label>
           </div>
           <label>
-            Specifications{' '}
-            <span className="hint">
-              One per line, as “name = value” (names become snake_case, e.g. ram_gb).
-            </span>
-            <textarea
-              name="attributes"
-              rows={5}
-              placeholder={'ram_gb = 16\nscreen = 14-inch OLED'}
-            />
+            {t('specifications')} <span className="hint">{t('specsHint')}</span>
+            <textarea name="attributes" rows={5} placeholder={t('specsPlaceholder')} />
           </label>
         </section>
 
         <section className="card">
-          <h2>Variants</h2>
-          <p className="muted">
-            Fill one row per version you sell (at least one). Rows without a SKU are ignored.
-          </p>
+          <h2>{t('variants')}</h2>
+          <p className="muted">{t('variantsIntro')}</p>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>SKU</th>
-                  <th>Name</th>
-                  <th>Options</th>
-                  <th>Price ($)</th>
-                  <th>Was ($)</th>
-                  <th>Stock</th>
+                  <th>{t('name')}</th>
+                  <th>{t('options')}</th>
+                  <th>{t('priceDollars')}</th>
+                  <th>{t('wasDollars')}</th>
+                  <th>{t('stock')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,21 +112,21 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
                         name={`v${i}.sku`}
                         required={i === 0}
                         placeholder="KES-14-16-512"
-                        aria-label={`Variant ${i + 1} SKU`}
+                        aria-label={t('variantSkuLabel', { n: i + 1 })}
                       />
                     </td>
                     <td>
                       <input
                         name={`v${i}.title`}
-                        placeholder="16 GB · 512 GB"
-                        aria-label={`Variant ${i + 1} name`}
+                        placeholder={t('variantNamePlaceholder')}
+                        aria-label={t('variantNameLabel', { n: i + 1 })}
                       />
                     </td>
                     <td>
                       <input
                         name={`v${i}.options`}
-                        placeholder="Color = Graphite"
-                        aria-label={`Variant ${i + 1} options`}
+                        placeholder={t('variantOptionsPlaceholder')}
+                        aria-label={t('variantOptionsLabel', { n: i + 1 })}
                       />
                     </td>
                     <td>
@@ -135,14 +135,14 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
                         inputMode="decimal"
                         required={i === 0}
                         placeholder="1299.00"
-                        aria-label={`Variant ${i + 1} price`}
+                        aria-label={t('variantPriceLabel', { n: i + 1 })}
                       />
                     </td>
                     <td>
                       <input
                         name={`v${i}.compareAt`}
                         inputMode="decimal"
-                        aria-label={`Variant ${i + 1} was price`}
+                        aria-label={t('variantWasLabel', { n: i + 1 })}
                       />
                     </td>
                     <td>
@@ -151,7 +151,7 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
                         type="number"
                         min={0}
                         defaultValue={0}
-                        aria-label={`Variant ${i + 1} stock`}
+                        aria-label={t('variantStockLabel', { n: i + 1 })}
                       />
                     </td>
                   </tr>
@@ -159,14 +159,11 @@ export default async function NewProductPage({ searchParams }: { searchParams: S
               </tbody>
             </table>
           </div>
-          <p className="hint">
-            Options: “Name = value”, separate several with a semicolon (Color = Graphite; Size = 14
-            in).
-          </p>
+          <p className="hint">{t('optionsHint')}</p>
         </section>
 
         <div>
-          <SubmitButton>Create product</SubmitButton>
+          <SubmitButton>{t('createProduct')}</SubmitButton>
         </div>
       </form>
     </>

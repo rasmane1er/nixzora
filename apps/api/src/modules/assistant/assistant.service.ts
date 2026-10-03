@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
 import {
   type AssistantChatRequest,
   type AssistantChatResponse,
   type AssistantPick,
   type Comparison,
-  formatMoney,
 } from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiUsageService } from '../ai/ai-usage.service';
@@ -17,16 +17,16 @@ import {
   LANGUAGE_MODEL,
   type LanguageModel,
   LocalLanguageModel,
+  type ExplainInput,
   type PickFacts,
   type Usage,
   groundExplanation,
   templateExplanation,
 } from './language-model';
-import { type CategoryRef, type ParsedNeed, QUALITIES } from './need';
+import { type CategoryRef, type ParsedNeed, QUALITIES, qualityLabel } from './need';
+import { type Locale, type Replies, repliesFor } from './replies';
 
 const MAX_PICKS = 3;
-const money = (cents: number) =>
-  formatMoney({ amountCents: cents, currency: 'USD' }).replace(/\.00$/, '');
 
 type Candidate = {
   id: string;
@@ -46,133 +46,159 @@ type Candidate = {
 export function evidence(
   quality: string,
   c: Pick<Candidate, 'attributes' | 'text'>,
+  locale: Locale = 'en',
 ): string | null {
+  const { t, num: n } = repliesFor(locale);
   const a = c.attributes;
   const num = (key: string) => (typeof a[key] === 'number' ? (a[key] as number) : undefined);
   const concepts = new Set(conceptsIn(c.text));
   switch (quality) {
     case 'lightweight': {
       const kg = num('weight_kg');
-      if (kg !== undefined) return kg <= 1.5 ? `${kg} kg` : null;
+      if (kg !== undefined) return kg <= 1.5 ? t('weightKg', { value: n(kg) }) : null;
       const g = num('weight_g');
-      if (g !== undefined) return g <= 260 ? `${g} g` : null;
-      return concepts.has('lightweight') ? 'lightweight' : null;
+      if (g !== undefined) return g <= 260 ? t('weightG', { value: n(g) }) : null;
+      return concepts.has('lightweight') ? t('lightweight') : null;
     }
     case 'battery': {
       const hours = num('battery_hours');
-      if (hours !== undefined) return hours >= 14 ? `${hours} h battery` : null;
+      if (hours !== undefined) return hours >= 14 ? t('batteryHours', { value: n(hours) }) : null;
       const days = num('battery_days');
-      if (days !== undefined) return days >= 5 ? `${days}-day battery` : null;
+      if (days !== undefined) return days >= 5 ? t('batteryDays', { value: n(days) }) : null;
       const mah = num('battery_mah');
-      return mah !== undefined && mah >= 4500 ? `${mah} mAh battery` : null;
+      return mah !== undefined && mah >= 4500 ? t('batteryMah', { value: n(mah) }) : null;
     }
     case 'noise_cancelling':
-      return a.anc === true ? 'active noise cancelling' : null;
+      return a.anc === true ? t('ancActive') : null;
     case 'comfort':
-      return /cushion|memory-foam|comfortable|soft/i.test(c.text) ? 'comfortable cushions' : null;
+      return /cushion|memory-foam|comfortable|soft/i.test(c.text) ? t('comfortableCushions') : null;
     case 'quiet':
-      if (/fanless/i.test(c.text)) return 'fanless';
-      if (/silent/i.test(c.text)) return 'silent';
-      if (a.anc === true) return 'active noise cancelling';
-      return /\bquiet\b/i.test(c.text) ? 'quiet' : null;
+      if (/fanless/i.test(c.text)) return t('fanless');
+      if (/silent/i.test(c.text)) return t('silent');
+      if (a.anc === true) return t('ancActive');
+      return /\bquiet\b/i.test(c.text) ? t('quiet') : null;
     case 'wireless':
-      return a.wireless === true || /wireless|bluetooth/i.test(c.text) ? 'wireless' : null;
+      return a.wireless === true || /wireless|bluetooth/i.test(c.text) ? t('wireless') : null;
     case 'large_screen': {
       const size = num('size_in') ?? num('screen_in');
-      return size !== undefined && size >= 16 ? `${size}-inch screen` : null;
+      return size !== undefined && size >= 16 ? t('screenInches', { value: n(size) }) : null;
     }
     case 'high_refresh': {
       const hz = num('refresh_hz');
-      return hz !== undefined && hz >= 120 ? `${hz} Hz display` : null;
+      return hz !== undefined && hz >= 120 ? t('refreshDisplay', { value: n(hz) }) : null;
     }
     case 'developer': {
       const cores = num('cpu_cores');
-      if (cores !== undefined && cores >= 10) return `${cores}-core CPU`;
-      return concepts.has('developer') ? 'built for coding' : null;
+      if (cores !== undefined && cores >= 10) return t('cpuCores', { value: n(cores) });
+      return concepts.has('developer') ? t('builtForCoding') : null;
     }
     case 'travel': {
       const kg = num('weight_kg');
-      if (kg !== undefined && kg <= 1.5) return `${kg} kg`;
-      if (a.anc === true) return 'noise cancelling for flights';
-      return concepts.has('travel') ? 'travel-friendly' : null;
+      if (kg !== undefined && kg <= 1.5) return t('weightKg', { value: n(kg) });
+      if (a.anc === true) return t('ancForFlights');
+      return concepts.has('travel') ? t('travelFriendly') : null;
     }
     case 'fitness':
       return a.gps === true
-        ? 'GPS and activity tracking'
+        ? t('gpsTracking')
         : concepts.has('fitness')
-          ? 'fitness tracking'
+          ? t('fitnessTracking')
           : null;
     default:
       // design, gaming, ergonomic: described in the product's own words.
-      return concepts.has(quality) ? QUALITIES[quality]! : null;
+      return concepts.has(quality) ? qualityLabel(quality, locale) : null;
   }
 }
 
 /** A few key specs as short phrases, for highlights and the comparison table. */
-function keySpecs(attributes: Record<string, unknown>): string[] {
+function keySpecs(attributes: Record<string, unknown>, { t, num: n }: Replies): string[] {
   const phrases: string[] = [];
   const a = attributes;
-  if (typeof a.cpu_cores === 'number') phrases.push(`${a.cpu_cores}-core CPU`);
-  if (typeof a.battery_hours === 'number') phrases.push(`${a.battery_hours} h battery`);
-  if (typeof a.weight_kg === 'number') phrases.push(`${a.weight_kg} kg`);
-  if (typeof a.weight_g === 'number') phrases.push(`${a.weight_g} g`);
-  if (typeof a.screen_in === 'number') phrases.push(`${a.screen_in}-inch`);
-  if (typeof a.size_in === 'number') phrases.push(`${a.size_in}-inch`);
+  if (typeof a.cpu_cores === 'number') phrases.push(t('cpuCores', { value: n(a.cpu_cores) }));
+  if (typeof a.battery_hours === 'number')
+    phrases.push(t('batteryHours', { value: n(a.battery_hours) }));
+  if (typeof a.weight_kg === 'number') phrases.push(t('weightKg', { value: n(a.weight_kg) }));
+  if (typeof a.weight_g === 'number') phrases.push(t('weightG', { value: n(a.weight_g) }));
+  if (typeof a.screen_in === 'number') phrases.push(t('inches', { value: n(a.screen_in) }));
+  if (typeof a.size_in === 'number') phrases.push(t('inches', { value: n(a.size_in) }));
   if (typeof a.resolution === 'string') phrases.push(a.resolution);
-  if (typeof a.refresh_hz === 'number' && a.refresh_hz >= 100) phrases.push(`${a.refresh_hz} Hz`);
-  if (a.anc === true) phrases.push('noise cancelling');
+  if (typeof a.refresh_hz === 'number' && a.refresh_hz >= 100)
+    phrases.push(t('refresh', { value: n(a.refresh_hz) }));
+  if (a.anc === true) phrases.push(t('anc'));
   return phrases;
 }
 
+type Value = number | string | boolean;
+const yesNo = (v: Value, { t }: Replies) => (v === true ? t('yes') : t('no'));
+
 /** Comparison rows: spec keys that share a row, with a readable label and units. */
 const COMPARE_ROWS: {
-  label: string;
+  label: MessageKey<'assistantReplies'>;
   keys: string[];
-  format: (value: number | string | boolean) => string;
+  format: (value: Value, replies: Replies) => string;
 }[] = [
-  { label: 'CPU', keys: ['cpu_cores'], format: (v) => `${v} cores` },
-  { label: 'Screen', keys: ['screen_in', 'size_in'], format: (v) => `${v}″` },
-  { label: 'Resolution', keys: ['resolution'], format: String },
-  { label: 'Refresh rate', keys: ['refresh_hz'], format: (v) => `${v} Hz` },
-  { label: 'Weight', keys: ['weight_kg', 'weight_g'], format: (v) => String(v) },
   {
-    label: 'Battery',
-    keys: ['battery_hours', 'battery_days', 'battery_mah'],
-    format: (v) => String(v),
+    label: 'rowCpu',
+    keys: ['cpu_cores'],
+    format: (v, r) => r.t('cores', { value: r.num(v as number) }),
   },
-  { label: 'Noise cancelling', keys: ['anc'], format: (v) => (v === true ? 'Yes' : 'No') },
-  { label: 'Wireless', keys: ['wireless'], format: (v) => (v === true ? 'Yes' : 'No') },
-  { label: 'Panel', keys: ['panel'], format: String },
+  {
+    label: 'rowScreen',
+    keys: ['screen_in', 'size_in'],
+    format: (v, r) => `${r.num(v as number)}″`,
+  },
+  { label: 'rowResolution', keys: ['resolution'], format: String },
+  { label: 'rowRefreshRate', keys: ['refresh_hz'], format: (v, r) => `${r.num(v as number)} Hz` },
+  { label: 'rowWeight', keys: ['weight_kg', 'weight_g'], format: (v, r) => r.num(v as number) },
+  {
+    label: 'rowBattery',
+    keys: ['battery_hours', 'battery_days', 'battery_mah'],
+    format: (v, r) => r.num(v as number),
+  },
+  { label: 'rowNoiseCancelling', keys: ['anc'], format: yesNo },
+  { label: 'rowWireless', keys: ['wireless'], format: yesNo },
+  { label: 'rowPanel', keys: ['panel'], format: String },
 ];
 
 const UNITS: Record<string, string> = {
   weight_kg: ' kg',
   weight_g: ' g',
   battery_hours: ' h',
-  battery_days: ' days',
   battery_mah: ' mAh',
 };
 
 function compareValue(
   attributes: Record<string, unknown>,
   keys: string[],
-  format: (v: number | string | boolean) => string,
+  format: (v: Value, replies: Replies) => string,
+  replies: Replies,
 ) {
   for (const key of keys) {
     const value = attributes[key];
-    if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean')
-      return `${format(value)}${UNITS[key] ?? ''}`;
+    if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+      const shown = format(value, replies);
+      return key === 'battery_days'
+        ? replies.t('days', { value: shown })
+        : `${shown}${UNITS[key] ?? ''}`;
+    }
   }
   return null;
 }
 
-function formatValue(value: unknown): string | null {
-  if (value === true) return 'Yes';
-  if (value === false) return 'No';
+function formatValue(value: unknown, { t }: Replies): string | null {
+  if (value === true) return t('yes');
+  if (value === false) return t('no');
   if (typeof value === 'number' || (typeof value === 'string' && value.trim()))
     return String(value);
   return null;
 }
+
+/** Relaxed requirements (internal names) → how the shopper reads them. */
+const RELAXED: Record<string, MessageKey<'assistantReplies'>> = {
+  'in stock': 'relaxedInStock',
+  'your budget': 'relaxedBudget',
+  'the category': 'relaxedCategory',
+};
 
 /**
  * The shopping assistant (p6-05, ADR-0009): understand → retrieve → filter → rank → explain.
@@ -192,7 +218,8 @@ export class AssistantService {
     @Inject(LANGUAGE_MODEL) private readonly llm: LanguageModel,
   ) {}
 
-  async chat(request: AssistantChatRequest): Promise<AssistantChatResponse> {
+  async chat(request: AssistantChatRequest, locale: Locale = 'en'): Promise<AssistantChatResponse> {
+    const r = repliesFor(locale);
     const userTurns = request.messages.filter((m) => m.role === 'user').map((m) => m.content);
     const lastTurn = userTurns[userTurns.length - 1]!;
     const categories = await this.prisma.category.findMany({
@@ -202,7 +229,11 @@ export class AssistantService {
     const model = await this.chooseModel();
 
     const started = Date.now();
-    const understood = await this.withFallback(model, (m) => m.understand(userTurns, categories));
+    // English calls keep their exact shape (older AI services, recorded test doubles).
+    const language = locale === 'en' ? [] : [locale];
+    const understood = await this.withFallback(model, (m) =>
+      m.understand(userTurns, categories, ...language),
+    );
     const need = understood.value.need;
 
     const { picks, relaxed } = await this.findPicks(need, categories);
@@ -214,20 +245,27 @@ export class AssistantService {
       n: i + 1,
       title: p.title,
       brand: p.brand,
-      price: money(p.priceFromCents),
-      badge: this.badgeFor(p, i, shown, need),
-      matched: need.qualities.flatMap((q) => (evidence(q, p) ? [QUALITIES[q]!] : [])),
-      highlights: this.highlights(p, need),
+      price: r.money(p.priceFromCents),
+      badge: this.badgeFor(p, i, shown, need, r),
+      matched: need.qualities.flatMap((q) => (evidence(q, p) ? [qualityLabel(q, locale)] : [])),
+      highlights: this.highlights(p, need, r),
     }));
     const category = categories.find((c) => c.slug === need.category) ?? null;
-    const needSummary = this.summarize(need, category);
-    const explainInput = { request: lastTurn, needSummary, picks: facts, relaxed };
+    const needSummary = this.summarize(need, category, lastTurn, r);
+    const relaxedLabels = relaxed.map((label) => r.t(RELAXED[label]!));
+    const explainInput: ExplainInput = {
+      request: lastTurn,
+      needSummary,
+      picks: facts,
+      relaxed: relaxedLabels,
+      ...(locale === 'en' ? {} : { locale }),
+    };
 
     const explained = await this.withFallback(understood.model, (m) => m.explain(explainInput));
     let reply = explained.value.text;
     let grounded = true;
     if (explained.model.driver !== 'local') {
-      const checked = groundExplanation(reply, facts);
+      const checked = groundExplanation(reply, facts, locale);
       if (checked === null) {
         grounded = false;
         reply = templateExplanation(explainInput);
@@ -249,7 +287,7 @@ export class AssistantService {
       badge: facts[i]!.badge,
       reason: facts[i]!.highlights.length
         ? `${facts[i]!.highlights.slice(0, 3).join(' · ')}`
-        : `${p.brand ? `${p.brand} · ` : ''}${money(p.priceFromCents)}`,
+        : `${p.brand ? `${p.brand} · ` : ''}${r.money(p.priceFromCents)}`,
       matched: facts[i]!.matched,
       variantId: p.defaultVariantId,
     }));
@@ -258,21 +296,25 @@ export class AssistantService {
       reply,
       need: {
         category: category?.slug ?? null,
-        categoryName: category?.name ?? null,
+        categoryName: category ? r.department(category) : null,
         minPriceCents: need.minPriceCents,
         maxPriceCents: need.maxPriceCents,
-        mustHave: need.qualities.map((q) => QUALITIES[q]!),
+        mustHave: need.qualities.map((q) => qualityLabel(q, locale)),
         query: need.query,
       },
       picks: resultPicks,
-      comparison: shown.length >= 2 ? await this.compare(shown) : null,
+      comparison: shown.length >= 2 ? await this.compare(shown, r) : null,
       suggestions: shown.length
-        ? this.suggestions(need, shown)
+        ? this.suggestions(need, shown, r)
         : categories
             .filter((c) => c.parentId)
             .slice(0, 3)
-            .map((c) => `Show me ${c.name.toLowerCase()}`),
-      relaxed,
+            .map((c) =>
+              r.t('suggestCategory', {
+                category: locale === 'en' ? c.name.toLowerCase() : r.department(c),
+              }),
+            ),
+      relaxed: relaxedLabels,
       model: explained.model.model,
     };
   }
@@ -420,11 +462,12 @@ export class AssistantService {
     index: number,
     picks: Candidate[],
     need: ParsedNeed,
+    { t }: Replies,
   ): string | null {
-    if (index === 0) return 'Best match';
+    if (index === 0) return t('badgeBestMatch');
     const cheapest = picks.reduce((a, b) => (b.priceFromCents < a.priceFromCents ? b : a));
     if (cheapest.id === pick.id && pick.priceFromCents < picks[0]!.priceFromCents)
-      return 'Best value';
+      return t('badgeBestValue');
     const best = (key: string, higher: boolean) => {
       const values = picks.map((p) =>
         typeof p.attributes[key] === 'number' ? (p.attributes[key] as number) : null,
@@ -434,40 +477,59 @@ export class AssistantService {
       const target = higher ? Math.max(...known) : Math.min(...known);
       return values[index] === target && values.filter((v) => v === target).length === 1;
     };
-    if (best('battery_hours', true) || best('battery_days', true)) return 'Longest battery';
-    if (best('weight_kg', false) || best('weight_g', false)) return 'Lightest';
-    if (need.qualities.includes('developer') && best('cpu_cores', true)) return 'Most powerful';
+    if (best('battery_hours', true) || best('battery_days', true)) return t('badgeLongestBattery');
+    if (best('weight_kg', false) || best('weight_g', false)) return t('badgeLightest');
+    if (need.qualities.includes('developer') && best('cpu_cores', true))
+      return t('badgeMostPowerful');
     return null;
   }
 
-  private highlights(pick: Candidate, need: ParsedNeed): string[] {
+  private highlights(pick: Candidate, need: ParsedNeed, r: Replies): string[] {
     const out: string[] = [];
     for (const q of need.qualities) {
-      const fact = evidence(q, pick);
+      const fact = evidence(q, pick, r.locale);
       if (fact && !out.includes(fact)) out.push(fact);
     }
-    for (const spec of keySpecs(pick.attributes))
+    for (const spec of keySpecs(pick.attributes, r))
       if (!out.some((fact) => fact.includes(spec) || spec.includes(fact))) out.push(spec);
-    if (!pick.inStock) out.push('out of stock');
+    if (!pick.inStock) out.push(r.t('outOfStockNote'));
     return out.slice(0, 4);
   }
 
-  private summarize(need: ParsedNeed, category: CategoryRef | null): string {
-    const what = category?.name.toLowerCase() ?? '';
+  /** "laptops under $1,500 (quiet, good for coding)", in the shopper's language. */
+  private summarize(
+    need: ParsedNeed,
+    category: CategoryRef | null,
+    lastTurn: string,
+    { t, money, locale, department }: Replies,
+  ): string {
+    const what = category ? department(category).toLowerCase() : '';
     const budget =
       need.minPriceCents !== null && need.maxPriceCents !== null
-        ? ` between ${money(need.minPriceCents)} and ${money(need.maxPriceCents)}`
+        ? t('budgetBetween', { min: money(need.minPriceCents), max: money(need.maxPriceCents) })
         : need.maxPriceCents !== null
-          ? ` under ${money(need.maxPriceCents)}`
+          ? t('budgetUnder', { max: money(need.maxPriceCents) })
           : need.minPriceCents !== null
-            ? ` over ${money(need.minPriceCents)}`
+            ? t('budgetOver', { min: money(need.minPriceCents) })
             : '';
-    const labels = need.qualities.map((q) => QUALITIES[q]!);
-    const qualities = labels.length ? ` (${labels.join(', ')})` : '';
-    return category ? `${what}${budget}${qualities}` : `“${need.query}”${budget}`;
+    const labels = need.qualities.map((q) => qualityLabel(q, locale));
+    const qualities = labels.length ? t('needQualities', { qualities: labels.join(', ') }) : '';
+    if (category) return `${what}${budget}${qualities}`;
+    // The search query is in English (the catalog's language); other languages quote the
+    // shopper's own words, which already carry their budget.
+    return locale === 'en'
+      ? `${t('needQuery', { query: need.query })}${budget}`
+      : t('needQuery', { query: lastTurn.trim() });
   }
 
-  private async compare(picks: Candidate[]): Promise<Comparison> {
+  private async compare(picks: Candidate[], r: Replies): Promise<Comparison> {
+    const rating = (average: number) =>
+      r.locale === 'en'
+        ? average.toFixed(1)
+        : average.toLocaleString(INTL_LOCALE[r.locale], {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          });
     const ratings = await this.prisma.review.groupBy({
       by: ['productId'],
       where: { productId: { in: picks.map((p) => p.id) }, status: 'APPROVED' },
@@ -476,19 +538,24 @@ export class AssistantService {
     });
     const ratingOf = new Map(ratings.map((r) => [r.productId, r]));
     const rows: Comparison['rows'] = [
-      { label: 'Price', values: picks.map((p) => `from ${money(p.priceFromCents)}`) },
       {
-        label: 'Rating',
+        label: r.t('rowPrice'),
+        values: picks.map((p) => r.t('priceFrom', { price: r.money(p.priceFromCents) })),
+      },
+      {
+        label: r.t('rowRating'),
         values: picks.map((p) => {
-          const r = ratingOf.get(p.id);
-          return r?._avg.rating ? `${r._avg.rating.toFixed(1)} ★ (${r._count._all})` : null;
+          const stats = ratingOf.get(p.id);
+          return stats?._avg.rating
+            ? `${rating(stats._avg.rating)} ★ (${r.num(stats._count._all)})`
+            : null;
         }),
       },
     ];
     const known = new Set(COMPARE_ROWS.flatMap((row) => row.keys));
     for (const row of COMPARE_ROWS) {
-      const values = picks.map((p) => compareValue(p.attributes, row.keys, row.format));
-      if (values.filter(Boolean).length >= 2) rows.push({ label: row.label, values });
+      const values = picks.map((p) => compareValue(p.attributes, row.keys, row.format, r));
+      if (values.filter(Boolean).length >= 2) rows.push({ label: r.t(row.label), values });
     }
     // Other specs the picks share, with a generic label.
     const extra = new Map<string, number>();
@@ -499,30 +566,30 @@ export class AssistantService {
       if (count < 2 || rows.length >= 9) continue;
       rows.push({
         label: humanKey(key).replace(/^./, (c) => c.toUpperCase()),
-        values: picks.map((p) => formatValue(p.attributes[key])),
+        values: picks.map((p) => formatValue(p.attributes[key], r)),
       });
     }
     rows.push({
-      label: 'Availability',
-      values: picks.map((p) => (p.inStock ? 'In stock' : 'Out of stock')),
+      label: r.t('rowAvailability'),
+      values: picks.map((p) => (p.inStock ? r.t('inStock') : r.t('outOfStock'))),
     });
     return { rows: rows.filter((row) => row.values.some((v) => v !== null)) };
   }
 
-  private suggestions(need: ParsedNeed, picks: Candidate[]): string[] {
+  private suggestions(need: ParsedNeed, picks: Candidate[], { t, money }: Replies): string[] {
     const out: string[] = [];
-    if (picks[0]) out.push(`Something cheaper than ${money(picks[0].priceFromCents)}`);
-    const followUps: [string, string][] = [
-      ['battery', 'Longer battery life'],
-      ['lightweight', 'Something lighter'],
-      ['quiet', 'Something quieter'],
-      ['noise_cancelling', 'With noise cancelling'],
-      ['large_screen', 'A bigger screen'],
+    if (picks[0]) out.push(t('suggestCheaper', { price: money(picks[0].priceFromCents) }));
+    const followUps: [string, MessageKey<'assistantReplies'>][] = [
+      ['battery', 'suggestBattery'],
+      ['lightweight', 'suggestLighter'],
+      ['quiet', 'suggestQuieter'],
+      ['noise_cancelling', 'suggestNoiseCancelling'],
+      ['large_screen', 'suggestBiggerScreen'],
     ];
     for (const [quality, prompt] of followUps) {
       if (out.length >= 3) break;
       if (!need.qualities.includes(quality) && picks.some((p) => evidence(quality, p)))
-        out.push(prompt);
+        out.push(t(prompt));
     }
     return out.slice(0, 4);
   }

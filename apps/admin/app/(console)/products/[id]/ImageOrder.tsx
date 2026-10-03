@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { deleteImage, reorderImages } from '../actions';
 
 type Photo = { id: string; url: string; alt: string };
@@ -9,6 +10,8 @@ type Photo = { id: string; url: string; alt: string };
 /** The product's photos in order: the first is the main photo shoppers see in search and lists. */
 export function ImageOrder({ productId, photos }: { productId: string; photos: Photo[] }) {
   const router = useRouter();
+  const t = useT('opsCatalog');
+  const tc = useT('common');
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const ids = photos.map((p) => p.id);
@@ -17,7 +20,7 @@ export function ImageOrder({ productId, photos }: { productId: string; photos: P
     start(async () => {
       setError(null);
       const result = await call();
-      if (!result.ok) setError(result.error ?? 'That did not work. Try again.');
+      if (!result.ok) setError(result.error ?? t('photoActionFailed'));
       router.refresh();
     });
 
@@ -41,14 +44,16 @@ export function ImageOrder({ productId, photos }: { productId: string; photos: P
             <figure>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo.url} alt={photo.alt} width={120} height={120} />
-              <figcaption className="hint">{i === 0 ? 'Main photo' : `Photo ${i + 1}`}</figcaption>
+              <figcaption className="hint">
+                {i === 0 ? t('mainPhoto') : t('photoNumber', { n: i + 1 })}
+              </figcaption>
             </figure>
             <div className="photo-order__tools">
               <button
                 type="button"
                 className="btn btn--secondary btn--small"
                 disabled={pending || i === 0}
-                aria-label={`Move photo ${i + 1} earlier`}
+                aria-label={t('movePhotoEarlier', { n: i + 1 })}
                 onClick={() => move(i, i - 1)}
               >
                 ←
@@ -57,7 +62,7 @@ export function ImageOrder({ productId, photos }: { productId: string; photos: P
                 type="button"
                 className="btn btn--secondary btn--small"
                 disabled={pending || i === photos.length - 1}
-                aria-label={`Move photo ${i + 1} later`}
+                aria-label={t('movePhotoLater', { n: i + 1 })}
                 onClick={() => move(i, i + 1)}
               >
                 →
@@ -69,17 +74,17 @@ export function ImageOrder({ productId, photos }: { productId: string; photos: P
                   disabled={pending}
                   onClick={() => move(i, 0)}
                 >
-                  Make main
+                  {t('makeMain')}
                 </button>
               ) : null}
               <button
                 type="button"
                 className="btn btn--secondary btn--small"
                 disabled={pending}
-                aria-label={`Remove photo ${i + 1}`}
+                aria-label={t('removePhoto', { n: i + 1 })}
                 onClick={() => run(() => deleteImage(productId, photo.id))}
               >
-                Remove
+                {tc('remove')}
               </button>
             </div>
           </li>

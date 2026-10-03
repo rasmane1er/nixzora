@@ -3,6 +3,7 @@
 import { MAX_PRODUCT_IMAGES } from '@nixzora/validation';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { attachImage, requestUpload } from '../actions';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
@@ -25,6 +26,7 @@ export function ImageUpload({
   existing: number;
 }) {
   const router = useRouter();
+  const t = useT('opsCatalog');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const room = MAX_PRODUCT_IMAGES - existing;
 
@@ -35,18 +37,18 @@ export function ImageUpload({
     const files = data.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
     const alt = String(data.get('alt') ?? '').trim() || defaultAlt;
 
-    if (!files.length) return setStatus({ kind: 'error', text: 'Choose at least one photo.' });
+    if (!files.length) return setStatus({ kind: 'error', text: t('choosePhoto') });
     const bad = files.find((f) => !TYPES.includes(f.type) || f.size > MAX_BYTES);
     if (bad) {
       return setStatus({
         kind: 'error',
-        text: `${bad.name}: use a JPEG, PNG, WebP or AVIF photo up to 10 MB.`,
+        text: t('badPhoto', { name: bad.name }),
       });
     }
     if (files.length > room) {
       return setStatus({
         kind: 'error',
-        text: `You can add ${room} more ${room === 1 ? 'photo' : 'photos'} (up to ${MAX_PRODUCT_IMAGES} per product).`,
+        text: t('tooManyPhotos', { room, max: MAX_PRODUCT_IMAGES }),
       });
     }
 
@@ -54,7 +56,7 @@ export function ImageUpload({
     for (const file of files) {
       setStatus({
         kind: 'busy',
-        text: `Uploading ${done + 1} of ${files.length}…`,
+        text: t('uploadingCount', { n: done + 1, total: files.length }),
         done,
         of: files.length,
       });
@@ -66,14 +68,16 @@ export function ImageUpload({
         router.refresh();
         return setStatus({
           kind: 'error',
-          text: `${file.name}: ${failed}${done ? ` The first ${done} uploaded.` : ''}`,
+          text: done
+            ? t('uploadFailedPartial', { name: file.name, error: failed, done })
+            : t('uploadFailedFile', { name: file.name, error: failed }),
         });
       }
       done += 1;
     }
 
     form.reset();
-    setStatus({ kind: 'ok', text: done === 1 ? 'Photo added.' : `${done} photos added.` });
+    setStatus({ kind: 'ok', text: t('photosAdded', { count: done }) });
     router.refresh();
   }
 
@@ -87,7 +91,7 @@ export function ImageUpload({
     }).catch(() => null);
     if (!put?.ok) {
       const body = (await put?.json().catch(() => null)) as { message?: string } | null;
-      return body?.message ?? 'The upload failed. Try again.';
+      return body?.message ?? t('uploadFailed');
     }
     const attached = await attachImage(productId, ticket.data.storageKey, alt);
     return attached.ok ? null : attached.error;
@@ -96,7 +100,7 @@ export function ImageUpload({
   if (room <= 0) {
     return (
       <p className="muted" style={{ fontSize: 14 }}>
-        This product has the maximum of {MAX_PRODUCT_IMAGES} photos. Remove one to add another.
+        {t('maxPhotos', { max: MAX_PRODUCT_IMAGES })}
       </p>
     );
   }
@@ -104,19 +108,15 @@ export function ImageUpload({
   return (
     <form onSubmit={onSubmit} className="form">
       <label>
-        Add photos{' '}
-        <span className="hint">
-          Choose several at once: every angle, close-ups and the item in use. JPEG, PNG, WebP or
-          AVIF, up to 10 MB each; {room} more allowed.
-        </span>
+        {t('addPhotos')} <span className="hint">{t('addPhotosHint', { room })}</span>
         <input type="file" name="files" accept={TYPES.join(',')} multiple required />
       </label>
       <label>
-        Describe the photos <span className="hint">For shoppers using screen readers.</span>
+        {t('describePhotos')} <span className="hint">{t('describePhotosHint')}</span>
         <input name="alt" placeholder={defaultAlt} maxLength={180} />
       </label>
       {status.kind === 'busy' && status.of ? (
-        <progress max={status.of} value={status.done} aria-label="Upload progress" />
+        <progress max={status.of} value={status.done} aria-label={t('uploadProgress')} />
       ) : null}
       {status.text ? (
         <p
@@ -128,7 +128,7 @@ export function ImageUpload({
       ) : null}
       <div>
         <button className="btn btn--primary" type="submit" disabled={status.kind === 'busy'}>
-          {status.kind === 'busy' ? 'Uploading…' : 'Upload photos'}
+          {status.kind === 'busy' ? t('uploading') : t('uploadPhotos')}
         </button>
       </div>
     </form>

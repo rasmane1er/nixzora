@@ -1,22 +1,29 @@
+import { INTL_LOCALE, type Locale, rich } from '@nixzora/i18n';
 import { type AiUsageReport } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { ActionButton, Banner, Empty, PageHeader } from '@/components/ui';
 import { load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
-import { dateTime, param } from '@/lib/format';
+import { param } from '@/lib/format';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { reindex } from './actions';
 
-export const metadata: Metadata = { title: 'AI operations' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('nav_ai') };
+}
 
 type SearchStats = { products: number; indexed: number; stale: number; model: string };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const usd = (value: number) =>
-  value === 0
-    ? '$0'
-    : value < 0.01
-      ? `$${value.toFixed(4)}`
-      : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+/** Dollars (not cents), with four decimals for fractions of a cent. */
+const usdFormatter = (locale: Locale) => (value: number) =>
+  new Intl.NumberFormat(INTL_LOCALE[locale], {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value === 0 ? 0 : value < 0.01 ? 4 : 2,
+    maximumFractionDigits: value === 0 ? 0 : value < 0.01 ? 4 : 2,
+  }).format(value);
 
 /** The last `n` UTC days as YYYY-MM-DD, oldest first. */
 function lastDays(n: number): string[] {
@@ -53,67 +60,81 @@ export default async function AiOperationsPage({ searchParams }: { searchParams:
   const maxRequests = Math.max(1, ...columns.map((d) => d.requests));
   const paid =
     report.config.assistantDriver !== 'local' || report.config.embeddingsDriver !== 'local';
+  const [t, ops, f, locale] = await Promise.all([
+    getT('opsPeople'),
+    getT('ops'),
+    getFormat(),
+    getLocale(),
+  ]);
+  const usd = usdFormatter(locale);
+  const bold = (chunk: string) => <strong key="b">{chunk}</strong>;
 
   return (
     <>
-      <PageHeader eyebrow="Intelligence" title="AI operations" />
+      <PageHeader eyebrow={t('intelligence')} title={ops('nav_ai')} />
       <Banner notice={param(params, 'notice')} error={param(params, 'error')} />
 
       <p className="muted">
-        Assistant: <strong>{report.config.assistantModel}</strong> · Embeddings:{' '}
-        <strong>{report.config.embeddingsModel}</strong>
-        {paid
-          ? ` · Daily budget ${usd(report.config.dailyBudgetUsd)}, then the free local driver answers.`
-          : ' · Free local drivers: no model costs. See the runbook to switch on Claude and Voyage.'}
+        {rich(t('assistantModel', { model: report.config.assistantModel }), { b: bold })} ·{' '}
+        {rich(t('embeddingsModel', { model: report.config.embeddingsModel }), { b: bold })} ·{' '}
+        {paid ? t('paidNote', { amount: usd(report.config.dailyBudgetUsd) }) : t('freeNote')}
       </p>
 
-      <nav className="tabs" aria-label="Period">
+      <nav className="tabs" aria-label={t('period')}>
         {[1, 7, 14, 30].map((d) => (
           <a key={d} href={`/ai?days=${d}`} aria-current={d === days ? 'page' : undefined}>
-            {d === 1 ? 'Today' : `${d} days`}
+            {d === 1 ? t('today') : t('daysCount', { count: d })}
           </a>
         ))}
       </nav>
 
-      <section className="grid" aria-label="Key numbers">
+      <section className="grid" aria-label={ops('keyNumbers')}>
         <Stat
-          label={`Model calls, ${days === 1 ? 'today' : `${days} days`}`}
-          value={String(report.totals.requests)}
+          label={days === 1 ? t('modelCallsToday') : t('modelCallsDays', { count: days })}
+          value={f.number(report.totals.requests)}
         />
-        <Stat label="Estimated cost" value={usd(report.totals.costUsd)} />
+        <Stat label={t('estimatedCost')} value={usd(report.totals.costUsd)} />
         <Stat
-          label="Spent today"
+          label={t('spentToday')}
           value={usd(report.today.spentUsd)}
-          note={paid ? `${report.today.budgetUsedPercent}% of the daily budget` : undefined}
+          note={
+            paid
+              ? t('budgetUsed', { percent: f.percent(report.today.budgetUsedPercent / 100) })
+              : undefined
+          }
         />
         <Stat
-          label="Grounded answers"
-          value={report.totals.groundedPercent === null ? '—' : `${report.totals.groundedPercent}%`}
-          note="Model text matched catalog facts"
+          label={t('groundedAnswers')}
+          value={
+            report.totals.groundedPercent === null
+              ? '—'
+              : f.percent(report.totals.groundedPercent / 100)
+          }
+          note={t('groundedNote')}
         />
         <Stat
-          label="p95 response time"
-          value={report.totals.p95LatencyMs === null ? '—' : `${report.totals.p95LatencyMs} ms`}
+          label={t('p95')}
+          value={
+            report.totals.p95LatencyMs === null
+              ? '—'
+              : t('milliseconds', { value: f.number(report.totals.p95LatencyMs) })
+          }
         />
-        <Stat
-          label="Errors"
-          value={String(report.totals.errors)}
-          note="Fell back to the local driver"
-        />
+        <Stat label={t('errors')} value={f.number(report.totals.errors)} note={t('errorsNote')} />
       </section>
 
       <div className="two-col">
         <section className="card">
-          <h2>Calls per day</h2>
+          <h2>{t('callsPerDay')}</h2>
           {report.daily.length === 0 ? (
-            <Empty>No assistant or search model calls in this period.</Empty>
+            <Empty>{t('noCalls')}</Empty>
           ) : (
-            <div className="bars" role="img" aria-label="Model calls per day">
+            <div className="bars" role="img" aria-label={t('callsPerDayLabel')}>
               {columns.map((d) => (
                 <div
                   key={d.day}
                   className="bars__col"
-                  title={`${d.day}: ${d.requests} calls, ${usd(d.costUsd)}`}
+                  title={t('barTitle', { day: d.day, count: d.requests, cost: usd(d.costUsd) })}
                 >
                   <div
                     className="bars__bar"
@@ -127,24 +148,34 @@ export default async function AiOperationsPage({ searchParams }: { searchParams:
         </section>
 
         <section className="card">
-          <h2>Search index</h2>
+          <h2>{t('searchIndex')}</h2>
           {search ? (
             <>
               <p>
-                <strong>{search.indexed}</strong> of {search.products} products indexed with{' '}
-                <span className="mono">{search.model}</span>
-                {search.stale ? ` · ${search.stale} use an older model` : ''}.
+                {rich(
+                  t('indexedSummary', {
+                    indexed: f.number(search.indexed),
+                    total: f.number(search.products),
+                    model: search.model,
+                  }),
+                  {
+                    b: bold,
+                    model: (chunk) => (
+                      <span key="model" className="mono">
+                        {chunk}
+                      </span>
+                    ),
+                  },
+                )}
+                {search.stale ? t('staleCount', { count: f.number(search.stale) }) : ''}.
               </p>
-              <p className="muted small">
-                Products re-index themselves when they change. Rebuild after renaming categories or
-                brands, or after switching the embedding model.
-              </p>
+              <p className="muted small">{t('reindexHint')}</p>
               {can(me, 'catalog.write') ? (
                 <div className="row">
-                  <ActionButton action={reindex} label="Update changed products" />
+                  <ActionButton action={reindex} label={t('updateChanged')} />
                   <ActionButton
                     action={reindex}
-                    label="Rebuild everything"
+                    label={t('rebuildAll')}
                     fields={{ force: 'true' }}
                     tone="danger"
                   />
@@ -152,26 +183,26 @@ export default async function AiOperationsPage({ searchParams }: { searchParams:
               ) : null}
             </>
           ) : (
-            <Empty>Search index status is not available.</Empty>
+            <Empty>{t('indexUnavailable')}</Empty>
           )}
         </section>
       </div>
 
       <section className="card">
-        <h2>By feature and model</h2>
+        <h2>{t('byFeature')}</h2>
         {report.byFeature.length === 0 ? (
-          <Empty>Nothing yet.</Empty>
+          <Empty>{t('nothingYet')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Feature</th>
-                  <th>Model</th>
-                  <th className="num">Calls</th>
-                  <th className="num">Tokens in / out</th>
-                  <th className="num">Avg time</th>
-                  <th className="num">Cost</th>
+                  <th>{t('colFeature')}</th>
+                  <th>{t('colModel')}</th>
+                  <th className="num">{t('colCalls')}</th>
+                  <th className="num">{t('colTokens')}</th>
+                  <th className="num">{t('colAvgTime')}</th>
+                  <th className="num">{t('colCost')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,13 +210,14 @@ export default async function AiOperationsPage({ searchParams }: { searchParams:
                   <tr key={`${row.feature}-${row.model}`}>
                     <td>{row.feature}</td>
                     <td className="mono">{row.model}</td>
-                    <td className="num">{row.requests}</td>
+                    <td className="num">{f.number(row.requests)}</td>
                     <td className="num">
-                      {row.inputTokens.toLocaleString('en-US')} /{' '}
-                      {row.outputTokens.toLocaleString('en-US')}
+                      {f.number(row.inputTokens)} / {f.number(row.outputTokens)}
                     </td>
                     <td className="num">
-                      {row.avgLatencyMs === null ? '—' : `${row.avgLatencyMs} ms`}
+                      {row.avgLatencyMs === null
+                        ? '—'
+                        : t('milliseconds', { value: f.number(row.avgLatencyMs) })}
                     </td>
                     <td className="num">{usd(row.costUsd)}</td>
                   </tr>
@@ -198,11 +230,11 @@ export default async function AiOperationsPage({ searchParams }: { searchParams:
 
       {report.recentErrors.length ? (
         <section className="card">
-          <h2>Recent model errors</h2>
+          <h2>{t('recentErrors')}</h2>
           <ul className="plain-list">
             {report.recentErrors.map((e) => (
               <li key={e.at}>
-                <span className="muted">{dateTime(e.at)}</span> · {e.feature} ·{' '}
+                <span className="muted">{f.dateTime(e.at)}</span> · {e.feature} ·{' '}
                 <span className="mono">{e.model}</span>: {e.error}
               </li>
             ))}

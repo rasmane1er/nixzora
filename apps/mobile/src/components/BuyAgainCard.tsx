@@ -4,8 +4,8 @@ import { type DimensionValue, View } from 'react-native';
 import { PressableLink } from './PressableLink';
 import { Button, Text } from './ui';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
+import { useFormat, useT } from '@/lib/i18n';
 import { fonts, radius, space, usePalette } from '@/lib/theme';
 
 /** A product the customer ordered before, with a one-tap "Add to cart". */
@@ -17,6 +17,8 @@ export function BuyAgainCard({
   width?: DimensionValue;
 }) {
   const p = usePalette();
+  const t = useT('appAccount');
+  const f = useFormat();
   const add = useCartMutation(() => api.cart.add(item.variantId, 1));
   return (
     <View
@@ -51,10 +53,10 @@ export function BuyAgainCard({
         </Text>
       ) : null}
       <Text variant="small" muted>
-        {money(item.priceCents, item.currency)}
+        {f.money(item.priceCents, item.currency)}
       </Text>
       <Button
-        title={add.isSuccess ? 'Added' : item.inStock ? 'Add to cart' : 'Out of stock'}
+        title={add.isSuccess ? t('added') : item.inStock ? t('addToCart') : t('outOfStock')}
         tone="secondary"
         disabled={!item.inStock || add.isSuccess}
         loading={add.isPending}

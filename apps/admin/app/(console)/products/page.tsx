@@ -3,9 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Banner, Empty, PageHeader, Pager, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
-import { money, param, query, type SearchParams } from '@/lib/format';
+import { param, query, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Products' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsCatalog');
+  return { title: t('metaProducts') };
+}
 
 type Row = ProductCard & { status: string };
 
@@ -17,6 +21,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
   const page = Number(param(params, 'page') ?? 1) || 1;
   const sort = q ? 'relevance' : 'newest';
 
+  const [t, tc, f] = await Promise.all([getT('opsCatalog'), getT('common'), getFormat()]);
   const result = await load<PagedResult<Row>>(
     `/admin/products${query({ q, status, category, page, pageSize: 25, sort })}`,
   );
@@ -24,11 +29,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
   return (
     <>
       <PageHeader
-        eyebrow="Catalog"
-        title="Products"
+        eyebrow={t('eyebrowCatalog')}
+        title={t('metaProducts')}
         actions={
           <Link className="btn btn--primary" href="/products/new">
-            New product
+            {t('newProduct')}
           </Link>
         }
       />
@@ -36,37 +41,42 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
 
       <form className="toolbar" role="search">
         <label>
-          Search
-          <input type="search" name="q" defaultValue={q} placeholder="Title, brand or SKU words" />
+          {tc('search')}
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder={t('productSearchPlaceholder')}
+          />
         </label>
         <label>
-          Status
+          {t('status')}
           <select name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
-            <option value="ACTIVE">Active</option>
-            <option value="DRAFT">Draft</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value="">{t('any')}</option>
+            <option value="ACTIVE">{t('status_ACTIVE')}</option>
+            <option value="DRAFT">{t('status_DRAFT')}</option>
+            <option value="ARCHIVED">{t('status_ARCHIVED')}</option>
           </select>
         </label>
         {category ? <input type="hidden" name="category" value={category} /> : null}
         <button className="btn btn--secondary" type="submit">
-          Filter
+          {t('filter')}
         </button>
       </form>
 
       <section className="card">
         {result.items.length === 0 ? (
-          <Empty>No products match.</Empty>
+          <Empty>{t('noProductsMatch')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th className="num">From</th>
-                  <th>Stock</th>
+                  <th>{t('colProduct')}</th>
+                  <th>{t('category')}</th>
+                  <th>{t('status')}</th>
+                  <th className="num">{t('colFrom')}</th>
+                  <th>{t('stock')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -74,15 +84,15 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
                   <tr key={product.id}>
                     <td>
                       <Link href={`/products/${product.id}`}>{product.title}</Link>
-                      <div className="muted">{product.brand?.name ?? 'No brand'}</div>
+                      <div className="muted">{product.brand?.name ?? t('noBrand')}</div>
                     </td>
                     <td>{product.category.name}</td>
                     <td>
                       <StatusPill value={product.status} />
                     </td>
-                    <td className="num">{money(product.priceFromCents, product.currency)}</td>
+                    <td className="num">{f.money(product.priceFromCents, product.currency)}</td>
                     <td className={product.inStock ? undefined : 'low'}>
-                      {product.inStock ? 'In stock' : 'Out of stock'}
+                      {product.inStock ? t('inStock') : t('outOfStock')}
                     </td>
                   </tr>
                 ))}
@@ -97,11 +107,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
         />
       </section>
       <p className="muted">
-        {result.total} products{category ? ` in “${category}” and its subcategories` : ''}
+        {category
+          ? t('productCountInCategory', { count: result.total, category })
+          : t('productCount', { count: result.total })}
         {category ? (
           <>
             {' · '}
-            <Link href="/products">Show all</Link>
+            <Link href="/products">{t('showAll')}</Link>
           </>
         ) : null}
       </p>

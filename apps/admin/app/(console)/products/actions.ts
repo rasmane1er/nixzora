@@ -8,6 +8,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { cents, checked, integer, pairs, perform, text, uuidField } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 
 /** "RAM (GB)" → "ram_gb": attribute names are snake_case so the store can filter on them. */
 function attributeKey(label: string): string {
@@ -35,6 +36,7 @@ const VARIANT_ROWS = 5;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function createProduct(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   await perform(
     '/products/new',
     () =>
@@ -60,12 +62,13 @@ export async function createProduct(form: FormData): Promise<void> {
             })),
         },
       }),
-    'Product created.',
+    t('noticeProductCreated'),
     (product) => `/products/${(product as ProductDetail).id}`,
   );
 }
 
 export async function updateProduct(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   const id = uuidField(form, 'id');
   await perform(
     `/products/${id}`,
@@ -82,11 +85,12 @@ export async function updateProduct(form: FormData): Promise<void> {
           attributes: typedAttributes(pairs(form, 'attributes')),
         },
       }),
-    'Product saved.',
+    t('noticeProductSaved'),
   );
 }
 
 export async function addVariant(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   const id = uuidField(form, 'productId');
   await perform(
     `/products/${id}`,
@@ -103,11 +107,12 @@ export async function addVariant(form: FormData): Promise<void> {
           initialStock: integer(form, 'stock') ?? 0,
         },
       }),
-    'Variant added.',
+    t('noticeVariantAdded'),
   );
 }
 
 export async function updateVariant(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   const productId = uuidField(form, 'productId');
   const id = uuidField(form, 'variantId');
   await perform(
@@ -123,11 +128,12 @@ export async function updateVariant(form: FormData): Promise<void> {
           isActive: checked(form, 'isActive'),
         },
       }),
-    'Variant saved.',
+    t('noticeVariantSaved'),
   );
 }
 
 export async function adjustStock(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   const back = text(form, 'back') ?? '/inventory';
   const id = uuidField(form, 'variantId');
   await perform(
@@ -141,7 +147,7 @@ export async function adjustStock(form: FormData): Promise<void> {
           note: text(form, 'note'),
         },
       }),
-    'Stock updated.',
+    t('noticeStockUpdated'),
   );
 }
 
@@ -149,9 +155,10 @@ export async function adjustStock(form: FormData): Promise<void> {
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
-function failure(error: unknown): { ok: false; error: string } {
+async function failure(error: unknown): Promise<{ ok: false; error: string }> {
   if (error instanceof ApiError && error.status === 401) {
-    return { ok: false, error: 'Your session ended. Reload the page and sign in again.' };
+    const t = await getT('opsCatalog');
+    return { ok: false, error: t('errorSessionEnded') };
   }
   return { ok: false, error: errorMessage(error) };
 }
@@ -176,7 +183,9 @@ export async function attachImage(
   storageKey: string,
   alt: string,
 ): Promise<Result<null>> {
-  if (!UUID.test(productId)) return { ok: false, error: 'Unknown product.' };
+  if (!UUID.test(productId)) {
+    return { ok: false, error: (await getT('opsCatalog'))('errorUnknownProduct') };
+  }
   try {
     await api(`/admin/products/${productId}/images`, {
       method: 'POST',
@@ -198,7 +207,9 @@ export type CopyDraft = {
 
 /** A draft description for the editor (p6-03). It only fills the form; staff decide to save. */
 export async function suggestCopy(productId: string): Promise<CopyDraft> {
-  if (!/^[0-9a-f-]{36}$/i.test(productId)) return { error: 'Unknown product.' };
+  if (!/^[0-9a-f-]{36}$/i.test(productId)) {
+    return { error: (await getT('opsCatalog'))('errorUnknownProduct') };
+  }
   try {
     return await api<ProductCopySuggestion>(`/admin/products/${productId}/copy-suggestion`, {
       method: 'POST',
@@ -210,7 +221,7 @@ export async function suggestCopy(productId: string): Promise<CopyDraft> {
 
 export async function reorderImages(productId: string, imageIds: string[]): Promise<Result<null>> {
   if (!UUID.test(productId) || !imageIds.every((i) => UUID.test(i))) {
-    return { ok: false, error: 'Unknown product.' };
+    return { ok: false, error: (await getT('opsCatalog'))('errorUnknownProduct') };
   }
   try {
     await api(`/admin/products/${productId}/images/order`, { method: 'PUT', body: { imageIds } });
@@ -222,7 +233,9 @@ export async function reorderImages(productId: string, imageIds: string[]): Prom
 }
 
 export async function deleteImage(productId: string, imageId: string): Promise<Result<null>> {
-  if (!UUID.test(productId) || !UUID.test(imageId)) return { ok: false, error: 'Unknown image.' };
+  if (!UUID.test(productId) || !UUID.test(imageId)) {
+    return { ok: false, error: (await getT('opsCatalog'))('errorUnknownImage') };
+  }
   try {
     await api(`/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' });
     revalidatePath(`/products/${productId}`);

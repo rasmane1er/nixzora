@@ -3,35 +3,40 @@ import type { Metadata } from 'next';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, Empty, PageHeader, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
-import { money, param, type SearchParams } from '@/lib/format';
+import { param, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 import { createCoupon, setCouponActive, setCouponPublic } from './actions';
 
-export const metadata: Metadata = { title: 'Coupons' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('nav_coupons') };
+}
 
 const day = (iso: string | null) => (iso ? iso.slice(0, 10) : '—');
 
 export default async function CouponsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const coupons = await load<CouponView[]>('/admin/coupons');
+  const [t, ops, f] = await Promise.all([getT('opsPeople'), getT('ops'), getFormat()]);
 
   return (
     <>
-      <PageHeader eyebrow="Marketing" title="Coupons" />
+      <PageHeader eyebrow={t('marketing')} title={ops('nav_coupons')} />
       <Banner notice={param(params, 'notice')} error={param(params, 'error')} />
       <div className="two-col">
         <section className="card">
           {coupons.length === 0 ? (
-            <Empty>No coupons yet.</Empty>
+            <Empty>{t('noCoupons')}</Empty>
           ) : (
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Code</th>
-                    <th>Discount</th>
-                    <th>Rules</th>
-                    <th className="num">Used</th>
-                    <th>Status</th>
+                    <th>{t('colCode')}</th>
+                    <th>{t('colDiscount')}</th>
+                    <th>{t('colRules')}</th>
+                    <th className="num">{t('colUsed')}</th>
+                    <th>{t('colStatus')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -43,10 +48,14 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
                         {c.description ? <div className="muted">{c.description}</div> : null}
                       </td>
                       <td>
-                        {c.type === 'PERCENT' ? `${c.value / 100}% off` : `${money(c.value)} off`}
+                        {c.type === 'PERCENT'
+                          ? t('percentOff', { value: f.percent(c.value / 10000) })
+                          : t('amountOff', { amount: f.money(c.value) })}
                       </td>
                       <td className="muted">
-                        {c.minSubtotalCents ? `Min ${money(c.minSubtotalCents)}` : 'No minimum'}
+                        {c.minSubtotalCents
+                          ? t('minSpend', { amount: f.money(c.minSubtotalCents) })
+                          : t('noMinimum')}
                         <br />
                         {day(c.startsAt)} → {day(c.endsAt)}
                       </td>
@@ -56,17 +65,17 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
                       </td>
                       <td>
                         <StatusPill value={c.isActive ? 'active' : 'archived'} />
-                        {c.isPublic ? <div className="muted">Listed in accounts</div> : null}
+                        {c.isPublic ? <div className="muted">{t('listedInAccounts')}</div> : null}
                       </td>
                       <td className="num">
                         <ActionButton
                           action={setCouponActive}
-                          label={c.isActive ? 'Turn off' : 'Turn on'}
+                          label={c.isActive ? t('turnOff') : t('turnOn')}
                           fields={{ id: c.id, isActive: String(!c.isActive) }}
                         />{' '}
                         <ActionButton
                           action={setCouponPublic}
-                          label={c.isPublic ? 'Hide from accounts' : 'List in accounts'}
+                          label={c.isPublic ? t('hideFromAccounts') : t('listInAccounts')}
                           fields={{ id: c.id, isPublic: String(!c.isPublic) }}
                         />
                       </td>
@@ -79,10 +88,10 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
         </section>
 
         <section className="card">
-          <h2>New coupon</h2>
+          <h2>{t('newCoupon')}</h2>
           <form action={createCoupon} className="form">
             <label>
-              Code <span className="hint">Letters, numbers and hyphens</span>
+              {t('code')} <span className="hint">{t('codeHint')}</span>
               <input
                 name="code"
                 required
@@ -92,52 +101,51 @@ export default async function CouponsPage({ searchParams }: { searchParams: Sear
               />
             </label>
             <label>
-              Description <span className="hint">Shown to shoppers</span>
-              <input name="description" maxLength={200} placeholder="10% off your first order" />
+              {t('description')} <span className="hint">{t('descriptionHint')}</span>
+              <input name="description" maxLength={200} placeholder={t('descriptionPlaceholder')} />
             </label>
             <div className="form-row">
               <label>
-                Type
+                {t('type')}
                 <select name="type" defaultValue="PERCENT">
-                  <option value="PERCENT">Percent off</option>
-                  <option value="FIXED">Amount off</option>
+                  <option value="PERCENT">{t('typePercent')}</option>
+                  <option value="FIXED">{t('typeFixed')}</option>
                 </select>
               </label>
               <label>
-                Percent
+                {t('percent')}
                 <input name="percent" inputMode="decimal" placeholder="10" />
               </label>
               <label>
-                Amount ($)
+                {t('amount')}
                 <input name="amount" inputMode="decimal" placeholder="15.00" />
               </label>
             </div>
             <div className="form-row">
               <label>
-                Minimum spend ($)
+                {t('minimumSpend')}
                 <input name="minSubtotal" inputMode="decimal" placeholder="0" />
               </label>
               <label>
-                Max uses
-                <input name="maxRedemptions" type="number" min={1} placeholder="Unlimited" />
+                {t('maxUses')}
+                <input name="maxRedemptions" type="number" min={1} placeholder={t('unlimited')} />
               </label>
             </div>
             <div className="form-row">
               <label>
-                Starts
+                {t('starts')}
                 <input name="startsAt" type="date" />
               </label>
               <label>
-                Ends
+                {t('ends')}
                 <input name="endsAt" type="date" />
               </label>
             </div>
             <label className="check">
-              <input type="checkbox" name="isPublic" /> List in customers&apos; accounts (Coupons
-              &amp; promotions)
+              <input type="checkbox" name="isPublic" /> {t('listCheckbox')}
             </label>
             <div>
-              <SubmitButton>Create coupon</SubmitButton>
+              <SubmitButton>{t('createCoupon')}</SubmitButton>
             </div>
           </form>
         </section>

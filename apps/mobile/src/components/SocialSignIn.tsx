@@ -12,6 +12,7 @@ import { Platform, useColorScheme, View } from 'react-native';
 import { Banner, Button, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { deviceName } from '@/lib/device';
+import { useT } from '@/lib/i18n';
 import { radius, space, usePalette } from '@/lib/theme';
 
 // Closes the Google sign-in browser tab when it redirects back into the app (web builds).
@@ -29,6 +30,7 @@ type Props = {
  */
 export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
   const scheme = useColorScheme();
+  const t = useT('appAccount');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
@@ -83,7 +85,7 @@ export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
         if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return null;
         throw e;
       }
-      if (!credential.identityToken) throw new Error('Apple did not return a sign-in token.');
+      if (!credential.identityToken) throw new Error(t('appleNoToken'));
       return api.auth.social({
         provider: 'apple',
         idToken: credential.identityToken,
@@ -101,8 +103,7 @@ export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
   if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
     return __DEV__ ? (
       <Text muted variant="small" style={{ textAlign: 'center' }}>
-        Sign in with Apple and Google appear in the NIXZORA app build (npx expo run:ios), not in
-        Expo Go.
+        {t('socialExpoGo')}
       </Text>
     ) : null;
   }
@@ -141,7 +142,7 @@ export function SocialSignIn({ onResult, intent = 'signin' }: Props) {
       ) : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <Text muted variant="small" style={{ textAlign: 'center', marginTop: space.xs }}>
-        or use your email
+        {t('orUseEmail')}
       </Text>
     </View>
   );
@@ -164,6 +165,7 @@ function GoogleButton({
   onToken: (idToken: string, nonce: string | undefined) => void;
 }) {
   const p = usePalette();
+  const t = useT('appAccount');
   const [request, response, prompt] = Google.useIdTokenAuthRequest({
     webClientId: clientIds.webClientId ?? undefined,
     iosClientId: clientIds.iosClientId ?? undefined,
@@ -180,7 +182,7 @@ function GoogleButton({
 
   return (
     <Button
-      title={intent === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
+      title={intent === 'signup' ? t('googleSignUp') : t('googleContinue')}
       tone="ghost"
       icon={<Ionicons name="logo-google" size={18} color={p.fg} />}
       disabled={!request || busy}

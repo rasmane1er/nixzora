@@ -1,6 +1,7 @@
 import type { Totals as TotalsView } from '@nixzora/validation';
 import { View } from 'react-native';
-import { money } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
+import { useT } from '@/lib/i18n';
 import { fonts, space } from '@/lib/theme';
 import { Divider, Row, Text } from './ui';
 
@@ -32,23 +33,27 @@ function Line({
 }
 
 export function Totals({ totals, taxKnown = true }: { totals: TotalsView; taxKnown?: boolean }) {
+  const { money } = useFormatters();
+  const t = useT('appShop');
+  const to = useT('order');
+  const tc = useT('cart');
   const c = totals.currency;
   return (
     <View style={{ gap: space.sm }}>
-      <Line label="Subtotal" value={money(totals.subtotalCents, c)} />
+      <Line label={to('subtotal')} value={money(totals.subtotalCents, c)} />
       {totals.discountCents ? (
-        <Line label="Discount" value={`−${money(totals.discountCents, c)}`} tone="ok" />
+        <Line label={to('discount')} value={`−${money(totals.discountCents, c)}`} tone="ok" />
       ) : null}
       <Line
-        label="Shipping"
-        value={totals.shippingCents ? money(totals.shippingCents, c) : 'Free'}
+        label={to('shipping')}
+        value={totals.shippingCents ? money(totals.shippingCents, c) : to('free')}
       />
-      <Line label="Tax" value={taxKnown ? money(totals.taxCents, c) : 'At checkout'} />
+      <Line label={to('tax')} value={taxKnown ? money(totals.taxCents, c) : tc('atCheckout')} />
       <Divider />
-      <Line label="Total" value={money(totals.totalCents, c)} strong />
+      <Line label={to('total')} value={money(totals.totalCents, c)} strong />
       {totals.freeShippingRemainingCents > 0 ? (
         <Text variant="small" muted>
-          Add {money(totals.freeShippingRemainingCents, c)} more for free shipping.
+          {t('addMoreForFreeShipping', { amount: money(totals.freeShippingRemainingCents, c) })}
         </Text>
       ) : null}
     </View>

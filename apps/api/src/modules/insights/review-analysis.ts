@@ -1,3 +1,6 @@
+import { type MessageKey } from '@nixzora/i18n';
+import { type Locale, repliesFor } from '../assistant/replies';
+
 /**
  * Review insights (p6-04): what reviewers praise and complain about, computed from the review
  * text itself. Every number shown to shoppers comes from here, never from a model.
@@ -257,8 +260,48 @@ function list(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
-/** The summary sentence written from the analysis alone (local driver and model fallback). */
-export function templateSummary(analysis: ReviewAnalysis): string {
+/** Theme labels as stored (English) → their message, for readers in other languages. */
+const THEME_MESSAGES: Record<string, MessageKey<'assistantReplies'>> = {
+  'Battery life': 'aspectBattery',
+  Display: 'aspectDisplay',
+  Sound: 'aspectSound',
+  Comfort: 'aspectComfort',
+  'Build quality': 'aspectBuild',
+  Performance: 'aspectPerformance',
+  Keyboard: 'aspectKeyboard',
+  Noise: 'aspectNoise',
+  'Quiet operation': 'aspectQuiet',
+  Portability: 'aspectPortability',
+  Setup: 'aspectSetup',
+  Connectivity: 'aspectConnectivity',
+  'Value for money': 'aspectValue',
+};
+
+/** A theme label in the reader's language ("Sound" → "Son"); unknown labels as stored. */
+export function themeLabel(label: string, locale: Locale = 'en'): string {
+  const key = THEME_MESSAGES[label];
+  return locale === 'en' || !key ? label : repliesFor(locale).t(key);
+}
+
+/**
+ * The summary sentence written from the analysis alone (local driver and model fallback), in
+ * the reader's language. `analysis` carries the stored English theme labels.
+ */
+export function templateSummary(analysis: ReviewAnalysis, locale: Locale = 'en'): string {
+  if (locale !== 'en') {
+    const { t, num, and } = repliesFor(locale);
+    const themes = (items: Theme[]) =>
+      and(items.map((i) => themeLabel(i.label, locale).toLowerCase()));
+    const sentences = [
+      t('reviewRated', {
+        percent: num(analysis.positivePercent),
+        count: num(analysis.reviewCount),
+      }),
+    ];
+    if (analysis.pros.length) sentences.push(t('reviewPraise', { list: themes(analysis.pros) }));
+    if (analysis.cons.length) sentences.push(t('reviewConcerns', { list: themes(analysis.cons) }));
+    return sentences.join(' ');
+  }
   const parts = [
     `${analysis.positivePercent}% of ${analysis.reviewCount} reviewers rate it 4 or 5 stars.`,
   ];
@@ -279,7 +322,11 @@ export function templateSummary(analysis: ReviewAnalysis): string {
  * Guardrail for a model-written summary: short, no links or prices, and every number in it must
  * be one we computed (review count, percentage, average, theme counts). Null when untrustworthy.
  */
-export function groundSummary(text: string, analysis: ReviewAnalysis): string | null {
+export function groundSummary(
+  text: string,
+  analysis: ReviewAnalysis,
+  locale: Locale = 'en',
+): string | null {
   const clean = text.trim().replace(/\s+/g, ' ');
   if (!clean || clean.length > 500) return null;
   if (/https?:|www\.|\$|€|£|<|>/i.test(clean)) return null;
@@ -294,8 +341,15 @@ export function groundSummary(text: string, analysis: ReviewAnalysis): string | 
       ...analysis.cons.map((c) => c.mentions),
     ].map(String),
   );
-  for (const match of clean.matchAll(/\d+(?:\.\d+)?/g)) {
-    if (!allowed.has(match[0])) return null;
+  // French and Spanish write "4,3" and "1 234": read them as 4.3 and 1234.
+  const numbers =
+    locale === 'en'
+      ? clean
+      : clean.replace(/(\d)[ \u00a0\u202f](?=\d{3}(?!\d))/g, '$1').replace(/(\d),(\d)/g, '$1.$2');
+  // Other languages compare values, so "4,0" matches an average of 4.
+  const values = new Set([...allowed].map(Number));
+  for (const match of numbers.matchAll(/\d+(?:\.\d+)?/g)) {
+    if (!allowed.has(match[0]) && (locale === 'en' || !values.has(Number(match[0])))) return null;
   }
   return clean;
 }

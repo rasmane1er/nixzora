@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LOCALES } from '@nixzora/i18n';
 import { z } from 'zod';
 import { InternalKeyGuard } from '../common/internal-key.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -26,6 +27,8 @@ const UnderstandSchema = z.object({
   model,
   userTurns: z.array(z.string().max(4000)).min(1).max(20),
   categories: z.array(z.object({ slug: z.string(), name: z.string() }).loose()).max(500),
+  /** The shopper's language; optional so older API callers keep working. */
+  locale: z.enum(LOCALES).default('en'),
 });
 const InputSchema = z.object({ model, input: z.record(z.string(), z.unknown()) });
 const EmbedSchema = z.object({
@@ -61,6 +64,7 @@ export class AiServiceController {
       this.llm.understand(
         body.userTurns,
         body.categories as Parameters<LanguageModel['understand']>[1],
+        body.locale,
       ),
     );
   }

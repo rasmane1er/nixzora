@@ -5,6 +5,7 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { formatters, translator } from '@nixzora/i18n';
 import {
   type Address,
   type PagedResult,
@@ -39,9 +40,6 @@ const include = {
   },
 } satisfies Prisma.SellerOrderInclude;
 type Row = Prisma.SellerOrderGetPayload<{ include: typeof include }>;
-
-const money = (cents: number, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
 
 /**
  * A seller's side of marketplace orders (p7-04, p7-05): what to ship, shipping it, and what it
@@ -288,16 +286,30 @@ export class SellerOrdersService implements OnModuleInit {
     if (!row) return;
     const view = this.view(row);
     const link = `${this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '')}/sell/orders/${row.id}`;
+    const locale = await this.sellers.ownerLocale(row.sellerId);
+    const t = translator(locale)('email');
+    const { money, number } = formatters(locale);
     const lines = view.items
-      .map(
-        (item) =>
-          `  ${item.quantity} × ${item.productTitle} (${item.variantTitle}), SKU ${item.sku}`,
+      .map((item) =>
+        t('seller_newOrder_line', {
+          quantity: item.quantity,
+          product: item.productTitle,
+          variant: item.variantTitle,
+          sku: item.sku,
+        }),
       )
       .join('\n');
     await this.mail.trySend({
       to: row.seller.contactEmail,
-      subject: `New order ${view.orderNumber}: ship within 2 business days`,
-      text: `${row.seller.displayName} has a new order.\n\nOrder ${view.orderNumber}\n${lines}\n\nYou earn ${money(view.netCents, view.currency)} after the ${row.commissionBps / 100}% commission.\n\nShip it and add the tracking number here: ${link}\n`,
+      subject: t('seller_newOrder_subject', { number: view.orderNumber }),
+      text: t('seller_newOrder_text', {
+        store: row.seller.displayName,
+        number: view.orderNumber,
+        lines,
+        amount: money(view.netCents, view.currency),
+        commission: number(row.commissionBps / 100),
+        link,
+      }),
       template: 'sellers.new-order',
       data: { number: view.orderNumber, link },
     });

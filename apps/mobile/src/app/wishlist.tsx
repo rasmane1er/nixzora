@@ -4,11 +4,13 @@ import { router } from 'expo-router';
 import { ProductGrid } from '@/components/ProductGrid';
 import { Banner, Button, EmptyState } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 
 export default function WishlistScreen() {
   const { status } = useSession();
+  const t = useT('appShop');
   const wishlist = useQuery({
     queryKey: keys.wishlist,
     queryFn: () => api.account.wishlist(),
@@ -26,10 +28,10 @@ export default function WishlistScreen() {
       empty={
         wishlist.isLoading ? undefined : (
           <EmptyState
-            title="Nothing saved yet"
-            body="Tap the heart on a product to keep it here."
+            title={t('nothingSaved')}
+            body={t('tapHeart')}
             action={
-              <Button title="Browse the shop" tone="ghost" onPress={() => router.navigate('/')} />
+              <Button title={t('browseShop')} tone="ghost" onPress={() => router.navigate('/')} />
             }
           />
         )

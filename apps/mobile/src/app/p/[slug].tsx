@@ -29,7 +29,8 @@ import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
-import { attributeLabel } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
+import { t as translate, useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
@@ -38,9 +39,12 @@ import { visitorId } from '@/lib/visitor';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
 function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' | 'ok' } {
-  if (!variant.isActive || variant.available <= 0) return { text: 'Sold out', tone: 'error' };
-  if (variant.available <= 5) return { text: `Only ${variant.available} left`, tone: 'signal' };
-  return { text: 'In stock · ships in 1–2 business days', tone: 'ok' };
+  const t = translate('productPage');
+  if (!variant.isActive || variant.available <= 0)
+    return { text: translate('product')('soldOut'), tone: 'error' };
+  if (variant.available <= 5)
+    return { text: t('onlyLeft', { count: variant.available }), tone: 'signal' };
+  return { text: t('inStockShips'), tone: 'ok' };
 }
 
 /**
@@ -49,6 +53,8 @@ function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' 
  */
 function Gallery({ product, size }: { product: ProductDetail; size: number }) {
   const p = usePalette();
+  const t = useT('appShop');
+  const tp = useT('productPage');
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
@@ -73,7 +79,7 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
     return (
       <View style={[styles.noPhoto, { height: size * 0.75, backgroundColor: p.card }]}>
         <Text variant="label" muted>
-          No photo yet
+          {t('noPhotoYet')}
         </Text>
       </View>
     );
@@ -88,14 +94,18 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
           showsHorizontalScrollIndicator={false}
           onScroll={onScroll}
           scrollEventThrottle={32}
-          accessibilityLabel={`Product photos, ${photos.length} in total`}
+          accessibilityLabel={tp('photosLabel', { count: photos.length })}
         >
           {photos.map((image, i) => (
             <Pressable
               key={image.id}
               onPress={() => setFull(i)}
               accessibilityRole="imagebutton"
-              accessibilityLabel={`Photo ${i + 1} of ${photos.length}: ${image.alt || product.title}. Opens full screen.`}
+              accessibilityLabel={t('photoSlide', {
+                n: i + 1,
+                count: photos.length,
+                alt: image.alt || product.title,
+              })}
             >
               <Image
                 source={{ uri: image.url }}
@@ -132,7 +142,7 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
               key={image.id}
               onPress={() => show(i)}
               accessibilityRole="button"
-              accessibilityLabel={`Show photo ${i + 1}`}
+              accessibilityLabel={t('showPhotoN', { n: i + 1 })}
               accessibilityState={{ selected: i === index }}
               style={[
                 styles.thumb,
@@ -185,7 +195,7 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
           <Pressable
             onPress={() => setFull(null)}
             accessibilityRole="button"
-            accessibilityLabel="Close photos"
+            accessibilityLabel={t('closePhotos')}
             hitSlop={10}
             style={[styles.close, { top: insets.top + space.sm }]}
           >
@@ -211,6 +221,10 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
 
 export default function ProductScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const tp = useT('productPage');
+  const tc = useT('common');
+  const { attributeLabel, rating } = useFormatters();
   const layout = useLayout();
   // Side by side, the photos take a bit over half of the page (up to 760pt).
   const galleryWidth = layout.wide
@@ -261,10 +275,10 @@ export default function ProductScreen() {
     return (
       <Screen>
         <EmptyState
-          title="Product not found"
-          body={product.error ? errorMessage(product.error) : 'It may have been removed.'}
+          title={t('productNotFound')}
+          body={product.error ? errorMessage(product.error) : t('mayBeRemoved')}
           action={
-            <Button title="Back to the shop" tone="ghost" onPress={() => router.replace('/')} />
+            <Button title={t('backToShop')} tone="ghost" onPress={() => router.replace('/')} />
           }
         />
       </Screen>
@@ -276,7 +290,7 @@ export default function ProductScreen() {
   const variant =
     sellable.find((v) => v.id === chosen) ?? sellable.find((v) => v.available > 0) ?? sellable[0];
   const wished = !!wishIds.data?.includes(item.id);
-  const stock = variant ? stockText(variant) : { text: 'Not available', tone: 'error' as const };
+  const stock = variant ? stockText(variant) : { text: t('notAvailable'), tone: 'error' as const };
   const canBuy = !!variant && variant.available > 0;
   const specs = Object.entries(item.attributes);
 
@@ -308,11 +322,11 @@ export default function ProductScreen() {
           headerRight: () => (
             <Row style={{ gap: space.lg }}>
               <Pressable
-                accessibilityLabel="Share"
+                accessibilityLabel={t('share')}
                 hitSlop={8}
                 onPress={() =>
                   void Share.share({
-                    message: `${item.title} on NIXZORA`,
+                    message: t('shareMessage', { title: item.title }),
                     url: `${WEB_URL}/p/${item.slug}`,
                   })
                 }
@@ -320,7 +334,7 @@ export default function ProductScreen() {
                 <Ionicons name="share-outline" size={22} color={p.fg} />
               </Pressable>
               <Pressable
-                accessibilityLabel={wished ? 'Remove from saved' : 'Save for later'}
+                accessibilityLabel={wished ? t('removeFromSaved') : t('saveForLater')}
                 accessibilityState={{ selected: wished }}
                 hitSlop={8}
                 onPress={onWish}
@@ -351,7 +365,7 @@ export default function ProductScreen() {
               <Text variant="title">{item.title}</Text>
               <Stars average={item.rating.average} count={item.rating.count} />
               <Text variant="small" muted>
-                Sold by{' '}
+                {tp('soldBy')}{' '}
                 {item.seller ? (
                   <Text
                     variant="small"
@@ -369,7 +383,10 @@ export default function ProductScreen() {
                   </Text>
                 )}
                 {item.seller?.rating.count && item.seller.rating.average !== null
-                  ? ` · ★ ${item.seller.rating.average.toFixed(1)} seller rating (${item.seller.rating.count})`
+                  ? t('sellerRatingInline', {
+                      rating: rating(item.seller.rating.average),
+                      count: item.seller.rating.count,
+                    })
                   : ''}
               </Text>
             </View>
@@ -386,7 +403,7 @@ export default function ProductScreen() {
             {sellable.length > 1 ? (
               <View style={{ gap: space.sm }}>
                 <Text variant="label" muted>
-                  Choose
+                  {tp('choose')}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                   {sellable.map((v) => {
@@ -397,7 +414,7 @@ export default function ProductScreen() {
                         key={v.id}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: active }}
-                        accessibilityLabel={`${v.title}${out ? ', sold out' : ''}`}
+                        accessibilityLabel={out ? t('itemSoldOut', { title: v.title }) : v.title}
                         onPress={() => {
                           setChosen(v.id);
                           setQuantity(1);
@@ -440,7 +457,7 @@ export default function ProductScreen() {
                   onChange={(next) => setQuantity(Math.max(1, next))}
                 />
                 <Button
-                  title="Add to cart"
+                  title={t('addToCart')}
                   style={{ flex: 1 }}
                   loading={add.isPending}
                   onPress={onAdd}
@@ -450,19 +467,19 @@ export default function ProductScreen() {
             {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
             {added ? (
               <Banner tone="ok">
-                Added to your cart.{' '}
+                {tp('addedToCart')}{' '}
                 <Link
                   href="/cart"
                   style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
                 >
-                  View cart
+                  {t('viewCart')}
                 </Link>
               </Banner>
             ) : null}
 
             <Divider />
             <View style={{ gap: space.sm }}>
-              <Text variant="heading">About this item</Text>
+              <Text variant="heading">{t('aboutItem')}</Text>
               <Text>{item.description}</Text>
             </View>
 
@@ -485,7 +502,7 @@ export default function ProductScreen() {
                       variant="small"
                       style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, textAlign: 'right' }}
                     >
-                      {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                      {typeof value === 'boolean' ? (value ? tc('yes') : tc('no')) : String(value)}
                     </Text>
                   </Row>
                 ))}
@@ -493,18 +510,18 @@ export default function ProductScreen() {
             ) : null}
             {variant ? (
               <Text variant="mono" muted>
-                SKU {variant.sku}
+                {tp('sku', { sku: variant.sku })}
               </Text>
             ) : null}
 
             {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
 
             <ProductRail
-              title="Often bought together"
+              title={tp('oftenBoughtTogether')}
               products={related.data?.boughtTogether ?? []}
             />
-            <ProductRail title="Similar products" products={related.data?.similar ?? []} />
-            <ProductRail title="Customers also viewed" products={related.data?.alsoViewed ?? []} />
+            <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
+            <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
           </View>
         </View>
       </Screen>

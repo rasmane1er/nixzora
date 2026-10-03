@@ -2,29 +2,28 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Banner } from '@/components/ui';
 import { enableMfa, type EnableState } from '../actions';
 
 export function EnableForm() {
   const [state, action] = useActionState<EnableState, FormData>(enableMfa, {});
+  const t = useT('ops');
 
   if (state.recoveryCodes) {
     return (
       <div className="form">
-        <Banner notice="Two-step verification is on." />
-        <h2>3. Save your recovery codes</h2>
-        <p>
-          Each code works once if you lose your phone. Store them in your password manager — this is
-          the only time they are shown.
-        </p>
+        <Banner notice={t('mfaNowOn')} />
+        <h2>{t('saveCodesTitle')}</h2>
+        <p>{t('saveCodesBody')}</p>
         <ul className="codes">
           {state.recoveryCodes.map((code) => (
             <li key={code}>{code}</li>
           ))}
         </ul>
         <Link className="btn btn--primary" href="/">
-          I saved them — continue
+          {t('savedContinue')}
         </Link>
       </div>
     );
@@ -34,7 +33,7 @@ export function EnableForm() {
     <form action={action} className="form" style={{ maxWidth: 320 }}>
       <Banner error={state.error} />
       <label>
-        Code
+        {t('code')}
         <input
           name="code"
           inputMode="numeric"
@@ -45,7 +44,7 @@ export function EnableForm() {
           required
         />
       </label>
-      <SubmitButton>Turn on</SubmitButton>
+      <SubmitButton>{t('turnOn')}</SubmitButton>
     </form>
   );
 }

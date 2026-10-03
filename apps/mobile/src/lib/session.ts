@@ -3,6 +3,7 @@ import type { AuthTokens, MeResponse } from '@nixzora/validation';
 import { useSyncExternalStore } from 'react';
 import { confirmIdentity } from './biometrics';
 import { API_URL } from './config';
+import { t } from './i18n';
 import { secureStorage } from './secure-storage';
 
 export type SessionStatus = 'loading' | 'locked' | 'signedOut' | 'signedIn';
@@ -104,7 +105,7 @@ export const session = {
   },
 
   async unlock(): Promise<boolean> {
-    if (!(await confirmIdentity('Unlock NIXZORA'))) return false;
+    if (!(await confirmIdentity(t('appAccount')('unlockPrompt')))) return false;
     await session.resume();
     return true;
   },
@@ -158,7 +159,7 @@ export const session = {
   },
 
   async setBiometricLock(enabled: boolean): Promise<boolean> {
-    if (enabled && !(await confirmIdentity('Turn on Face ID / fingerprint unlock'))) return false;
+    if (enabled && !(await confirmIdentity(t('appAccount')('biometricOnPrompt')))) return false;
     await (enabled ? secureStorage.set(KEYS.biometric, '1') : secureStorage.remove(KEYS.biometric));
     set({ biometricLock: enabled });
     return true;

@@ -1,6 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { clientHeaders } from './client-headers';
+import { getLocale } from './i18n';
 import { accessToken } from './session';
 
 export const API_URL = (process.env.API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
@@ -44,6 +45,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'User-Agent': 'nixzora-ops-center',
       ...(await clientHeaders()),
+      'Accept-Language': await getLocale(),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

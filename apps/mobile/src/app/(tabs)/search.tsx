@@ -8,11 +8,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProductGrid } from '@/components/ProductGrid';
 import { type Sort, SortChips } from '@/components/SortChips';
 import { Banner, EmptyState, Text } from '@/components/ui';
+import { useFormatters } from '@/lib/format';
 import { useCategories, useProductList } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 
 export default function SearchScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const tc = useT('common');
+  const { departmentName } = useFormatters();
   const params = useLocalSearchParams<{ q?: string }>();
   const [text, setText] = useState(params.q ?? '');
   const [q, setQ] = useState(params.q ?? '');
@@ -58,9 +63,9 @@ export default function SearchScreen() {
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Search NIXZORA"
+          placeholder={t('searchPlaceholder')}
           placeholderTextColor={p.muted}
-          accessibilityLabel="Search products"
+          accessibilityLabel={tc('searchLabel')}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
@@ -69,7 +74,7 @@ export default function SearchScreen() {
           style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
         />
         <Pressable
-          accessibilityLabel="Scan a barcode"
+          accessibilityLabel={t('scanBarcode')}
           onPress={() => router.push('/scan')}
           hitSlop={8}
         >
@@ -82,13 +87,13 @@ export default function SearchScreen() {
       ) : null}
       {searching && results.data ? (
         <Text variant="small" muted>
-          {total === 1 ? '1 result' : `${total} results`} for “{q}”
+          {t('resultsFor', { count: total, q })}
         </Text>
       ) : null}
       {!searching && categories.data?.length ? (
         <View style={{ gap: space.sm }}>
           <Text variant="label" muted>
-            Departments
+            {t('departmentsLabel')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             {categories.data
@@ -106,12 +111,12 @@ export default function SearchScreen() {
                     paddingVertical: 7,
                   }}
                 >
-                  <Text variant="small">{category.name}</Text>
+                  <Text variant="small">{departmentName(category.slug, category.name)}</Text>
                 </PressableLink>
               ))}
           </View>
           <Text variant="heading" style={{ marginTop: space.md }}>
-            Popular right now
+            {t('popularNow')}
           </Text>
         </View>
       ) : null}
@@ -129,10 +134,7 @@ export default function SearchScreen() {
         }}
         empty={
           results.isLoading || !results.data ? undefined : (
-            <EmptyState
-              title="No matches"
-              body="Try fewer words, a brand, or something like “32GB laptop”."
-            />
+            <EmptyState title={t('noMatches')} body={t('noMatchesBody')} />
           )
         }
       />

@@ -212,6 +212,63 @@ describe('Intelligence layer: hybrid search and the shopping assistant (e2e)', (
     expect(body.picks.every((p) => p.product.priceFromCents <= 30_000)).toBe(true);
   });
 
+  it('answers in French when the shopper asks in French', async () => {
+    const res = await http()
+      .post('/api/v1/assistant/chat')
+      .set('Accept-Language', 'fr-FR,fr;q=0.9,en;q=0.8')
+      .send({
+        messages: [
+          { role: 'user', content: 'Un télescope léger pour les voyages, moins de 300 $' },
+        ],
+      })
+      .expect(200);
+    const body = AssistantChatResponseSchema.parse(res.body);
+    expect(body.need).toMatchObject({ category: `telescopes-${run}`, maxPriceCents: 30_000 });
+    expect(body.need.mustHave).toEqual(expect.arrayContaining(['léger', 'idéal en voyage']));
+    expect(body.picks.map((p) => p.product.id)).toEqual([travelId]);
+    expect(body.picks[0]!.badge).toBe('Meilleur choix');
+    expect(body.picks[0]!.matched).toEqual(expect.arrayContaining(['léger']));
+    expect(body.picks[0]!.reason).toContain('1,2 kg');
+    expect(body.reply).toMatch(/^Voici le meilleur choix pour telescopes à moins de 300\s\$US/);
+    expect(body.reply).toContain('Stargazer 80');
+    expect(body.suggestions[0]).toMatch(/^Quelque chose de moins cher que 249\s\$US$/);
+    expect(body.model).toBe('local');
+
+    // The suggestion, sent back as the next message, is understood too.
+    const next = await http()
+      .post('/api/v1/assistant/chat')
+      .set('Accept-Language', 'fr')
+      .send({
+        messages: [
+          { role: 'user', content: 'Un télescope pour les voyages' },
+          { role: 'assistant', content: body.reply },
+          { role: 'user', content: body.suggestions[0]! },
+        ],
+      })
+      .expect(200);
+    expect(AssistantChatResponseSchema.parse(next.body).need.maxPriceCents).toBe(24_899);
+  });
+
+  it('answers in Spanish and says, in Spanish, what it relaxed', async () => {
+    const res = await http()
+      .post('/api/v1/assistant/chat')
+      .set('Accept-Language', 'es')
+      .send({
+        messages: [{ role: 'user', content: `Un telescope ${run} más barato que $50` }],
+      })
+      .expect(200);
+    const body = AssistantChatResponseSchema.parse(res.body);
+    expect(body.need.maxPriceCents).toBe(4_999);
+    expect(body.relaxed).toEqual(['tu presupuesto']);
+    expect(body.reply).toMatch(/^Nada cumplía todo lo que pediste/);
+    expect(body.picks.length).toBeGreaterThan(0);
+    expect(body.picks[0]!.badge).toBe('Mejor opción');
+    expect(body.comparison?.rows.map((row) => row.label)).toEqual(
+      expect.arrayContaining(['Precio', 'Peso', 'Disponibilidad']),
+    );
+    expect(body.suggestions[0]).toMatch(/^Algo más barato que \$/);
+  });
+
   it('rejects conversations that do not end with the shopper', async () => {
     await http()
       .post('/api/v1/assistant/chat')

@@ -8,8 +8,10 @@ import { useIsOnline } from '@/components/OfflineToast';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, EmptyState, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
+import { rich } from '@nixzora/i18n';
+import { useFormatters } from '@/lib/format';
 import { useCart } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { pay } from '@/lib/payments';
 import { keys } from '@/lib/query';
 import { session, useSession } from '@/lib/session';
@@ -56,6 +58,9 @@ type Pending = { number: string; token: string; email: string; address: Address 
 
 export default function CheckoutScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const tc = useT('checkout');
+  const { money } = useFormatters();
   const client = useQueryClient();
   const online = useIsOnline();
   const { status, user } = useSession();
@@ -105,7 +110,7 @@ export default function CheckoutScreen() {
   const validate = useMemo(
     () => (): { email: string; address: Address } | null => {
       const next: Partial<Record<keyof Form, string>> = {};
-      if (!EMAIL.test(form.email.trim())) next.email = 'Enter the email for your receipt.';
+      if (!EMAIL.test(form.email.trim())) next.email = t('enterReceiptEmail');
       const parsed = AddressSchema.safeParse({
         fullName: form.fullName,
         line1: form.line1,
@@ -121,7 +126,7 @@ export default function CheckoutScreen() {
           const field = String(issue.path[0]) as keyof Form;
           next[field] ??=
             issue.message.startsWith('Too small') || issue.message.startsWith('Invalid')
-              ? 'Please fill this in.'
+              ? t('fillThisIn')
               : issue.message;
         }
       }
@@ -130,7 +135,7 @@ export default function CheckoutScreen() {
         ? { email: form.email.trim(), address: parsed.data }
         : null;
     },
-    [form],
+    [form, t],
   );
 
   async function collect(order: Pending, session_: Parameters<typeof pay>[0]) {
@@ -191,8 +196,8 @@ export default function CheckoutScreen() {
     return (
       <Screen>
         <EmptyState
-          title="Nothing to check out"
-          action={<Button title="Back to the shop" onPress={() => router.replace('/')} />}
+          title={t('nothingToCheckOut')}
+          action={<Button title={t('backToShop')} onPress={() => router.replace('/')} />}
         />
       </Screen>
     );
@@ -202,27 +207,30 @@ export default function CheckoutScreen() {
     <Screen>
       {!signedIn && !pending ? (
         <Banner>
-          Have an account?{' '}
-          <Link
-            href="/sign-in"
-            style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
-          >
-            Sign in
-          </Link>{' '}
-          for saved addresses and order updates on this phone.
+          {rich(t('haveAccount'), {
+            link: (chunk) => (
+              <Link
+                key="sign-in"
+                href="/sign-in"
+                style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
+              >
+                {chunk}
+              </Link>
+            ),
+          })}
         </Banner>
       ) : null}
 
       {pending ? (
         <Card>
-          <Text variant="heading">Order {pending.number} is waiting for payment</Text>
-          <Text muted>We are holding your items for 15 minutes. Pay now to confirm the order.</Text>
+          <Text variant="heading">{t('awaitingPaymentTitle', { number: pending.number })}</Text>
+          <Text muted>{t('holdingItems')}</Text>
         </Card>
       ) : (
         <>
-          <Text variant="heading">Contact</Text>
+          <Text variant="heading">{tc('contact')}</Text>
           <Field
-            label="Email for the receipt"
+            label={t('emailForTheReceipt')}
             value={form.email}
             onChangeText={set('email')}
             error={errors.email}
@@ -232,7 +240,7 @@ export default function CheckoutScreen() {
             textContentType="emailAddress"
           />
 
-          <Text variant="heading">Ship to</Text>
+          <Text variant="heading">{t('shipTo')}</Text>
           {addresses.data?.length ? (
             <View style={{ gap: space.sm }}>
               {addresses.data.map((address) => {
@@ -265,12 +273,12 @@ export default function CheckoutScreen() {
                 );
               })}
               <Text variant="small" muted>
-                Or edit the address below to ship somewhere new.
+                {t('editBelow')}
               </Text>
             </View>
           ) : null}
           <Field
-            label="Full name"
+            label={tc('fullName')}
             value={form.fullName}
             onChangeText={set('fullName')}
             error={errors.fullName}
@@ -278,7 +286,7 @@ export default function CheckoutScreen() {
             textContentType="name"
           />
           <Field
-            label="Street address"
+            label={t('streetAddress')}
             value={form.line1}
             onChangeText={set('line1')}
             error={errors.line1}
@@ -286,14 +294,14 @@ export default function CheckoutScreen() {
             textContentType="streetAddressLine1"
           />
           <Field
-            label="Apartment, suite (optional)"
+            label={tc('line2')}
             value={form.line2}
             onChangeText={set('line2')}
             error={errors.line2}
             textContentType="streetAddressLine2"
           />
           <Field
-            label="City"
+            label={tc('city')}
             value={form.city}
             onChangeText={set('city')}
             error={errors.city}
@@ -302,7 +310,7 @@ export default function CheckoutScreen() {
           <Row style={{ alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
               <Field
-                label="State"
+                label={tc('state')}
                 value={form.region}
                 onChangeText={set('region')}
                 error={errors.region}
@@ -314,7 +322,7 @@ export default function CheckoutScreen() {
             </View>
             <View style={{ flex: 1.4 }}>
               <Field
-                label="ZIP code"
+                label={tc('zip')}
                 value={form.postalCode}
                 onChangeText={set('postalCode')}
                 error={errors.postalCode}
@@ -326,7 +334,7 @@ export default function CheckoutScreen() {
             </View>
           </Row>
           <Field
-            label="Phone (optional, for the courier)"
+            label={t('phoneCourier')}
             value={form.phone}
             onChangeText={set('phone')}
             error={errors.phone}
@@ -336,11 +344,11 @@ export default function CheckoutScreen() {
           />
           {signedIn && chosenId === 'new' ? (
             <Row style={{ justifyContent: 'space-between' }}>
-              <Text>Save to my address book</Text>
+              <Text>{t('saveToAddressBook')}</Text>
               <Switch
                 value={saveAddress}
                 onValueChange={setSaveAddress}
-                accessibilityLabel="Save to my address book"
+                accessibilityLabel={t('saveToAddressBook')}
               />
             </Row>
           ) : null}
@@ -353,22 +361,21 @@ export default function CheckoutScreen() {
         </Card>
       ) : null}
       {problem ? <Banner tone="error">{problem}</Banner> : null}
-      {!online ? <Banner tone="warn">You are offline. Connect to place the order.</Banner> : null}
+      {!online ? <Banner tone="warn">{t('offlinePlaceOrder')}</Banner> : null}
       <Button
         title={
           pending
-            ? 'Pay now'
+            ? t('payNow')
             : totals
-              ? `Place order · ${money(totals.totalCents, totals.currency)}`
-              : 'Place order'
+              ? t('placeOrderTotal', { amount: money(totals.totalCents, totals.currency) })
+              : t('placeOrder')
         }
         loading={busy}
         disabled={!online}
         onPress={() => void (pending ? retryPayment() : placeOrder())}
       />
       <Text variant="small" muted style={{ textAlign: 'center' }}>
-        You will choose a card, Apple Pay or Google Pay next. Payments are processed by Stripe;
-        NIXZORA never sees your card number.
+        {t('paymentNote')}
       </Text>
     </Screen>
   );

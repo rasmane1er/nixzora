@@ -2,11 +2,11 @@ import { type ReturnView } from '@nixzora/validation';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/SubmitButton';
 import { StatusPill } from '@/components/ui';
-import { dateTime, money } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 import { decideReturn } from '../orders/actions';
 
 /** Return requests with the next step for each (approve/reject, then receive & refund). */
-export function ReturnList({
+export async function ReturnList({
   returns,
   canDecide,
   back,
@@ -17,6 +17,12 @@ export function ReturnList({
   back: string;
   showOrder?: boolean;
 }) {
+  const [t, tOrder, f] = await Promise.all([getT('opsOrders'), getT('order'), getFormat()]);
+  const reasonLabel = (reason: string) => {
+    const key = `reason_${reason}`;
+    const label = tOrder(key as never);
+    return label === key ? reason : label;
+  };
   return (
     <div className="stack">
       {returns.map((r) => (
@@ -28,12 +34,15 @@ export function ReturnList({
                   {r.orderNumber}
                 </Link>
               ) : null}{' '}
-              <StatusPill value={r.status} /> <span className="muted">{dateTime(r.createdAt)}</span>
+              <StatusPill value={r.status} />{' '}
+              <span className="muted">{f.dateTime(r.createdAt)}</span>
             </div>
-            {r.refundCents ? <strong>{money(r.refundCents)} refunded</strong> : null}
+            {r.refundCents ? (
+              <strong>{t('refundedAmount', { amount: f.money(r.refundCents) })}</strong>
+            ) : null}
           </div>
           <p>
-            <strong>{r.reason}</strong>
+            <strong>{reasonLabel(r.reason)}</strong>
             {r.customerNote ? <span className="muted"> — “{r.customerNote}”</span> : null}
           </p>
           <ul style={{ margin: '8px 0', paddingLeft: 18 }}>
@@ -43,14 +52,14 @@ export function ReturnList({
               </li>
             ))}
           </ul>
-          {r.staffNote ? <p className="muted">Staff note: {r.staffNote}</p> : null}
+          {r.staffNote ? <p className="muted">{t('staffNote', { note: r.staffNote })}</p> : null}
           {canDecide && r.status === 'REQUESTED' ? (
             <div className="inline-form" style={{ flexWrap: 'wrap', gap: 10 }}>
               <form action={decideReturn} className="inline-form">
                 <input type="hidden" name="id" value={r.id} />
                 <input type="hidden" name="back" value={back} />
                 <input type="hidden" name="action" value="approve" />
-                <SubmitButton>Approve</SubmitButton>
+                <SubmitButton>{t('approve')}</SubmitButton>
               </form>
               <form action={decideReturn} className="inline-form">
                 <input type="hidden" name="id" value={r.id} />
@@ -60,11 +69,11 @@ export function ReturnList({
                   name="note"
                   required
                   minLength={3}
-                  placeholder="Why (emailed)"
-                  aria-label="Reason for rejecting"
+                  placeholder={t('rejectPlaceholder')}
+                  aria-label={t('rejectAria')}
                   style={{ width: 200 }}
                 />
-                <SubmitButton tone="danger">Reject</SubmitButton>
+                <SubmitButton tone="danger">{t('reject')}</SubmitButton>
               </form>
             </div>
           ) : null}
@@ -74,10 +83,9 @@ export function ReturnList({
               <input type="hidden" name="back" value={back} />
               <input type="hidden" name="action" value="receive" />
               <label className="check">
-                <input type="checkbox" name="restock" defaultChecked /> Items can be resold
-                (restock)
+                <input type="checkbox" name="restock" defaultChecked /> {t('restockLabel')}
               </label>
-              <SubmitButton>Mark received &amp; refund</SubmitButton>
+              <SubmitButton>{t('markReceivedRefund')}</SubmitButton>
             </form>
           ) : null}
         </article>

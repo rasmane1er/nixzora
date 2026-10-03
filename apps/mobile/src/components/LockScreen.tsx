@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { signOut } from '@/lib/account-actions';
+import { useT } from '@/lib/i18n';
 import { session } from '@/lib/session';
 import { space, usePalette } from '@/lib/theme';
 import { Logo } from './Logo';
@@ -10,6 +11,7 @@ import { Button, Text } from './ui';
 /** Shown at launch when "Unlock with Face ID / fingerprint" is on. */
 export function LockScreen() {
   const p = usePalette();
+  const t = useT('appAccount');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -30,12 +32,12 @@ export function LockScreen() {
         <View style={{ alignItems: 'center', gap: space.md }}>
           <Logo size={44} />
           <Text muted style={{ textAlign: 'center' }}>
-            {failed ? 'We could not confirm it’s you.' : 'Confirm it’s you to continue.'}
+            {failed ? t('lockFailed') : t('lockPrompt')}
           </Text>
         </View>
-        <Button title="Unlock" loading={busy} onPress={unlock} />
+        <Button title={t('unlock')} loading={busy} onPress={unlock} />
         <Button
-          title="Sign out instead"
+          title={t('lockSignOutInstead')}
           tone="ghost"
           disabled={busy}
           onPress={() => void signOut()}

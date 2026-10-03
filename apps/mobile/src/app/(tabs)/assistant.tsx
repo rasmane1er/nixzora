@@ -17,8 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Price } from '@/components/Price';
 import { Banner, Button, Card, Row, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
@@ -26,14 +27,7 @@ type Turn =
   | { role: 'user'; content: string }
   | { role: 'assistant'; content: string; response: AssistantChatResponse };
 
-const EXAMPLES = [
-  'A quiet laptop for coding under $1,500',
-  'Headphones for long flights, under $250',
-  'A gift for someone who runs every morning',
-];
-
-/** "$1,500" rather than "$1,500.00" for round budgets. */
-const usd = (cents: number) => money(cents, 'USD').replace(/\.00$/, '');
+const EXAMPLES = ['example1', 'example2', 'example4'] as const;
 
 function Chip({ label, onPress }: { label: string; onPress?: () => void }) {
   const p = usePalette();
@@ -61,15 +55,16 @@ function Chip({ label, onPress }: { label: string; onPress?: () => void }) {
 }
 
 function AddPick({ variantId, title }: { variantId: string; title: string }) {
+  const t = useT('assistant');
   const add = useCartMutation((id: string) => api.cart.add(id, 1));
   const done = add.isSuccess;
   return (
     <View style={{ gap: 4 }}>
       <Button
-        title={done ? 'Added ✓' : 'Add to cart'}
+        title={done ? t('addedCheck') : t('addToCart')}
         tone={done ? 'secondary' : 'primary'}
         loading={add.isPending}
-        accessibilityLabel={done ? `Added ${title} to cart` : `Add ${title} to cart`}
+        accessibilityLabel={done ? t('addedTitle', { title }) : t('addTitle', { title })}
         onPress={() =>
           add.mutate(variantId, {
             onSuccess: () => {
@@ -96,12 +91,17 @@ function Answer({
   onAsk: (text: string) => void;
 }) {
   const p = usePalette();
+  const t = useT('assistant');
+  const ts = useT('appShop');
+  const tp = useT('product');
+  // "$1,500" rather than "$1,500.00" for round budgets.
+  const { wholeMoney: usd } = useFormatters();
   const need = response.need;
   const understood = [
     need.categoryName,
-    need.maxPriceCents !== null ? `Up to ${usd(need.maxPriceCents)}` : null,
+    need.maxPriceCents !== null ? t('upTo', { price: usd(need.maxPriceCents) }) : null,
     need.minPriceCents !== null && need.maxPriceCents === null
-      ? `From ${usd(need.minPriceCents)}`
+      ? t('fromPrice', { price: usd(need.minPriceCents) })
       : null,
     ...need.mustHave,
   ].filter(Boolean) as string[];
@@ -110,11 +110,11 @@ function Answer({
     <Card style={{ gap: space.md }}>
       {understood.length ? (
         <View
-          accessibilityLabel={`Understood: ${understood.join(', ')}`}
+          accessibilityLabel={ts('understoodList', { list: understood.join(', ') })}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}
         >
           <Text variant="label" muted>
-            Understood
+            {t('understood')}
           </Text>
           {understood.map((chip) => (
             <Chip key={chip} label={chip} />
@@ -184,7 +184,7 @@ function Answer({
                 <AddPick variantId={pick.variantId} title={pick.product.title} />
               ) : (
                 <Text variant="small" tone="error">
-                  Sold out
+                  {tp('soldOut')}
                 </Text>
               )}
             </View>
@@ -194,10 +194,10 @@ function Answer({
 
       {response.comparison && response.picks.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View accessibilityLabel="Comparison of the picks">
+          <View accessibilityLabel={t('comparisonCaption')}>
             <Row style={{ borderBottomWidth: 1, borderBottomColor: p.line, paddingVertical: 6 }}>
               <Text variant="label" muted style={{ width: 96 }}>
-                Compare
+                {t('compare')}
               </Text>
               {response.picks.map((pick) => (
                 <Text
@@ -237,7 +237,7 @@ function Answer({
         </View>
       ) : null}
       <Text variant="small" muted>
-        Products, prices and stock come from the live catalog.
+        {t('noteLocal')}
       </Text>
     </Card>
   );
@@ -247,6 +247,9 @@ function Answer({
 export default function AssistantScreen() {
   const { width } = useLayout();
   const p = usePalette();
+  const t = useT('assistant');
+  const ts = useT('appShop');
+  const tc = useT('common');
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
@@ -298,16 +301,16 @@ export default function AssistantScreen() {
         >
           <View style={{ gap: space.xs }}>
             <Text variant="label" tone="ai">
-              AI shopping assistant
+              {ts('aiAssistantEyebrow')}
             </Text>
-            <Text variant="title">What do you need today?</Text>
-            <Text muted>Describe it in your own words: budget, what it is for, what matters.</Text>
+            <Text variant="title">{ts('whatDoYouNeed')}</Text>
+            <Text muted>{ts('assistantLead')}</Text>
           </View>
 
           {!turns.length && !chat.isPending ? (
             <View style={{ gap: space.sm }}>
-              {EXAMPLES.map((example) => (
-                <Chip key={example} label={example} onPress={() => ask(example)} />
+              {EXAMPLES.map((key) => (
+                <Chip key={key} label={t(key)} onPress={() => ask(t(key))} />
               ))}
             </View>
           ) : null}
@@ -335,7 +338,7 @@ export default function AssistantScreen() {
 
           {chat.isPending ? (
             <Text muted accessibilityLiveRegion="polite">
-              Searching the catalog…
+              {t('searching')}
             </Text>
           ) : null}
           {chat.isError ? <Banner tone="error">{errorMessage(chat.error)}</Banner> : null}
@@ -359,16 +362,16 @@ export default function AssistantScreen() {
             value={draft}
             onChangeText={setDraft}
             onSubmitEditing={() => ask(draft)}
-            placeholder={turns.length ? 'Ask a follow-up' : 'Describe what you need'}
+            placeholder={turns.length ? ts('askFollowUp') : t('describePlaceholder')}
             placeholderTextColor={p.muted}
-            accessibilityLabel="Message the assistant"
+            accessibilityLabel={t('messageLabel')}
             returnKeyType="send"
             maxLength={1000}
             style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={tc('send')}
             disabled={!draft.trim() || chat.isPending}
             onPress={() => ask(draft)}
             style={{

@@ -1,21 +1,25 @@
 import {
   type AdminSellerView,
-  BUSINESS_TYPE_LABEL,
+  BUSINESS_TYPES,
   type BusinessType,
-  SELLER_CATEGORY_LABEL,
+  SELLER_CARRIER_LABEL,
+  SELLER_CATEGORIES,
+  type SellerCarrier,
   type SellerCategory,
   type PagedResult,
   type PayoutView,
   type SellerBalance,
   type SellerFeedback,
 } from '@nixzora/validation';
+import { INTL_LOCALE, rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
-import { dateTime, money, param, type SearchParams } from '@/lib/format';
+import { param, type SearchParams } from '@/lib/format';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import {
   changeSellerStatus,
   payOutSeller,
@@ -23,7 +27,10 @@ import {
   updateSellerTerms,
 } from '../actions';
 
-export const metadata: Metadata = { title: 'Seller' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsOrders');
+  return { title: t('metaSeller') };
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STOREFRONT = process.env.STOREFRONT_URL ?? 'http://localhost:3000';
@@ -48,7 +55,10 @@ export default async function SellerPage({
   const { id } = await params;
   const search = await searchParams;
   const seller = await loadSeller(id);
-  const [balance, payoutHistory, feedback] = await Promise.all([
+  const [t, f, locale, balance, payoutHistory, feedback] = await Promise.all([
+    getT('opsOrders'),
+    getFormat(),
+    getLocale(),
     load<SellerBalance>(`/admin/sellers/${id}/balance`),
     load<PagedResult<PayoutView>>(`/admin/sellers/${id}/payouts`),
     load<SellerFeedback>(`/admin/sellers/${id}/feedback`),
@@ -57,15 +67,16 @@ export default async function SellerPage({
     (r) => r.status === 'REQUESTED' || r.status === 'APPROVED',
   ).length;
   const { payouts } = seller;
+  const { money, dateTime } = f;
 
   return (
     <>
       <PageHeader
-        eyebrow="Seller"
+        eyebrow={t('metaSeller')}
         title={seller.displayName}
         actions={
           <Link className="btn btn--secondary" href="/sellers">
-            All sellers
+            {t('allSellers')}
           </Link>
         }
       />
@@ -76,7 +87,7 @@ export default async function SellerPage({
       <div className="two-col">
         <section className="card">
           <h2>
-            Store <StatusPill value={seller.status} />
+            {t('store')} <StatusPill value={seller.status} />
           </h2>
           {seller.statusReason ? (
             <p className="banner banner--error">{seller.statusReason}</p>
@@ -85,11 +96,11 @@ export default async function SellerPage({
             <table>
               <tbody>
                 <tr>
-                  <th scope="row">Legal name</th>
+                  <th scope="row">{t('legalName')}</th>
                   <td>{seller.legalName}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Store page</th>
+                  <th scope="row">{t('storePage')}</th>
                   <td>
                     {seller.status === 'ACTIVE' ? (
                       <a
@@ -105,11 +116,11 @@ export default async function SellerPage({
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row">Contact</th>
+                  <th scope="row">{t('contact')}</th>
                   <td>{seller.contactEmail}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Owner account</th>
+                  <th scope="row">{t('ownerAccount')}</th>
                   <td>
                     {seller.owner ? (
                       <Link href={`/users/${seller.owner.id}`}>{seller.owner.email}</Link>
@@ -119,22 +130,25 @@ export default async function SellerPage({
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row">Country</th>
+                  <th scope="row">{t('country')}</th>
                   <td>{seller.country}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Applied</th>
+                  <th scope="row">{t('applied')}</th>
                   <td>{dateTime(seller.createdAt)}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Approved</th>
+                  <th scope="row">{t('approved')}</th>
                   <td>{seller.approvedAt ? dateTime(seller.approvedAt) : '—'}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Listings</th>
+                  <th scope="row">{t('listings')}</th>
                   <td>
-                    {seller.listings.active} live · {seller.listings.pendingReview} in review ·{' '}
-                    {seller.listings.draft} draft
+                    {t('listingCounts', {
+                      live: seller.listings.active,
+                      review: seller.listings.pendingReview,
+                      draft: seller.listings.draft,
+                    })}
                   </td>
                 </tr>
               </tbody>
@@ -144,55 +158,55 @@ export default async function SellerPage({
         </section>
 
         <section className="card">
-          <h2>Payout verification</h2>
+          <h2>{t('payoutVerification')}</h2>
           <div className="table-wrap">
             <table>
               <tbody>
                 <tr>
-                  <th scope="row">Provider</th>
+                  <th scope="row">{t('provider')}</th>
                   <td>
                     {payouts.provider === 'FAKE'
-                      ? 'Test mode (no money moves)'
+                      ? t('providerFake')
                       : payouts.provider === 'STRIPE'
-                        ? 'Stripe Connect'
-                        : 'Not started'}
+                        ? t('providerStripe')
+                        : t('payoutsNotStarted')}
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row">Details submitted</th>
-                  <td>{payouts.detailsSubmitted ? 'Yes' : 'No'}</td>
+                  <th scope="row">{t('detailsSubmitted')}</th>
+                  <td>{payouts.detailsSubmitted ? t('yes') : t('no')}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Payouts enabled</th>
-                  <td>{payouts.payoutsEnabled ? 'Yes' : 'No'}</td>
+                  <th scope="row">{t('payoutsEnabled')}</th>
+                  <td>{payouts.payoutsEnabled ? t('yes') : t('no')}</td>
                 </tr>
                 {payouts.requirementsDue.length ? (
                   <tr>
-                    <th scope="row">Still needed</th>
+                    <th scope="row">{t('stillNeeded')}</th>
                     <td className="mono">{payouts.requirementsDue.join(', ')}</td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
           </div>
-          <h3>Earnings</h3>
+          <h3>{t('earnings')}</h3>
           <div className="table-wrap">
             <table>
               <tbody>
                 <tr>
-                  <th scope="row">Available</th>
+                  <th scope="row">{t('available')}</th>
                   <td>{money(balance.availableCents)}</td>
                 </tr>
                 <tr>
-                  <th scope="row">On hold</th>
+                  <th scope="row">{t('onHold')}</th>
                   <td>{money(balance.onHoldCents)}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Waiting to ship</th>
+                  <th scope="row">{t('waitingToShip')}</th>
                   <td>{money(balance.pendingCents)}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Lifetime net</th>
+                  <th scope="row">{t('lifetimeNet')}</th>
                   <td>{money(balance.lifetimeNetCents)}</td>
                 </tr>
               </tbody>
@@ -203,14 +217,14 @@ export default async function SellerPage({
           payouts.payoutsEnabled ? (
             <ActionButton
               action={payOutSeller}
-              label={`Pay out ${money(balance.availableCents)} now`}
+              label={t('payOutNow', { amount: money(balance.availableCents) })}
               tone="primary"
               fields={{ id }}
             />
           ) : null}
           {payoutHistory.items.length ? (
             <>
-              <h3>Recent payouts</h3>
+              <h3>{t('recentPayouts')}</h3>
               <div className="table-wrap">
                 <table>
                   <tbody>
@@ -223,7 +237,7 @@ export default async function SellerPage({
                             <div className="muted">{payout.failureReason}</div>
                           ) : null}
                         </td>
-                        <td>{payout.automatic ? 'Daily run' : 'Staff'}</td>
+                        <td>{payout.automatic ? t('payoutDailyRun') : t('payoutStaff')}</td>
                         <td className="num">{money(payout.amountCents)}</td>
                       </tr>
                     ))}
@@ -235,7 +249,7 @@ export default async function SellerPage({
           {payouts.accountConnected ? (
             <ActionButton
               action={refreshSellerPayouts}
-              label="Refresh from provider"
+              label={t('refreshFromProvider')}
               fields={{ id }}
             />
           ) : null}
@@ -244,25 +258,21 @@ export default async function SellerPage({
 
       <div className="two-col">
         <section className="card">
-          <h2>Decision</h2>
+          <h2>{t('decision')}</h2>
           {seller.status === 'PENDING' || seller.status === 'SUSPENDED' ? (
             <>
               <p className="muted">
-                {seller.status === 'PENDING'
-                  ? 'Approve once the business is verified and the application looks legitimate.'
-                  : 'Reinstating does not republish listings; the seller resubmits them.'}
+                {seller.status === 'PENDING' ? t('approveHint') : t('reinstateHint')}
               </p>
               {payouts.detailsSubmitted ? (
                 <ActionButton
                   action={changeSellerStatus}
-                  label={seller.status === 'PENDING' ? 'Approve store' : 'Reinstate store'}
+                  label={seller.status === 'PENDING' ? t('approveStore') : t('reinstateStore')}
                   tone="primary"
                   fields={{ id, status: 'ACTIVE' }}
                 />
               ) : (
-                <p className="banner banner--error">
-                  Waiting for the seller to finish payout verification.
-                </p>
+                <p className="banner banner--error">{t('waitingPayoutVerification')}</p>
               )}
             </>
           ) : null}
@@ -275,31 +285,29 @@ export default async function SellerPage({
                 value={seller.status === 'PENDING' ? 'REJECTED' : 'SUSPENDED'}
               />
               <label>
-                {seller.status === 'PENDING' ? 'Reason for rejecting' : 'Reason for suspending'}{' '}
-                <span className="hint">Shown to the seller.</span>
+                {seller.status === 'PENDING' ? t('reasonRejecting') : t('reasonSuspending')}{' '}
+                <span className="hint">{t('shownToSeller')}</span>
                 <textarea name="reason" rows={2} required minLength={5} maxLength={500} />
               </label>
               <div>
                 <SubmitButton tone="danger">
-                  {seller.status === 'PENDING' ? 'Reject application' : 'Suspend store'}
+                  {seller.status === 'PENDING' ? t('rejectApplication') : t('suspendStore')}
                 </SubmitButton>
               </div>
-              {seller.status === 'ACTIVE' ? (
-                <p className="muted">Suspending takes every listing off sale immediately.</p>
-              ) : null}
+              {seller.status === 'ACTIVE' ? <p className="muted">{t('suspendHint')}</p> : null}
             </form>
           ) : null}
           {seller.status === 'REJECTED' ? (
-            <p className="muted">This application was rejected.</p>
+            <p className="muted">{t('applicationRejected')}</p>
           ) : null}
         </section>
 
         <form action={updateSellerTerms} className="card form">
-          <h2>Terms</h2>
+          <h2>{t('terms')}</h2>
           <input type="hidden" name="id" value={id} />
           <div className="form-row">
             <label>
-              Commission (%)
+              {t('commissionPercent')}
               <input
                 name="commissionPercent"
                 type="number"
@@ -310,7 +318,7 @@ export default async function SellerPage({
               />
             </label>
             <label>
-              Payout hold (days)
+              {t('payoutHoldDays')}
               <input
                 name="payoutHoldDays"
                 type="number"
@@ -321,19 +329,30 @@ export default async function SellerPage({
             </label>
           </div>
           <div>
-            <SubmitButton>Save terms</SubmitButton>
+            <SubmitButton>{t('saveTerms')}</SubmitButton>
           </div>
         </form>
 
         <section className="card">
-          <h2>Customer feedback</h2>
+          <h2>{t('customerFeedback')}</h2>
           <p>
             {feedback.rating.average === null
-              ? 'No ratings yet.'
-              : `${feedback.rating.average.toFixed(1)} out of 5 from ${feedback.rating.count} ${feedback.rating.count === 1 ? 'order' : 'orders'}`}
+              ? t('noRatings')
+              : t('ratingSummary', {
+                  average: feedback.rating.average.toLocaleString(INTL_LOCALE[locale], {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  }),
+                  count: feedback.rating.count,
+                })}
             {' · '}
-            {feedback.returns.length} {feedback.returns.length === 1 ? 'return' : 'returns'} of its
-            items ({openReturns} open) · <Link href="/returns">Returns queue</Link>
+            {rich(t('returnsSummary', { count: feedback.returns.length, open: openReturns }), {
+              link: (chunk) => (
+                <Link key="returns" href="/returns">
+                  {chunk}
+                </Link>
+              ),
+            })}
           </p>
           {feedback.ratings.length ? (
             <div className="table-wrap">
@@ -342,8 +361,10 @@ export default async function SellerPage({
                   {feedback.ratings.slice(0, 10).map((r) => (
                     <tr key={r.id}>
                       <td className="mono">{r.orderNumber}</td>
-                      <td aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</td>
-                      <td>{r.comment ?? <span className="muted">No comment</span>}</td>
+                      <td aria-label={t('starsAria', { rating: r.rating })}>
+                        {'★'.repeat(r.rating)}
+                      </td>
+                      <td>{r.comment ?? <span className="muted">{t('noComment')}</span>}</td>
                       <td className="muted">{dateTime(r.updatedAt)}</td>
                     </tr>
                   ))}
@@ -358,17 +379,36 @@ export default async function SellerPage({
 }
 
 /** What the seller entered in the application (p8-13); the owner's details are private. */
-function ApplicationDetails({ seller }: { seller: AdminSellerView }) {
+async function ApplicationDetails({ seller }: { seller: AdminSellerView }) {
+  const [t, tApply, tDept, f] = await Promise.all([
+    getT('opsOrders'),
+    getT('sellApply'),
+    getT('departments'),
+    getFormat(),
+  ]);
   const v = seller.verification;
+  const businessType = seller.businessType as BusinessType | null;
+  const category = seller.category as SellerCategory | null;
+  const carrierLabel = (carrier: string) =>
+    carrier === 'OTHER'
+      ? tApply('carrier_OTHER')
+      : (SELLER_CARRIER_LABEL[carrier as SellerCarrier] ?? carrier);
   const rows: [string, React.ReactNode][] = [
     [
-      'Business type',
-      seller.businessType ? BUSINESS_TYPE_LABEL[seller.businessType as BusinessType] : null,
+      t('businessType'),
+      businessType
+        ? BUSINESS_TYPES.includes(businessType)
+          ? tApply(`businessType_${businessType}`)
+          : businessType
+        : null,
     ],
-    ['Category', seller.category ? SELLER_CATEGORY_LABEL[seller.category as SellerCategory] : null],
-    ['What they sell', seller.whatYouSell],
     [
-      'Website',
+      t('category'),
+      category ? (SELLER_CATEGORIES.includes(category) ? tDept(category) : category) : null,
+    ],
+    [t('whatTheySell'), seller.whatYouSell],
+    [
+      t('website'),
       seller.website ? (
         <a href={seller.website} target="_blank" rel="noopener noreferrer nofollow">
           {seller.website}
@@ -376,44 +416,44 @@ function ApplicationDetails({ seller }: { seller: AdminSellerView }) {
       ) : null,
     ],
     [
-      'Business address',
+      t('businessAddress'),
       seller.address
         ? `${seller.address.line1}${seller.address.line2 ? `, ${seller.address.line2}` : ''}, ${seller.address.city}, ${seller.address.region} ${seller.address.postalCode}`
         : null,
     ],
-    ['Owner', v ? `${v.firstName} ${v.lastName}` : null],
-    ['Date of birth', v ? (v.dateOfBirth ?? 'Unreadable (encryption key changed)') : null],
-    ['Owner phone', v?.phone],
+    [t('owner'), v ? `${v.firstName} ${v.lastName}` : null],
+    [t('dateOfBirth'), v ? (v.dateOfBirth ?? t('dobUnreadable')) : null],
+    [t('ownerPhone'), v?.phone],
     [
-      'Support contact',
+      t('supportContact'),
       [seller.supportEmail, seller.supportPhone].filter(Boolean).join(' · ') || null,
     ],
     [
-      'Shipping',
-      `Within ${seller.shipping.handlingDays} business day${seller.shipping.handlingDays === 1 ? '' : 's'}${
-        seller.shipping.carriers.length ? ` · ${seller.shipping.carriers.join(', ')}` : ''
+      t('shipping'),
+      `${t('shippingWithin', { count: seller.shipping.handlingDays })}${
+        seller.shipping.carriers.length
+          ? ` · ${seller.shipping.carriers.map(carrierLabel).join(', ')}`
+          : ''
       }`,
     ],
     [
-      'Agreements accepted',
-      seller.agreementsAcceptedAt ? dateTime(seller.agreementsAcceptedAt) : null,
+      t('agreementsAccepted'),
+      seller.agreementsAcceptedAt ? f.dateTime(seller.agreementsAcceptedAt) : null,
     ],
   ];
   const shown = rows.filter(([, value]) => value);
   if (!v && !seller.businessType) return null;
   return (
     <section className="card">
-      <h2>Application</h2>
-      <p className="muted">
-        Private: owner details are for verification only and never shown on the store.
-      </p>
+      <h2>{t('application')}</h2>
+      <p className="muted">{t('applicationPrivate')}</p>
       {seller.logoUrl || seller.bannerUrl ? (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           {seller.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- seller upload preview
             <img
               src={seller.logoUrl}
-              alt="Store logo"
+              alt={t('storeLogo')}
               width={72}
               height={72}
               style={{ borderRadius: 12, objectFit: 'cover' }}
@@ -423,7 +463,7 @@ function ApplicationDetails({ seller }: { seller: AdminSellerView }) {
             // eslint-disable-next-line @next/next/no-img-element -- seller upload preview
             <img
               src={seller.bannerUrl}
-              alt="Store banner"
+              alt={t('storeBanner')}
               height={72}
               style={{ borderRadius: 12, objectFit: 'cover', maxWidth: '100%' }}
             />

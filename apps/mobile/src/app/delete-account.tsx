@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { signOut } from '@/lib/account-actions';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 
 /** In-app account deletion, as the App Store and Google Play require. */
@@ -14,6 +15,7 @@ export default function DeleteAccountScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT('appAccount');
 
   async function confirm() {
     setBusy(true);
@@ -32,21 +34,13 @@ export default function DeleteAccountScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Delete your account</Text>
-      <Text>
-        This permanently removes your account and signs you out on every device. We delete:
-      </Text>
-      <Text muted>
-        • your name, email, password and two-step settings{'\n'}• saved addresses and saved products
-        {'\n'}• this phone’s notification registration
-      </Text>
-      <Text muted>
-        Past orders are kept without your sign-in for tax and refund records, as the law requires.
-        This cannot be undone.
-      </Text>
+      <Text variant="title">{t('deleteTitle')}</Text>
+      <Text>{t('deleteIntro')}</Text>
+      <Text muted>{t('deleteList')}</Text>
+      <Text muted>{t('deleteKept')}</Text>
       {usesPassword ? (
         <Field
-          label="Enter your password to confirm"
+          label={t('deletePasswordLabel')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -55,7 +49,7 @@ export default function DeleteAccountScreen() {
         />
       ) : (
         <Field
-          label="Type DELETE to confirm"
+          label={t('deleteTypeLabel')}
           value={password}
           onChangeText={setPassword}
           autoCapitalize="characters"
@@ -64,13 +58,13 @@ export default function DeleteAccountScreen() {
       )}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <Button
-        title="Delete my account"
+        title={t('deleteButton')}
         tone="danger"
         loading={busy}
         disabled={usesPassword ? !password : password.trim() !== 'DELETE'}
         onPress={() => void confirm()}
       />
-      <Button title="Keep my account" tone="ghost" disabled={busy} onPress={() => router.back()} />
+      <Button title={t('deleteKeep')} tone="ghost" disabled={busy} onPress={() => router.back()} />
     </Screen>
   );
 }

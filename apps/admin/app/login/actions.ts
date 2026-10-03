@@ -3,8 +3,9 @@
 import { type AuthTokens, type LoginResponse, type MeResponse } from '@nixzora/validation';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { api, errorMessage } from '@/lib/api';
-import { text, withMessage } from '@/lib/forms';
+import { api } from '@/lib/api';
+import { problemMessage, text, withMessage } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 import { MFA_COOKIE, clearSession, cookieOptions, saveTokens } from '@/lib/session';
 
 const DEVICE = 'Ops Center';
@@ -42,7 +43,7 @@ export async function signIn(form: FormData): Promise<void> {
       },
     });
   } catch (error) {
-    redirect(withMessage('/login', 'error', errorMessage(error)));
+    redirect(withMessage('/login', 'error', await problemMessage(error)));
   }
 
   if ('mfaRequired' in result) {
@@ -55,7 +56,10 @@ export async function signIn(form: FormData): Promise<void> {
 export async function verifyCode(form: FormData): Promise<void> {
   const store = await cookies();
   const mfaToken = store.get(MFA_COOKIE)?.value;
-  if (!mfaToken) redirect(withMessage('/login', 'error', 'That sign-in expired. Start again.'));
+  if (!mfaToken) {
+    const t = await getT('ops');
+    redirect(withMessage('/login', 'error', t('signInExpired')));
+  }
 
   let tokens: AuthTokens;
   try {
@@ -65,7 +69,7 @@ export async function verifyCode(form: FormData): Promise<void> {
       body: { mfaToken, code: text(form, 'code') ?? '' },
     });
   } catch (error) {
-    redirect(withMessage('/login/verify', 'error', errorMessage(error)));
+    redirect(withMessage('/login/verify', 'error', await problemMessage(error)));
   }
   await finish(tokens);
 }

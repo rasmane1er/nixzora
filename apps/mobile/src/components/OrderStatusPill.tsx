@@ -1,4 +1,4 @@
-import { statusLabel } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
 import { Pill } from './ui';
 
 const TONES: Record<string, 'neutral' | 'ok' | 'warn' | 'error'> = {
@@ -13,5 +13,6 @@ const TONES: Record<string, 'neutral' | 'ok' | 'warn' | 'error'> = {
 };
 
 export function OrderStatusPill({ status }: { status: string }) {
+  const { statusLabel } = useFormatters();
   return <Pill label={statusLabel(status)} tone={TONES[status] ?? 'neutral'} />;
 }

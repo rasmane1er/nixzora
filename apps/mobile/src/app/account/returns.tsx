@@ -1,25 +1,31 @@
 import { errorMessage } from '@nixzora/api-client';
+import { type MessageKey, rich } from '@nixzora/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
 import { PressableLink } from '@/components/PressableLink';
 import { Banner, Button, Card, EmptyState, Pill, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money, shortDate } from '@/lib/format';
+import { useFormat, useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { space } from '@/lib/theme';
 
-const STATUS: Record<string, { label: string; tone: 'neutral' | 'ok' | 'warn' | 'error' }> = {
-  REQUESTED: { label: 'Requested', tone: 'warn' },
-  APPROVED: { label: 'Approved: send it back', tone: 'warn' },
-  REJECTED: { label: 'Not accepted', tone: 'error' },
-  RECEIVED: { label: 'Received', tone: 'ok' },
-  REFUNDED: { label: 'Refunded', tone: 'ok' },
+const STATUS: Record<
+  string,
+  { label: MessageKey<'appAccount'>; tone: 'neutral' | 'ok' | 'warn' | 'error' }
+> = {
+  REQUESTED: { label: 'returnRequested', tone: 'warn' },
+  APPROVED: { label: 'returnApproved', tone: 'warn' },
+  REJECTED: { label: 'returnRejected', tone: 'error' },
+  RECEIVED: { label: 'returnReceived', tone: 'ok' },
+  REFUNDED: { label: 'returnRefunded', tone: 'ok' },
 };
 
 /** Every return the customer asked for, with its progress and refund. */
 export default function ReturnsScreen() {
   const returns = useQuery({ queryKey: keys.returns, queryFn: () => api.me.returns() });
+  const t = useT('appAccount');
+  const f = useFormat();
   return (
     <Screen
       refreshControl={
@@ -29,18 +35,15 @@ export default function ReturnsScreen() {
         />
       }
     >
-      <Text muted>
-        Most items can be returned within 30 days of delivery. Refunds go back to the card you paid
-        with.
-      </Text>
+      <Text muted>{t('returnsIntro')}</Text>
       {returns.error ? <Banner tone="error">{errorMessage(returns.error)}</Banner> : null}
       {returns.data && !returns.data.length ? (
         <EmptyState
-          title="No returns"
-          body="To return something, open the order and choose Return an item."
+          title={t('returnsEmptyTitle')}
+          body={t('returnsEmptyBody')}
           action={
             <Button
-              title="Your orders"
+              title={t('returnsYourOrders')}
               tone="ghost"
               onPress={() => router.push('/orders?filter=delivered')}
             />
@@ -48,17 +51,25 @@ export default function ReturnsScreen() {
         />
       ) : null}
       {returns.data?.map((r) => {
-        const s = STATUS[r.status] ?? { label: r.status, tone: 'neutral' as const };
+        const status = STATUS[r.status];
+        const s = status
+          ? { label: t(status.label), tone: status.tone }
+          : { label: r.status, tone: 'neutral' as const };
         return (
           <Card key={r.id}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.sm }}>
               <Pill label={s.label} tone={s.tone} />
-              {r.refundCents ? <Text>{money(r.refundCents)}</Text> : null}
+              {r.refundCents ? <Text>{f.money(r.refundCents)}</Text> : null}
             </View>
             <PressableLink href={`/orders/${r.orderNumber}`} accessibilityRole="link">
               <Text variant="small" muted>
-                Order <Text variant="mono">{r.orderNumber}</Text> · requested{' '}
-                {shortDate(r.createdAt)}
+                {rich(t('returnsOrderLine', { number: r.orderNumber, date: f.date(r.createdAt) }), {
+                  num: (chunk) => (
+                    <Text key="num" variant="mono">
+                      {chunk}
+                    </Text>
+                  ),
+                })}
               </Text>
             </PressableLink>
             {r.items.map((item) => (
@@ -67,9 +78,11 @@ export default function ReturnsScreen() {
               </Text>
             ))}
             <Text variant="small" muted>
-              Reason: {r.reason}
+              {t('returnsReason', { reason: r.reason })}
             </Text>
-            {r.staffNote ? <Banner tone="info">From NIXZORA: {r.staffNote}</Banner> : null}
+            {r.staffNote ? (
+              <Banner tone="info">{t('returnsStaffNote', { note: r.staffNote })}</Banner>
+            ) : null}
           </Card>
         );
       })}

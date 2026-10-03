@@ -6,6 +6,8 @@ import {
   templateExplanation,
 } from './language-model';
 import { matchCategory, parseBudget, parseNeedLocally, stripBudget } from './need';
+import { repliesFor, requestLocale } from './replies';
+import { toEnglishRequest } from './request-language';
 
 const categories = [
   { slug: 'laptops', name: 'Laptops' },
@@ -163,9 +165,178 @@ describe('Claude driver', () => {
     expect(usage).toEqual({ inputTokens: 420, outputTokens: 60 });
   });
 
+  it('asks for the shopper’s language, keeping the structured fields and English prompts', async () => {
+    const tool = {
+      content: [
+        {
+          type: 'tool_use',
+          name: 'record_shopping_need',
+          input: {
+            category: 'headphones',
+            qualities: ['travel'],
+            search_query: 'travel headphones',
+          },
+        },
+      ],
+    };
+    const english = claude(tool);
+    await english.model.understand(['headphones for flights'], categories);
+    const englishBody = JSON.parse(
+      (english.fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(englishBody.system).not.toMatch(/writes in/);
+
+    const french = claude(tool);
+    const { need } = await french.model.understand(['un casque pour l’avion'], categories, 'fr');
+    const frenchBody = JSON.parse(
+      (french.fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(frenchBody.system).toContain('The shopper writes in French');
+    expect(frenchBody.tools).toEqual(englishBody.tools);
+    expect(need).toMatchObject({ category: 'headphones', qualities: ['travel'] });
+
+    const spanish = claude({ content: [{ type: 'text', text: '[1] es ideal.' }] });
+    await spanish.model.explain({
+      request: 'audífonos',
+      needSummary: 'audífonos',
+      picks,
+      relaxed: [],
+      locale: 'es',
+    });
+    const explainBody = JSON.parse(
+      (spanish.fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(explainBody.system).toContain('Write your answer in Spanish.');
+  });
+
   it('falls back to the local parser when the tool output is malformed', async () => {
     const { model } = claude({ content: [{ type: 'text', text: 'no tool' }] });
     const { need } = await model.understand(['headphones under $250'], categories);
     expect(need).toMatchObject({ category: 'headphones', maxPriceCents: 25_000 });
+  });
+});
+
+describe('the shopper’s language', () => {
+  it('reads it from Accept-Language, English by default', () => {
+    expect(requestLocale('fr-CA,fr;q=0.9,en;q=0.8')).toBe('fr');
+    expect(requestLocale('es')).toBe('es');
+    expect(requestLocale('de-DE')).toBe('en');
+    expect(requestLocale(undefined)).toBe('en');
+  });
+
+  it('understands French requests offline', () => {
+    const need = parseNeedLocally(
+      ['ordinateur portable pour coder moins de 1 500 $'],
+      categories,
+      'fr',
+    );
+    expect(need).toEqual({
+      category: 'laptops',
+      minPriceCents: null,
+      maxPriceCents: 150_000,
+      qualities: ['developer'],
+      query: 'laptop for coding',
+    });
+    expect(
+      parseNeedLocally(['casque sans fil entre 100 et 200 $'], categories, 'fr'),
+    ).toMatchObject({
+      category: 'headphones',
+      minPriceCents: 10_000,
+      maxPriceCents: 20_000,
+      qualities: ['wireless'],
+    });
+    expect(
+      parseNeedLocally(['un PC portable pas cher pour les jeux, 16 Go de RAM'], categories, 'fr'),
+    ).toMatchObject({ category: 'laptops', qualities: ['gaming'] });
+    // A follow-up suggestion written by the assistant in French.
+    expect(
+      parseBudget(toEnglishRequest('Quelque chose de moins cher que 1 149 $US', 'fr')),
+    ).toEqual({ min: null, max: 114_899 });
+  });
+
+  it('understands Spanish requests offline', () => {
+    expect(
+      parseNeedLocally(['audífonos para vuelos largos menos de $250'], categories, 'es'),
+    ).toEqual({
+      category: 'headphones',
+      minPriceCents: null,
+      maxPriceCents: 25_000,
+      qualities: ['travel'],
+      query: 'headphones for long flights',
+    });
+    expect(
+      parseNeedLocally(
+        ['Una laptop silenciosa para programar, máximo 1500 dólares'],
+        categories,
+        'es',
+      ),
+    ).toMatchObject({
+      category: 'laptops',
+      maxPriceCents: 150_000,
+      qualities: expect.arrayContaining(['quiet', 'developer']) as string[],
+    });
+    expect(parseBudget(toEnglishRequest('Algo más barato que $1,149', 'es'))).toEqual({
+      min: null,
+      max: 114_899,
+    });
+  });
+
+  it('leaves English requests exactly as they were, whatever the header', () => {
+    for (const text of ['A quiet laptop for coding under $1,500', 'a portable speaker, 1500 $']) {
+      expect(toEnglishRequest(text, 'en')).toBe(text);
+    }
+    expect(parseNeedLocally(['A quiet laptop for coding under $1,500'], categories, 'fr')).toEqual(
+      parseNeedLocally(['A quiet laptop for coding under $1,500'], categories),
+    );
+  });
+
+  it('cites specs in the shopper’s language', () => {
+    const laptop = { attributes: { weight_kg: 1.4, battery_hours: 18, cpu_cores: 12 }, text: '' };
+    expect(evidence('lightweight', laptop, 'fr')).toBe('1,4 kg');
+    expect(evidence('battery', laptop, 'fr')).toBe('autonomie de 18 h');
+    expect(evidence('developer', laptop, 'es')).toBe('CPU de 12 núcleos');
+  });
+
+  it('writes the template answer in French and Spanish', () => {
+    const localized = (locale: 'fr' | 'es') => {
+      const r = repliesFor(locale);
+      return picks.map((p, i) => ({
+        ...p,
+        price: r.money(i === 0 ? 114_900 : 89_900),
+        badge: r.t(i === 0 ? 'badgeBestMatch' : 'badgeBestValue'),
+      }));
+    };
+    const fr = templateExplanation({
+      request: 'portable',
+      needSummary: 'ordinateurs portables à moins de 1 500 $US',
+      picks: localized('fr'),
+      relaxed: [],
+      locale: 'fr',
+    });
+    // Intl writes French amounts with narrow no-break spaces.
+    expect(fr.replace(/[\u00a0\u202f]/g, ' ')).toBe(
+      'Voici 2 suggestions pour ordinateurs portables à moins de 1 500 $US. Kestrel 14 Pro est le meilleur choix, à 1 149 $US : 18 h battery. Vela 13 Air (meilleur rapport qualité-prix) coûte 899 $US, avec 0.98 kg.',
+    );
+    const es = templateExplanation({
+      request: 'laptop',
+      needSummary: 'laptops por menos de $500',
+      picks: [localized('es')[1]!],
+      relaxed: [repliesFor('es').t('relaxedBudget')],
+      locale: 'es',
+    });
+    expect(es).toMatch(
+      /^Nada cumplía todo lo que pediste para laptops por menos de \$500, así que flexibilicé tu presupuesto\. Esta es la opción más cercana\./,
+    );
+  });
+
+  it('grounds French and Spanish model answers, prices in local formats included', () => {
+    const fr = picks.map((p, i) => ({ ...p, price: repliesFor('fr').money(i ? 89_900 : 114_900) }));
+    expect(groundExplanation('[1] tient le plus longtemps ; [2] coûte 899 $US.', fr, 'fr')).toBe(
+      'Kestrel 14 Pro tient le plus longtemps ; Vela 13 Air coûte 899 $US.',
+    );
+    expect(groundExplanation('[2] coûte 799 $ aujourd’hui.', fr, 'fr')).toBeNull();
+    expect(groundExplanation('[2] cuesta 1.149 dólares.', picks, 'es')).not.toBeNull();
+    expect(groundExplanation('[2] cuesta 999 dólares.', picks, 'es')).toBeNull();
+    expect(groundExplanation('[3] es mejor.', picks, 'es')).toBeNull();
   });
 });

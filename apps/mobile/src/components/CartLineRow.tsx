@@ -2,7 +2,8 @@ import type { CartLine } from '@nixzora/validation';
 import { PressableLink } from './PressableLink';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
-import { money, optionsText } from '@/lib/format';
+import { optionsText, useFormatters } from '@/lib/format';
+import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 import { QuantityStepper } from './QuantityStepper';
 import { Text } from './ui';
@@ -17,6 +18,9 @@ export function CartLineRow({
   onQuantity: (quantity: number) => void;
 }) {
   const p = usePalette();
+  const { money } = useFormatters();
+  const t = useT('appShop');
+  const tc = useT('cart');
   const options = optionsText(line.options);
   return (
     <View style={styles.row}>
@@ -42,11 +46,11 @@ export function CartLineRow({
         </Text>
         {line.problem === 'UNAVAILABLE' ? (
           <Text variant="small" tone="error">
-            No longer available — remove it to continue.
+            {t('lineUnavailable')}
           </Text>
         ) : line.problem === 'INSUFFICIENT_STOCK' ? (
           <Text variant="small" tone="error">
-            Only {line.available} left — lower the quantity.
+            {tc('lowStock', { count: line.available })}
           </Text>
         ) : null}
         <View style={styles.bottom}>
@@ -55,7 +59,7 @@ export function CartLineRow({
             max={Math.max(line.available, line.quantity)}
             disabled={busy}
             onChange={onQuantity}
-            label={`Quantity of ${line.productTitle}`}
+            label={tc('quantityOf', { title: line.productTitle })}
           />
           <Text style={{ fontFamily: fonts.displayMedium }}>{money(line.lineTotalCents)}</Text>
         </View>

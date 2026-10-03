@@ -8,6 +8,7 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { formatters, translator } from '@nixzora/i18n';
 import { type PagedResult, type PayoutView } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Payout, Prisma } from '../../generated/prisma/client';
@@ -207,10 +208,17 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
       },
     });
     if (result.status === 'PAID') {
+      const locale = await this.sellers.ownerLocale(sellerId);
+      const t = translator(locale)('email');
+      const amount = formatters(locale).money(result.amountCents, result.currency);
       await this.mail.trySend({
         to: seller.contactEmail,
-        subject: `Payout sent: ${money(result.amountCents, result.currency)}`,
-        text: `We sent ${money(result.amountCents, result.currency)} to the bank account on file for ${seller.displayName}.${result.provider === 'FAKE' ? ' (Test mode: no money moved.)' : ' It usually arrives within 2 business days.'}\n\nDetails: ${this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '')}/sell/earnings\n`,
+        subject: t('seller_payout_subject', { amount }),
+        text: t(result.provider === 'FAKE' ? 'seller_payout_textTest' : 'seller_payout_text', {
+          amount,
+          store: seller.displayName,
+          link: `${this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '')}/sell/earnings`,
+        }),
         template: 'sellers.payout-sent',
         data: { amount: String(result.amountCents) },
       });

@@ -112,10 +112,11 @@ export default async function ProductPage({ params }: Props) {
       auth: false,
       revalidate: 300,
     }).catch((): RelatedProducts => ({ similar: [], boughtTogether: [], alsoViewed: [] })),
-    api<{ insights: Insights | null }>(`/catalog/products/${slug}/reviews/insights`, {
-      auth: false,
-      revalidate: 300,
-    })
+    // Cached reads carry no Accept-Language: the language is in the URL, one cache entry each.
+    api<{ insights: Insights | null }>(
+      `/catalog/products/${slug}/reviews/insights?lang=${await getLocale()}`,
+      { auth: false, revalidate: 300 },
+    )
       .then((res) => res.insights)
       .catch(() => null),
   ]);

@@ -1,20 +1,25 @@
 import type { Metadata } from 'next';
 import { Logo } from '@nixzora/ui';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Banner } from '@/components/ui';
 import { param, type SearchParams } from '@/lib/format';
+import { getT } from '@/lib/i18n';
 import { signIn } from './actions';
 
-export const metadata: Metadata = { title: 'Sign in' };
-
-const REASONS: Record<string, string> = {
-  expired: 'Your session ended. Sign in again.',
-  denied: 'That account does not have Ops Center access.',
-  signedOut: 'You are signed out.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const common = await getT('common');
+  return { title: common('signIn') };
+}
 
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  const [t, common] = await Promise.all([getT('ops'), getT('common')]);
+  const REASONS: Record<string, string> = {
+    expired: t('reasonExpired'),
+    denied: t('reasonDenied'),
+    signedOut: t('reasonSignedOut'),
+  };
   const reason = Object.keys(REASONS).find((key) => param(params, key));
 
   return (
@@ -22,8 +27,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
       <div className="auth__card">
         <Logo size={40} />
         <div>
-          <h1>Ops Center</h1>
-          <p className="muted">Staff sign-in. Two-step verification is required.</p>
+          <h1>{t('opsCenter')}</h1>
+          <p className="muted">{t('loginIntro')}</p>
         </div>
         <Banner
           error={param(params, 'error') ?? (reason === 'denied' ? REASONS.denied : undefined)}
@@ -31,15 +36,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         />
         <form action={signIn} className="form">
           <label>
-            Work email
+            {t('workEmail')}
             <input name="email" type="email" autoComplete="username" required autoFocus />
           </label>
           <label>
-            Password
+            {t('password')}
             <input name="password" type="password" autoComplete="current-password" required />
           </label>
-          <SubmitButton>Sign in</SubmitButton>
+          <SubmitButton>{common('signIn')}</SubmitButton>
         </form>
+        <LanguagePicker id="login-language" />
       </div>
     </main>
   );

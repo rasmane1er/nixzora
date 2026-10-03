@@ -6,12 +6,14 @@ import { BuyAgainCard } from '@/components/BuyAgainCard';
 import { Banner, Button, EmptyState, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useLayout } from '@/lib/layout';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { space } from '@/lib/theme';
 
 /** Products from past orders, newest first, ready to add to the cart again. */
 export default function BuyAgainScreen() {
   const { columns, width } = useLayout();
+  const t = useT('appAccount');
   const items = useQuery({ queryKey: keys.buyAgain, queryFn: () => api.me.buyAgain() });
   const cols = Math.max(2, columns - 1);
   // Screen padding on both sides, and the gaps between cards.
@@ -27,14 +29,14 @@ export default function BuyAgainScreen() {
       {items.error ? <Banner tone="error">{errorMessage(items.error)}</Banner> : null}
       {items.data && items.data.length === 0 ? (
         <EmptyState
-          title="Nothing to buy again yet"
-          body="Products you order show up here, so you can reorder them in one tap."
-          action={<Button title="Start shopping" onPress={() => router.push('/')} />}
+          title={t('buyAgainEmptyTitle')}
+          body={t('buyAgainEmptyBody')}
+          action={<Button title={t('startShopping')} onPress={() => router.push('/')} />}
         />
       ) : null}
       {items.data?.length ? (
         <>
-          <Text muted>Things you ordered before. Prices and stock are today's.</Text>
+          <Text muted>{t('buyAgainIntro')}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             {items.data.map((item) => (
               <BuyAgainCard key={item.productId} item={item} width={cardWidth} />

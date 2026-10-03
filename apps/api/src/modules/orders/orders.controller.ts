@@ -41,9 +41,11 @@ import {
   type SellerRatingCreate,
   SellerRatingCreateSchema,
 } from '@nixzora/validation';
+import { type Locale } from '@nixzora/i18n';
 import { type Request } from 'express';
 import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
+import { ReqLocale } from '../../common/locale';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
@@ -97,8 +99,9 @@ export class CheckoutController {
     @Body(new ZodValidationPipe(CheckoutRequestSchema)) body: CheckoutRequest,
     @MaybeUser() user: AuthUser | undefined,
     @ReqMeta() meta: RequestMeta,
+    @ReqLocale() locale: Locale,
   ): Promise<CheckoutResponse> {
-    return this.orders.checkout(body, user, meta);
+    return this.orders.checkout(body, user, meta, locale);
   }
 
   /** Order status page: the owner's session, or the signed link from the receipt. */

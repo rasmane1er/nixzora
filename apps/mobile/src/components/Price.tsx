@@ -1,5 +1,6 @@
 import { View } from 'react-native';
-import { money } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
+import { useT } from '@/lib/i18n';
 import { fonts } from '@/lib/theme';
 import { Text } from './ui';
 
@@ -14,6 +15,8 @@ export function Price({
   currency?: string;
   size?: 'md' | 'lg';
 }) {
+  const { money } = useFormatters();
+  const t = useT('appShop');
   const onSale = compareAtCents != null && compareAtCents > cents;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
@@ -21,7 +24,12 @@ export function Price({
         tone={onSale ? 'signal' : undefined}
         style={{ fontFamily: fonts.displayMedium, fontSize: size === 'lg' ? 24 : 16 }}
         accessibilityLabel={
-          onSale ? `${money(cents, currency)}, was ${money(compareAtCents, currency)}` : undefined
+          onSale
+            ? t('priceWas', {
+                price: money(cents, currency),
+                was: money(compareAtCents, currency),
+              })
+            : undefined
         }
       >
         {money(cents, currency)}

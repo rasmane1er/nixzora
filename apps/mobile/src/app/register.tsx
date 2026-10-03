@@ -8,6 +8,7 @@ import { completeSignIn } from '@/lib/account-actions';
 import { api } from '@/lib/api';
 import { fonts } from '@/lib/theme';
 import { deviceName } from '@/lib/device';
+import { language, useT } from '@/lib/i18n';
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
@@ -16,6 +17,8 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | string | null>(null);
+  const t = useT('appAccount');
+  const tc = useT('common');
 
   async function submit() {
     setBusy(true);
@@ -27,6 +30,7 @@ export default function RegisterScreen() {
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         deviceName: deviceName(),
+        language: language.get(),
       });
       await completeSignIn(tokens);
       if (router.canGoBack()) router.back();
@@ -42,7 +46,7 @@ export default function RegisterScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Create your account</Text>
+      <Text variant="title">{t('registerTitle')}</Text>
       <SocialSignIn
         intent="signup"
         onResult={async (result) => {
@@ -53,11 +57,11 @@ export default function RegisterScreen() {
           else router.replace('/account');
         }}
       />
-      <Text muted>Track orders, save products and check out faster.</Text>
+      <Text muted>{t('registerIntro')}</Text>
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
           <Field
-            label="First name"
+            label={t('fieldFirstName')}
             value={firstName}
             onChangeText={setFirstName}
             autoComplete="given-name"
@@ -66,7 +70,7 @@ export default function RegisterScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Field
-            label="Last name"
+            label={t('fieldLastName')}
             value={lastName}
             onChangeText={setLastName}
             autoComplete="family-name"
@@ -75,7 +79,7 @@ export default function RegisterScreen() {
         </View>
       </Row>
       <Field
-        label="Email"
+        label={t('fieldEmail')}
         value={email}
         onChangeText={setEmail}
         error={field('email')}
@@ -85,11 +89,11 @@ export default function RegisterScreen() {
         textContentType="username"
       />
       <Field
-        label="Password"
+        label={t('fieldPassword')}
         value={password}
         onChangeText={setPassword}
         error={field('password')}
-        hint="At least 12 characters. A short phrase works well."
+        hint={t('registerPasswordHint')}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
@@ -97,15 +101,15 @@ export default function RegisterScreen() {
       {error ? (
         <Banner tone="error">{typeof error === 'string' ? error : errorMessage(error)}</Banner>
       ) : null}
-      <Button title="Create account" loading={busy} onPress={() => void submit()} />
+      <Button title={t('registerButton')} loading={busy} onPress={() => void submit()} />
       <Text muted style={{ textAlign: 'center' }}>
-        Already have one?{' '}
+        {t('alreadyHaveOne')}{' '}
         <Link
           href="/sign-in"
           replace
           style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
         >
-          Sign in
+          {tc('signIn')}
         </Link>
       </Text>
     </Screen>

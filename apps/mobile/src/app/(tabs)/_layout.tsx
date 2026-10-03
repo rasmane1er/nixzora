@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Tabs from 'expo-router/js-tabs';
 import { type ColorValue } from 'react-native';
 import { useCart } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { brand, fonts, usePalette } from '@/lib/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -14,6 +15,7 @@ const icon =
 
 export default function TabsLayout() {
   const p = usePalette();
+  const t = useT('appShop');
   const { data: cart } = useCart();
   const count = cart?.itemCount ?? 0;
 
@@ -32,7 +34,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Shop',
+          title: t('tabShop'),
           headerShown: false,
           tabBarIcon: icon('storefront-outline', 'storefront'),
         }}
@@ -40,7 +42,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: t('tabSearch'),
           headerShown: false,
           tabBarIcon: icon('search-outline', 'search'),
         }}
@@ -48,27 +50,30 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="assistant"
         options={{
-          title: 'Ask',
+          title: t('tabAsk'),
           headerShown: false,
           tabBarIcon: icon('sparkles-outline', 'sparkles'),
-          tabBarAccessibilityLabel: 'Shopping assistant',
+          tabBarAccessibilityLabel: t('tabAssistantLabel'),
         }}
       />
       {/* Scanning opens from Search and the home screen; it keeps its route, not a tab. */}
-      <Tabs.Screen name="scan" options={{ title: 'Scan', href: null }} />
+      <Tabs.Screen name="scan" options={{ title: t('tabScan'), href: null }} />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: t('tabCart'),
           tabBarIcon: icon('bag-outline', 'bag'),
           tabBarBadge: count > 0 ? count : undefined,
           tabBarBadgeStyle: { backgroundColor: brand.signal, fontFamily: fonts.bodyBold },
-          tabBarAccessibilityLabel: count ? `Cart, ${count} item${count === 1 ? '' : 's'}` : 'Cart',
+          tabBarAccessibilityLabel: t('tabCartLabel', { count }),
         }}
       />
       <Tabs.Screen
         name="account"
-        options={{ title: 'Account', tabBarIcon: icon('person-circle-outline', 'person-circle') }}
+        options={{
+          title: t('tabAccount'),
+          tabBarIcon: icon('person-circle-outline', 'person-circle'),
+        }}
       />
     </Tabs>
   );

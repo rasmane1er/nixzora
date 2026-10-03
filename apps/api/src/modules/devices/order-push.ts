@@ -1,36 +1,49 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { type Formatters, formatters, type Translate, translator } from '@nixzora/i18n';
+import { toLocale } from '../../common/locale';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { PushService } from './push.service';
 
-const money = (cents: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+type Copy = (
+  t: Translate<'email'>,
+  money: Formatters['money'],
+  number: string,
+  payload: Record<string, unknown>,
+) => { title: string; body: string };
 
-type Copy = (number: string, payload: Record<string, unknown>) => { title: string; body: string };
-
-/** Short, lock-screen-friendly copy for each order event. */
+/** Short, lock-screen-friendly copy for each order event, in the account's language. */
 const COPY: Record<string, Copy> = {
-  'order.paid': (n) => ({ title: 'Order confirmed', body: `We have your order ${n}.` }),
-  'order.shipped': (n) => ({ title: 'On its way', body: `Order ${n} has shipped.` }),
-  'order.delivered': (n) => ({ title: 'Delivered', body: `Order ${n} was delivered.` }),
-  'order.cancelled': (n) => ({
-    title: 'Order cancelled',
-    body: `Order ${n} was cancelled and refunded.`,
+  'order.paid': (t, _, number) => ({
+    title: t('push_orderPaid_title'),
+    body: t('push_orderPaid_body', { number }),
   }),
-  'order.refunded': (n, payload) => ({
-    title: 'Refund issued',
+  'order.shipped': (t, _, number) => ({
+    title: t('push_orderShipped_title'),
+    body: t('push_orderShipped_body', { number }),
+  }),
+  'order.delivered': (t, _, number) => ({
+    title: t('push_orderDelivered_title'),
+    body: t('push_orderDelivered_body', { number }),
+  }),
+  'order.cancelled': (t, _, number) => ({
+    title: t('push_orderCancelled_title'),
+    body: t('push_orderCancelled_body', { number }),
+  }),
+  'order.refunded': (t, money, number, payload) => ({
+    title: t('push_orderRefunded_title'),
     body:
       typeof payload.amountCents === 'number'
-        ? `We refunded ${money(payload.amountCents)} for order ${n}.`
-        : `We issued a refund for order ${n}.`,
+        ? t('push_orderRefunded_body', { number, amount: money(payload.amountCents) })
+        : t('push_orderRefunded_bodyNoAmount', { number }),
   }),
-  'return.approved': (n) => ({
-    title: 'Return approved',
-    body: `Your return for order ${n} was approved.`,
+  'return.approved': (t, _, number) => ({
+    title: t('push_returnApproved_title'),
+    body: t('push_returnApproved_body', { number }),
   }),
-  'return.rejected': (n) => ({
-    title: 'Return update',
-    body: `We could not accept the return for order ${n}.`,
+  'return.rejected': (t, _, number) => ({
+    title: t('push_returnRejected_title'),
+    body: t('push_returnRejected_body', { number }),
   }),
 };
 
@@ -62,11 +75,12 @@ export class OrderPush implements OnModuleInit {
   ): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { number: true, userId: true },
+      select: { number: true, userId: true, user: { select: { language: true } } },
     });
     if (!order?.userId) return;
+    const locale = toLocale(order.user?.language);
     await this.push.sendToUser(order.userId, {
-      ...copy(order.number, payload),
+      ...copy(translator(locale)('email'), formatters(locale).money, order.number, payload),
       data: { path: `/orders/${order.number}`, orderNumber: order.number },
     });
   }

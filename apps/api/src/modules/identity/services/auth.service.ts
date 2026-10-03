@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { translator } from '@nixzora/i18n';
 import {
   type AuthTokens,
   type ChangePasswordRequest,
@@ -25,6 +26,7 @@ import {
 } from '../../../generated/prisma/client';
 import { type Env } from '../../../config/env';
 import { randomToken, sha256 } from '../../../common/crypto';
+import { toLocale } from '../../../common/locale';
 import { type RequestMeta } from '../../../common/request-meta';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -68,10 +70,11 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) {
       // Tell the real owner by email instead of confirming the account exists in the response.
+      const t = translator(toLocale(existing.language))('email');
       await this.mail.trySend({
         to: input.email,
-        subject: 'Someone tried to create a NIXZORA account with your email',
-        text: `If this was you, sign in or reset your password at ${this.webAppUrl}/account/forgot-password.`,
+        subject: t('auth_duplicate_subject'),
+        text: t('auth_duplicate_text', { link: `${this.webAppUrl}/account/forgot-password` }),
         template: 'auth.duplicate-sign-up',
         data: {},
       });
@@ -99,7 +102,7 @@ export class AuthService {
       entityId: user.id,
       meta,
     });
-    await this.sendEmailVerification(user.id, user.email);
+    await this.sendEmailVerification(user);
 
     const issued = await this.sessions.create({
       userId: user.id,
@@ -245,7 +248,7 @@ export class AuthService {
         meta,
         metadata: { provider: input.provider },
       });
-      if (created && !identity.emailVerified) await this.sendEmailVerification(user.id, user.email);
+      if (created && !identity.emailVerified) await this.sendEmailVerification(user);
     }
 
     if (user.mfaEnabled) {
@@ -349,17 +352,18 @@ export class AuthService {
 
   // ───────────── Email verification and passwords ─────────────
 
-  async sendEmailVerification(userId: string, email: string): Promise<void> {
+  async sendEmailVerification(user: Pick<User, 'id' | 'email' | 'language'>): Promise<void> {
     const token = await this.createVerificationToken(
-      userId,
+      user.id,
       'EMAIL_VERIFICATION',
       EMAIL_VERIFICATION_TTL_MS,
     );
     const link = `${this.webAppUrl}/account/verify-email?token=${token}`;
+    const t = translator(toLocale(user.language))('email');
     await this.mail.trySend({
-      to: email,
-      subject: 'Confirm your email for NIXZORA',
-      text: `Confirm your email address: ${link}\nThis link expires in 24 hours.`,
+      to: user.email,
+      subject: t('auth_verify_subject'),
+      text: t('auth_verify_text', { link }),
       template: 'auth.verify-email',
       data: { link, token },
     });
@@ -368,7 +372,7 @@ export class AuthService {
   async resendEmailVerification(user: AuthUser): Promise<void> {
     const record = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     if (record.emailVerifiedAt) return;
-    await this.sendEmailVerification(record.id, record.email);
+    await this.sendEmailVerification(record);
   }
 
   async verifyEmail(token: string, meta: RequestMeta): Promise<void> {
@@ -397,10 +401,11 @@ export class AuthService {
       PASSWORD_RESET_TTL_MS,
     );
     const link = `${this.webAppUrl}/account/reset-password?token=${token}`;
+    const t = translator(toLocale(user.language))('email');
     await this.mail.trySend({
       to: user.email,
-      subject: 'Reset your NIXZORA password',
-      text: `Reset your password: ${link}\nThis link expires in 30 minutes. If you did not ask for this, ignore this email.`,
+      subject: t('auth_reset_subject'),
+      text: t('auth_reset_text', { link }),
       template: 'auth.reset-password',
       data: { link, token },
     });

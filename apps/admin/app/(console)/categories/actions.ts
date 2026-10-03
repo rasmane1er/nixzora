@@ -2,8 +2,10 @@
 
 import { api } from '@/lib/api';
 import { checked, integer, perform, text, uuidField } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 
 export async function createCategory(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   await perform(
     '/categories',
     () =>
@@ -18,30 +20,33 @@ export async function createCategory(form: FormData): Promise<void> {
           isActive: checked(form, 'isActive'),
         },
       }),
-    'Category created.',
+    t('noticeCategoryCreated'),
   );
 }
 
 export async function setCategoryActive(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const isActive = text(form, 'isActive') === 'true';
+  const t = await getT('opsCatalog');
   await perform(
     '/categories',
     () => api(`/admin/categories/${id}`, { method: 'PATCH', body: { isActive } }),
-    isActive ? 'Category is visible on the store.' : 'Category hidden from the store.',
+    isActive ? t('noticeCategoryShown') : t('noticeCategoryHidden'),
   );
 }
 
 export async function deleteCategory(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsCatalog');
   await perform(
     '/categories',
     () => api(`/admin/categories/${id}`, { method: 'DELETE' }),
-    'Category deleted.',
+    t('noticeCategoryDeleted'),
   );
 }
 
 export async function createBrand(form: FormData): Promise<void> {
+  const t = await getT('opsCatalog');
   await perform(
     '/categories',
     () =>
@@ -49,15 +54,16 @@ export async function createBrand(form: FormData): Promise<void> {
         method: 'POST',
         body: { name: text(form, 'name'), slug: text(form, 'slug') },
       }),
-    'Brand created.',
+    t('noticeBrandCreated'),
   );
 }
 
 export async function renameBrand(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsCatalog');
   await perform(
     '/categories',
     () => api(`/admin/brands/${id}`, { method: 'PATCH', body: { name: text(form, 'name') } }),
-    'Brand renamed.',
+    t('noticeBrandRenamed'),
   );
 }

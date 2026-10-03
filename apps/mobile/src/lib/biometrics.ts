@@ -1,5 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
+import { t } from './i18n';
 
 export type BiometricKind = 'Face ID' | 'Touch ID' | 'fingerprint' | 'biometrics';
 
@@ -23,7 +24,7 @@ export async function confirmIdentity(prompt: string): Promise<boolean> {
   if (Platform.OS === 'web') return true;
   const result = await LocalAuthentication.authenticateAsync({
     promptMessage: prompt,
-    cancelLabel: 'Cancel',
+    cancelLabel: t('common')('cancel'),
     // Allow the device passcode as a fallback, like banking apps do.
     disableDeviceFallback: false,
   });

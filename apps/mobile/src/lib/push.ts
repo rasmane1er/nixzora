@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { api } from './api';
 import { EAS_PROJECT_ID } from './config';
+import { t } from './i18n';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,9 +35,10 @@ export async function enablePush(ask: boolean): Promise<PushStatus> {
   if (!Device.isDevice || !EAS_PROJECT_ID) return 'unsupported';
 
   if (Platform.OS === 'android') {
+    const text = t('appShop');
     await Notifications.setNotificationChannelAsync('orders', {
-      name: 'Order updates',
-      description: 'Shipping, delivery, refunds and returns',
+      name: text('pushChannelName'),
+      description: text('pushChannelDescription'),
       importance: Notifications.AndroidImportance.HIGH,
       lightColor: '#E8622C',
     });

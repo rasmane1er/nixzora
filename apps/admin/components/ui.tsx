@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { type ReactNode } from 'react';
+import { OpsText, PagesNav } from './OpsText';
 import { SubmitButton } from './SubmitButton';
+
+export { StatusPill } from './OpsText';
 
 /** Success or error banner driven by ?notice= / ?error= after a form action. */
 export function Banner({ notice, error }: { notice?: string; error?: string }) {
@@ -41,10 +44,6 @@ export function PageHeader({
   );
 }
 
-export function StatusPill({ value }: { value: string }) {
-  return <span className={`pill pill--${value.toLowerCase()}`}>{value.toLowerCase()}</span>;
-}
-
 export function Pager({
   page,
   totalPages,
@@ -56,13 +55,25 @@ export function Pager({
 }) {
   if (totalPages <= 1) return null;
   return (
-    <nav className="pager" aria-label="Pages">
-      {page > 1 ? <Link href={href(page - 1)}>← Previous</Link> : <span />}
+    <PagesNav>
+      {page > 1 ? (
+        <Link href={href(page - 1)}>
+          <OpsText k="previous" />
+        </Link>
+      ) : (
+        <span />
+      )}
       <span className="muted">
-        Page {page} of {totalPages}
+        <OpsText k="pageOf" vars={{ page, total: totalPages }} />
       </span>
-      {page < totalPages ? <Link href={href(page + 1)}>Next →</Link> : <span />}
-    </nav>
+      {page < totalPages ? (
+        <Link href={href(page + 1)}>
+          <OpsText k="next" />
+        </Link>
+      ) : (
+        <span />
+      )}
+    </PagesNav>
   );
 }
 

@@ -7,19 +7,21 @@ import { PressableLink } from '@/components/PressableLink';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, EmptyState, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { shortDate } from '@/lib/format';
+import { useFormat, useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { fonts, space, usePalette } from '@/lib/theme';
 
 const STATUS = {
-  PENDING: { label: 'Being checked', tone: 'warn' },
-  APPROVED: { label: 'Published', tone: 'ok' },
-  REJECTED: { label: 'Not published', tone: 'error' },
+  PENDING: { label: 'reviewPending', tone: 'warn' },
+  APPROVED: { label: 'reviewApproved', tone: 'ok' },
+  REJECTED: { label: 'reviewRejected', tone: 'error' },
 } as const;
 
 /** Products waiting for a review, and the reviews the customer wrote. */
 export default function ReviewsScreen() {
   const p = usePalette();
+  const t = useT('appAccount');
+  const f = useFormat();
   const reviews = useQuery({ queryKey: keys.reviews, queryFn: () => api.me.reviews() });
   const delivered = useQuery({
     queryKey: keys.orderHistory('delivered-50'),
@@ -45,7 +47,7 @@ export default function ReviewsScreen() {
       {reviews.error ? <Banner tone="error">{errorMessage(reviews.error)}</Banner> : null}
       {toReview.length ? (
         <View style={{ gap: space.sm }}>
-          <Text variant="heading">Waiting for your review</Text>
+          <Text variant="heading">{t('reviewsWaiting')}</Text>
           {toReview.map((line) => (
             <Card key={line.productSlug}>
               <Row>
@@ -58,7 +60,7 @@ export default function ReviewsScreen() {
                 </Text>
               </Row>
               <Button
-                title="Write a review"
+                title={t('reviewsWrite')}
                 onPress={() => router.push(`/p/${line.productSlug}`)}
               />
             </Card>
@@ -66,22 +68,22 @@ export default function ReviewsScreen() {
         </View>
       ) : null}
 
-      <Text variant="heading">Reviews you wrote</Text>
+      <Text variant="heading">{t('reviewsYours')}</Text>
       {reviews.data && !reviews.data.length ? (
-        <EmptyState title="No reviews yet" body="Products you receive show up here to review." />
+        <EmptyState title={t('reviewsEmptyTitle')} body={t('reviewsEmptyBody')} />
       ) : null}
       {reviews.data?.map((r) => (
         <Card key={r.id}>
           <Row style={{ justifyContent: 'space-between' }}>
             <Stars average={r.rating} count={1} />
-            <Pill label={STATUS[r.status].label} tone={STATUS[r.status].tone} />
+            <Pill label={t(STATUS[r.status].label)} tone={STATUS[r.status].tone} />
           </Row>
           <Text style={{ fontFamily: fonts.bodyMedium }}>{r.title}</Text>
           <Text>{r.body}</Text>
           <PressableLink href={`/p/${r.product.slug}`} accessibilityRole="link">
             <Text variant="small" muted>
-              {r.product.title} · {shortDate(r.createdAt)}
-              {r.verifiedPurchase ? ' · Verified purchase' : ''}
+              {r.product.title} · {f.date(r.createdAt)}
+              {r.verifiedPurchase ? ` · ${t('verifiedPurchase')}` : ''}
             </Text>
           </PressableLink>
         </Card>

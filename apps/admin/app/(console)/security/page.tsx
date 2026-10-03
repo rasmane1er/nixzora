@@ -4,10 +4,15 @@ import Link from 'next/link';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
 import { currentStaff } from '@/lib/auth';
-import { dateTime, param, type SearchParams } from '@/lib/format';
+import { rich } from '@nixzora/i18n';
+import { param, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 import { revokeOthers, revokeSession } from './actions';
 
-export const metadata: Metadata = { title: 'My security' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('nav_security') };
+}
 
 export default async function SecurityPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
@@ -15,42 +20,48 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
     currentStaff(),
     load<SessionSummary[]>('/me/sessions'),
   ]);
+  const [t, common, f] = await Promise.all([getT('ops'), getT('common'), getFormat()]);
 
   return (
     <>
-      <PageHeader eyebrow="Account" title="My security" />
+      <PageHeader eyebrow={common('account')} title={t('nav_security')} />
       <Banner notice={param(params, 'notice')} error={param(params, 'error')} />
 
       <section className="card">
-        <h2>Two-step verification</h2>
+        <h2>{t('twoStep')}</h2>
         {me.mfaEnabled ? (
           <p>
-            <StatusPill value="active" /> On. Every Ops Center sign-in asks for a code from your
-            authenticator app.
+            <StatusPill value="active" /> {t('mfaOn')}
           </p>
         ) : (
           <p>
-            <StatusPill value="draft" /> Off. Staff tools stay locked until you{' '}
-            <Link href="/security/setup">turn it on</Link>.
+            <StatusPill value="draft" />{' '}
+            {rich(t('mfaOff'), {
+              link: (chunk) => (
+                <Link key="setup" href="/security/setup">
+                  {chunk}
+                </Link>
+              ),
+            })}
           </p>
         )}
       </section>
 
       <section className="card">
         <div className="page-header">
-          <h2>Signed-in devices</h2>
+          <h2>{t('signedInDevices')}</h2>
           {sessions.length > 1 ? (
-            <ActionButton action={revokeOthers} label="Sign out all other devices" tone="danger" />
+            <ActionButton action={revokeOthers} label={t('signOutOthers')} tone="danger" />
           ) : null}
         </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Device</th>
-                <th>IP</th>
-                <th>Last used</th>
-                <th>Verified</th>
+                <th>{t('colDevice')}</th>
+                <th>{t('colIp')}</th>
+                <th>{t('colLastUsed')}</th>
+                <th>{t('colVerified')}</th>
                 <th />
               </tr>
             </thead>
@@ -58,17 +69,17 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
               {sessions.map((session) => (
                 <tr key={session.id}>
                   <td>
-                    {session.deviceName ?? 'Unknown device'}
-                    {session.current ? <span className="muted"> · this browser</span> : null}
+                    {session.deviceName ?? t('unknownDevice')}
+                    {session.current ? <span className="muted"> · {t('thisBrowser')}</span> : null}
                   </td>
                   <td className="mono">{session.ipAddress ?? '—'}</td>
-                  <td>{dateTime(session.lastUsedAt)}</td>
-                  <td>{session.mfaVerified ? 'Yes' : 'No'}</td>
+                  <td>{f.dateTime(session.lastUsedAt)}</td>
+                  <td>{session.mfaVerified ? common('yes') : common('no')}</td>
                   <td className="num">
                     {session.current ? null : (
                       <ActionButton
                         action={revokeSession}
-                        label="Sign out"
+                        label={common('signOut')}
                         fields={{ id: session.id }}
                       />
                     )}

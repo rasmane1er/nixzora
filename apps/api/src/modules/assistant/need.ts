@@ -1,4 +1,7 @@
+import { type MessageKey } from '@nixzora/i18n';
 import { conceptOf, conceptsIn, stem, tokenize } from '../ai/concepts';
+import { type Locale, repliesFor } from './replies';
+import { toEnglishRequest } from './request-language';
 
 /** Qualities a shopper can ask for, keyed by concept, with the label shown back to them. */
 export const QUALITIES: Record<string, string> = {
@@ -17,6 +20,30 @@ export const QUALITIES: Record<string, string> = {
   high_refresh: 'high refresh rate',
   fitness: 'fitness tracking',
 };
+
+const QUALITY_MESSAGES: Record<string, MessageKey<'assistantReplies'>> = {
+  quiet: 'qualityQuiet',
+  noise_cancelling: 'qualityNoiseCancelling',
+  travel: 'qualityTravel',
+  lightweight: 'qualityLightweight',
+  battery: 'qualityBattery',
+  developer: 'qualityDeveloper',
+  design: 'qualityDesign',
+  gaming: 'qualityGaming',
+  ergonomic: 'qualityErgonomic',
+  comfort: 'qualityComfort',
+  wireless: 'qualityWireless',
+  large_screen: 'qualityLargeScreen',
+  high_refresh: 'qualityHighRefresh',
+  fitness: 'qualityFitness',
+};
+
+/** A quality's label in the shopper's language ("good for travel", "idéal en voyage"). */
+export function qualityLabel(quality: string, locale: Locale = 'en'): string {
+  if (locale === 'en') return QUALITIES[quality]!;
+  const key = QUALITY_MESSAGES[quality];
+  return key ? repliesFor(locale).t(key) : QUALITIES[quality]!;
+}
 
 export type CategoryRef = { slug: string; name: string };
 
@@ -132,9 +159,16 @@ const PRODUCT_TYPES = new Set([
 /**
  * The offline need parser (ADR-0009): budget from patterns, category from names and synonyms,
  * qualities from the shopping vocabulary. Every shopper turn counts; later turns refine earlier
- * ones ("under $1,500" then "actually under $1,200").
+ * ones ("under $1,500" then "actually under $1,200"). French and Spanish requests are read through
+ * their English meaning first (request-language.ts); the search query is then in English, like
+ * the catalog.
  */
-export function parseNeedLocally(userTurns: string[], categories: CategoryRef[]): ParsedNeed {
+export function parseNeedLocally(
+  shopperTurns: string[],
+  categories: CategoryRef[],
+  locale: Locale = 'en',
+): ParsedNeed {
+  const userTurns = shopperTurns.map((turn) => toEnglishRequest(turn, locale));
   let min: number | null = null;
   let max: number | null = null;
   let category: string | null = null;

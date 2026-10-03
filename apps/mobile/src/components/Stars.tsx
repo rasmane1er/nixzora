@@ -1,15 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { View } from 'react-native';
+import { useFormatters } from '@/lib/format';
+import { useT } from '@/lib/i18n';
 import { brand } from '@/lib/theme';
 import { Text } from './ui';
 
 export function Stars({ average, count }: { average: number | null; count: number }) {
+  const t = useT('appShop');
+  const { rating } = useFormatters();
   if (!count || average == null) return null;
   const rounded = Math.round(average * 2) / 2;
   return (
     <View
       accessible
-      accessibilityLabel={`Rated ${average.toFixed(1)} out of 5 from ${count} review${count === 1 ? '' : 's'}`}
+      accessibilityLabel={t('starsLabel', { rating: rating(average), count })}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
     >
       {[1, 2, 3, 4, 5].map((n) => (
@@ -21,7 +25,7 @@ export function Stars({ average, count }: { average: number | null; count: numbe
         />
       ))}
       <Text variant="small" muted style={{ marginLeft: 4 }}>
-        {average.toFixed(1)} ({count})
+        {rating(average)} ({count})
       </Text>
     </View>
   );

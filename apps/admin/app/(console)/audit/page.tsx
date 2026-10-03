@@ -3,9 +3,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Empty, PageHeader } from '@/components/ui';
 import { load } from '@/lib/api';
+import { type MessageKey } from '@nixzora/i18n';
 import { dateTime, param, query, type SearchParams } from '@/lib/format';
+import { getLocale, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Audit log' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('ops');
+  return { title: t('nav_audit') };
+}
+
+const ACTORS = new Set(['user', 'admin', 'system']);
 
 type Entry = {
   id: string;
@@ -30,58 +37,60 @@ export default async function AuditPage({ searchParams }: { searchParams: Search
   const page = await load<Page<Entry>>(
     `/admin/audit-logs${query({ action, actorId, cursor, limit: 50 })}`,
   );
+  const [t, ops, locale] = await Promise.all([getT('opsPeople'), getT('ops'), getLocale()]);
+  const actorLabel = (type: string) => {
+    const code = type.toLowerCase();
+    return ACTORS.has(code) ? t(`actor_${code}` as MessageKey<'opsPeople'>) : code;
+  };
 
   return (
     <>
-      <PageHeader eyebrow="Compliance" title="Audit log" />
-      <p className="muted">
-        Every sign-in, permission change and catalog edit, newest first. Entries cannot be edited or
-        deleted.
-      </p>
+      <PageHeader eyebrow={t('compliance')} title={ops('nav_audit')} />
+      <p className="muted">{t('auditIntro')}</p>
 
       <form className="toolbar" role="search">
         <label>
-          Action
+          {t('action')}
           <input name="action" defaultValue={action} placeholder="catalog.product.updated" />
         </label>
         <label>
-          Actor id
-          <input name="actorId" defaultValue={actorId} placeholder="User id" />
+          {t('actorId')}
+          <input name="actorId" defaultValue={actorId} placeholder={t('userIdPlaceholder')} />
         </label>
         <button className="btn btn--secondary" type="submit">
-          Filter
+          {t('filter')}
         </button>
         {action || actorId ? (
           <Link href="/audit" className="btn btn--secondary">
-            Clear
+            {t('clear')}
           </Link>
         ) : null}
       </form>
 
       <section className="card">
         {page.items.length === 0 ? (
-          <Empty>No entries match.</Empty>
+          <Empty>{t('noEntries')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>When (UTC)</th>
-                  <th>Action</th>
-                  <th>Actor</th>
-                  <th>Entity</th>
-                  <th>IP</th>
+                  <th>{t('colWhenUtc')}</th>
+                  <th>{t('colAction')}</th>
+                  <th>{t('colActor')}</th>
+                  <th>{t('colEntity')}</th>
+                  <th>{t('colIp')}</th>
                 </tr>
               </thead>
               <tbody>
                 {page.items.map((entry) => (
                   <tr key={entry.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{dateTime(entry.createdAt)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{dateTime(entry.createdAt, locale)}</td>
                     <td>
                       <span className="mono">{entry.action}</span>
                       {entry.metadata && Object.keys(entry.metadata as object).length > 0 ? (
                         <details>
-                          <summary className="muted">Details</summary>
+                          <summary className="muted">{t('details')}</summary>
                           <pre className="meta">{JSON.stringify(entry.metadata, null, 2)}</pre>
                         </details>
                       ) : null}
@@ -92,7 +101,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Search
                           {entry.actorId.slice(0, 8)}
                         </Link>
                       ) : (
-                        <span className="muted">{entry.actorType.toLowerCase()}</span>
+                        <span className="muted">{actorLabel(entry.actorType)}</span>
                       )}
                     </td>
                     <td className="mono">
@@ -107,11 +116,15 @@ export default async function AuditPage({ searchParams }: { searchParams: Search
             </table>
           </div>
         )}
-        <nav className="pager" aria-label="Pages">
-          {cursor ? <Link href={`/audit${query({ action, actorId })}`}>← Newest</Link> : <span />}
+        <nav className="pager" aria-label={ops('pages')}>
+          {cursor ? (
+            <Link href={`/audit${query({ action, actorId })}`}>{t('newest')}</Link>
+          ) : (
+            <span />
+          )}
           {page.nextCursor ? (
             <Link href={`/audit${query({ action, actorId, cursor: page.nextCursor })}`}>
-              Older →
+              {t('older')}
             </Link>
           ) : (
             <span />

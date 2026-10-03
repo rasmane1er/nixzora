@@ -1,6 +1,27 @@
 import 'server-only';
+import { type MessageKey, translator, type Vars } from '@nixzora/i18n';
 import { redirect } from 'next/navigation';
 import { ApiError, FormProblem, errorMessage } from './api';
+import { getLocale, getT } from './i18n';
+
+/**
+ * A form problem worded in the Ops Center catalog: `perform` shows it in the staff member's
+ * language (the message itself stays English for any other caller).
+ */
+export class OpsProblem extends FormProblem {
+  constructor(
+    readonly key: MessageKey<'ops'> | `opsPeople:${MessageKey<'opsPeople'>}`,
+    readonly vars: Vars = {},
+  ) {
+    super(OpsProblem.render(translator('en'), key, vars));
+  }
+
+  static render(tr: ReturnType<typeof translator>, key: OpsProblem['key'], vars: Vars): string {
+    return key.startsWith('opsPeople:')
+      ? tr('opsPeople')(key.slice('opsPeople:'.length) as MessageKey<'opsPeople'>, vars)
+      : tr('ops')(key as MessageKey<'ops'>, vars);
+  }
+}
 
 /** Reads a trimmed text field; empty becomes undefined. */
 export function text(form: FormData, name: string): string | undefined {
@@ -25,7 +46,7 @@ export function integer(form: FormData, name: string): number | undefined {
   const value = text(form, name);
   if (value === undefined) return undefined;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed)) throw new FormProblem(`“${value}” is not a whole number.`);
+  if (!Number.isInteger(parsed)) throw new OpsProblem('notWholeNumber', { value });
   return parsed;
 }
 
@@ -35,7 +56,7 @@ export function cents(form: FormData, name: string): number | undefined {
   const value = raw?.replace(/[,$\s]/g, '');
   if (value === undefined) return undefined;
   if (!/^\d+(\.\d{1,2})?$/.test(value)) {
-    throw new FormProblem(`“${raw}” is not a price. Enter it like 1299.00.`);
+    throw new OpsProblem('notPrice', { value: raw ?? '' });
   }
   return Math.round(Number(value) * 100);
 }
@@ -54,6 +75,15 @@ export function pairs(form: FormData, name: string): Record<string, string> {
     if (k && v) out[k] = v;
   }
   return out;
+}
+
+/** What went wrong, in the staff member's language where the words are ours. */
+export async function problemMessage(error: unknown): Promise<string> {
+  if (error instanceof OpsProblem) {
+    return OpsProblem.render(translator(await getLocale()), error.key, error.vars);
+  }
+  if (error instanceof ApiError || error instanceof FormProblem) return errorMessage(error);
+  return (await getT('common'))('somethingWrong');
 }
 
 export function withMessage(path: string, kind: 'notice' | 'error', message: string): string {
@@ -81,7 +111,7 @@ export async function perform(
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) redirect('/login?expired=1');
     if (error instanceof ApiError && error.code === 'MFA_REQUIRED') redirect('/security/setup');
-    target = withMessage(path, 'error', errorMessage(error));
+    target = withMessage(path, 'error', await problemMessage(error));
   }
   redirect(target);
 }

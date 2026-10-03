@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useT } from '@/lib/i18n';
 import { fonts, usePalette } from '@/lib/theme';
 import { Text } from './ui';
 
@@ -10,7 +11,7 @@ export function QuantityStepper({
   max = MAX_QUANTITY,
   onChange,
   disabled,
-  label = 'Quantity',
+  label: labelProp,
 }: {
   value: number;
   max?: number;
@@ -19,6 +20,8 @@ export function QuantityStepper({
   label?: string;
 }) {
   const p = usePalette();
+  const t = useT('appShop');
+  const label = labelProp ?? t('quantity');
   const limit = Math.min(max, MAX_QUANTITY);
   const button = (icon: 'remove' | 'add', next: number, enabled: boolean, a11y: string) => (
     <Pressable
@@ -42,9 +45,9 @@ export function QuantityStepper({
       accessibilityLabel={`${label}: ${value}`}
       accessibilityValue={{ min: 0, max: limit, now: value }}
     >
-      {button('remove', value - 1, value > 0, `Decrease ${label.toLowerCase()}`)}
+      {button('remove', value - 1, value > 0, t('decrease', { label: label.toLowerCase() }))}
       <Text style={{ fontFamily: fonts.mono, minWidth: 28, textAlign: 'center' }}>{value}</Text>
-      {button('add', value + 1, value < limit, `Increase ${label.toLowerCase()}`)}
+      {button('add', value + 1, value < limit, t('increase', { label: label.toLowerCase() }))}
     </View>
   );
 }

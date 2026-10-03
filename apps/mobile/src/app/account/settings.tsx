@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { type Locale, LOCALE_LABEL, LOCALES, type MessageKey } from '@nixzora/i18n';
 import { useFocusEffect } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useState } from 'react';
@@ -6,22 +7,32 @@ import { Platform, Pressable, Switch, View } from 'react-native';
 import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { applySavedTheme, setTheme, type ThemeChoice } from '@/lib/appearance';
 import { availableBiometric, type BiometricKind } from '@/lib/biometrics';
+import { api } from '@/lib/api';
 import { APP_VARIANT, APP_VERSION } from '@/lib/config';
+import { language, useLocale, useT } from '@/lib/i18n';
 import { enablePush, pushStatus, type PushStatus } from '@/lib/push';
 import { session, useSession } from '@/lib/session';
 import { fonts, space, usePalette } from '@/lib/theme';
 
-const THEMES: { value: ThemeChoice; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'system', label: 'Automatic', icon: 'phone-portrait-outline' },
-  { value: 'light', label: 'Light', icon: 'sunny-outline' },
-  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+type Key = MessageKey<'appAccount'>;
+
+const THEMES: { value: ThemeChoice; label: Key; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'system', label: 'themeAutomatic', icon: 'phone-portrait-outline' },
+  { value: 'light', label: 'themeLight', icon: 'sunny-outline' },
+  { value: 'dark', label: 'themeDark', icon: 'moon-outline' },
 ];
 
-const PUSH_HINT: Record<PushStatus, string> = {
-  on: 'Shipping, delivery, refund and return updates on this phone.',
-  off: 'Get shipping and delivery updates on this phone.',
-  blocked: 'Notifications are off for NIXZORA in your phone settings.',
-  unsupported: 'Not available on this device.',
+const PUSH_HINT: Record<PushStatus, Key> = {
+  on: 'pushOn',
+  off: 'pushOff',
+  blocked: 'pushBlocked',
+  unsupported: 'pushUnsupported',
+};
+
+/** Face ID and Touch ID are names; the others are words to translate. */
+const BIOMETRIC_WORD: Partial<Record<BiometricKind, Key>> = {
+  fingerprint: 'bioFingerprint',
+  biometrics: 'bioBiometrics',
 };
 
 function SettingRow({
@@ -56,6 +67,11 @@ export default function SettingsScreen() {
   const [push, setPush] = useState<PushStatus | null>(null);
   const [biometric, setBiometric] = useState<BiometricKind | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useT('appAccount');
+  const tc = useT('common');
+  const locale = useLocale();
+  const biometricWord = biometric ? BIOMETRIC_WORD[biometric] : undefined;
+  const biometricName = biometricWord ? t(biometricWord) : biometric;
 
   useEffect(() => {
     void applySavedTheme().then(setChoice);
@@ -73,6 +89,12 @@ export default function SettingsScreen() {
     void setTheme(choice);
   };
 
+  const chooseLanguage = (next: Locale) => {
+    void language.choose(next);
+    // One language everywhere: the website and emails follow the account's choice.
+    if (status === 'signedIn') void api.me.setLanguage(next).catch(() => undefined);
+  };
+
   const togglePush = async (on: boolean) => {
     setError(null);
     if (!on || push === 'blocked') {
@@ -83,7 +105,7 @@ export default function SettingsScreen() {
     try {
       setPush(await enablePush(true));
     } catch {
-      setError('Could not turn on notifications. Try again.');
+      setError(t('pushError'));
     }
   };
 
@@ -94,18 +116,18 @@ export default function SettingsScreen() {
       {Platform.OS !== 'web' ? (
         <>
           <Text variant="label" muted style={{ paddingHorizontal: space.xs }}>
-            Appearance
+            {t('appearance')}
           </Text>
           <Card style={{ flexDirection: 'row', gap: space.sm, padding: space.sm }}>
-            {THEMES.map((t) => {
-              const selected = theme === t.value;
+            {THEMES.map((option) => {
+              const selected = theme === option.value;
               return (
                 <Pressable
-                  key={t.value}
+                  key={option.value}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={`${t.label} appearance`}
-                  onPress={() => chooseTheme(t.value)}
+                  accessibilityLabel={t('themeA11y', { theme: t(option.label) })}
+                  onPress={() => chooseTheme(option.value)}
                   style={{
                     flex: 1,
                     alignItems: 'center',
@@ -116,19 +138,19 @@ export default function SettingsScreen() {
                     borderColor: selected ? p.fg : p.line,
                   }}
                 >
-                  <Ionicons name={t.icon} size={22} color={p.fg} />
+                  <Ionicons name={option.icon} size={22} color={p.fg} />
                   <Text
                     variant="small"
                     style={{ fontFamily: selected ? fonts.bodyMedium : undefined }}
                   >
-                    {t.label}
+                    {t(option.label)}
                   </Text>
                 </Pressable>
               );
             })}
           </Card>
           <Text variant="small" muted style={{ marginTop: -space.sm }}>
-            Automatic follows your phone's light or dark setting.
+            {t('appearanceHint')}
           </Text>
         </>
       ) : null}
@@ -136,29 +158,32 @@ export default function SettingsScreen() {
       {Platform.OS !== 'web' ? (
         <>
           <Text variant="label" muted style={{ paddingHorizontal: space.xs }}>
-            This phone
+            {t('thisPhone')}
           </Text>
           <Card>
-            <SettingRow title="Order notifications" body={push ? PUSH_HINT[push] : undefined}>
+            <SettingRow
+              title={t('orderNotifications')}
+              body={push ? t(PUSH_HINT[push]) : undefined}
+            >
               {push && push !== 'unsupported' ? (
                 <Switch
                   value={push === 'on'}
                   onValueChange={(on) => void togglePush(on)}
-                  accessibilityLabel="Order notifications"
+                  accessibilityLabel={t('orderNotifications')}
                 />
               ) : null}
             </SettingRow>
-            {biometric && status !== 'signedOut' ? (
+            {biometricName && status !== 'signedOut' ? (
               <>
                 <Divider />
                 <SettingRow
-                  title={`Unlock with ${biometric}`}
-                  body="Ask for it when the app opens, before showing your account."
+                  title={t('unlockWith', { method: biometricName })}
+                  body={t('unlockWithBody')}
                 >
                   <Switch
                     value={biometricLock}
                     onValueChange={(on) => void session.setBiometricLock(on)}
-                    accessibilityLabel={`Unlock with ${biometric}`}
+                    accessibilityLabel={t('unlockWith', { method: biometricName })}
                   />
                 </SettingRow>
               </>
@@ -168,19 +193,57 @@ export default function SettingsScreen() {
       ) : null}
 
       <Text variant="label" muted style={{ paddingHorizontal: space.xs }}>
-        Region
+        {t('region')}
       </Text>
       <Card>
-        <SettingRow title="Language" body="English is the only language for now.">
-          <Text muted>English</Text>
-        </SettingRow>
+        <View style={{ gap: space.sm, paddingVertical: space.xs }}>
+          <View style={{ gap: 2 }}>
+            <Text>{tc('language')}</Text>
+            <Text variant="small" muted>
+              {t('languageHint')}
+            </Text>
+          </View>
+          <View
+            accessibilityRole="radiogroup"
+            accessibilityLabel={tc('language')}
+            style={{ flexDirection: 'row', gap: space.sm }}
+          >
+            {LOCALES.map((code) => {
+              const selected = locale === code;
+              return (
+                <Pressable
+                  key={code}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={LOCALE_LABEL[code]}
+                  onPress={() => chooseLanguage(code)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: space.sm,
+                    borderRadius: 10,
+                    borderWidth: selected ? 2 : 1,
+                    borderColor: selected ? p.fg : p.line,
+                  }}
+                >
+                  <Text
+                    variant="small"
+                    style={{ fontFamily: selected ? fonts.bodyMedium : undefined }}
+                  >
+                    {LOCALE_LABEL[code]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
         <Divider />
-        <SettingRow title="Currency" body="Prices and payments are in US dollars.">
+        <SettingRow title={t('currency')} body={t('currencyBody')}>
           <Text muted>USD $</Text>
         </SettingRow>
         <Divider />
-        <SettingRow title="Ships to" body="We deliver to US addresses only.">
-          <Text muted>United States</Text>
+        <SettingRow title={t('shipsTo')} body={t('shipsToBody')}>
+          <Text muted>{t('unitedStates')}</Text>
         </SettingRow>
       </Card>
 

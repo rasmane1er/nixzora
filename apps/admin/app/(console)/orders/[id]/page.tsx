@@ -6,11 +6,15 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
-import { dateTime, money, param, type SearchParams } from '@/lib/format';
+import { param, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 import { buyLabel, fulfill, refund } from '../actions';
 import { ReturnList } from '../../returns/ReturnList';
 
-export const metadata: Metadata = { title: 'Order' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsOrders');
+  return { title: t('metaOrder') };
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -25,6 +29,8 @@ export default async function OrderPage({
   const search = await searchParams;
   if (!UUID.test(id)) notFound();
   const me = await currentStaff();
+  const [t, tOrder, f] = await Promise.all([getT('opsOrders'), getT('order'), getFormat()]);
+  const money = f.money;
   let order: OrderView;
   try {
     order = await load<OrderView>(`/admin/orders/${id}`);
@@ -48,17 +54,22 @@ export default async function OrderPage({
   const ownPart = order.shipments.find((part) => !part.seller);
   const shipOwn = open && (!order.shipments.length || ownPart?.status === 'PROCESSING');
   const a = order.shippingAddress;
+  const statusLabel = (status: string) => {
+    const key = `status_${status}`;
+    const label = tOrder(key as never);
+    return label === key ? status.replace('_', ' ').toLowerCase() : label;
+  };
 
   return (
     <>
       <PageHeader
-        eyebrow={`Order · ${order.email}`}
+        eyebrow={t('orderEyebrow', { email: order.email })}
         title={order.number}
         actions={
           <>
             <StatusPill value={order.status} />
             <Link className="btn btn--secondary" href="/orders">
-              All orders
+              {t('allOrders')}
             </Link>
           </>
         }
@@ -68,16 +79,16 @@ export default async function OrderPage({
       <div className="two-col">
         <div>
           <section className="card">
-            <h2>Items</h2>
+            <h2>{t('items')}</h2>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>SKU</th>
-                    <th>Product</th>
-                    <th className="num">Qty</th>
-                    <th className="num">Price</th>
-                    <th className="num">Total</th>
+                    <th>{t('colSku')}</th>
+                    <th>{t('colProduct')}</th>
+                    <th className="num">{t('colQty')}</th>
+                    <th className="num">{t('colPrice')}</th>
+                    <th className="num">{t('colTotal')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -95,8 +106,9 @@ export default async function OrderPage({
                   ))}
                   <tr>
                     <td colSpan={4} className="num muted">
-                      Subtotal{order.discountCents ? ` · discount (${order.couponCode})` : ''} ·
-                      shipping · tax
+                      {order.discountCents
+                        ? t('totalsBreakdownDiscount', { code: order.couponCode ?? '' })
+                        : t('totalsBreakdown')}
                     </td>
                     <td className="num">
                       {money(order.subtotalCents, order.currency)}
@@ -113,7 +125,7 @@ export default async function OrderPage({
                   </tr>
                   <tr>
                     <td colSpan={4} className="num">
-                      <strong>Total charged</strong>
+                      <strong>{t('totalCharged')}</strong>
                     </td>
                     <td className="num">
                       <strong>{money(order.totalCents, order.currency)}</strong>
@@ -122,7 +134,7 @@ export default async function OrderPage({
                   {order.refundedCents ? (
                     <tr>
                       <td colSpan={4} className="num">
-                        Refunded so far
+                        {t('refundedSoFar')}
                       </td>
                       <td className="num low">−{money(order.refundedCents, order.currency)}</td>
                     </tr>
@@ -134,11 +146,8 @@ export default async function OrderPage({
 
           {order.shipments.length ? (
             <section className="card">
-              <h2>Shipments</h2>
-              <p className="muted">
-                Marketplace order: each seller ships its own items. The order is shipped when every
-                part has shipped.
-              </p>
+              <h2>{t('shipments')}</h2>
+              <p className="muted">{t('shipmentsHint')}</p>
               <div className="table-wrap">
                 <table>
                   <tbody>
@@ -177,53 +186,53 @@ export default async function OrderPage({
           {canFulfill &&
           (open || order.status === 'SHIPPED' || order.status === 'PENDING_PAYMENT') ? (
             <section className="card">
-              <h2>Fulfillment</h2>
+              <h2>{t('fulfillment')}</h2>
               <div className="form">
                 {order.status === 'PAID' ? (
                   <ActionButton
                     action={fulfill}
-                    label="Start packing"
+                    label={t('startPacking')}
                     fields={{ id: order.id, action: 'start' }}
                   />
                 ) : null}
                 {shipOwn && label?.provider !== 'NONE' ? (
                   <form action={buyLabel} className="inline-form" style={{ flexWrap: 'wrap' }}>
                     <input type="hidden" name="id" value={order.id} />
-                    <span className="muted">Box (in)</span>
+                    <span className="muted">{t('boxInches')}</span>
                     <input
                       name="lengthIn"
                       defaultValue={18}
-                      aria-label="Length in inches"
+                      aria-label={t('lengthInches')}
                       style={{ width: 60 }}
                     />
                     <input
                       name="widthIn"
                       defaultValue={14}
-                      aria-label="Width in inches"
+                      aria-label={t('widthInches')}
                       style={{ width: 60 }}
                     />
                     <input
                       name="heightIn"
                       defaultValue={4}
-                      aria-label="Height in inches"
+                      aria-label={t('heightInches')}
                       style={{ width: 60 }}
                     />
-                    <span className="muted">Weight (oz)</span>
+                    <span className="muted">{t('weightOz')}</span>
                     <input
                       name="weightOz"
                       defaultValue={96}
-                      aria-label="Weight in ounces"
+                      aria-label={t('weightOunces')}
                       style={{ width: 70 }}
                     />
-                    <SubmitButton>Buy label &amp; ship</SubmitButton>
+                    <SubmitButton>{t('buyLabelAndShip')}</SubmitButton>
                   </form>
                 ) : null}
                 {shipOwn ? (
                   <form action={fulfill} className="inline-form" style={{ flexWrap: 'wrap' }}>
-                    <span className="muted">Or enter tracking yourself:</span>
+                    <span className="muted">{t('orEnterTracking')}</span>
                     <input type="hidden" name="id" value={order.id} />
                     <input type="hidden" name="action" value="ship" />
-                    <select name="carrier" aria-label="Carrier" defaultValue="UPS">
+                    <select name="carrier" aria-label={t('carrier')} defaultValue="UPS">
                       {CARRIERS.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -233,23 +242,23 @@ export default async function OrderPage({
                     <input
                       name="trackingNumber"
                       required
-                      placeholder="Tracking number"
-                      aria-label="Tracking number"
+                      placeholder={t('trackingNumber')}
+                      aria-label={t('trackingNumber')}
                       style={{ width: 220 }}
                     />
-                    <SubmitButton>Mark as shipped</SubmitButton>
+                    <SubmitButton>{t('markShipped')}</SubmitButton>
                   </form>
                 ) : null}
                 {order.status === 'SHIPPED' ? (
                   <ActionButton
                     action={fulfill}
-                    label="Mark as delivered"
+                    label={t('markDelivered')}
                     fields={{ id: order.id, action: 'deliver' }}
                   />
                 ) : null}
                 {open || order.status === 'PENDING_PAYMENT' ? (
                   <details>
-                    <summary>Cancel order{open ? ' and refund' : ''}</summary>
+                    <summary>{open ? t('cancelOrderAndRefund') : t('cancelOrder')}</summary>
                     <form
                       action={fulfill}
                       className="inline-form"
@@ -261,14 +270,16 @@ export default async function OrderPage({
                         name="reason"
                         required
                         minLength={3}
-                        placeholder="Reason (shown in the audit log)"
-                        aria-label="Reason"
+                        placeholder={t('cancelReasonPlaceholder')}
+                        aria-label={t('reason')}
                         style={{ width: 280 }}
                       />
                       <SubmitButton tone="danger">
                         {open
-                          ? `Cancel and refund ${money(order.totalCents, order.currency)}`
-                          : 'Cancel order'}
+                          ? t('cancelAndRefundAmount', {
+                              amount: money(order.totalCents, order.currency),
+                            })
+                          : t('cancelOrder')}
                       </SubmitButton>
                     </form>
                   </details>
@@ -278,10 +289,9 @@ export default async function OrderPage({
           ) : null}
           {can(me, 'orders.refund') && refundable && remaining > 0 ? (
             <section className="card">
-              <h2>Refund</h2>
+              <h2>{t('refundTitle')}</h2>
               <p className="muted">
-                Up to {money(remaining, order.currency)} left to refund. Full refunds of unshipped
-                orders: use Cancel above.
+                {t('refundHint', { amount: money(remaining, order.currency) })}
               </p>
               <form action={refund} className="inline-form" style={{ flexWrap: 'wrap' }}>
                 <input type="hidden" name="id" value={order.id} />
@@ -290,25 +300,25 @@ export default async function OrderPage({
                   required
                   inputMode="decimal"
                   placeholder="25.00"
-                  aria-label="Amount in dollars"
+                  aria-label={t('amountInDollars')}
                   style={{ width: 110 }}
                 />
                 <input
                   name="reason"
                   required
                   minLength={3}
-                  placeholder="Reason (emailed to the customer)"
-                  aria-label="Reason"
+                  placeholder={t('refundReasonPlaceholder')}
+                  aria-label={t('reason')}
                   style={{ width: 280 }}
                 />
-                <SubmitButton tone="secondary">Refund</SubmitButton>
+                <SubmitButton tone="secondary">{t('refundButton')}</SubmitButton>
               </form>
             </section>
           ) : null}
 
           {returns.length ? (
             <section className="card">
-              <h2>Returns</h2>
+              <h2>{t('returnsTitle')}</h2>
               <ReturnList returns={returns} canDecide={canFulfill} back={`/orders/${order.id}`} />
             </section>
           ) : null}
@@ -316,7 +326,7 @@ export default async function OrderPage({
 
         <div>
           <section className="card">
-            <h2>Ship to</h2>
+            <h2>{t('shipTo')}</h2>
             <p>
               {a.fullName}
               <br />
@@ -344,10 +354,12 @@ export default async function OrderPage({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Print label
+                  {t('printLabel')}
                 </a>{' '}
                 {label.postageCents ? (
-                  <span className="muted">Postage {money(label.postageCents)}</span>
+                  <span className="muted">
+                    {t('postage', { amount: money(label.postageCents) })}
+                  </span>
                 ) : null}
               </p>
             ) : null}
@@ -358,7 +370,7 @@ export default async function OrderPage({
                   <>
                     {' · '}
                     <a href={order.tracking.url} target="_blank" rel="noopener noreferrer">
-                      Track
+                      {t('track')}
                     </a>
                   </>
                 ) : null}
@@ -366,12 +378,12 @@ export default async function OrderPage({
             ) : null}
           </section>
           <section className="card">
-            <h2>History</h2>
+            <h2>{t('history')}</h2>
             <ul className="activity">
               {order.timeline.map((entry) => (
                 <li key={entry.status}>
-                  <span>{entry.status.replace('_', ' ').toLowerCase()}</span>
-                  <span className="muted">{dateTime(entry.at)}</span>
+                  <span>{statusLabel(entry.status)}</span>
+                  <span className="muted">{f.dateTime(entry.at)}</span>
                 </li>
               ))}
             </ul>

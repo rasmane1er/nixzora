@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { type CopyDraft, suggestCopy } from '../actions';
 
 /**
@@ -11,6 +12,7 @@ import { type CopyDraft, suggestCopy } from '../actions';
 export function CopySuggestion({ productId, target }: { productId: string; target: string }) {
   const [draft, setDraft] = useState<CopyDraft | null>(null);
   const [pending, startTransition] = useTransition();
+  const t = useT('opsCatalog');
 
   const use = () => {
     const field = document.getElementById(target) as HTMLTextAreaElement | null;
@@ -28,7 +30,7 @@ export function CopySuggestion({ productId, target }: { productId: string; targe
         disabled={pending}
         onClick={() => startTransition(async () => setDraft(await suggestCopy(productId)))}
       >
-        {pending ? 'Drafting…' : 'Suggest description'}
+        {pending ? t('drafting') : t('suggestDescription')}
       </button>
       {draft?.error ? (
         <p className="banner banner--error" role="alert">
@@ -37,7 +39,7 @@ export function CopySuggestion({ productId, target }: { productId: string; targe
       ) : null}
       {draft?.description ? (
         <div className="copy-suggest__draft" role="status">
-          <span className="pill">{draft.aiWritten ? 'AI draft' : 'Draft from specs'}</span>
+          <span className="pill">{draft.aiWritten ? t('aiDraft') : t('draftFromSpecs')}</span>
           <p>{draft.description}</p>
           {draft.notes?.map((note) => (
             <p key={note} className="muted small">
@@ -46,17 +48,17 @@ export function CopySuggestion({ productId, target }: { productId: string; targe
           ))}
           <div className="row">
             <button type="button" className="btn btn--primary btn--small" onClick={use}>
-              Use this text
+              {t('useThisText')}
             </button>
             <button
               type="button"
               className="btn btn--secondary btn--small"
               onClick={() => setDraft(null)}
             >
-              Discard
+              {t('discard')}
             </button>
           </div>
-          <p className="muted small">Check it against the product before saving.</p>
+          <p className="muted small">{t('checkBeforeSaving')}</p>
         </div>
       ) : null}
     </div>

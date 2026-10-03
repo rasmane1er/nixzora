@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Button, Card, Divider, Screen, Text } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { fonts, space } from '@/lib/theme';
 import { View } from 'react-native';
 
@@ -8,35 +9,33 @@ import { View } from 'react-native';
  * Same message as the website's Payment methods page.
  */
 export default function PaymentsScreen() {
+  const t = useT('appAccount');
   return (
     <Screen>
       <Card style={{ gap: space.sm }}>
-        <Text variant="heading">Ways to pay</Text>
+        <Text variant="heading">{t('payWaysTitle')}</Text>
         <View style={{ gap: 2 }}>
-          <Text style={{ fontFamily: fonts.bodyMedium }}>Credit and debit cards</Text>
+          <Text style={{ fontFamily: fonts.bodyMedium }}>{t('payCards')}</Text>
           <Text variant="small" muted>
-            Visa, Mastercard, American Express and Discover.
+            {t('payCardsBody')}
           </Text>
         </View>
         <Divider />
         <View style={{ gap: 2 }}>
-          <Text style={{ fontFamily: fonts.bodyMedium }}>Apple Pay and Google Pay</Text>
+          <Text style={{ fontFamily: fonts.bodyMedium }}>{t('payWallets')}</Text>
           <Text variant="small" muted>
-            Offered at checkout on phones that support them.
+            {t('payWalletsBody')}
           </Text>
         </View>
       </Card>
       <Card style={{ gap: space.sm }}>
-        <Text variant="heading">No saved cards, on purpose</Text>
-        <Text>
-          You enter your card in our payment provider's secure sheet at checkout, each time. Card
-          numbers never reach NIXZORA's servers and are not stored in your account.
-        </Text>
+        <Text variant="heading">{t('payNoSavedTitle')}</Text>
+        <Text>{t('payNoSavedBody')}</Text>
         <Text variant="small" muted>
-          Refunds always go back to the card you paid with.
+          {t('payRefunds')}
         </Text>
         <Button
-          title="Returns & refunds"
+          title={t('menuReturns')}
           tone="ghost"
           onPress={() => router.push('/account/returns')}
         />

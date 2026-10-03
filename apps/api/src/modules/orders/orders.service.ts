@@ -10,6 +10,7 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_LOCALE, type Locale } from '@nixzora/i18n';
 import {
   type AdminOrderListQuery,
   type CheckoutRequest,
@@ -107,6 +108,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     input: CheckoutRequest,
     user: AuthUser | undefined,
     meta: RequestMeta,
+    locale: Locale = DEFAULT_LOCALE,
   ): Promise<CheckoutResponse> {
     if (user && !user.permissions.includes('orders.create')) {
       throw new ConflictException('This account cannot place orders.');
@@ -156,6 +158,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         cart.totals,
         holds,
         cart.coupon && !cart.coupon.problem ? cart.coupon.code : null,
+        locale,
       );
     } catch (error) {
       await this.inventory.release(holds);
@@ -270,6 +273,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     totals: Awaited<ReturnType<CartService['view']>>['totals'],
     holds: string[],
     couponCode: string | null,
+    language: Locale,
   ): Promise<OrderRow> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -303,6 +307,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               subtotalCents: totals.subtotalCents,
               discountCents: totals.discountCents,
               couponCode,
+              language,
               shippingCents: totals.shippingCents,
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,

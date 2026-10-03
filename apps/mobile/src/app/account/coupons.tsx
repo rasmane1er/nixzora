@@ -4,18 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 import { RefreshControl, View } from 'react-native';
 import { Banner, Card, EmptyState, Pill, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money, shortDate } from '@/lib/format';
+import { useFormat, useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
-
-function amount(c: AccountCoupon): string {
-  return c.type === 'PERCENT' ? `${c.value / 100}% off` : `${money(c.value)} off`;
-}
 
 /** Current public promotions. Codes are entered in the cart. */
 export default function CouponsScreen() {
   const p = usePalette();
+  const t = useT('appAccount');
+  const f = useFormat();
   const coupons = useQuery({ queryKey: keys.coupons, queryFn: () => api.me.coupons() });
+  const amount = (c: AccountCoupon) =>
+    t('couponOff', {
+      amount: c.type === 'PERCENT' ? f.percent(c.value / 10000) : f.money(c.value),
+    });
 
   return (
     <Screen
@@ -26,10 +28,10 @@ export default function CouponsScreen() {
         />
       }
     >
-      <Text muted>Enter a code in your cart. One code per order.</Text>
+      <Text muted>{t('couponsIntro')}</Text>
       {coupons.error ? <Banner tone="error">{errorMessage(coupons.error)}</Banner> : null}
       {coupons.data && coupons.data.length === 0 ? (
-        <EmptyState title="No promotions right now" body="Check back soon." />
+        <EmptyState title={t('couponsEmptyTitle')} body={t('couponsEmptyBody')} />
       ) : null}
       {coupons.data?.map((c) => (
         <Card key={c.code} style={{ gap: space.sm, opacity: c.used ? 0.6 : 1 }}>
@@ -48,9 +50,9 @@ export default function CouponsScreen() {
               <Text style={{ fontFamily: fonts.bodyMedium }}>{c.description ?? amount(c)}</Text>
               <Text variant="small" muted>
                 {c.minSubtotalCents
-                  ? `On orders of ${money(c.minSubtotalCents)} or more`
-                  : 'No minimum'}
-                {c.endsAt ? ` · until ${shortDate(c.endsAt)}` : ''}
+                  ? t('couponsMin', { amount: f.money(c.minSubtotalCents) })
+                  : t('couponsNoMin')}
+                {c.endsAt ? ` · ${t('couponsUntil', { date: f.date(c.endsAt) })}` : ''}
               </Text>
             </View>
           </Row>
@@ -58,7 +60,7 @@ export default function CouponsScreen() {
             <Text
               variant="mono"
               selectable
-              accessibilityLabel={`Code ${c.code}`}
+              accessibilityLabel={t('couponsCodeA11y', { code: c.code })}
               style={{
                 flex: 1,
                 padding: space.sm,
@@ -72,12 +74,12 @@ export default function CouponsScreen() {
             >
               {c.code}
             </Text>
-            {c.used ? <Pill label="Used" /> : null}
+            {c.used ? <Pill label={t('couponsUsed')} /> : null}
           </Row>
         </Card>
       ))}
       <Text variant="small" muted>
-        Gift cards and store credit are not available yet.
+        {t('couponsGiftCards')}
       </Text>
     </Screen>
   );

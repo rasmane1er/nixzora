@@ -3,9 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Empty, PageHeader, Pager, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
-import { dateTime, param, query, type SearchParams } from '@/lib/format';
+import { param, query, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Sellers' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsOrders');
+  return { title: t('metaSellers') };
+}
 
 const STATUSES = ['PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED'] as const;
 
@@ -14,53 +18,54 @@ export default async function SellersPage({ searchParams }: { searchParams: Sear
   const q = param(params, 'q');
   const status = param(params, 'status');
   const page = Number(param(params, 'page') ?? 1) || 1;
+  const [t, f] = await Promise.all([getT('opsOrders'), getFormat()]);
   const result = await load<PagedResult<AdminSellerView>>(
     `/admin/sellers${query({ q, status, page })}`,
   );
 
   return (
     <>
-      <PageHeader eyebrow="Marketplace" title="Sellers" />
+      <PageHeader eyebrow={t('eyebrowMarketplace')} title={t('metaSellers')} />
       <form className="toolbar" role="search">
         <label>
-          Search
+          {t('search')}
           <input
             type="search"
             name="q"
             defaultValue={q}
-            placeholder="Store, legal name, address or email"
+            placeholder={t('searchSellersPlaceholder')}
           />
         </label>
         <label>
-          Status
+          {t('status')}
           <select name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('any')}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.toLowerCase()}
+                {t(`sellerStatus_${s}`)}
               </option>
             ))}
           </select>
         </label>
         <button className="btn btn--secondary" type="submit">
-          Filter
+          {t('filter')}
         </button>
       </form>
 
       <section className="card">
         {result.items.length === 0 ? (
-          <Empty>{status === 'PENDING' ? 'No applications waiting.' : 'No sellers match.'}</Empty>
+          <Empty>{status === 'PENDING' ? t('noApplications') : t('noSellers')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Store</th>
-                  <th>Status</th>
-                  <th>Payouts</th>
-                  <th className="num">Live</th>
-                  <th className="num">In review</th>
-                  <th>Applied</th>
+                  <th>{t('colStore')}</th>
+                  <th>{t('status')}</th>
+                  <th>{t('colPayouts')}</th>
+                  <th className="num">{t('colLive')}</th>
+                  <th className="num">{t('colInReview')}</th>
+                  <th>{t('colApplied')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,16 +82,16 @@ export default async function SellersPage({ searchParams }: { searchParams: Sear
                     </td>
                     <td>
                       {seller.payouts.payoutsEnabled
-                        ? 'Verified'
+                        ? t('payoutsVerified')
                         : seller.payouts.detailsSubmitted
-                          ? 'Submitted'
+                          ? t('payoutsSubmitted')
                           : seller.payouts.accountConnected
-                            ? 'Started'
-                            : 'Not started'}
+                            ? t('payoutsStarted')
+                            : t('payoutsNotStarted')}
                     </td>
                     <td className="num">{seller.listings.active}</td>
                     <td className="num">{seller.listings.pendingReview}</td>
-                    <td>{dateTime(seller.createdAt)}</td>
+                    <td>{f.dateTime(seller.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>

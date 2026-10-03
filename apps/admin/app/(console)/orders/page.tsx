@@ -3,58 +3,75 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Empty, PageHeader, Pager, StatusPill } from '@/components/ui';
 import { load } from '@/lib/api';
-import { dateTime, money, param, query, type SearchParams } from '@/lib/format';
+import { param, query, type SearchParams } from '@/lib/format';
+import { getFormat, getT } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'Orders' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT('opsOrders');
+  return { title: t('metaOrders') };
+}
 
-const STATUSES = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PENDING_PAYMENT', 'CANCELLED'];
+const STATUSES = [
+  'PAID',
+  'FULFILLING',
+  'SHIPPED',
+  'DELIVERED',
+  'PENDING_PAYMENT',
+  'CANCELLED',
+] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const q = param(params, 'q');
   const status = param(params, 'status');
   const page = Number(param(params, 'page') ?? 1) || 1;
+  const [t, tOrder, f] = await Promise.all([getT('opsOrders'), getT('order'), getFormat()]);
   const result = await load<PagedResult<OrderSummary & { email: string }>>(
     `/admin/orders${query({ q, status, page, pageSize: 25 })}`,
   );
 
   return (
     <>
-      <PageHeader eyebrow="Operations" title="Orders" />
+      <PageHeader eyebrow={t('eyebrowOperations')} title={t('metaOrders')} />
       <form className="toolbar" role="search">
         <label>
-          Search
-          <input type="search" name="q" defaultValue={q} placeholder="Order number or email" />
+          {t('search')}
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder={t('searchOrdersPlaceholder')}
+          />
         </label>
         <label>
-          Status
+          {t('status')}
           <select name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('any')}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.replace('_', ' ').toLowerCase()}
+                {tOrder(`status_${s}`)}
               </option>
             ))}
           </select>
         </label>
         <button className="btn btn--secondary" type="submit">
-          Filter
+          {t('filter')}
         </button>
       </form>
       <section className="card">
         {result.items.length === 0 ? (
-          <Empty>No orders match.</Empty>
+          <Empty>{t('noOrders')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Placed</th>
-                  <th>Status</th>
-                  <th className="num">Items</th>
-                  <th className="num">Total</th>
+                  <th>{t('colOrder')}</th>
+                  <th>{t('colCustomer')}</th>
+                  <th>{t('colPlaced')}</th>
+                  <th>{t('status')}</th>
+                  <th className="num">{t('colItems')}</th>
+                  <th className="num">{t('colTotal')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,12 +83,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
                       </Link>
                     </td>
                     <td>{order.email}</td>
-                    <td>{dateTime(order.placedAt ?? order.createdAt)}</td>
+                    <td>{f.dateTime(order.placedAt ?? order.createdAt)}</td>
                     <td>
                       <StatusPill value={order.status} />
                     </td>
                     <td className="num">{order.itemCount}</td>
-                    <td className="num">{money(order.totalCents, order.currency)}</td>
+                    <td className="num">{f.money(order.totalCents, order.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -84,7 +101,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
           href={(n) => `/orders${query({ q, status, page: n })}`}
         />
       </section>
-      <p className="muted">{result.total} orders</p>
+      <p className="muted">{t('orderCount', { count: result.total })}</p>
     </>
   );
 }

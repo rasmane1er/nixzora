@@ -17,26 +17,28 @@ import { OrderStatusPill } from '@/components/OrderStatusPill';
 import { PressableLink } from '@/components/PressableLink';
 import { Banner, Button, Card, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money, shortDate } from '@/lib/format';
+import { useFormatters } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
+import { useT } from '@/lib/i18n';
 import { READABLE_WIDTH } from '@/lib/layout';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
-const FILTERS: { value: OrderFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'open', label: 'On the way' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'returns', label: 'Returns' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
+const FILTERS = [
+  { value: 'all', label: 'filterAll' },
+  { value: 'open', label: 'filterOpen' },
+  { value: 'delivered', label: 'filterDelivered' },
+  { value: 'returns', label: 'filterReturns' },
+  { value: 'cancelled', label: 'filterCancelled' },
+] as const satisfies readonly { value: OrderFilter; label: string }[];
 
 function BuyAgainButton({ variantId }: { variantId: string }) {
+  const t = useT('appShop');
   const add = useCartMutation(() => api.cart.add(variantId, 1));
   return (
     <Button
-      title={add.isSuccess ? 'In your cart' : 'Buy it again'}
+      title={add.isSuccess ? t('inYourCart') : t('buyItAgain')}
       tone="secondary"
       loading={add.isPending}
       disabled={add.isSuccess}
@@ -49,6 +51,8 @@ function BuyAgainButton({ variantId }: { variantId: string }) {
 /** One order: when, total and status, each item with "Buy it again" and "Write a review". */
 function OrderCard({ order }: { order: AccountOrder }) {
   const p = usePalette();
+  const t = useT('appShop');
+  const { money, shortDate } = useFormatters();
   return (
     <Card style={{ gap: space.md }}>
       <PressableLink href={`/orders/${order.number}`} accessibilityRole="link">
@@ -56,8 +60,8 @@ function OrderCard({ order }: { order: AccountOrder }) {
           <View style={{ gap: 4, flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodyMedium }}>
               {order.status === 'DELIVERED' && order.deliveredAt
-                ? `Delivered ${shortDate(order.deliveredAt)}`
-                : `Ordered ${shortDate(order.placedAt ?? order.createdAt)}`}
+                ? t('deliveredOn', { date: shortDate(order.deliveredAt) })
+                : t('orderedOn', { date: shortDate(order.placedAt ?? order.createdAt) })}
             </Text>
             <Text variant="small" muted>
               <Text variant="mono">{order.number}</Text> · {money(order.totalCents, order.currency)}
@@ -77,7 +81,7 @@ function OrderCard({ order }: { order: AccountOrder }) {
           <View style={{ flex: 1, gap: 4 }}>
             <Text numberOfLines={2}>{line.productTitle}</Text>
             <Text variant="small" muted>
-              {line.variantTitle} · Qty {line.quantity}
+              {t('lineQuantity', { variant: line.variantTitle, quantity: line.quantity })}
             </Text>
             <Row style={{ flexWrap: 'wrap', gap: space.sm }}>
               {line.canBuyAgain && line.variantId ? (
@@ -85,7 +89,7 @@ function OrderCard({ order }: { order: AccountOrder }) {
               ) : null}
               {line.canReview && line.productSlug ? (
                 <Button
-                  title="Write a review"
+                  title={t('writeReview')}
                   tone="ghost"
                   onPress={() => router.push(`/p/${line.productSlug}`)}
                   style={{ alignSelf: 'flex-start', minHeight: 36, paddingVertical: 6 }}
@@ -97,8 +101,8 @@ function OrderCard({ order }: { order: AccountOrder }) {
       ))}
       {order.returnableUntil ? (
         <Text variant="small" muted>
-          Returns open until {shortDate(order.returnableUntil)}
-          {order.openReturns ? ` · ${order.openReturns} in progress` : ''}
+          {t('returnsOpenUntil', { date: shortDate(order.returnableUntil) })}
+          {order.openReturns ? t('returnsInProgress', { count: order.openReturns }) : ''}
         </Text>
       ) : null}
     </Card>
@@ -107,6 +111,8 @@ function OrderCard({ order }: { order: AccountOrder }) {
 
 export default function OrdersScreen() {
   const p = usePalette();
+  const t = useT('appShop');
+  const tc = useT('common');
   const { status } = useSession();
   const params = useLocalSearchParams<{ filter?: string }>();
   const [filter, setFilter] = useState<OrderFilter>(
@@ -124,9 +130,9 @@ export default function OrdersScreen() {
     return (
       <Screen>
         <EmptyState
-          title="Sign in to see your orders"
-          body="Bought as a guest? Open the link in your confirmation email on this phone."
-          action={<Button title="Sign in" onPress={() => router.push('/sign-in')} />}
+          title={t('signInForOrders')}
+          body={t('guestOrdersHint')}
+          action={<Button title={tc('signIn')} onPress={() => router.push('/sign-in')} />}
         />
       </Screen>
     );
@@ -177,7 +183,7 @@ export default function OrdersScreen() {
                     variant="small"
                     style={{ color: active ? p.bg : p.fg, fontFamily: fonts.bodyMedium }}
                   >
-                    {f.label}
+                    {t(f.label)}
                   </Text>
                 </Pressable>
               );
@@ -190,17 +196,13 @@ export default function OrdersScreen() {
       ListEmptyComponent={
         orders.isLoading ? null : (
           <EmptyState
-            title={filter === 'all' ? 'No orders yet' : 'Nothing here'}
-            body={
-              filter === 'all'
-                ? 'When you buy something it shows up here, with tracking.'
-                : 'No orders match this filter.'
-            }
+            title={filter === 'all' ? t('noOrdersYet') : t('nothingHere')}
+            body={filter === 'all' ? t('noOrdersBody') : t('noOrdersMatch')}
             action={
               filter === 'all' ? (
-                <Button title="Start shopping" onPress={() => router.navigate('/')} />
+                <Button title={t('startShopping')} onPress={() => router.navigate('/')} />
               ) : (
-                <Button title="Show all orders" tone="ghost" onPress={() => setFilter('all')} />
+                <Button title={t('showAllOrders')} tone="ghost" onPress={() => setFilter('all')} />
               )
             }
           />

@@ -2,17 +2,19 @@
 
 import { api } from '@/lib/api';
 import { cents, checked, perform, text, uuidField } from '@/lib/forms';
+import { getT } from '@/lib/i18n';
 
-const MESSAGES: Record<string, string> = {
-  start: 'Marked as packing.',
-  ship: 'Marked as shipped. The customer has been emailed.',
-  deliver: 'Marked as delivered.',
-  cancel: 'Order cancelled.',
-};
+const MESSAGES = {
+  start: 'noticePacking',
+  ship: 'noticeShipped',
+  deliver: 'noticeDelivered',
+  cancel: 'noticeCancelled',
+} as const;
 
 export async function fulfill(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const action = text(form, 'action') ?? '';
+  const t = await getT('opsOrders');
   const body =
     action === 'ship'
       ? { action, carrier: text(form, 'carrier'), trackingNumber: text(form, 'trackingNumber') }
@@ -22,12 +24,17 @@ export async function fulfill(form: FormData): Promise<void> {
   await perform(
     `/orders/${id}`,
     () => api(`/admin/orders/${id}/fulfillment`, { method: 'POST', body }),
-    MESSAGES[action] ?? 'Order updated.',
+    t(
+      Object.hasOwn(MESSAGES, action)
+        ? MESSAGES[action as keyof typeof MESSAGES]
+        : 'noticeOrderUpdated',
+    ),
   );
 }
 
 export async function refund(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsOrders');
   await perform(
     `/orders/${id}`,
     () =>
@@ -35,12 +42,13 @@ export async function refund(form: FormData): Promise<void> {
         method: 'POST',
         body: { amountCents: cents(form, 'amount'), reason: text(form, 'reason'), restock: [] },
       }),
-    'Refund issued. The customer has been emailed.',
+    t('noticeRefunded'),
   );
 }
 
 export async function buyLabel(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
+  const t = await getT('opsOrders');
   const num = (name: string) => {
     const value = Number(text(form, name));
     return Number.isFinite(value) && value > 0 ? value : undefined;
@@ -57,7 +65,7 @@ export async function buyLabel(form: FormData): Promise<void> {
           weightOz: num('weightOz'),
         },
       }),
-    'Label bought and order shipped. Print the label from the Shipping card.',
+    t('noticeLabelBought'),
   );
 }
 
@@ -65,6 +73,7 @@ export async function decideReturn(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const action = text(form, 'action') ?? '';
   const back = text(form, 'back') ?? '/returns';
+  const t = await getT('opsOrders');
   const body =
     action === 'receive'
       ? { action, restock: checked(form, 'restock') }
@@ -75,9 +84,9 @@ export async function decideReturn(form: FormData): Promise<void> {
     back,
     () => api(`/admin/returns/${id}/decision`, { method: 'POST', body }),
     action === 'receive'
-      ? 'Return received and refunded.'
+      ? t('noticeReturnReceived')
       : action === 'approve'
-        ? 'Return approved. The customer has the return address.'
-        : 'Return rejected.',
+        ? t('noticeReturnApproved')
+        : t('noticeReturnRejected'),
   );
 }

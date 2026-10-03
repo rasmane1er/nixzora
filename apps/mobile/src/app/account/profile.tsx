@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { Banner, Button, Card, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { session } from '@/lib/session';
 import { space } from '@/lib/theme';
@@ -15,6 +16,8 @@ const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 /** Edit profile: photo, name and phone. */
 export default function ProfileScreen() {
   const client = useQueryClient();
+  const t = useT('appAccount');
+  const tc = useT('common');
   const profile = useQuery({ queryKey: keys.profile, queryFn: () => api.me.profile() });
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
@@ -55,7 +58,7 @@ export default function ProfileScreen() {
       if (!asset) return null;
       const type = asset.mimeType && TYPES.includes(asset.mimeType) ? asset.mimeType : 'image/jpeg';
       const blob = await (await fetch(asset.uri)).blob();
-      if (blob.size > 5 * 1024 * 1024) throw new Error('Photos can be up to 5 MB.');
+      if (blob.size > 5 * 1024 * 1024) throw new Error(t('profilePhotoTooBig'));
       const ticket = await api.me.avatarUpload({
         contentType: type as 'image/jpeg',
         sizeBytes: blob.size,
@@ -65,7 +68,7 @@ export default function ProfileScreen() {
         headers: ticket.headers,
         body: blob,
       });
-      if (!put.ok) throw new Error('The upload failed. Try again.');
+      if (!put.ok) throw new Error(t('profileUploadFailed'));
       return api.me.setAvatar(ticket.storageKey);
     },
     onSuccess: (next) => next && saved(next),
@@ -84,14 +87,14 @@ export default function ProfileScreen() {
         />
         <Row>
           <Button
-            title={profile.data?.avatarUrl ? 'Change photo' : 'Add a photo'}
+            title={profile.data?.avatarUrl ? t('profileChangePhoto') : t('profileAddPhoto')}
             tone="ghost"
             loading={photo.isPending}
             onPress={() => photo.mutate()}
           />
           {profile.data?.avatarUrl ? (
             <Button
-              title="Remove"
+              title={tc('remove')}
               tone="ghost"
               loading={removePhoto.isPending}
               onPress={() => removePhoto.mutate()}
@@ -102,11 +105,11 @@ export default function ProfileScreen() {
       </Card>
 
       <Card>
-        <Text variant="heading">Name and phone</Text>
+        <Text variant="heading">{t('profileNamePhone')}</Text>
         <Row style={{ alignItems: 'flex-start' }}>
           <View style={{ flex: 1 }}>
             <Field
-              label="First name"
+              label={t('fieldFirstName')}
               value={first}
               onChangeText={setFirst}
               autoComplete="given-name"
@@ -115,7 +118,7 @@ export default function ProfileScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Field
-              label="Last name"
+              label={t('fieldLastName')}
               value={last}
               onChangeText={setLast}
               autoComplete="family-name"
@@ -124,8 +127,8 @@ export default function ProfileScreen() {
           </View>
         </Row>
         <Field
-          label="Mobile number"
-          hint="For delivery questions only."
+          label={t('profileMobile')}
+          hint={t('profileMobileHint')}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -133,15 +136,15 @@ export default function ProfileScreen() {
           maxLength={20}
         />
         {save.error ? <Banner tone="error">{errorMessage(save.error)}</Banner> : null}
-        {save.isSuccess ? <Banner tone="ok">Saved.</Banner> : null}
-        <Button title="Save" loading={save.isPending} onPress={() => save.mutate()} />
+        {save.isSuccess ? <Banner tone="ok">{t('profileSaved')}</Banner> : null}
+        <Button title={tc('save')} loading={save.isPending} onPress={() => save.mutate()} />
       </Card>
 
       <Card>
-        <Text variant="heading">Email</Text>
+        <Text variant="heading">{t('fieldEmail')}</Text>
         <Text>{profile.data?.email}</Text>
         <Text variant="small" muted>
-          {profile.data?.emailVerified ? 'Confirmed' : 'Not confirmed yet: check your inbox.'}
+          {profile.data?.emailVerified ? t('confirmed') : t('profileNotConfirmed')}
         </Text>
       </Card>
     </Screen>
