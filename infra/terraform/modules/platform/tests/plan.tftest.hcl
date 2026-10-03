@@ -157,7 +157,7 @@ run "search_in_process" {
     error_message = "without a search entry, the API searches in-process."
   }
   assert {
-    condition     = length(aws_ecs_service.ai) == 0 && strcontains(aws_ecs_task_definition.app["api"].container_definitions, "ANTHROPIC_API_KEY")
+    condition     = length(aws_ecs_service.ai) == 0 && contains(output.secret_names.api, "ANTHROPIC_API_KEY")
     error_message = "without an AI service, the API keeps the provider keys."
   }
 }
