@@ -692,3 +692,25 @@ pre.meta {
   font-size: 10px;
   color: var(--muted);
 }
+
+/* Product copy suggestion (p6-03) */
+.btn--small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.copy-suggest {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.copy-suggest__draft {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  width: 100%;
+}
+.copy-suggest__draft p {
+  margin: 0;
+}

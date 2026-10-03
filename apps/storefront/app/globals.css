@@ -1318,3 +1318,61 @@ table.plain th {
     display: none;
   }
 }
+
+/* ───── What customers say (review insights) ───── */
+.insights {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+}
+.insights__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.insights__head h3 {
+  margin: 0;
+}
+.insights__badge {
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--muted);
+}
+.insights p {
+  margin: 0;
+}
+.insights__themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+.insights__themes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.insights__pro,
+.insights__con {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+.insights__pro {
+  background: var(--ok-bg, #e6f4ea);
+  color: var(--ok-fg, #1e6b3a);
+}
+.insights__con {
+  background: var(--warn-bg, #fdf0e1);
+  color: var(--warn-fg, #8a4b0f);
+}

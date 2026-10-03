@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
+import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
@@ -104,6 +105,12 @@ export default function ProductScreen() {
   const related = useQuery({
     queryKey: ['catalog', 'related', slug],
     queryFn: () => api.catalog.related(slug),
+    enabled: !!product.data,
+    staleTime: 5 * 60_000,
+  });
+  const insights = useQuery({
+    queryKey: ['catalog', 'review-insights', slug],
+    queryFn: () => api.catalog.reviewInsights(slug),
     enabled: !!product.data,
     staleTime: 5 * 60_000,
   });
@@ -335,6 +342,8 @@ export default function ProductScreen() {
               SKU {variant.sku}
             </Text>
           ) : null}
+
+          {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
 
           <ProductRail
             title="Often bought together"

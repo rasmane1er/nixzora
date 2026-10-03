@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   SocialProvidersResponse,
   RelatedProducts,
+  ReviewInsights,
   Recommendations,
   SocialSignInRequest,
   MeResponse,
@@ -188,6 +189,13 @@ export function createApiClient(options: ClientOptions) {
         }),
       product: (slug: string) =>
         request<ProductDetail>('GET', `/catalog/products/${enc(slug)}`, { auth: 'none' }),
+      /** "What customers say" for a product; null until it has 3 approved reviews. */
+      reviewInsights: (slug: string) =>
+        request<{ insights: ReviewInsights | null }>(
+          'GET',
+          `/catalog/products/${enc(slug)}/reviews/insights`,
+          { auth: 'none' },
+        ).then((res) => res.insights),
       /** Similar, bought-together and also-viewed products for a product page. */
       related: (slug: string) =>
         request<RelatedProducts>('GET', `/catalog/products/${enc(slug)}/related`, { auth: 'none' }),

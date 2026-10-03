@@ -1,6 +1,10 @@
 'use server';
 
-import { type ProductDetail, type UploadTicket } from '@nixzora/validation';
+import {
+  type ProductCopySuggestion,
+  type ProductDetail,
+  type UploadTicket,
+} from '@nixzora/validation';
 import { revalidatePath } from 'next/cache';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { cents, checked, integer, pairs, perform, text, uuidField } from '@/lib/forms';
@@ -192,5 +196,24 @@ export async function attachImage(
     return { ok: true, data: null };
   } catch (error) {
     return failure(error);
+  }
+}
+
+export type CopyDraft = {
+  description?: string;
+  aiWritten?: boolean;
+  notes?: string[];
+  error?: string;
+};
+
+/** A draft description for the editor (p6-03). It only fills the form; staff decide to save. */
+export async function suggestCopy(productId: string): Promise<CopyDraft> {
+  if (!/^[0-9a-f-]{36}$/i.test(productId)) return { error: 'Unknown product.' };
+  try {
+    return await api<ProductCopySuggestion>(`/admin/products/${productId}/copy-suggestion`, {
+      method: 'POST',
+    });
+  } catch (error) {
+    return { error: errorMessage(error) };
   }
 }

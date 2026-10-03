@@ -510,6 +510,113 @@ const products: ProductSeed[] = [
   },
 ];
 
+// Demo reviews so the product pages and "what customers say" have something to show. The
+// authors are demo accounts that cannot sign in, and their names say "(demo)".
+const DEMO_REVIEWS: Record<string, [number, string, string][]> = {
+  'kestrel-14-pro': [
+    [
+      5,
+      'Silent while compiling',
+      'The fan stays quiet even during long builds. Battery easily lasts a full workday and the screen is sharp.',
+    ],
+    [
+      5,
+      'Great travel laptop',
+      'Lightweight enough for my backpack every day. The keyboard is comfortable for long typing sessions.',
+    ],
+    [
+      4,
+      'Fast and quiet',
+      'Performance is excellent for Docker and IDEs. The display is bright, but the speakers are a bit thin.',
+    ],
+    [
+      4,
+      'Solid build',
+      'Feels premium and sturdy. Battery is great, though the charger is bulky to carry.',
+    ],
+    [
+      3,
+      'Good, not perfect',
+      'Runs fast and the screen is great, but only two USB-C ports is annoying for my setup.',
+    ],
+  ],
+  'halo-anc-headphones': [
+    [
+      5,
+      'Perfect for flights',
+      'Noise cancelling is excellent on planes and they stay comfortable for hours. Battery lasts the whole trip.',
+    ],
+    [5, 'Comfortable all day', 'Very comfortable even with glasses. Sound is warm and detailed.'],
+    [4, 'Great sound', 'The sound is great but the app setup took a few tries to pair.'],
+    [4, 'Quiet commute', 'ANC is impressive on the train. The case is a bit bulky.'],
+    [
+      2,
+      'Connection drops',
+      'Bluetooth connection keeps dropping with my laptop, which is annoying. Comfortable though.',
+    ],
+  ],
+  'pulse-s-watch': [
+    [
+      5,
+      'A week of battery',
+      'Battery really lasts about a week with GPS runs twice a week. Comfortable to sleep in.',
+    ],
+    [
+      4,
+      'Good running watch',
+      'GPS locks quickly and heart rate looks accurate. The app is easy to use.',
+    ],
+    [4, 'Light and comfortable', 'Comfortable on the wrist and the screen is bright outdoors.'],
+    [3, 'Okay value', 'Does the basics well, but the strap feels cheap for the price.'],
+  ],
+  'tactile-75': [
+    [
+      5,
+      'Lovely to type on',
+      'Typing feels fantastic and the switches are smooth. Solid build with no flex.',
+    ],
+    [
+      5,
+      'Great keyboard',
+      'Build quality is excellent and the Bluetooth connection is stable across three devices.',
+    ],
+    [4, 'Nice but loud', 'Keys feel great, but it is loud on video calls.'],
+    [4, 'Good value', 'Great value for a hot-swap board. Setup took two minutes.'],
+  ],
+  'vela-13-air': [
+    [5, 'So light', 'Incredibly lightweight and the battery lasts all day at university.'],
+    [
+      4,
+      'Pretty and portable',
+      'Portable and the display is lovely, but the screen is not very bright in sunlight.',
+    ],
+    [
+      4,
+      'Good everyday laptop',
+      'Fast enough for school work and very quiet. Keyboard is comfortable.',
+    ],
+    [
+      3,
+      'Slow with many tabs',
+      'Fine for documents but it gets slow and laggy with lots of browser tabs.',
+    ],
+  ],
+  'drift-earbuds': [
+    [
+      4,
+      'Comfortable fit',
+      'They fit well and stay in during workouts. Sound is good for the price.',
+    ],
+    [4, 'Good value', 'Great value earbuds. Pairing was easy.'],
+    [
+      2,
+      'Battery fades',
+      'Sound is fine but the battery dies after about three hours, which is disappointing.',
+    ],
+  ],
+};
+const DEMO_REVIEWERS = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Riley'];
+
 async function main(): Promise<void> {
   const categoryIds = new Map<string, string>();
   for (const category of categories) {
@@ -553,6 +660,19 @@ async function main(): Promise<void> {
       update: data,
     });
 
+    // Demo illustration bundled with the storefront (public/demo-products). Added only when the
+    // product has no photo, so images uploaded in the Ops Center are never replaced.
+    if (!(await prisma.productImage.count({ where: { productId: row.id } }))) {
+      await prisma.productImage.create({
+        data: {
+          productId: row.id,
+          storageKey: `demo/${product.slug}.webp`,
+          alt: product.title,
+          position: 0,
+        },
+      });
+    }
+
     for (const variant of product.variants) {
       const variantData = {
         title: variant.title,
@@ -575,6 +695,45 @@ async function main(): Promise<void> {
     }
   }
 
+  // Demo reviewers and their reviews (idempotent).
+  const reviewerIds: string[] = [];
+  for (const [i, name] of DEMO_REVIEWERS.entries()) {
+    const email = `reviewer-${i + 1}@demo.nixzora.com`;
+    const user = await prisma.user.upsert({
+      where: { email },
+      create: {
+        email,
+        firstName: `${name} (demo)`,
+        roles: { create: [{ role: { connect: { key: 'customer' } } }] },
+      },
+      update: {},
+    });
+    reviewerIds.push(user.id);
+  }
+  let reviewCount = 0;
+  for (const [slug, reviews] of Object.entries(DEMO_REVIEWS)) {
+    const product = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+    if (!product) continue;
+    for (const [i, [rating, title, body]] of reviews.entries()) {
+      const userId = reviewerIds[i % reviewerIds.length]!;
+      await prisma.review.upsert({
+        where: { productId_userId: { productId: product.id, userId } },
+        create: { productId: product.id, userId, rating, title, body, status: 'APPROVED' },
+        update: {},
+      });
+      reviewCount++;
+    }
+    // The API's outbox worker rebuilds "what customers say" for this product.
+    await prisma.outboxEvent.create({
+      data: {
+        aggregateType: 'product',
+        aggregateId: product.id,
+        type: 'reviews.product.changed',
+        payload: { productId: product.id },
+      },
+    });
+  }
+
   // A demo code shoppers can try at checkout.
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },
@@ -590,7 +749,7 @@ async function main(): Promise<void> {
 
   const variantCount = products.reduce((sum, product) => sum + product.variants.length, 0);
   console.warn(
-    `Seeded ${categories.length} categories, ${brands.length} brands, ${products.length} products, ${variantCount} variants and coupon WELCOME10 (demo data).`,
+    `Seeded ${categories.length} categories, ${brands.length} brands, ${products.length} products, ${variantCount} variants, ${reviewCount} reviews and coupon WELCOME10 (demo data).`,
   );
 }
 

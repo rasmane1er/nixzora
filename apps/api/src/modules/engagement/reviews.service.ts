@@ -12,6 +12,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from '../identity/auth-user';
 import { type ActorContext } from '../identity/guards/actor.decorator';
+import { REVIEWS_CHANGED } from '../insights/events';
 
 const reviewInclude = {
   user: { select: { firstName: true, lastName: true, email: true } },
@@ -134,11 +135,17 @@ export class ReviewsService {
       body: input.body,
       verifiedPurchase: bought > 0,
     };
+    const previous = await this.prisma.review.findUnique({
+      where: { productId_userId: { productId, userId: user.id } },
+      select: { status: true },
+    });
     const review = await this.prisma.review.upsert({
       where: { productId_userId: { productId, userId: user.id } },
       create: { productId, userId: user.id, ...data },
       update: { ...data, status: 'PENDING', moderatedAt: null, moderatedById: null },
     });
+    // An edited review goes back to moderation, so it leaves the product's insights for now.
+    if (previous?.status === 'APPROVED') await this.reviewsChanged(productId);
     return { status: review.status };
   }
 
@@ -177,10 +184,13 @@ export class ReviewsService {
   ): Promise<{ status: string }> {
     const review = await this.prisma.review.findUnique({ where: { id } });
     if (!review) throw new NotFoundException('Review not found.');
-    await this.prisma.review.update({
-      where: { id },
-      data: { status, moderatedAt: new Date(), moderatedById: actor.user.id },
-    });
+    await this.prisma.$transaction([
+      this.prisma.review.update({
+        where: { id },
+        data: { status, moderatedAt: new Date(), moderatedById: actor.user.id },
+      }),
+      this.reviewsChangedEvent(review.productId),
+    ]);
     await this.audit.record({
       action: `reviews.${status === 'APPROVED' ? 'approved' : 'rejected'}`,
       actorId: actor.user.id,
@@ -190,5 +200,21 @@ export class ReviewsService {
       metadata: { productId: review.productId, rating: review.rating },
     });
     return { status };
+  }
+
+  /** Tells review insights (p6-04) to rebuild this product's summary. */
+  private reviewsChangedEvent(productId: string) {
+    return this.prisma.outboxEvent.create({
+      data: {
+        aggregateType: 'product',
+        aggregateId: productId,
+        type: REVIEWS_CHANGED,
+        payload: { productId },
+      },
+    });
+  }
+
+  private async reviewsChanged(productId: string): Promise<void> {
+    await this.reviewsChangedEvent(productId);
   }
 }

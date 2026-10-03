@@ -19,6 +19,9 @@ export type LocalUploadClaims = {
   expiresAt: number;
 };
 
+/** Storage keys of the demo catalog's bundled illustrations, e.g. "demo/pulse-s-watch.webp". */
+export const DEMO_PREFIX = 'demo/';
+
 /**
  * Where product images live.
  * - local: files under STORAGE_LOCAL_DIR, uploaded to and served by this API (development).
@@ -35,11 +38,13 @@ export class StorageService {
   private readonly s3?: S3Client;
   private readonly bucket?: string;
   private readonly assetsBaseUrl?: string;
+  private readonly webAppUrl: string;
 
   constructor(config: ConfigService<Env, true>) {
     this.driver = config.get('STORAGE_DRIVER', { infer: true });
     this.localDir = resolve(config.get('STORAGE_LOCAL_DIR', { infer: true }));
     this.apiPublicUrl = config.get('API_PUBLIC_URL', { infer: true }).replace(/\/$/, '');
+    this.webAppUrl = config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '');
     this.signingSecret =
       config.get('MEDIA_SIGNING_SECRET', { infer: true }) ?? randomBytes(32).toString('base64url');
 
@@ -60,6 +65,10 @@ export class StorageService {
   }
 
   publicUrl(key: string): string {
+    // Demo catalog illustrations ship with the storefront (public/demo-products), not in storage.
+    if (key.startsWith(DEMO_PREFIX)) {
+      return `${this.webAppUrl}/demo-products/${key.slice(DEMO_PREFIX.length)}`;
+    }
     return this.driver === 's3'
       ? `${this.assetsBaseUrl}/${key}`
       : `${this.apiPublicUrl}/api/v1/media/${key}`;

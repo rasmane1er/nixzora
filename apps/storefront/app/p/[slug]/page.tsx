@@ -2,6 +2,7 @@ import {
   type ProductDetail,
   type RatingSummary,
   type RelatedProducts,
+  type ReviewInsights as Insights,
   type ReviewView,
 } from '@nixzora/validation';
 import { Price } from '@nixzora/ui';
@@ -9,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ProductRail } from '@/components/ProductRail';
+import { ReviewInsights } from '@/components/ReviewInsights';
 import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
 import { isSignedIn } from '@/lib/session';
@@ -88,7 +90,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
-  const [reviews, wishIds, mine, related] = await Promise.all([
+  const [reviews, wishIds, mine, related, insights] = await Promise.all([
     api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
       () => null,
     ),
@@ -106,6 +108,12 @@ export default async function ProductPage({ params }: Props) {
       auth: false,
       revalidate: 300,
     }).catch((): RelatedProducts => ({ similar: [], boughtTogether: [], alsoViewed: [] })),
+    api<{ insights: Insights | null }>(`/catalog/products/${slug}/reviews/insights`, {
+      auth: false,
+      revalidate: 300,
+    })
+      .then((res) => res.insights)
+      .catch(() => null),
   ]);
   const [main, ...rest] = product.images;
   const specs = Object.entries(product.attributes);
@@ -245,6 +253,7 @@ export default async function ProductPage({ params }: Props) {
       </div>
       <section id="reviews" className="section stack" aria-labelledby="reviews-title">
         <h2 id="reviews-title">Customer reviews</h2>
+        {insights ? <ReviewInsights insights={insights} /> : null}
         <div className="reviews">
           <div className="stack">
             {reviews?.summary.count ? (

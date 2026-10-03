@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
+import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Totals } from '@/components/Totals';
 
@@ -74,5 +75,28 @@ describe('ProductRail', () => {
   it('renders nothing when there is nothing to show', () => {
     render(<ProductRail title="Similar products" products={[]} />);
     expect(screen.queryByText('Similar products')).toBeNull();
+  });
+});
+
+describe('ReviewInsightsCard', () => {
+  it('shows the summary, themes with counts and whether AI wrote it', () => {
+    render(
+      <ReviewInsightsCard
+        insights={{
+          summary: '80% of 5 reviewers rate it 4 or 5 stars.',
+          pros: [{ label: 'Sound', mentions: 4 }],
+          cons: [{ label: 'Connectivity', mentions: 1 }],
+          reviewCount: 5,
+          averageRating: 4.2,
+          positivePercent: 80,
+          aiWritten: true,
+          generatedAt: '2026-10-03T00:00:00.000Z',
+        }}
+      />,
+    );
+    expect(screen.getByText('What customers say')).toBeTruthy();
+    expect(screen.getByText('AI summary of 5 reviews')).toBeTruthy();
+    expect(screen.getByText('+ Sound · 4')).toBeTruthy();
+    expect(screen.getByText('− Connectivity · 1')).toBeTruthy();
   });
 });

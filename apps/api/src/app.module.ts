@@ -8,6 +8,7 @@ import { ClientThrottlerGuard } from './common/client-throttler.guard';
 import { type Env, validateEnv } from './config/env';
 import { HealthModule } from './health/health.module';
 import { AssistantModule } from './modules/assistant/assistant.module';
+import { InsightsModule } from './modules/insights/insights.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
@@ -67,6 +68,7 @@ import { RedisModule } from './redis/redis.module';
     AuditModule,
     AssistantModule,
     RecommendationsModule,
+    InsightsModule,
     NotificationsModule,
     OutboxModule,
     // Feature modules, added phase by phase.

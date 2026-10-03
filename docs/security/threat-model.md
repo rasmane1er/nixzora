@@ -170,6 +170,16 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Event spam skews popularity                             | 60 views/min per client, one view per shopper per product per 30 min                  | ✔      |
 | Keeping behavior data forever                           | Deleted after 180 days and on account deletion                                        | ✔      |
 
+## Review insights and copy suggestions (ADR-0011)
+
+| Threat                                                    | Mitigation                                                                                         | Status |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------ |
+| Model invents a statistic in the review summary           | Counts come from code; any number not computed by us rejects the model text                        | ✔      |
+| Prompt injection inside a review ("ignore instructions…") | Reviews are sent as data; the model has no tools; output is checked and only replaces one sentence | ✔      |
+| Model-written product copy claims specs the product lacks | Draft only, never auto-saved; numbers must appear in the facts; staff review before saving         | ✔      |
+| Summaries look like genuine reviews from real people      | Labelled "AI summary" / "Summary of N reviews"; demo reviewers are named "(demo)"                  | ✔      |
+| Cost runaway from regenerating summaries                  | Hash of reviews + model skips unchanged products; daily budget falls back to templates             | ✔      |
+
 ## Open items
 
 - Content Security Policy for the storefront allowing only Stripe's script and frames (P6).

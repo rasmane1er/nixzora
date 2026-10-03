@@ -9,6 +9,7 @@ import { can, currentStaff } from '@/lib/auth';
 import { catalogOptions } from '@/lib/catalog';
 import { centsInput, dateTime, money, pairsText, param, type SearchParams } from '@/lib/format';
 import { addVariant, adjustStock, removeImage, updateProduct, updateVariant } from '../actions';
+import { CopySuggestion } from './CopySuggestion';
 import { ImageUpload } from './ImageUpload';
 
 export const metadata: Metadata = { title: 'Edit product' };
@@ -80,8 +81,15 @@ export default async function ProductPage({
               </label>
               <label>
                 Description
-                <textarea name="description" defaultValue={product.description} rows={6} required />
+                <textarea
+                  id="product-description"
+                  name="description"
+                  defaultValue={product.description}
+                  rows={6}
+                  required
+                />
               </label>
+              <CopySuggestion productId={product.id} target="product-description" />
               <div className="form-row">
                 <label>
                   Category

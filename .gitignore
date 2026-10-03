@@ -54,3 +54,4 @@ infra/**/.terraform.lock.hcl
 
 # Compiled test output (api-client)
 dist-test/
+tools/demo-images/svg/

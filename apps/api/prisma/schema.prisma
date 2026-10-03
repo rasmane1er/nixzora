@@ -254,14 +254,15 @@ model Product {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  category Category         @relation(fields: [categoryId], references: [id])
-  brand    Brand?           @relation(fields: [brandId], references: [id])
-  variants ProductVariant[]
-  images   ProductImage[]
-  reviews  Review[]
-  wishlist WishlistItem[]
-  events    ProductEvent[]
-  searchDoc ProductSearchDoc?
+  category      Category          @relation(fields: [categoryId], references: [id])
+  brand         Brand?            @relation(fields: [brandId], references: [id])
+  variants      ProductVariant[]
+  images        ProductImage[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+  events        ProductEvent[]
+  reviewInsight ReviewInsight?
+  searchDoc     ProductSearchDoc?
 
   @@index([categoryId, status])
   @@map("products")
@@ -721,4 +722,26 @@ model ProductEvent {
   @@index([visitorId, createdAt])
   @@index([productId, createdAt])
   @@map("product_events")
+}
+
+/// "What customers say" (p6-04): computed from approved reviews, regenerated when they change.
+model ReviewInsight {
+  productId     String   @id @map("product_id") @db.Uuid
+  summary       String
+  /// [{ label, mentions }]: aspects reviewers praise, by number of reviews.
+  pros          Json
+  /// [{ label, mentions }]: aspects reviewers complain about.
+  cons          Json
+  reviewCount   Int      @map("review_count")
+  averageRating Float    @map("average_rating")
+  positivePct   Int      @map("positive_pct")
+  /// "local" or the Claude model that wrote the summary sentence.
+  model         String
+  /// Hash of the reviews it was built from; skips work when nothing changed.
+  inputHash     String   @map("input_hash")
+  generatedAt   DateTime @default(now()) @map("generated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("review_insights")
 }

@@ -41,6 +41,31 @@ export type RatingSummary = {
   distribution: [number, number, number, number, number];
 };
 
+/** "What customers say" (p6-04). Every number comes from the reviews, not from a model. */
+export const ReviewInsightsSchema = z.object({
+  summary: z.string(),
+  pros: z.array(z.object({ label: z.string(), mentions: z.number().int() })),
+  cons: z.array(z.object({ label: z.string(), mentions: z.number().int() })),
+  reviewCount: z.number().int(),
+  averageRating: z.number(),
+  positivePercent: z.number().int(),
+  /** True when a language model wrote the summary sentence (shown as an AI label). */
+  aiWritten: z.boolean(),
+  generatedAt: z.iso.datetime(),
+});
+export type ReviewInsights = z.infer<typeof ReviewInsightsSchema>;
+
+/** A draft product description for staff (p6-03); never saved without review. */
+export const ProductCopySuggestionSchema = z.object({
+  description: z.string(),
+  /** True when a language model wrote it (it passed the fact check). */
+  aiWritten: z.boolean(),
+  model: z.string(),
+  /** Why the AI draft was not used, when it was not. */
+  notes: z.array(z.string()),
+});
+export type ProductCopySuggestion = z.infer<typeof ProductCopySuggestionSchema>;
+
 export type AdminReviewView = ReviewView & {
   status: z.infer<typeof ReviewStatusSchema>;
   product: { id: string; slug: string; title: string };
