@@ -16,8 +16,9 @@ What we can lose, how fast we come back, and how we prove it. Step-by-step datab
 
 The point-in-time window is 3 days on staging and 14 in production (`backup_retention_days`).
 Production runs PostgreSQL and Redis in two availability zones, so losing one zone fails over on
-its own in a minute or two. A whole-region outage is not covered: it would mean rebuilding in
-another region from Terraform and a backup copied there (not set up; see "Not covered yet").
+its own in a minute or two. For a whole-region outage, production copies every AWS Backup
+recovery point (database and media) to a vault in a second region, `us-west-2` by default
+(`backup_copy_region`, p9-10): see "Losing the region" below. Staging has no copy, to save cost.
 
 ## What to do
 
@@ -29,9 +30,27 @@ another region from Terraform and a backup copied there (not set up; see "Not co
 | An image or upload deleted                   | S3 console → the media bucket → Show versions → restore the previous version.                                        |
 | The database instance is gone                | Restore the newest AWS Backup recovery point, with the old name (Terraform expects it).                              |
 | One availability zone down                   | Nothing (production fails over). Watch the dashboards; staging waits.                                                |
+| The whole region is down                     | Restore from the copy vault in the second region (below). Recovery point: up to a day.                               |
 
 Before sending traffic to any restored database, run the restore check against it (below): it
 must pass.
+
+## Losing the region
+
+The copy vault `nixzora-production-copy` in the second region holds the daily (35 days) and
+monthly (a year) recovery points of the database and the media bucket.
+
+1. AWS Backup console → switch to the second region → Backup vaults →
+   `nixzora-production-copy` → choose the newest RDS recovery point → **Restore** with the
+   instance id `nixzora-production` and the database subnet group of the new region. Restore the
+   newest S3 recovery point into a new media bucket the same way.
+2. Bring up the platform there: a copy of `environments/production` with `aws_region` set to the
+   second region (and that region's VPC, certificates and DNS). Point it at the restored
+   instance by name; Terraform adopts it with `terraform import`.
+3. Run the restore check against it (below), then move DNS.
+
+This is hours of work, not minutes: it is for losing the region for days, not for a short
+outage. Rehearse step 1 once a year on a copy of production's backup.
 
 ## The drill (every quarter, on staging)
 
@@ -48,6 +67,9 @@ must pass.
 4. Uploads a test file to the media bucket, deletes it, brings it back from its previous
    version, and removes every trace of it.
 5. Writes `docs/dr-drills/<date>-<env>.md` with the times, and deletes the temporary instance.
+
+In production (or any environment with a copy), set `COPY_REGION` and the drill also checks
+that the second region has a recovery point from the last 30 hours.
 
 Run it from CloudShell, in the repository:
 
@@ -66,8 +88,7 @@ Locally, the check runs against your own database: `pnpm --filter @nixzora/api b
 
 ## Not covered yet
 
-- **Another region.** For a regional outage: copy AWS Backup recovery points to a second region
-  (a `copy_action` in `backup.tf` with a vault there) and keep the Terraform state bucket
-  replicated. Worth it once production carries real revenue.
+- **Terraform state in another region.** The backups are copied (p9-10), but the state bucket
+  is not replicated; rebuilding in another region starts from a fresh state and imports.
 - **Secrets.** Secrets Manager keeps deleted secrets for 7 to 30 days; restore them from there.
   The Stripe, Anthropic and Voyage keys can also be issued again from their dashboards.

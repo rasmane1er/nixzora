@@ -235,3 +235,9 @@ variable "media_malware_scan" {
   type        = bool
   default     = true
 }
+
+variable "backup_copy_region" {
+  description = "Second AWS region that receives a copy of every AWS Backup recovery point (p9-10), for a regional outage. null: no copy. The aws.backup_copy provider must point at this region."
+  type        = string
+  default     = null
+}

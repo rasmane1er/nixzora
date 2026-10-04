@@ -1,9 +1,18 @@
 # Daily backups kept 35 days, plus monthly kept a year in production, in addition to RDS
-# point-in-time recovery. Restores are rehearsed every quarter with scripts/dr/restore-drill.sh
+# point-in-time recovery. With backup_copy_region set, every recovery point is also copied to a
+# vault in that region (p9-10), so a regional outage does not take the backups with it.
+# Restores are rehearsed every quarter with scripts/dr/restore-drill.sh
 # (docs/runbooks/disaster-recovery.md).
 resource "aws_backup_vault" "main" {
   name = local.prefix
   tags = local.tags
+}
+
+resource "aws_backup_vault" "copy" {
+  count    = var.backup_copy_region == null ? 0 : 1
+  provider = aws.backup_copy
+  name     = "${local.prefix}-copy"
+  tags     = local.tags
 }
 
 resource "aws_backup_plan" "main" {
@@ -15,6 +24,15 @@ resource "aws_backup_plan" "main" {
     lifecycle {
       delete_after = 35
     }
+    dynamic "copy_action" {
+      for_each = aws_backup_vault.copy
+      content {
+        destination_vault_arn = copy_action.value.arn
+        lifecycle {
+          delete_after = 35
+        }
+      }
+    }
   }
   dynamic "rule" {
     for_each = var.environment == "production" ? [1] : []
@@ -25,6 +43,16 @@ resource "aws_backup_plan" "main" {
       lifecycle {
         cold_storage_after = 30
         delete_after       = 365
+      }
+      dynamic "copy_action" {
+        for_each = aws_backup_vault.copy
+        content {
+          destination_vault_arn = copy_action.value.arn
+          lifecycle {
+            cold_storage_after = 30
+            delete_after       = 365
+          }
+        }
       }
     }
   }

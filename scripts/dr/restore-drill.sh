@@ -14,6 +14,7 @@
 #   EXPECT_MIGRATION  newest migration the copy must have  (default: not checked)
 #   KEEP=1            keep the restored instance afterwards (it costs money: delete it yourself)
 #   SKIP_MEDIA=1      skip the media-file recovery check
+#   COPY_REGION       region holding the backup copies (default: none checked; production: us-west-2)
 # Needs: aws, jq; credentials allowed to restore RDS instances and run ECS tasks.
 set -euo pipefail
 
@@ -128,6 +129,25 @@ else
   echo "No recovery point found in vault ${PREFIX}"
 fi
 
+# ── 4b. The copy in the second region (p9-10), when there is one ────────────────────────────
+copy_ok=skipped
+newest_copy=None
+if [[ -n "${COPY_REGION:-}" ]]; then
+  say "Checking the backup copy in ${COPY_REGION}"
+  newest_copy=$(aws backup list-recovery-points-by-backup-vault --region "$COPY_REGION" \
+    --backup-vault-name "${PREFIX}-copy" \
+    --query 'max_by(RecoveryPoints, &CreationDate).CreationDate' --output text 2>/dev/null || echo None)
+  copy_ok=no
+  if [[ "$newest_copy" != "None" && -n "$newest_copy" ]]; then
+    copy_age_h=$(( ($(date +%s) - $(date -d "$newest_copy" +%s)) / 3600 ))
+    # Copies start after the backup finishes, so allow a few more hours than for the original.
+    [[ $copy_age_h -le 30 ]] && copy_ok=yes
+    echo "Newest copy: ${newest_copy} (${copy_age_h} h old)"
+  else
+    echo "No recovery point found in ${PREFIX}-copy (${COPY_REGION})"
+  fi
+fi
+
 # ── 5. A deleted media file comes back (bucket versioning) ──────────────────────────────────
 media_ok=skipped
 if [[ "${SKIP_MEDIA:-0}" != "1" ]]; then
@@ -153,7 +173,7 @@ fi
 # ── 6. Report ───────────────────────────────────────────────────────────────────────────────
 total=$(since)
 gap=$(jq -r '.dataGapSeconds // "unknown"' <<<"$check" 2>/dev/null || echo unknown)
-verdict=$([[ "$code" == "0" && "$backup_ok" == "yes" && "$media_ok" != "no" ]] && echo PASSED || echo FAILED)
+verdict=$([[ "$code" == "0" && "$backup_ok" == "yes" && "$media_ok" != "no" && "$copy_ok" != "no" ]] && echo PASSED || echo FAILED)
 mkdir -p "$REPORT_DIR"
 cat >"$REPORT" <<EOF
 # Disaster-recovery drill: ${ENV}, $(date -u +%Y-%m-%d)
@@ -165,6 +185,7 @@ cat >"$REPORT" <<EOF
 - Newest write in the copy was ${gap} s before the restore point (data lost, RPO)
 - Restore check exit code: ${code}
 - AWS Backup newest recovery point: ${newest_backup} (recent enough: ${backup_ok})
+- Copy in the second region${COPY_REGION:+ (${COPY_REGION})}: ${newest_copy} (recent enough: ${copy_ok})
 - Deleted media file recovered: ${media_ok}
 - Drill took $((total / 60)) min in total; temporary instance ${DRILL} $([[ "${KEEP:-0}" == "1" ]] && echo kept || echo deleted)
 

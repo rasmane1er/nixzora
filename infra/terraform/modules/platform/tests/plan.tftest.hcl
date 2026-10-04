@@ -116,6 +116,13 @@ mock_provider "aws" {
   }
 }
 
+mock_provider "aws" {
+  alias = "backup_copy"
+  mock_resource "aws_backup_vault" {
+    defaults = { arn = "arn:aws:backup:us-west-2:123456789012:backup-vault:nixzora-production-copy" }
+  }
+}
+
 mock_provider "random" {
   mock_resource "random_password" {
     defaults = { result = "mockedredisauthtokenmockedredisauthtoken" }
@@ -325,10 +332,11 @@ run "search_in_process" {
 run "production" {
   command = plan
   variables {
-    environment       = "production"
-    nat_gateway_count = 2
-    db_multi_az       = true
-    ops_allowed_cidrs = ["203.0.113.10/32"]
+    environment        = "production"
+    nat_gateway_count  = 2
+    db_multi_az        = true
+    ops_allowed_cidrs  = ["203.0.113.10/32"]
+    backup_copy_region = "us-west-2"
   }
   assert {
     condition     = output.urls.storefront == "https://nixzora-demo.com"
@@ -341,6 +349,10 @@ run "production" {
   assert {
     condition     = length(aws_lb_listener_rule.admin_blocked) == 1
     error_message = "the Ops Center allow-list must block everyone else."
+  }
+  assert {
+    condition     = length(aws_backup_vault.copy) == 1 && length(aws_backup_plan.main.rule) == 2
+    error_message = "production backups must be copied to a second region (p9-10)."
   }
   assert {
     condition     = output.api_environment["PAYMENTS_PROVIDER"] == "stripe"

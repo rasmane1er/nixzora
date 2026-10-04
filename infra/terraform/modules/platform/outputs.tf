@@ -88,3 +88,8 @@ output "kubernetes" {
     }
   } : null
 }
+
+output "backup_copy_vault" {
+  description = "Vault in the second region holding copies of the backups (p9-10), or null."
+  value       = var.backup_copy_region == null ? null : { region = var.backup_copy_region, name = aws_backup_vault.copy[0].name }
+}

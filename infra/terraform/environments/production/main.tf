@@ -24,6 +24,11 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
+variable "backup_copy_region" {
+  description = "Second region for backup copies (p9-10). null: no copy."
+  type        = string
+  default     = "us-west-2"
+}
 variable "domain_name" {
   type = string
 }
@@ -60,11 +65,21 @@ provider "aws" {
   }
 }
 
+# Region that receives copies of the backups (p9-10). Used only when backup_copy_region is set.
+provider "aws" {
+  alias  = "backup_copy"
+  region = coalesce(var.backup_copy_region, var.aws_region)
+  default_tags {
+    tags = { Project = "nixzora", Environment = "production", ManagedBy = "terraform" }
+  }
+}
+
 module "platform" {
   source    = "../../modules/platform"
-  providers = { aws = aws, aws.us_east_1 = aws.us_east_1 }
+  providers = { aws = aws, aws.us_east_1 = aws.us_east_1, aws.backup_copy = aws.backup_copy }
 
   environment        = "production"
+  backup_copy_region = var.backup_copy_region
   domain_name        = var.domain_name
   hosted_zone_id     = var.hosted_zone_id
   image_repositories = var.image_repositories

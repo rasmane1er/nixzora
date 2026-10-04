@@ -9,3 +9,5 @@ image_repositories = {
 image_tag   = "replace-with-a-pushed-git-sha"
 alarm_email = "you@example.com"
 # ops_allowed_cidrs = ["203.0.113.10/32"]
+# Second region for backup copies (p9-10); null turns the copy off.
+# backup_copy_region = "us-west-2"

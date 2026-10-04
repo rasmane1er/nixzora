@@ -4,7 +4,7 @@ terraform {
     aws = {
       source                = "hashicorp/aws"
       version               = "~> 6.14"
-      configuration_aliases = [aws.us_east_1]
+      configuration_aliases = [aws.us_east_1, aws.backup_copy]
     }
     random = {
       source  = "hashicorp/random"
