@@ -177,7 +177,7 @@ run "staging" {
     error_message = "the read replica stays off unless db_read_replica.enabled."
   }
   assert {
-    condition     = length(aws_prometheus_workspace.main) == 0 && length(jsondecode(aws_ecs_task_definition.app["api"].container_definitions)) == 1
+    condition     = length(aws_prometheus_workspace.main) == 0 && length(aws_cloudwatch_log_group.metrics_collector) == 0
     error_message = "Managed Prometheus stays off unless observability.managed_prometheus."
   }
   assert {
