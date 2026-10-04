@@ -62,7 +62,7 @@ jobs:
         if: steps.existing.outputs.found != 'true'
       - name: Build and push nixzora/${{ matrix.app }}:${{ env.TAG }}${{ matrix.suffix }}
         if: steps.existing.outputs.found != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
