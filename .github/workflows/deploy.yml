@@ -58,7 +58,7 @@ jobs:
             echo "Image ${TAG}${{ matrix.suffix }} is already in ECR: skipping the build."
             echo "found=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
         if: steps.existing.outputs.found != 'true'
       - name: Build and push nixzora/${{ matrix.app }}:${{ env.TAG }}${{ matrix.suffix }}
         if: steps.existing.outputs.found != 'true'
