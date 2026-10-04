@@ -51,6 +51,8 @@ infra/**/.terraform.lock.hcl
 
 # Local transfer archives
 *.zip
+# The status page probe is deployed from this committed, reproducible zip (infra/status-page/build.py).
+!infra/status-page/probe.zip
 
 # Compiled test output (api-client)
 dist-test/
