@@ -2,6 +2,7 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
+import { EmailSuppressionService } from './email-suppression.service';
 
 export type MailMessage = {
   to: string;
@@ -25,9 +26,15 @@ export class MailService {
   private readonly recent: MailMessage[] = [];
   private readonly ses?: SESv2Client;
 
-  constructor(private readonly config: ConfigService<Env, true>) {
+  private readonly configurationSet?: string;
+
+  constructor(
+    private readonly config: ConfigService<Env, true>,
+    private readonly suppressions: EmailSuppressionService,
+  ) {
     if (config.get('MAIL_DRIVER', { infer: true }) === 'ses') {
       this.ses = new SESv2Client({ region: config.get('SES_REGION', { infer: true }) });
+      this.configurationSet = config.get('SES_CONFIGURATION_SET', { infer: true });
     }
   }
 
@@ -37,8 +44,7 @@ export class MailService {
    */
   async trySend(message: MailMessage): Promise<boolean> {
     try {
-      await this.send(message);
-      return true;
+      return await this.send(message);
     } catch (error) {
       // No address or body in the log: the template and the provider's reason are enough.
       const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
@@ -47,7 +53,14 @@ export class MailService {
     }
   }
 
-  async send(message: MailMessage): Promise<void> {
+  /** Returns false when the address bounced or complained before, and nothing was sent. */
+  async send(message: MailMessage): Promise<boolean> {
+    if (await this.suppressions.isSuppressed(message.to)) {
+      this.logger.warn(
+        `Email "${message.template}" skipped: the address is on the suppression list.`,
+      );
+      return false;
+    }
     this.recent.push(message);
     if (this.recent.length > 50) this.recent.shift();
 
@@ -68,17 +81,19 @@ export class MailService {
           EmailTags: [
             { Name: 'template', Value: message.template.replace(/[^A-Za-z0-9_-]/g, '_') },
           ],
+          ...(this.configurationSet ? { ConfigurationSetName: this.configurationSet } : {}),
         }),
       );
-      return;
+      return true;
     }
 
     if (this.config.get('NODE_ENV', { infer: true }) === 'production') {
       // Never log message bodies in production: they contain single-use tokens.
       this.logger.warn(`No email provider configured; "${message.template}" was not delivered.`);
-      return;
+      return false;
     }
     this.logger.log(`[dev mail] to=${message.to} subject="${message.subject}"\n${message.text}`);
+    return true;
   }
 
   /** Test helper: the most recent message sent to an address. */

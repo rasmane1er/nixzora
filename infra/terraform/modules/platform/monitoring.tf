@@ -11,6 +11,23 @@ resource "aws_sns_topic_subscription" "email" {
 
 locals {
   alarms = {
+    # SES reviews accounts above 5% bounces or 0.1% complaints; warn well before (p9-02).
+    ses-bounce-rate = {
+      namespace   = "AWS/SES"
+      metric      = "Reputation.BounceRate"
+      stat        = "Average"
+      threshold   = 0.02
+      dimensions  = {}
+      description = "Email bounce rate above 2% (SES reviews accounts at 5%)"
+    }
+    ses-complaint-rate = {
+      namespace   = "AWS/SES"
+      metric      = "Reputation.ComplaintRate"
+      stat        = "Average"
+      threshold   = 0.0005
+      dimensions  = {}
+      description = "Spam complaint rate above 0.05% (SES reviews accounts at 0.1%)"
+    }
     alb-5xx = {
       namespace   = "AWS/ApplicationELB"
       metric      = "HTTPCode_Target_5XX_Count"

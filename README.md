@@ -146,7 +146,7 @@ Try it in Swagger at http://localhost:4000/docs, or see [Authentication flows](d
 - [Authentication flows and endpoints](docs/architecture/auth-flows.md)
 - [Checkout and payment flow](docs/architecture/checkout-flow.md)
 - [Mobile app architecture](docs/architecture/mobile.md) and [mobile release runbook](docs/runbooks/mobile-release.md)
-- [Deployment architecture](docs/architecture/deployment.md) and runbooks: [first deploy](docs/runbooks/first-deploy.md) · [deploy and roll back](docs/runbooks/deploy-and-rollback.md) · [restore the database](docs/runbooks/restore-database.md) · [disaster recovery](docs/runbooks/disaster-recovery.md) · [incident response](docs/runbooks/incident-response.md) · [rotate secrets](docs/runbooks/rotate-secrets.md) · [fraud review](docs/runbooks/fraud-review.md) · [all runbooks](docs/runbooks/)
+- [Deployment architecture](docs/architecture/deployment.md) and runbooks: [first deploy](docs/runbooks/first-deploy.md) · [deploy and roll back](docs/runbooks/deploy-and-rollback.md) · [restore the database](docs/runbooks/restore-database.md) · [disaster recovery](docs/runbooks/disaster-recovery.md) · [incident response](docs/runbooks/incident-response.md) · [rotate secrets](docs/runbooks/rotate-secrets.md) · [fraud review](docs/runbooks/fraud-review.md) · [email deliverability](docs/runbooks/email-deliverability.md) · [all runbooks](docs/runbooks/)
 - [Data model (ERD)](docs/architecture/erd.md)
 - [Service level objectives](docs/slo.md) · [load testing](docs/performance/load-testing.md) and the [October 2026 report](docs/performance/load-test-report-2026-10.md)
 - [Shopping assistant evaluation](docs/evaluation/assistant.md)

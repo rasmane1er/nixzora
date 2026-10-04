@@ -10,6 +10,7 @@ import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
+import { EmailSuppressionService } from '../notifications/email-suppression.service';
 
 const userInclude = {
   roles: { include: { role: true } },
@@ -25,6 +26,7 @@ export class UsersAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly suppressions: EmailSuppressionService,
   ) {}
 
   async list(query: UserListQuery): Promise<PagedResult<AdminUser>> {
@@ -60,7 +62,26 @@ export class UsersAdminService {
   async get(id: string): Promise<AdminUser> {
     const user = await this.prisma.user.findUnique({ where: { id }, include: userInclude });
     if (!user) throw new NotFoundException('User not found.');
-    return toAdminUser(user);
+    const suppression = await this.suppressions.find(user.email);
+    return {
+      ...toAdminUser(user),
+      emailSuppressed: suppression
+        ? {
+            reason: suppression.reason,
+            at: suppression.createdAt.toISOString(),
+            detail: suppression.detail,
+          }
+        : null,
+    };
+  }
+
+  /** Emails this customer again: they fixed their mailbox, or the complaint was a mistake. */
+  async resumeEmails(userId: string, actor: ActorContext): Promise<AdminUser> {
+    const user = await this.get(userId);
+    if (await this.suppressions.remove(user.email)) {
+      await this.audit.recordFor(actor, 'users.email.resumed', 'user', userId);
+    }
+    return this.get(userId);
   }
 
   async grantRole(userId: string, roleKey: string, actor: ActorContext): Promise<AdminUser> {
@@ -160,6 +181,7 @@ export class UsersAdminService {
 }
 
 function toAdminUser(user: UserRow): AdminUser {
+  // The list leaves out the suppression lookup; the detail page (get) fills it in.
   return {
     id: user.id,
     email: user.email,
@@ -178,6 +200,7 @@ function toAdminUser(user: UserRow): AdminUser {
     socialSignIns: user.identities.map((identity) => identity.provider).sort(),
     passkeys: user._count.passkeys,
     hasPassword: user.passwordHash !== null,
+    emailSuppressed: null,
   };
 }
 

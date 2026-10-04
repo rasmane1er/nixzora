@@ -219,6 +219,10 @@ export const EnvSchema = z
     /** Where new support requests are announced (a shared inbox); optional. */
     SUPPORT_EMAIL: z.email().optional(),
     SES_REGION: z.string().default('us-east-1'),
+    /** SES configuration set: bounce and complaint events go to SNS, then to this API (p9-02). */
+    SES_CONFIGURATION_SET: z.string().optional(),
+    /** The SNS topic SES feedback arrives from; messages from any other topic are refused. */
+    SES_EVENTS_TOPIC_ARN: z.string().startsWith('arn:aws:sns:').optional(),
 
     // ── Push notifications (mobile app) ──
     /** "log" records pushes (development); "expo" sends through Expo's push service. */

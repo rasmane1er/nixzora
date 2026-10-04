@@ -36,6 +36,14 @@ export const AdminUserSchema = z.object({
   socialSignIns: z.array(z.string()),
   hasPassword: z.boolean(),
   passkeys: z.number().int(),
+  /** We stopped emailing this address after a permanent bounce or a spam complaint (p9-02). */
+  emailSuppressed: z
+    .object({
+      reason: z.enum(['BOUNCE', 'COMPLAINT']),
+      at: z.iso.datetime(),
+      detail: z.string().nullable(),
+    })
+    .nullable(),
 });
 
 export type UserListQuery = z.infer<typeof UserListQuerySchema>;

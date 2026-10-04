@@ -1211,3 +1211,20 @@ model RiskAssessment {
   @@index([email, createdAt])
   @@map("risk_assessments")
 }
+
+enum EmailSuppressionReason {
+  BOUNCE
+  COMPLAINT
+}
+
+/// Addresses we no longer email: SES reported a permanent bounce or a spam complaint (p9-02).
+/// Stored lowercase. Staff can remove an entry once the customer fixes their address.
+model EmailSuppression {
+  email     String                 @id
+  reason    EmailSuppressionReason
+  /// What the receiving server or the complaint said, e.g. "smtp; 550 5.1.1 user unknown".
+  detail    String?
+  createdAt DateTime               @default(now()) @map("created_at")
+
+  @@map("email_suppressions")
+}

@@ -20,7 +20,7 @@ import { param, query, type SearchParams } from '@/lib/format';
 import { isUuid } from '@/lib/forms';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { ROLE_KEYS, roleLabel } from '@/lib/roles';
-import { addNote, grantRole, revokeRole, setStatus } from '../actions';
+import { addNote, grantRole, resumeEmails, revokeRole, setStatus } from '../actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const common = await getT('common');
@@ -160,6 +160,31 @@ export default async function UserPage({
             <dt className="muted">{t('termsAccepted')}</dt>
             <dd>
               {user.termsAcceptedAt ? f.dateTime(user.termsAcceptedAt) : t('termsNotRecorded')}
+            </dd>
+            <dt className="muted">{t('emailDelivery')}</dt>
+            <dd>
+              {user.emailSuppressed ? (
+                <>
+                  <span className="pill pill--suspended">
+                    {t(`emailStopped_${user.emailSuppressed.reason}`, {
+                      date: f.dateTime(user.emailSuppressed.at),
+                    })}
+                  </span>
+                  {user.emailSuppressed.detail ? (
+                    <span className="muted"> {user.emailSuppressed.detail}</span>
+                  ) : null}
+                  {can(me, 'users.manage') ? (
+                    <ActionButton
+                      action={resumeEmails}
+                      label={t('resumeEmails')}
+                      tone="secondary"
+                      fields={{ id: user.id }}
+                    />
+                  ) : null}
+                </>
+              ) : (
+                t('emailDeliveryOk')
+              )}
             </dd>
           </dl>
           {can(me, 'users.manage') && !self && user.status !== 'DELETED' ? (

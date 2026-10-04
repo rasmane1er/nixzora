@@ -83,6 +83,12 @@ export class UsersAdminController {
     return this.users.setStatus(id, 'ACTIVE', actor);
   }
 
+  @Post('users/:id/emails/resume')
+  @RequirePermissions('users.manage')
+  resumeEmails(@Param('id', uuid) id: string, @Actor() actor: ActorContext): Promise<AdminUser> {
+    return this.users.resumeEmails(id, actor);
+  }
+
   // ───── Customer support ─────
 
   @Get('users/:id/orders')

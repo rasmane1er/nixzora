@@ -29,6 +29,8 @@ export function configureApp(app: INestApplication): void {
   });
   // JSON bodies up to 2 MB: sellers' CSV imports are sent as JSON text (1 MB at most).
   (app as NestExpressApplication).useBodyParser('json', { limit: '2mb' });
+  // Amazon SNS posts its JSON as text/plain (SES bounce and complaint feedback, p9-02).
+  (app as NestExpressApplication).useBodyParser('text', { type: 'text/plain', limit: '256kb' });
   app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

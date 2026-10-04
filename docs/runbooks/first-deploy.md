@@ -81,6 +81,11 @@ aws ecs run-task --cluster nixzora-staging --task-definition nixzora-staging-mig
 In the SES console, request production access (out of the sandbox) for the region. Until then,
 receipts only reach verified addresses.
 
+Terraform also sets up the sending domain's DKIM, SPF (via `mail.<domain>`) and DMARC records,
+and bounce and complaint feedback. After the first deploy with it, check SNS → Topics →
+`nixzora-staging-ses-events` → Subscriptions: the API's endpoint should be **Confirmed**. If it
+says pending, choose **Request confirmation**. Details: [email deliverability](email-deliverability.md).
+
 ## 8. Production
 
 Repeat steps 4–6 in `environments/production` (use **live** Stripe keys, set

@@ -41,6 +41,16 @@ export async function setStatus(form: FormData): Promise<void> {
   );
 }
 
+export async function resumeEmails(form: FormData): Promise<void> {
+  const id = uuidField(form, 'id');
+  const t = await getT('opsPeople');
+  await perform(
+    `/users/${id}`,
+    () => api(`/admin/users/${id}/emails/resume`, { method: 'POST' }),
+    t('emailsResumed'),
+  );
+}
+
 export async function addNote(form: FormData): Promise<void> {
   const id = uuidField(form, 'id');
   const t = await getT('opsPeople');

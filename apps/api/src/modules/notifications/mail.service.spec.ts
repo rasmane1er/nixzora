@@ -1,5 +1,6 @@
 import { type ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
+import { type EmailSuppressionService } from './email-suppression.service';
 import { MailService } from './mail.service';
 
 const message = {
@@ -10,20 +11,28 @@ const message = {
   data: {},
 };
 
-function sesMail(send: jest.Mock): MailService {
+const suppressed = new Set<string>();
+const suppressions = {
+  isSuppressed: async (email: string) => suppressed.has(email.toLowerCase()),
+} as unknown as EmailSuppressionService;
+
+function sesMail(send: jest.Mock, extra: Record<string, string> = {}): MailService {
   const values: Record<string, string> = {
     MAIL_DRIVER: 'ses',
     SES_REGION: 'us-east-1',
     MAIL_FROM: 'NIXZORA <orders@nixzora.com>',
     NODE_ENV: 'production',
+    ...extra,
   };
   const config = { get: (key: string) => values[key] } as unknown as ConfigService<Env, true>;
-  const mail = new MailService(config);
+  const mail = new MailService(config, suppressions);
   (mail as unknown as { ses: { send: jest.Mock } }).ses = { send };
   return mail;
 }
 
 describe('MailService', () => {
+  afterEach(() => suppressed.clear());
+
   it('send() reports provider failures so queued emails are retried', async () => {
     const mail = sesMail(jest.fn().mockRejectedValue(new Error('Email address is not verified.')));
     await expect(mail.send(message)).rejects.toThrow('not verified');
@@ -53,5 +62,22 @@ describe('MailService', () => {
     const send = jest.fn().mockResolvedValue({});
     await expect(sesMail(send).trySend(message)).resolves.toBe(true);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends through the configuration set, so bounces and complaints come back', async () => {
+    const send = jest.fn().mockResolvedValue({});
+    await sesMail(send, { SES_CONFIGURATION_SET: 'nixzora-staging-mail' }).send(message);
+    expect(
+      (send.mock.calls[0] as [{ input: { ConfigurationSetName?: string } }])[0].input,
+    ).toMatchObject({ ConfigurationSetName: 'nixzora-staging-mail' });
+  });
+
+  it('does not email an address that bounced or complained', async () => {
+    suppressed.add('shopper@example.com');
+    const send = jest.fn().mockResolvedValue({});
+    await expect(sesMail(send).trySend({ ...message, to: 'Shopper@Example.com' })).resolves.toBe(
+      false,
+    );
+    expect(send).not.toHaveBeenCalled();
   });
 });

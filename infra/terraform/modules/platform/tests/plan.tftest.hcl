@@ -188,6 +188,10 @@ run "staging" {
     condition     = length(aws_guardduty_malware_protection_plan.media) == 1 && output.api_environment["MEDIA_MALWARE_SCAN"] == "guardduty"
     error_message = "uploads must be scanned for malware before the API accepts them (ADR-0025)."
   }
+  assert {
+    condition     = output.api_environment["SES_CONFIGURATION_SET"] == "nixzora-staging-mail" && contains(aws_sesv2_configuration_set.mail.suppression_options[0].suppressed_reasons, "BOUNCE")
+    error_message = "email must go through the configuration set that reports bounces and complaints (p9-02)."
+  }
 }
 
 run "event_streaming" {
