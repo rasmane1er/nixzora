@@ -106,9 +106,40 @@ module "platform" {
   backup_retention_days = 14
   redis_node_type       = "cache.t4g.small"
   deletion_protection   = true
-  app_config = {
+  # Payments and payouts go through Stripe (module defaults). The app secret needs Stripe keys
+  # before the first deploy: test keys for the smoke test, live keys at launch (p9-03).
+  # Staging owns the SES identity, DKIM, DMARC and MAIL FROM records for the shared domain.
+  email_domain_owner = false
+  app_config = merge({
     TAX_RATES_BPS     = "MD:600"
     SHIPPING_PROVIDER = "none"
+  }, var.sign_in_client_ids)
+  mobile_app_links = var.mobile_app_links
+}
+
+variable "mobile_app_links" {
+  description = "App identities for universal links / App Links (the store app, not the Preview build)."
+  type = object({
+    ios_app_ids               = list(string)
+    android_package           = string
+    android_cert_fingerprints = list(string)
+  })
+  default = {
+    ios_app_ids               = ["7HD2Z858BV.com.nixzora.shop"]
+    android_package           = "com.nixzora.shop"
+    android_cert_fingerprints = []
+  }
+}
+
+variable "sign_in_client_ids" {
+  description = "Public client ids for Sign in with Google / Apple. Empty hides the buttons: add them once the production domain is an authorized origin and return URL in Google Cloud and Apple (docs/runbooks/first-deploy.md)."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition = alltrue([for key in keys(var.sign_in_client_ids) : contains(
+      ["GOOGLE_WEB_CLIENT_ID", "GOOGLE_IOS_CLIENT_ID", "GOOGLE_ANDROID_CLIENT_ID", "APPLE_SERVICES_ID", "APPLE_BUNDLE_IDS"], key
+    )])
+    error_message = "Only Google / Apple sign-in client id settings belong here."
   }
 }
 

@@ -86,11 +86,54 @@ and bounce and complaint feedback. After the first deploy with it, check SNS →
 `nixzora-staging-ses-events` → Subscriptions: the API's endpoint should be **Confirmed**. If it
 says pending, choose **Request confirmation**. Details: [email deliverability](email-deliverability.md).
 
-## 8. Production
+## 8. Production (p9-01)
 
-Repeat steps 4–6 in `environments/production` (use **live** Stripe keys, set
-`ops_allowed_cidrs` to your IP if you want the Ops Center private). Deploys to production then
-wait for your approval in GitHub after staging succeeds.
+Production shares the AWS account, the hosted zone and the image repositories with staging, and
+serves the main domain (`<domain>`, `www`, `api.`, `ops.`, `media.`, `status.`). Two things are
+shared and therefore owned by one environment only:
+
+- **The main domain.** Until production exists, staging redirects `<domain>` and `www` to the
+  staging site (`redirect_main_domain`, on by default). Turn it off right before creating
+  production, or production cannot create those records.
+- **The email domain** (SES identity, DKIM, DMARC, `mail.<domain>`). Staging owns it
+  (`email_domain_owner`, on by default); production sets `email_domain_owner = false` and gets its
+  own configuration set and feedback topic. Before ever destroying staging, move ownership: set
+  it to `true` in production and `false` in staging, `terraform state rm` the six resources in
+  staging and `terraform import` them in production.
+
+Order (CloudShell, `TF_DATA_DIR=/tmp/tfdata` keeps provider plugins off the 1 GB home disk):
+
+1. **Settings.** In `environments/production`: `backend.hcl` (same bucket as staging; the state
+   key is `production/terraform.tfstate`) and `production.tfvars` (same `domain_name`,
+   `hosted_zone_id`, `image_repositories` and `alarm_email` as staging; `image_tag` = the commit
+   staging runs). Optional: `ops_allowed_cidrs` for a private Ops Center, `oncall_webhook_url`.
+2. **Plan only**: `terraform plan -var-file=production.tfvars -out=/tmp/prod.plan`. Review it
+   and the monthly cost (below) before going on. Nothing has changed yet.
+3. **Hand over the main domain**: in `environments/staging`,
+   `terraform apply -var-file=staging.tfvars -var redirect_main_domain=false` (and add
+   `redirect_main_domain = false` to `staging.tfvars`). From here until step 4 finishes,
+   `<domain>` does not answer; staging keeps working.
+4. **Create production**: `terraform apply /tmp/prod.plan` (about 20–30 minutes: the Multi-AZ
+   database and CloudFront take longest). Confirm the alarm emails it sends.
+5. **Secrets** (step 5 above, with the production secret). Stripe **test** keys are fine for the
+   smoke test (no money moves); live keys come with p9-03. The API refuses to start without
+   `STRIPE_SECRET_KEY`, because production uses Stripe for payments and payouts. Add the two
+   Stripe webhook endpoints for `api.<domain>`.
+6. **Deploy**: GitHub → Settings → Variables → `PRODUCTION_ENABLED=true`, then run **Deploy**
+   with environment `production` and approve it. Create your admin account with the migrate task
+   (step 6). Do not seed the demo catalog in production.
+7. **Smoke test**: `https://<domain>` loads, sign-up and sign-in work, a receipt email arrives
+   (SES must be out of the sandbox, p3-10), the Ops Center opens, `status.<domain>` shows both
+   components working, and `scripts/dr/restore-drill.sh` and `scripts/ops/incident-drill.sh` run
+   with `ENV=production`.
+
+Later, when convenient: add the production domain as an authorized origin / return URL for
+Google and Apple sign-in, then set `sign_in_client_ids` in `production.tfvars` (the buttons stay
+hidden until then).
+
+Monthly cost at the default sizes is dominated by two NAT gateways, the Multi-AZ
+`db.t4g.medium` database, `cache.t4g.small` Redis, the load balancer and about ten Fargate tasks.
+Check the current figures in the AWS Pricing Calculator before step 4.
 
 ## 9. Turn on the real AI models (optional)
 

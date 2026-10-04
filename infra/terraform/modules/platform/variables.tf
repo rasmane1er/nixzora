@@ -254,3 +254,9 @@ variable "oncall_sms_numbers" {
   type        = list(string)
   default     = []
 }
+
+variable "email_domain_owner" {
+  description = "Create the SES identity for domain_name and its DKIM, DMARC and MAIL FROM records. One environment per AWS account and domain owns them (staging today); the others reuse them."
+  type        = bool
+  default     = true
+}

@@ -163,6 +163,7 @@ locals {
       SES_CONFIGURATION_SET = aws_sesv2_configuration_set.mail.configuration_set_name
       SES_EVENTS_TOPIC_ARN  = aws_sns_topic.ses_events.arn
       PAYMENTS_PROVIDER     = "stripe"
+      PAYOUTS_PROVIDER      = "stripe"
       PUSH_DRIVER           = "expo"
       PASSWORD_BREACH_CHECK = "true"
       TRUST_PROXY_HOPS      = "1"

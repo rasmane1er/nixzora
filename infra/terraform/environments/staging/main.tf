@@ -158,6 +158,7 @@ module "platform" {
     # Public demo: test payments (no card, no money). Switch to "stripe" with test keys
     # (sk_test_…) in the app secret for a real Stripe checkout.
     PAYMENTS_PROVIDER   = "fake"
+    PAYOUTS_PROVIDER    = "fake"
     ALLOW_TEST_PAYMENTS = "true"
   }, var.sign_in_client_ids)
   mobile_app_links = var.mobile_app_links
@@ -166,13 +167,20 @@ module "platform" {
   db_read_replica  = { enabled = var.db_read_replica_enabled }
   observability    = { managed_prometheus = var.managed_prometheus_enabled }
 
-  # Until production exists, the main domain sends visitors to the staging demo. Remove this
-  # line before creating production (it takes these names over).
-  redirect_hosts = [var.domain_name, "www.${var.domain_name}"]
+  # Until production exists, the main domain sends visitors to the staging demo. Production
+  # takes these names over: apply staging with -var redirect_main_domain=false first
+  # (docs/runbooks/first-deploy.md, "Production").
+  redirect_hosts = var.redirect_main_domain ? [var.domain_name, "www.${var.domain_name}"] : []
 }
 
 output "platform" {
   value = module.platform
+}
+
+variable "redirect_main_domain" {
+  description = "Send visitors of the main domain (and www) to this staging site. false once production serves them."
+  type        = bool
+  default     = true
 }
 
 variable "sign_in_client_ids" {

@@ -165,6 +165,10 @@ run "staging" {
     error_message = "staging uses one NAT gateway."
   }
   assert {
+    condition     = length(aws_ses_domain_identity.domain) == 1 && length(aws_route53_record.dkim) == 3 && length(aws_route53_record.mail_from_mx) == 1
+    error_message = "by default the environment owns the email domain: identity, DKIM and MAIL FROM records."
+  }
+  assert {
     condition     = output.api_environment["SEARCH_SERVICE_URL"] == "http://search.nixzora-staging.internal:4100"
     error_message = "the API must call the search service by its private name."
   }
@@ -355,6 +359,7 @@ run "production" {
     ops_allowed_cidrs  = ["203.0.113.10/32"]
     backup_copy_region = "us-west-2"
     oncall_webhook_url = "https://events.pagerduty.com/integration/abc/enqueue"
+    email_domain_owner = false
   }
   assert {
     condition     = output.urls.storefront == "https://nixzora-demo.com"
@@ -377,7 +382,11 @@ run "production" {
     error_message = "with an on-call webhook, every alarm pages (p9-11)."
   }
   assert {
-    condition     = output.api_environment["PAYMENTS_PROVIDER"] == "stripe"
-    error_message = "production API must use Stripe."
+    condition     = output.api_environment["PAYMENTS_PROVIDER"] == "stripe" && output.api_environment["PAYOUTS_PROVIDER"] == "stripe"
+    error_message = "production API must use Stripe for payments and payouts (the API refuses to start otherwise)."
+  }
+  assert {
+    condition     = length(aws_ses_domain_identity.domain) == 0 && length(aws_route53_record.dmarc) == 0 && aws_sesv2_configuration_set.mail.configuration_set_name == "nixzora-production-mail"
+    error_message = "an environment that does not own the email domain keeps its own configuration set but creates no identity or domain records."
   }
 }

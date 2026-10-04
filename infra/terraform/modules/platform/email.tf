@@ -1,24 +1,32 @@
 # Sending domain for receipts. DKIM proves the mail is ours; new SES accounts start in the
 # sandbox — request production access once (see docs/runbooks/first-deploy.md).
+#
+# The domain identity, its DKIM/DMARC/MAIL FROM records are one per domain and AWS account, so
+# exactly one environment owns them (email_domain_owner). Staging and production share the
+# account and domain: staging owns them today; the other environment still gets its own
+# configuration set and feedback topic below.
 resource "aws_ses_domain_identity" "domain" {
+  count  = var.email_domain_owner ? 1 : 0
   domain = var.domain_name
 }
 
 resource "aws_ses_domain_dkim" "domain" {
-  domain = aws_ses_domain_identity.domain.domain
+  count  = var.email_domain_owner ? 1 : 0
+  domain = aws_ses_domain_identity.domain[0].domain
 }
 
 resource "aws_route53_record" "dkim" {
-  count   = 3
+  count   = var.email_domain_owner ? 3 : 0
   zone_id = var.hosted_zone_id
-  name    = "${aws_ses_domain_dkim.domain.dkim_tokens[count.index]}._domainkey.${var.domain_name}"
+  name    = "${aws_ses_domain_dkim.domain[0].dkim_tokens[count.index]}._domainkey.${var.domain_name}"
   type    = "CNAME"
   ttl     = 1800
-  records = ["${aws_ses_domain_dkim.domain.dkim_tokens[count.index]}.dkim.amazonses.com"]
+  records = ["${aws_ses_domain_dkim.domain[0].dkim_tokens[count.index]}.dkim.amazonses.com"]
 }
 
 # A mail-from subdomain and DMARC policy improve deliverability of receipts.
 resource "aws_route53_record" "dmarc" {
+  count   = var.email_domain_owner ? 1 : 0
   zone_id = var.hosted_zone_id
   name    = "_dmarc.${var.domain_name}"
   type    = "TXT"
@@ -30,22 +38,25 @@ resource "aws_route53_record" "dmarc" {
 
 # Bounces are handled by a subdomain we own, so SPF passes for our domain and DMARC aligns.
 resource "aws_ses_domain_mail_from" "domain" {
-  domain                 = aws_ses_domain_identity.domain.domain
+  count                  = var.email_domain_owner ? 1 : 0
+  domain                 = aws_ses_domain_identity.domain[0].domain
   mail_from_domain       = "mail.${var.domain_name}"
   behavior_on_mx_failure = "UseDefaultValue"
 }
 
 resource "aws_route53_record" "mail_from_mx" {
+  count   = var.email_domain_owner ? 1 : 0
   zone_id = var.hosted_zone_id
-  name    = aws_ses_domain_mail_from.domain.mail_from_domain
+  name    = aws_ses_domain_mail_from.domain[0].mail_from_domain
   type    = "MX"
   ttl     = 1800
   records = ["10 feedback-smtp.${data.aws_region.current.region}.amazonses.com"]
 }
 
 resource "aws_route53_record" "mail_from_spf" {
+  count   = var.email_domain_owner ? 1 : 0
   zone_id = var.hosted_zone_id
-  name    = aws_ses_domain_mail_from.domain.mail_from_domain
+  name    = aws_ses_domain_mail_from.domain[0].mail_from_domain
   type    = "TXT"
   ttl     = 1800
   records = ["v=spf1 include:amazonses.com -all"]
@@ -116,4 +127,30 @@ resource "aws_sns_topic_subscription" "ses_events_api" {
   endpoint               = "https://${local.hosts.api}/api/v1/notifications/webhooks/ses"
   endpoint_auto_confirms = false
   raw_message_delivery   = false
+}
+
+# Addresses before email_domain_owner existed: keep staging's records instead of replacing them.
+moved {
+  from = aws_ses_domain_identity.domain
+  to   = aws_ses_domain_identity.domain[0]
+}
+moved {
+  from = aws_ses_domain_dkim.domain
+  to   = aws_ses_domain_dkim.domain[0]
+}
+moved {
+  from = aws_route53_record.dmarc
+  to   = aws_route53_record.dmarc[0]
+}
+moved {
+  from = aws_ses_domain_mail_from.domain
+  to   = aws_ses_domain_mail_from.domain[0]
+}
+moved {
+  from = aws_route53_record.mail_from_mx
+  to   = aws_route53_record.mail_from_mx[0]
+}
+moved {
+  from = aws_route53_record.mail_from_spf
+  to   = aws_route53_record.mail_from_spf[0]
 }
