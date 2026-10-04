@@ -1,13 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { signUp } from './sign-up';
 
 /** A customer opens a store through the six-step application, leaving and coming back midway. */
 test('a customer applies to sell in six steps and can finish later', async ({ page }) => {
   const run = Date.now().toString(36);
   await page.goto('/account/register?next=/sell');
-  await page.getByLabel('First name').fill('Ada');
-  await page.getByLabel('Email').fill(`seller-${run}@example.com`);
-  await page.getByLabel('Password').fill('correct horse battery staple');
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await signUp(page, { firstName: 'Ada', email: `seller-${run}@example.com` });
   await page.waitForURL((url) => !url.pathname.includes('register'));
 
   await page.goto('/sell');

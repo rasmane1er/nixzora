@@ -184,6 +184,10 @@ export function createApiClient(options: ClientOptions) {
         password: string;
         firstName?: string;
         lastName?: string;
+        /** E.164, e.g. "+13015550199". */
+        phone?: string;
+        acceptTerms?: true;
+        marketingEmails?: boolean;
         deviceName?: string;
         language?: 'en' | 'fr' | 'es';
       }) => request<AuthTokens>('POST', '/auth/register', { body, auth: 'none' }),

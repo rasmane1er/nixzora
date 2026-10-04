@@ -18,11 +18,23 @@ export const PasswordSchema = z
 
 const DeviceNameSchema = z.string().trim().min(1).max(100).optional();
 
+/** A mobile number in international form: "+" then 7 to 15 digits (E.164). */
+export const MobileNumberSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{6,14}$/, { message: 'Enter a valid mobile number.' });
+
 export const RegisterRequestSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
   firstName: z.string().trim().min(1).max(100).optional(),
   lastName: z.string().trim().min(1).max(100).optional(),
+  /** For delivery updates; optional. */
+  phone: MobileNumberSchema.optional(),
+  /** The customer ticked "I agree to the Terms and Privacy Policy" (recorded with the time). */
+  acceptTerms: z.literal(true).optional(),
+  /** Deals and new arrivals by email: off unless the customer opts in. */
+  marketingEmails: z.boolean().optional(),
   deviceName: DeviceNameSchema,
   /** The language for emails and every app: "en", "fr" or "es". */
   language: z.enum(['en', 'fr', 'es']).optional(),
@@ -277,3 +289,97 @@ export type DeviceSignInCredential = z.infer<typeof DeviceSignInCredentialSchema
 export type DeviceSignInRequest = z.infer<typeof DeviceSignInRequestSchema>;
 export type DeviceSignInResponse = z.infer<typeof DeviceSignInResponseSchema>;
 export type DeviceSignInSummary = z.infer<typeof DeviceSignInSummarySchema>;
+
+// ───────────── Sign-up form (shared by the website and the app) ─────────────
+
+/** Countries offered for the mobile number, with their calling codes. */
+export const PHONE_COUNTRIES = [
+  { iso: 'US', dial: '1' },
+  { iso: 'CA', dial: '1' },
+  { iso: 'MX', dial: '52' },
+  { iso: 'GB', dial: '44' },
+  { iso: 'FR', dial: '33' },
+  { iso: 'BE', dial: '32' },
+  { iso: 'CH', dial: '41' },
+  { iso: 'DE', dial: '49' },
+  { iso: 'ES', dial: '34' },
+  { iso: 'IT', dial: '39' },
+  { iso: 'BF', dial: '226' },
+  { iso: 'BJ', dial: '229' },
+  { iso: 'CI', dial: '225' },
+  { iso: 'CM', dial: '237' },
+  { iso: 'GH', dial: '233' },
+  { iso: 'ML', dial: '223' },
+  { iso: 'MA', dial: '212' },
+  { iso: 'NE', dial: '227' },
+  { iso: 'NG', dial: '234' },
+  { iso: 'SN', dial: '221' },
+  { iso: 'TG', dial: '228' },
+] as const;
+export type PhoneCountry = (typeof PHONE_COUNTRIES)[number]['iso'];
+
+/** 🇺🇸 from "US". */
+export const flagOf = (iso: string): string =>
+  String.fromCodePoint(...[...iso.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+
+/** "+1" + "(301) 555-0199" → "+13015550199"; a leading 0 (trunk prefix) is dropped. Empty → null. */
+export function internationalNumber(country: string, local: string): string | null {
+  const digits = local.replace(/\D/g, '').replace(/^0+/, '');
+  if (!digits) return null;
+  const dial = PHONE_COUNTRIES.find((c) => c.iso === country)?.dial ?? '1';
+  return `+${dial}${digits}`;
+}
+
+export type SignUpValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneCountry: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+};
+
+/** What the password checklist shows, live, as the customer types. */
+export function passwordChecks(
+  values: Pick<SignUpValues, 'password' | 'confirmPassword' | 'email' | 'firstName' | 'lastName'>,
+) {
+  const lower = values.password.toLowerCase();
+  const personal = [values.email.split('@')[0] ?? '', values.firstName, values.lastName]
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part.length >= 3);
+  return {
+    length: values.password.length >= 12 && values.password.length <= 128,
+    notPersonal: values.password.length > 0 && !personal.some((part) => lower.includes(part)),
+    matches: values.password.length > 0 && values.password === values.confirmPassword,
+  };
+}
+
+export type SignUpProblem =
+  | 'firstNameRequired'
+  | 'lastNameRequired'
+  | 'emailInvalid'
+  | 'phoneInvalid'
+  | 'passwordShort'
+  | 'passwordPersonal'
+  | 'passwordMismatch'
+  | 'termsRequired';
+
+/** Field → problem, checked before sending (the API checks again, plus breached passwords). */
+export function signUpProblems(
+  values: SignUpValues,
+): Partial<Record<keyof SignUpValues, SignUpProblem>> {
+  const problems: Partial<Record<keyof SignUpValues, SignUpProblem>> = {};
+  if (!values.firstName.trim()) problems.firstName = 'firstNameRequired';
+  if (!values.lastName.trim()) problems.lastName = 'lastNameRequired';
+  if (!EmailSchema.safeParse(values.email).success) problems.email = 'emailInvalid';
+  const phone = internationalNumber(values.phoneCountry, values.phone);
+  if (phone && !MobileNumberSchema.safeParse(phone).success) problems.phone = 'phoneInvalid';
+  const checks = passwordChecks(values);
+  if (!checks.length) problems.password = 'passwordShort';
+  else if (!checks.notPersonal) problems.password = 'passwordPersonal';
+  if (!checks.matches) problems.confirmPassword = 'passwordMismatch';
+  if (!values.acceptTerms) problems.acceptTerms = 'termsRequired';
+  return problems;
+}

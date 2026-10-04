@@ -115,6 +115,35 @@ describe('Identity (e2e)', () => {
       expect(mail.lastTo(email)?.template).toBe('auth.duplicate-sign-up');
     });
 
+    it('keeps the sign-up details: name, mobile number, terms and marketing choice', async () => {
+      const email = newEmail();
+      await http()
+        .post('/api/v1/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Ana',
+          lastName: 'Ouédraogo',
+          phone: '+22670123456',
+          acceptTerms: true,
+          marketingEmails: true,
+        })
+        .expect(201);
+      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+      expect(user).toMatchObject({
+        lastName: 'Ouédraogo',
+        phone: '+22670123456',
+        marketingEmails: true,
+      });
+      expect(user.termsAcceptedAt).toBeInstanceOf(Date);
+
+      const bad = await http()
+        .post('/api/v1/auth/register')
+        .send({ email: newEmail(), password, phone: '70123456' })
+        .expect(400);
+      expect(bad.body.issues.map((i: { field: string }) => i.field)).toContain('phone');
+    });
+
     it('stores passwords as Argon2id hashes only', async () => {
       const { email } = await register();
       const user = await prisma.user.findUniqueOrThrow({ where: { email } });

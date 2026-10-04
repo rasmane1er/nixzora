@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { signUp } from './sign-up';
 
 /**
  * A shopper adds a passkey and signs in with it. Chromium's virtual authenticator stands in for
@@ -25,10 +26,7 @@ test('a shopper adds a passkey and signs in with it instead of a password', asyn
   const run = Date.now().toString(36);
   const email = `passkey-${run}@example.com`;
   await page.goto('/account/register?next=/account/security');
-  await page.getByLabel('First name').fill('Grace');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill('correct horse battery staple');
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await signUp(page, { firstName: 'Grace', email });
   await page.waitForURL(/\/account\/security/);
 
   await expect(page.getByText('No passkeys yet.')).toBeVisible();

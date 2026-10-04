@@ -38,6 +38,8 @@ model User {
   status          UserStatus @default(ACTIVE)
   /// Deals and new arrivals by email: off until the customer opts in.
   marketingEmails Boolean    @default(false) @map("marketing_emails")
+  /// When the customer agreed to the Terms of Service and Privacy Policy at sign-up.
+  termsAcceptedAt DateTime?  @map("terms_accepted_at")
   /// An email after delivery asking for a review.
   reviewRequests  Boolean    @default(true) @map("review_requests")
   /// Profile photo (an uploaded image's storage key).

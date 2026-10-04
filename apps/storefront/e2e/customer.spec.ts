@@ -1,13 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { signUp } from './sign-up';
 
 /** A registered customer saves a product, uses the demo coupon, buys, and reviews it. */
 test('a customer uses a coupon, buys, and writes a review', async ({ page }) => {
   const email = `customer-${Date.now()}@example.com`;
   await page.goto('/account/register');
-  await page.getByLabel('First name').fill('Grace');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill('correct horse battery staple');
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await signUp(page, { firstName: 'Grace', email });
   await expect(page.getByRole('heading', { level: 1, name: 'Grace' })).toBeVisible();
 
   // A product over $50 so WELCOME10 applies.
