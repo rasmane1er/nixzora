@@ -1,0 +1,12 @@
+# ZAP baseline rules (rule id, IGNORE|INFO|WARN|FAIL, reason). Anything not listed warns.
+10038	FAIL	Content Security Policy header missing
+10020	FAIL	Anti-clickjacking header missing
+10021	FAIL	X-Content-Type-Options header missing
+10035	FAIL	Strict-Transport-Security header missing
+10037	FAIL	Server leaks information via X-Powered-By
+10054	FAIL	Cookie without SameSite attribute
+10010	FAIL	Cookie without HttpOnly flag
+10011	FAIL	Cookie without Secure flag
+10055	WARN	CSP allows unsafe-inline scripts (Next.js inline page data; nonces are an open item)
+10096	IGNORE	Timestamps in responses are order and page dates, not server internals
+10027	INFO	Comments in scripts come from bundled libraries

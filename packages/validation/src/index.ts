@@ -1,3 +1,9 @@
+import { z } from 'zod';
+
+// In browsers, never probe for eval: under the Content Security Policy the probe is blocked
+// (harmlessly) but reported as a violation. Servers keep Zod's faster compiled checks.
+if ('window' in globalThis) z.config({ jitless: true });
+
 export * from './admin';
 export * from './assistant';
 export * from './auth';

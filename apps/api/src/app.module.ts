@@ -54,7 +54,14 @@ import { RedisModule } from './redis/redis.module';
             return { trace_id: traceId, span_id: spanId };
           },
           // Never write credentials or session cookies to logs.
-          redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+          // The web apps send the internal key with every call: it must never reach the logs.
+          redact: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers["x-internal-key"]',
+            'req.headers["stripe-signature"]',
+            'res.headers["set-cookie"]',
+          ],
           transport:
             config.get('NODE_ENV', { infer: true }) === 'development'
               ? { target: 'pino-pretty', options: { singleLine: true } }

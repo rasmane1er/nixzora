@@ -1,0 +1,49 @@
+name: Security scan
+
+# OWASP ZAP passive baseline scan of staging (docs/security/pentest-checklist.md). Run by hand
+# after a release with security-relevant changes, and before every pen-test. Passive only: it
+# crawls like a visitor and reports what it sees in responses, it never attacks.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to scan
+        type: choice
+        options: [storefront, ops-center, api]
+        default: storefront
+
+permissions:
+  contents: read
+
+jobs:
+  zap:
+    name: ZAP baseline (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the address
+        id: target
+        env:
+          STOREFRONT_URL: ${{ vars.STOREFRONT_URL }}
+          API_URL: ${{ vars.API_URL }}
+          OPS_URL: ${{ vars.OPS_URL }}
+        run: |
+          case "${{ inputs.target }}" in
+            storefront) url="$STOREFRONT_URL" ;;
+            ops-center) url="${OPS_URL:-${STOREFRONT_URL/\/\//\/\/ops.}}" ;;
+            api) url="$API_URL/api/v1/health" ;;
+          esac
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          rules_file_name: .zap/rules.tsv
+          cmd_options: '-a -j'
+          allow_issue_writing: false
+          artifact_name: zap-${{ inputs.target }}

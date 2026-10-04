@@ -8,10 +8,14 @@ import { api } from '@/lib/api';
 import { getLocale } from '@/lib/i18n';
 import { guestCartId, saveGuestCartId, saveTokens } from '@/lib/session';
 
-/** Only same-site paths: "/checkout" yes, "//evil.com" or "https://…" no. */
+/**
+ * Where to go after signing in: only a path on this site. Rejects "//host" and "/\\host"
+ * (other sites), and any whitespace or control character, because browsers drop tabs and
+ * newlines from URLs: "/\t/evil.example" would become "//evil.example".
+ */
 export function safeNext(value: FormDataEntryValue | null): string {
   const next = typeof value === 'string' ? value : '';
-  return next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\')
+  return /^\/(?![/\\])[^\s\\\u0000-\u001f\u007f]*$/.test(next) && next.length <= 2000
     ? next
     : '/account';
 }

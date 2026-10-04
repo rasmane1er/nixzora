@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { contentSecurityPolicy } from './lib/content-security-policy';
 
 /**
  * Runs before every page. Keeps customers signed in by rotating the refresh token when the
@@ -79,7 +80,7 @@ function toLogin(request: NextRequest): NextResponse {
   return NextResponse.redirect(url);
 }
 
-export async function proxy(request: NextRequest) {
+async function session(request: NextRequest): Promise<NextResponse> {
   const access = request.cookies.get('nx_at')?.value;
   const refresh = request.cookies.get('nx_rt')?.value;
 
@@ -111,6 +112,21 @@ export async function proxy(request: NextRequest) {
     maxAge: Math.floor((Date.parse(tokens.refreshTokenExpiresAt) - Date.now()) / 1000),
   });
   return out;
+}
+
+const API_ORIGIN = new URL(API_URL).origin;
+const DEV = process.env.NODE_ENV !== 'production';
+
+/** Every page: the session handling above, then the Content Security Policy. */
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const response = await session(request);
+  const https =
+    request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  response.headers.set(
+    'Content-Security-Policy',
+    contentSecurityPolicy({ apiOrigin: API_ORIGIN, https, dev: DEV }),
+  );
+  return response;
 }
 
 export const config = {

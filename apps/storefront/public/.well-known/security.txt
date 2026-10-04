@@ -1,0 +1,6 @@
+# How to report a security vulnerability in NIXZORA (RFC 9116).
+Contact: https://github.com/rasmane1er/nixzora/security/advisories/new
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: en, fr, es
+Policy: https://github.com/rasmane1er/nixzora/blob/main/SECURITY.md
+Canonical: https://nixzora.com/.well-known/security.txt

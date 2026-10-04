@@ -1,6 +1,6 @@
-# NIXZORA threat model — v6 (Phase 6)
+# NIXZORA threat model — v8 (Phase 8)
 
-Method: STRIDE per component. This version covers the Phase 0–6 scope (web storefront, mobile app, Ops Center, API, PostgreSQL, Redis, Stripe, AWS, and the AI layer: search index, shopping assistant, model providers). It is reviewed and updated at the end of every phase.
+Method: STRIDE per component. This version covers the Phase 0–8 scope (adding the marketplace, the extracted services, Kafka, Kubernetes, the read replica, metrics, fraud signals and passkeys to the earlier (web storefront, mobile app, Ops Center, API, PostgreSQL, Redis, Stripe, AWS, and the AI layer: search index, shopping assistant, model providers)). It is reviewed and updated at the end of every phase.
 
 ## System and trust boundaries
 
@@ -214,12 +214,31 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Staff member pays out to themselves              | Payouts only go to the store's verified connected account; staff action needs MFA and is audited | ✔      |
 | Seller withdraws before a refund or chargeback   | Earnings held 14 days after shipping (adjustable per store); negative balances net later sales   | ✔      |
 
+## Phase 8 additions (services, platform, fraud)
+
+| Threat                                                       | Mitigation                                                                                                  | Status |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------ |
+| A caller other than the API reaches the search or AI service | Internal key on every call (constant-time check), private network only, Kubernetes network policies         | ✔      |
+| Events on Kafka read or forged                               | MSK with IAM auth and TLS only; topics written by the worker's role, read by the search service's role      | ✔      |
+| Metrics port leaks data or is reachable from outside         | Separate port never behind the load balancer; route patterns, not URLs, as labels (no ids or emails)        | ✔      |
+| Stale reads from the replica used for money decisions        | Replica only for catalog and recommendations; prices and stock re-checked on the primary at checkout        | ✔      |
+| Stolen cards and card testing                                | Fraud signals: declined over the block score, held for review over the review score (ADR-0024)              | ✔      |
+| A seller cashes out fraudulent sales                         | Payouts paused on chargebacks, self-purchases, refund spikes; reviewed in the Ops Center                    | ✔      |
+| Cluster takeover through a pod                               | Pods run non-root with a read-only filesystem and no capabilities; deploy role limited to the app namespace | ✔      |
+| Clickjacking, injected scripts calling out                   | Content Security Policy on the storefront and Ops Center (no framing, narrow connect-src), HSTS             | ✔      |
+| Open redirect after sign-in                                  | Same-site paths only; whitespace and backslashes rejected                                                   | ✔      |
+| Losing the database                                          | Point-in-time recovery and AWS Backup, rehearsed by `scripts/dr/restore-drill.sh`                           | ✔      |
+
+Pen-test scope, automated checks and the item-by-item status:
+[pentest-checklist.md](pentest-checklist.md).
+
 ## Open items
 
-- Content Security Policy for the storefront allowing only Stripe's script and frames (P6).
-- Data retention policy for personal data in orders (account deletion is done in the API and app; add it to the web account page) (P6).
-- Image re-encoding (strip EXIF, resize) in a background worker, and malware scanning of uploads in S3 (P6).
-- Content Security Policy for the Ops Center (P6).
-- Stripe Connect `account.updated` webhook so verification changes arrive without a refresh (p7-06).
-- Seller staff invitations (STAFF members) with their own audit trail (P7).
-- Verify seller tracking numbers with carrier webhooks before releasing earnings (P8).
+- Content Security Policy nonces instead of `'unsafe-inline'` scripts (needs every page rendered
+  on demand).
+- Image re-encoding (strip EXIF, resize) in a background worker, and malware scanning of uploads
+  in S3.
+- Stripe Connect `account.updated` webhook so verification changes arrive without a refresh.
+- Seller staff invitations (STAFF members) with their own audit trail.
+- Verify seller tracking numbers with carrier webhooks before releasing earnings.
+- An independent pen-test of staging before taking real payments.

@@ -1,0 +1,39 @@
+name: CodeQL
+
+# Static analysis for security bugs in our TypeScript (injection, unsafe redirects, prototype
+# pollution, weak crypto…). Results appear under Security → Code scanning.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '23 4 * * 1' # Mondays, for new queries on unchanged code
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/node_modules'
+              - '**/dist'
+              - '**/.next'
+              - 'apps/api/src/generated'
+              - 'tests/load'
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
