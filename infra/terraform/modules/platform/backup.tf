@@ -20,7 +20,10 @@ resource "aws_backup_plan" "main" {
   rule {
     rule_name         = "daily"
     target_vault_name = aws_backup_vault.main.name
-    schedule          = "cron(0 6 * * ? *)"
+    # 02:00 UTC, well before RDS's own backup window (07:00-08:00, data-stores.tf): AWS Backup
+    # skips an RDS job that would start inside or close to it (first drill, 2026-10-04).
+    schedule     = "cron(0 2 * * ? *)"
+    start_window = 60
     lifecycle {
       delete_after = 35
     }
@@ -39,7 +42,8 @@ resource "aws_backup_plan" "main" {
     content {
       rule_name         = "monthly"
       target_vault_name = aws_backup_vault.main.name
-      schedule          = "cron(0 6 1 * ? *)"
+      schedule          = "cron(0 2 1 * ? *)"
+      start_window      = 60
       lifecycle {
         cold_storage_after = 30
         delete_after       = 365
@@ -83,6 +87,18 @@ resource "aws_iam_role_policy_attachment" "backup" {
 resource "aws_iam_role_policy_attachment" "restore" {
   role       = aws_iam_role.backup.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores"
+}
+
+# S3 backups need their own managed policies; without them every media-bucket job failed with
+# "does not have permission to describe resource" (first drill, 2026-10-04).
+resource "aws_iam_role_policy_attachment" "backup_s3" {
+  role       = aws_iam_role.backup.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSBackupServiceRolePolicyForS3Backup"
+}
+
+resource "aws_iam_role_policy_attachment" "restore_s3" {
+  role       = aws_iam_role.backup.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSBackupServiceRolePolicyForS3Restore"
 }
 
 resource "aws_backup_selection" "main" {

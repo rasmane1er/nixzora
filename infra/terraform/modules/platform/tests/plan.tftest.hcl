@@ -169,6 +169,10 @@ run "staging" {
     error_message = "by default the environment owns the email domain: identity, DKIM and MAIL FROM records."
   }
   assert {
+    condition     = aws_iam_role_policy_attachment.backup_s3.policy_arn == "arn:aws:iam::aws:policy/AWSBackupServiceRolePolicyForS3Backup" && alltrue([for r in aws_backup_plan.main.rule : startswith(r.schedule, "cron(0 2 ")])
+    error_message = "AWS Backup needs the S3 policies and must run clear of the RDS backup window (07:00-08:00 UTC)."
+  }
+  assert {
     condition     = output.api_environment["SEARCH_SERVICE_URL"] == "http://search.nixzora-staging.internal:4100"
     error_message = "the API must call the search service by its private name."
   }
