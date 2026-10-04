@@ -40,6 +40,15 @@ services:
       - '16686:16686' # Jaeger UI
       - '4318:4318' # OTLP over HTTP (the API sends traces here)
 
+  # Optional event streaming (ADR-0020). Start with: pnpm events:up, then set
+  # KAFKA_BROKERS=localhost:9092 in apps/api/.env.
+  kafka:
+    image: apache/kafka-native:3.9.1
+    container_name: nixzora-kafka
+    profiles: ['events']
+    ports:
+      - '9092:9092' # PLAINTEXT, advertised as localhost:9092
+
 volumes:
   postgres-data:
   redis-data:

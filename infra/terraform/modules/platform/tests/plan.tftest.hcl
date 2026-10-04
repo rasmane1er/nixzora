@@ -76,6 +76,15 @@ mock_provider "aws" {
   mock_resource "aws_backup_plan" {
     defaults = { arn = "arn:aws:backup:us-east-1:123456789012:backup-plan:x" }
   }
+  mock_resource "aws_msk_cluster" {
+    defaults = {
+      arn                        = "arn:aws:kafka:us-east-1:123456789012:cluster/nixzora-staging-events/abcd-1234"
+      bootstrap_brokers_sasl_iam = "b-1.events.kafka.us-east-1.amazonaws.com:9098,b-2.events.kafka.us-east-1.amazonaws.com:9098"
+    }
+  }
+  mock_resource "aws_msk_configuration" {
+    defaults = { arn = "arn:aws:kafka:us-east-1:123456789012:configuration/nixzora-staging-kafka/x", latest_revision = 1 }
+  }
 }
 
 mock_provider "aws" {
@@ -142,6 +151,35 @@ run "staging" {
   assert {
     condition     = length(aws_ecs_service.worker) == 1 && output.api_environment["BACKGROUND_JOBS"] == "false"
     error_message = "with the notifications worker, the API must leave background jobs to it."
+  }
+  assert {
+    condition     = length(aws_msk_cluster.main) == 0 && !contains(keys(output.api_environment), "KAFKA_BROKERS")
+    error_message = "MSK costs money: it stays off unless event_streaming.enabled."
+  }
+}
+
+run "event_streaming" {
+  command = plan
+  variables {
+    environment         = "staging"
+    deletion_protection = false
+    event_streaming     = { enabled = true }
+  }
+  assert {
+    condition     = length(aws_msk_cluster.main) == 1 && aws_msk_cluster.main[0].number_of_broker_nodes == 2
+    error_message = "event streaming runs one broker per availability zone."
+  }
+  assert {
+    condition     = output.api_environment["KAFKA_AUTH"] == "aws-iam" && output.api_environment["SEARCH_INDEX_EVENTS"] == "kafka"
+    error_message = "apps must sign in to MSK with IAM, and the search service must follow the product topic."
+  }
+  assert {
+    condition     = aws_msk_cluster.main[0].encryption_info[0].encryption_in_transit[0].client_broker == "TLS"
+    error_message = "MSK must accept TLS only."
+  }
+  assert {
+    condition     = length(aws_iam_role_policy.search_task_kafka) == 1 && length(aws_vpc_security_group_ingress_rule.kafka_iam) == 1
+    error_message = "the search service needs read access and the brokers need an ingress rule."
   }
 }
 

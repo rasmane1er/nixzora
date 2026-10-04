@@ -22,6 +22,15 @@ export const JobsCheckSchema = z.object({
   backlog: z.number().int().nonnegative(),
   /** Events that failed every retry and need a look. */
   failed: z.number().int().nonnegative(),
+  /** Streaming to Kafka (ADR-0020), when KAFKA_BROKERS is set. */
+  stream: z
+    .object({
+      status: z.enum(['up', 'down', 'unknown']),
+      /** Events not yet in Kafka. */
+      backlog: z.number().int().nonnegative(),
+      lastRunAt: z.iso.datetime().optional(),
+    })
+    .optional(),
 });
 
 /** Response of GET /api/v1/health — shared by the API and every client. */

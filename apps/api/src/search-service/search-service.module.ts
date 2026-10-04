@@ -9,7 +9,12 @@ import {
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from '../config/env';
+import { KafkaModule } from '../kafka/kafka.module';
 import { SearchCoreModule } from '../modules/search/search-core.module';
+import {
+  SEARCH_CONSUMER_ROLE,
+  SearchEventsConsumer,
+} from '../modules/search/search-events.consumer';
 import { SearchEngine } from '../modules/search/search-engine';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -71,9 +76,15 @@ class StartupReindex implements OnApplicationBootstrap {
     }),
     PrismaModule,
     RedisModule,
+    KafkaModule,
     SearchCoreModule,
   ],
   controllers: [SearchServiceController, HealthController],
-  providers: [InternalKeyGuard, StartupReindex],
+  providers: [
+    InternalKeyGuard,
+    StartupReindex,
+    SearchEventsConsumer,
+    { provide: SEARCH_CONSUMER_ROLE, useValue: 'search-service' },
+  ],
 })
 export class SearchServiceModule {}

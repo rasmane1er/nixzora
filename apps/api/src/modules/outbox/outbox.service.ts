@@ -120,7 +120,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
 
   /** Waiting and given-up events, and when the outbox was last drained. */
   async stats(): Promise<OutboxStats> {
-    // Only events something listens to: other types are recorded for a future broker (p8-04).
+    // Only events something listens to here; every type is also streamed to Kafka (ADR-0020).
     const type = { in: [...this.handlers.keys()] };
     const [backlog, failed, lastRunAt] = await Promise.all([
       this.prisma.outboxEvent.count({

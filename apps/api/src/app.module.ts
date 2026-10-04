@@ -30,6 +30,7 @@ import { ShippingModule } from './modules/shipping/shipping.module';
 import { SupportModule } from './modules/support/support.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { KafkaModule } from './kafka/kafka.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -67,6 +68,7 @@ import { RedisModule } from './redis/redis.module';
     }),
     PrismaModule,
     RedisModule,
+    KafkaModule,
     AuditModule,
     AssistantModule,
     RecommendationsModule,

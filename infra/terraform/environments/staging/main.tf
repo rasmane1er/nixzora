@@ -45,6 +45,12 @@ variable "ops_allowed_cidrs" {
   default = []
 }
 
+variable "event_streaming_enabled" {
+  description = "Kafka on Amazon MSK (ADR-0020). About 70 USD a month: two kafka.t3.small brokers."
+  type        = bool
+  default     = false
+}
+
 variable "mobile_app_links" {
   description = "App identities for universal links / App Links (see docs/runbooks/mobile-release.md)."
   type = object({
@@ -109,6 +115,7 @@ module "platform" {
     ALLOW_TEST_PAYMENTS = "true"
   }, var.sign_in_client_ids)
   mobile_app_links = var.mobile_app_links
+  event_streaming  = { enabled = var.event_streaming_enabled }
 
   # Until production exists, the main domain sends visitors to the staging demo. Remove this
   # line before creating production (it takes these names over).

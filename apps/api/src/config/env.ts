@@ -239,6 +239,40 @@ export const EnvSchema = z
     /** Health endpoint port of the notifications worker. */
     WORKER_PORT: z.coerce.number().int().positive().default(4300),
 
+    // ── Event streaming (ADR-0020) ──
+    /**
+     * Kafka bootstrap brokers ("host:port,host:port"). When set, the worker streams every outbox
+     * event to Kafka topics. Unset: no Kafka, everything works as before.
+     */
+    KAFKA_BROKERS: z
+      .string()
+      .optional()
+      .transform((value) =>
+        (value ?? '')
+          .split(',')
+          .map((broker) => broker.trim())
+          .filter(Boolean),
+      ),
+    KAFKA_CLIENT_ID: z.string().default('nixzora'),
+    /** "none" for local brokers; "aws-iam" for Amazon MSK with IAM access control (TLS). */
+    KAFKA_AUTH: z.enum(['none', 'aws-iam']).default('none'),
+    KAFKA_TLS: booleanString.default(false),
+    /** Topics are named "<prefix>.<aggregate>.events", e.g. "nixzora.order.events". */
+    KAFKA_TOPIC_PREFIX: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9.-]{0,40}$/)
+      .default('nixzora'),
+    KAFKA_TOPIC_PARTITIONS: z.coerce.number().int().min(1).max(64).default(3),
+    /** -1 uses the broker's default (2 on the staging MSK cluster). */
+    KAFKA_REPLICATION_FACTOR: z.coerce.number().int().min(-1).max(5).default(-1),
+    /** Region for MSK IAM signing (KAFKA_AUTH=aws-iam). */
+    KAFKA_REGION: z.string().default('us-east-1'),
+    /**
+     * How product changes reach the search index: "outbox" (the worker calls it) or "kafka" (the
+     * search service consumes the product topic itself; needs KAFKA_BROKERS).
+     */
+    SEARCH_INDEX_EVENTS: z.enum(['outbox', 'kafka']).default('outbox'),
+
     // ── AI layer (ADR-0009) ──
     /** "local" works offline with no key (development, CI, demo); "voyage" calls Voyage AI. */
     EMBEDDINGS_DRIVER: z.enum(['local', 'voyage']).default('local'),
@@ -305,6 +339,13 @@ export const EnvSchema = z
         code: 'custom',
         path: ['ANTHROPIC_API_KEY'],
         message: 'is required when AI_DRIVER=anthropic',
+      });
+    }
+    if (env.SEARCH_INDEX_EVENTS === 'kafka' && !env.KAFKA_BROKERS.length) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SEARCH_INDEX_EVENTS'],
+        message: 'SEARCH_INDEX_EVENTS=kafka needs KAFKA_BROKERS',
       });
     }
     if ((env.SEARCH_SERVICE_URL || env.AI_SERVICE_URL) && !env.INTERNAL_API_KEY) {

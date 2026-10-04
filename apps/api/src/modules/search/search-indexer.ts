@@ -20,6 +20,13 @@ export class SearchIndexer implements OnModuleInit, OnApplicationBootstrap {
   ) {}
 
   onModuleInit(): void {
+    // With SEARCH_INDEX_EVENTS=kafka the index owner reads product events from Kafka instead.
+    if (
+      this.config.get('SEARCH_INDEX_EVENTS', { infer: true }) === 'kafka' &&
+      this.config.get('KAFKA_BROKERS', { infer: true }).length
+    ) {
+      return;
+    }
     for (const type of ['catalog.product.created', 'catalog.product.updated']) {
       this.outbox.on(type, async (event) => {
         await this.index.indexProduct(event.aggregateId);

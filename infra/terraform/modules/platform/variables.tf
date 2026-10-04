@@ -162,3 +162,26 @@ variable "redirect_hosts" {
   type        = list(string)
   default     = []
 }
+
+variable "event_streaming" {
+  description = <<-EOT
+    Kafka on Amazon MSK, fed by the outbox (ADR-0020). Off by default: two kafka.t3.small brokers
+    cost roughly 70 USD a month. When on, the worker streams every outbox event to Kafka and, with
+    search_index_events = "kafka", the search service indexes products from the product topic.
+  EOT
+  type = object({
+    enabled             = bool
+    instance_type       = optional(string, "kafka.t3.small")
+    brokers_per_az      = optional(number, 1)
+    volume_gb           = optional(number, 20)
+    kafka_version       = optional(string, "3.6.0")
+    retention_hours     = optional(number, 168)
+    search_index_events = optional(string, "kafka")
+  })
+  default = { enabled = false }
+
+  validation {
+    condition     = contains(["outbox", "kafka"], var.event_streaming.search_index_events)
+    error_message = "search_index_events is \"outbox\" or \"kafka\"."
+  }
+}

@@ -19,7 +19,8 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @nixzora/api prisma:migrate",
     "db:studio": "pnpm --filter @nixzora/api exec prisma studio",
-    "obs:up": "docker compose --profile observability up -d jaeger"
+    "obs:up": "docker compose --profile observability up -d jaeger",
+    "events:up": "docker compose --profile events up -d kafka"
   },
   "devDependencies": {
     "prettier": "3.9.9",

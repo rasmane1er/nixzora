@@ -139,6 +139,8 @@ locals {
     local.ai_enabled ? { AI_SERVICE_URL = local.ai_url } : {},
     # With the notifications worker, the API leaves the background jobs to it (ADR-0017).
     local.worker_enabled ? { BACKGROUND_JOBS = "false" } : {},
+    # Kafka on MSK (ADR-0020): brokers and IAM auth for the worker and the search service.
+    local.msk_environment,
     var.app_config,
   )
 

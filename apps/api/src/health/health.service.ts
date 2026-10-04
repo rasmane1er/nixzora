@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type DependencyCheck, type HealthResponse, type JobsCheck } from '@nixzora/validation';
 import { type Env } from '../config/env';
+import { OutboxStreamer } from '../modules/outbox/outbox-streamer';
 import { OutboxService } from '../modules/outbox/outbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -42,6 +43,7 @@ export class HealthService {
     private readonly redis: RedisService,
     private readonly config: ConfigService<Env, true>,
     private readonly outbox: OutboxService,
+    private readonly streamer: OutboxStreamer,
   ) {}
 
   async check(): Promise<HealthResponse> {
@@ -65,8 +67,9 @@ export class HealthService {
   /** Background jobs: informational, so a stalled worker never fails the API's health check. */
   async jobs(): Promise<JobsCheck | undefined> {
     try {
-      const stats = await this.outbox.stats();
+      const [stats, streamed] = await Promise.all([this.outbox.stats(), this.streamer.stats()]);
       const age = stats.lastRunAt ? Date.now() - Date.parse(stats.lastRunAt) : Infinity;
+      const streamAge = streamed.lastRunAt ? Date.now() - Date.parse(streamed.lastRunAt) : Infinity;
       return {
         // "inline": the API runs them itself; "worker": the notifications worker does.
         mode:
@@ -76,6 +79,15 @@ export class HealthService {
             : 'worker',
         status: !stats.lastRunAt ? 'unknown' : age < JOBS_STALE_MS ? 'up' : 'down',
         ...stats,
+        ...(streamed.enabled
+          ? {
+              stream: {
+                status: !streamed.lastRunAt ? 'unknown' : streamAge < JOBS_STALE_MS ? 'up' : 'down',
+                backlog: streamed.backlog,
+                ...(streamed.lastRunAt ? { lastRunAt: streamed.lastRunAt } : {}),
+              },
+            }
+          : {}),
       };
     } catch {
       return undefined;

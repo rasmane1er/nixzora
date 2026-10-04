@@ -586,8 +586,11 @@ model OutboxEvent {
   publishedAt   DateTime? @map("published_at")
   attempts      Int       @default(0)
   lastError     String?   @map("last_error")
+  /// When the event reached Kafka (ADR-0020); separate from in-process delivery (publishedAt).
+  streamedAt    DateTime? @map("streamed_at")
 
   @@index([publishedAt, createdAt])
+  @@index([streamedAt, createdAt])
   @@map("outbox_events")
 }
 

@@ -10,6 +10,9 @@ image_tag   = "replace-with-a-pushed-git-sha"
 alarm_email = "you@example.com"
 # ops_allowed_cidrs = ["203.0.113.10/32"]
 
+# Kafka on Amazon MSK (ADR-0020): about 70 USD a month. See docs/runbooks/event-streaming.md.
+# event_streaming_enabled = true
+
 # Sign in with Google / Apple (public ids; leave out to hide the buttons). See docs/runbooks/sign-in-with-google-apple.md.
 # sign_in_client_ids = {
 #   GOOGLE_WEB_CLIENT_ID     = "1234-abc.apps.googleusercontent.com"
