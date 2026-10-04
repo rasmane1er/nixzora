@@ -1,0 +1,12 @@
+{
+  "name": "NIXZORA",
+  "subtitle": "Achats avec un assistant IA",
+  "shortDescription": "Demandez, scannez et achetez auprès de vendeurs indépendants, avec un assistant.",
+  "promotionalText": "Dites à l’assistant ce qu’il vous faut, scannez un code-barres pour le trouver et payez avec Apple Pay ou Google Pay. Le suivi des commandes arrive en notification.",
+  "keywords": "achats,marketplace,assistant,code-barres,scanner,vendeurs,commandes,favoris,cadeaux,maison",
+  "description": "NIXZORA est une marketplace où vous achetez auprès de vendeurs indépendants, avec un assistant qui vous aide à trouver le bon article.\n\nDEMANDEZ CE QU’IL VOUS FAUT\nDécrivez-le avec vos mots : « un ventilateur de bureau silencieux à moins de 40 $ » ou « un cadeau pour quelqu’un qui aime la randonnée ». L’assistant cherche dans le catalogue et montre de vrais produits avec leur prix et leur stock. Il n’invente jamais de produits.\n\nSCANNEZ POUR TROUVER\nVisez le code-barres d’un produit pour trouver cet article, ou un article proche, dans la boutique.\n\nPAYEZ EN QUELQUES SECONDES\nPayez avec Apple Pay, Google Pay ou une carte. Les prix, le stock et les taxes sont vérifiés à nouveau avant le paiement.\n\nSUIVEZ VOTRE COMMANDE\nRecevez une notification à l’expédition et à la livraison. Suivez le colis, demandez un retour ou obtenez de l’aide depuis la page de la commande.\n\nSÉCURISÉ PAR CONCEPTION\nConnectez-vous avec Apple, Google ou votre e-mail, et déverrouillez avec Face ID ou votre empreinte. Les paiements passent par Stripe : NIXZORA ne voit jamais votre numéro de carte. Les vendeurs sont vérifiés avant de pouvoir vendre, et leurs envois sont contrôlés auprès du transporteur avant qu’ils soient payés.\n\nVOS DONNÉES, VOTRE CHOIX\nPas de publicité, pas de suivi dans d’autres apps. Vous pouvez télécharger vos données ou supprimer votre compte depuis l’app à tout moment.\n\nDisponible en anglais, en français et en espagnol. Livraison aux adresses aux États-Unis.",
+  "whatsNew": "Première version publique.",
+  "supportUrl": "https://nixzora.com/help",
+  "privacyUrl": "https://nixzora.com/privacy",
+  "marketingUrl": "https://nixzora.com"
+}

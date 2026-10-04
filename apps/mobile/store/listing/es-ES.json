@@ -1,0 +1,12 @@
+{
+  "name": "NIXZORA",
+  "subtitle": "Compras con un asistente IA",
+  "shortDescription": "Pregunta, escanea y compra a vendedores independientes, con un asistente.",
+  "promotionalText": "Dile al asistente lo que necesitas, escanea un código de barras para encontrarlo y paga con Apple Pay o Google Pay. El seguimiento llega como notificación.",
+  "keywords": "compras,marketplace,asistente,código de barras,escáner,vendedores,pedidos,favoritos,regalos",
+  "description": "NIXZORA es un marketplace donde compras a vendedores independientes, con un asistente que te ayuda a encontrar lo que buscas.\n\nPIDE LO QUE NECESITAS\nDescríbelo con tus palabras: «un ventilador de escritorio silencioso por menos de 40 $» o «un regalo para alguien a quien le gusta el senderismo». El asistente busca en el catálogo y muestra productos reales con su precio y existencias. Nunca inventa productos.\n\nESCANEA PARA ENCONTRARLO\nApunta la cámara al código de barras de un producto para encontrar ese artículo, o uno parecido, en la tienda.\n\nPAGA EN SEGUNDOS\nPaga con Apple Pay, Google Pay o una tarjeta. Los precios, las existencias y los impuestos se comprueban de nuevo antes de pagar.\n\nSIGUE TU PEDIDO\nRecibe una notificación cuando se envía y cuando se entrega. Sigue el envío, pide una devolución u obtén ayuda desde la página del pedido.\n\nSEGURO POR DISEÑO\nInicia sesión con Apple, Google o tu correo, y desbloquea con Face ID o tu huella. Los pagos los gestiona Stripe: NIXZORA nunca ve el número de tu tarjeta. Los vendedores se verifican antes de vender, y sus envíos se comprueban con la empresa de transporte antes de pagarles.\n\nTUS DATOS, TU DECISIÓN\nSin anuncios y sin seguimiento en otras apps. Puedes descargar tus datos o eliminar tu cuenta desde la app cuando quieras.\n\nDisponible en inglés, francés y español. Envíos a direcciones de Estados Unidos.",
+  "whatsNew": "Primera versión pública.",
+  "supportUrl": "https://nixzora.com/help",
+  "privacyUrl": "https://nixzora.com/privacy",
+  "marketingUrl": "https://nixzora.com"
+}

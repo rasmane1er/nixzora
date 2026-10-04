@@ -1,0 +1,12 @@
+{
+  "name": "NIXZORA",
+  "subtitle": "Shop with an AI assistant",
+  "shortDescription": "Ask, scan and shop from independent sellers, with an assistant that helps.",
+  "promotionalText": "Tell the assistant what you need, scan a barcode to find it, and pay with Apple Pay or Google Pay. Order updates arrive as notifications.",
+  "keywords": "shopping,marketplace,assistant,barcode,scanner,deals,sellers,orders,wishlist,gifts,home,store",
+  "description": "NIXZORA is a marketplace where you shop from independent sellers, with an assistant that helps you find the right thing.\n\nASK FOR WHAT YOU NEED\nDescribe it in your own words: \"a quiet desk fan under $40\" or \"a gift for someone who likes hiking\". The assistant searches the catalog and shows real products with their prices and stock. It never invents products.\n\nSCAN TO FIND IT\nPoint the camera at a product barcode to find that item, or something like it, in the store.\n\nCHECK OUT IN SECONDS\nPay with Apple Pay, Google Pay or a card. Prices, stock and tax are checked again before you pay.\n\nKNOW WHERE YOUR ORDER IS\nGet a notification when your order ships and when it is delivered. Track it, ask for a return, or get help from the order page.\n\nSAFE BY DESIGN\nSign in with Apple, Google or your email, and unlock with Face ID or your fingerprint. Payments are handled by Stripe; NIXZORA never sees your card number. Sellers are verified before they can sell, and their shipments are checked with the carrier before they are paid.\n\nYOUR DATA, YOUR CHOICE\nNo ads and no tracking across other apps. You can download your data or delete your account from the app at any time.\n\nAvailable in English, French and Spanish. Ships to addresses in the United States.",
+  "whatsNew": "First public release.",
+  "supportUrl": "https://nixzora.com/help",
+  "privacyUrl": "https://nixzora.com/privacy",
+  "marketingUrl": "https://nixzora.com"
+}

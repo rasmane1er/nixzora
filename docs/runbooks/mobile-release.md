@@ -148,13 +148,38 @@ push notifications" in the Expo project, create an access token in Expo and stor
 3. Build numbers increase automatically (`appVersionSource: remote`). Change `version` in
    `app.config.ts` for a new marketing version.
 
-## Before inviting external testers or going to the stores
+## Public release in the App Store and Google Play (p9-12)
 
-- Privacy policy URL and support URL in both stores.
-- App Privacy (Apple) and Data safety (Google) forms: email, name, address, purchase history,
-  device push token; no tracking; data deletion available in the app (Account → Delete account).
-- Screenshots: 6.7" and 6.5" iPhone, and Android phone.
-- Sign in with a demo customer account for reviewers (fill in "App Review Information").
+Everything the store forms ask for is in `apps/mobile/store/`, checked by
+`src/__tests__/store-listing.test.ts` (length limits, keywords, links):
+
+| Store form                                        | Source                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| Name, subtitle, description, keywords, promo text | `store/listing/en-US.json`, `fr-FR.json`, `es-ES.json`       |
+| Play short description, "What's new"              | same files (`shortDescription`, `whatsNew`)                  |
+| Apple App Privacy, Play Data safety               | `store/privacy.md` (answers, row by row)                     |
+| Review notes and demo account                     | `store/review-notes.md` (password goes in the form only)     |
+| Play icon and feature graphic                     | `store/play-icon-512.png`, `store/play-feature-1024x500.png` |
+| Privacy policy, support and marketing URLs        | `https://nixzora.com/privacy`, `/help`, `/`                  |
+
+Steps, after production is up (p9-01) and the legal pages are reviewed (p9-09):
+
+1. **Production app records.** App Store Connect → New App, bundle id `com.nixzora.shop`, name
+   NIXZORA, primary language English (U.S.), add French and Spanish. Play Console → Create app
+   NIXZORA, package `com.nixzora.shop` (a new app; the Preview app stays for testers).
+2. **Screenshots** from a production build against production with the demo catalog, in each
+   language (switch the phone's language):
+   - iPhone 6.9" (1320 × 2868) and 6.5" (1284 × 2778): Home, Assistant answer, Scan, Product,
+     Checkout with Apple Pay, Order tracking. In the Simulator: File → Save Screen.
+   - iPad 13" (2064 × 2752), the same six, because the app supports tablets.
+   - Android phone (1080 × 1920 or larger): the same six.
+3. **Forms.** Copy the listing text per language, answer App Privacy and Data safety from
+   `store/privacy.md`, age rating (no objectionable content: 4+ / Everyone), content rights (no
+   third-party content), ads: none. Paste `store/review-notes.md` and the demo account.
+4. **Build and submit.** Actions → Mobile release → profile `production`. Submit for review in
+   both stores; choose manual release so both go live on the same day as the soft launch (p9-14).
+5. **After approval**: release, then check the store pages show the right text in each language
+   and that the universal links open the app from `https://nixzora.com/p/...`.
 
 ## Troubleshooting
 
