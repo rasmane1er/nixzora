@@ -39,6 +39,21 @@ export const CONTENT_TYPE_BY_EXT: Record<string, ImageContentType> = {
 export const STORAGE_KEY_PATTERN = /^products\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.(jpg|png|webp|avif)$/;
 
 /**
+ * Where uploads land before they are checked and re-encoded: never served, deleted after a day.
+ * `products/2027/03/<id>.jpg` is uploaded as `incoming/2027/03/<id>.jpg`.
+ */
+export const INCOMING_PREFIX = 'incoming/';
+
+export function incomingKeyFor(storageKey: string): string {
+  if (!STORAGE_KEY_PATTERN.test(storageKey)) throw new Error('Invalid storage key');
+  return INCOMING_PREFIX + storageKey.slice('products/'.length);
+}
+
+export function contentTypeOfKey(storageKey: string): ImageContentType {
+  return CONTENT_TYPE_BY_EXT[storageKey.split('.').pop() ?? '']!;
+}
+
+/**
  * The declared content type is client input. Checking the first bytes stops someone
  * uploading HTML or a script with an image/* label.
  */

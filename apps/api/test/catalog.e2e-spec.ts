@@ -358,6 +358,8 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       await http().put(uploadPath).set('Content-Type', 'image/png').send(PNG).expect(201);
       // Links are single-use.
       await http().put(uploadPath).set('Content-Type', 'image/png').send(PNG).expect(403);
+      // Nothing is served until the upload has been checked and re-encoded.
+      await http().get(new URL(ticket.publicUrl).pathname).expect(404);
 
       const detail = await http()
         .post(`/api/v1/admin/products/${product.id}/images`)
@@ -371,6 +373,58 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
 
       await http().get('/api/v1/media/products/2026/01/..%2F..%2Fetc%2Fpasswd').expect(404);
+    });
+
+    it('serves a re-encoded copy: hidden payloads and metadata are gone, broken files refused', async () => {
+      const product = await prisma.product.findUniqueOrThrow({
+        where: { slug: `zephyr-book-${run}` },
+      });
+      const upload = async (body: Buffer) => {
+        const ticket = UploadTicketSchema.parse(
+          (
+            await http()
+              .post('/api/v1/admin/uploads')
+              .set(bearer(staffToken))
+              .send({ contentType: 'image/png', sizeBytes: body.length })
+              .expect(201)
+          ).body,
+        );
+        const url = new URL(ticket.uploadUrl);
+        await http()
+          .put(url.pathname + url.search)
+          .set('Content-Type', 'image/png')
+          .send(body)
+          .expect(201);
+        return ticket;
+      };
+
+      // A real PNG with a script appended: passes the signature check, loses the script.
+      const polyglot = await upload(Buffer.concat([PNG, Buffer.from('<script>alert(1)</script>')]));
+      const ready = await http()
+        .post('/api/v1/media/ready')
+        .set(bearer(staffToken))
+        .send({ storageKey: polyglot.storageKey })
+        .expect(200);
+      expect(ready.body.publicUrl).toBe(polyglot.publicUrl);
+      const served = await http()
+        .get(new URL(polyglot.publicUrl).pathname)
+        .buffer(true)
+        .parse((res, done) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk: Buffer) => chunks.push(chunk));
+          res.on('end', () => done(null, Buffer.concat(chunks)));
+        })
+        .expect(200);
+      expect((served.body as Buffer).includes(Buffer.from('<script>'))).toBe(false);
+
+      // A PNG signature followed by junk does not decode: refused, and deleted.
+      const broken = await upload(Buffer.concat([PNG.subarray(0, 16), Buffer.alloc(64, 7)]));
+      const refused = await http()
+        .post(`/api/v1/admin/products/${product.id}/images`)
+        .set(bearer(staffToken))
+        .send({ storageKey: broken.storageKey, alt: 'Broken' })
+        .expect(400);
+      expect(refused.body.code).toBe('IMAGE_UNREADABLE');
     });
 
     it('takes up to 15 photos per product and lets staff choose their order', async () => {

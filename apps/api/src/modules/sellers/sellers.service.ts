@@ -24,6 +24,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { PAYOUT_GATEWAY, type PayoutGateway } from '../payments/payout-gateway';
+import { MediaIntakeService } from '../media/media-intake.service';
 import { StorageService } from '../media/storage.service';
 import { listingCounts, NO_LISTINGS, toSellerView } from './seller-mappers';
 
@@ -42,6 +43,7 @@ export class SellersService {
     private readonly config: ConfigService<Env, true>,
     @Inject(PAYOUT_GATEWAY) private readonly payouts: PayoutGateway,
     private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
   ) {}
 
   /** The language for emails to the store: its owner's account language. */
@@ -99,7 +101,7 @@ export class SellersService {
         key &&
         key !== seller.logoKey &&
         key !== seller.bannerKey &&
-        !(await this.storage.exists(key))
+        !(await this.intake.ensureReady(key))
       ) {
         throw new BadRequestException('Upload the image again: we could not find it.');
       }

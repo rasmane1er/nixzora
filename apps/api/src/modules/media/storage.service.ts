@@ -1,14 +1,27 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  GetObjectTaggingCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type UploadTicket } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { safeEqual } from '../../common/crypto';
-import { IMAGE_TYPES, type ImageContentType, STORAGE_KEY_PATTERN } from './image-type';
+import {
+  contentTypeOfKey,
+  IMAGE_TYPES,
+  type ImageContentType,
+  incomingKeyFor,
+  STORAGE_KEY_PATTERN,
+} from './image-type';
 
 const UPLOAD_TTL_SECONDS = 300;
 
@@ -27,6 +40,9 @@ export const DEMO_PREFIX = 'demo/';
  * - local: files under STORAGE_LOCAL_DIR, uploaded to and served by this API (development).
  * - s3: the browser uploads straight to S3 with a presigned URL; CloudFront serves the files.
  * Callers never see which driver is active.
+ *
+ * Uploads go to `incoming/`; MediaIntakeService checks and re-encodes them into `products/`,
+ * the only prefix that is ever served.
  */
 @Injectable()
 export class StorageService {
@@ -77,6 +93,7 @@ export class StorageService {
   async createUpload(contentType: ImageContentType, sizeBytes: number): Promise<UploadTicket> {
     const key = this.newProductImageKey(contentType);
     const expiresAt = Date.now() + UPLOAD_TTL_SECONDS * 1000;
+    // The browser uploads the original to incoming/; `key` is where the checked copy will live.
 
     let uploadUrl: string;
     if (this.driver === 's3' && this.s3) {
@@ -84,7 +101,7 @@ export class StorageService {
         this.s3,
         new PutObjectCommand({
           Bucket: this.bucket,
-          Key: key,
+          Key: incomingKeyFor(key),
           ContentType: contentType,
           ContentLength: sizeBytes,
         }),
@@ -131,11 +148,77 @@ export class StorageService {
     return safeEqual(sig, this.sign(claims)) ? claims : null;
   }
 
-  async writeLocal(key: string, body: Buffer): Promise<void> {
+  /** Local driver: stores an upload (for the image that will live at `key`) in incoming/. */
+  async writeLocalUpload(key: string, body: Buffer): Promise<void> {
+    const path = resolve(this.localDir, incomingKeyFor(key));
+    await mkdir(dirname(path), { recursive: true });
+    // "wx": an upload link works once.
+    await writeFile(path, body, { flag: 'wx' });
+  }
+
+  /** The uploaded original for `key`, or null if nothing was uploaded (or it was cleaned up). */
+  async readUpload(key: string): Promise<Buffer | null> {
+    const incoming = incomingKeyFor(key);
+    try {
+      if (this.driver === 's3' && this.s3) {
+        const object = await this.s3.send(
+          new GetObjectCommand({ Bucket: this.bucket, Key: incoming }),
+        );
+        return Buffer.from(await object.Body!.transformToByteArray());
+      }
+      return await readFile(resolve(this.localDir, incoming));
+    } catch (error) {
+      this.logger.debug(`Upload ${incoming} not readable: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /** Tags on the uploaded original (S3 only), e.g. the malware scan result. */
+  async uploadTags(key: string): Promise<Record<string, string>> {
+    if (this.driver !== 's3' || !this.s3) return {};
+    const result = await this.s3.send(
+      new GetObjectTaggingCommand({ Bucket: this.bucket, Key: incomingKeyFor(key) }),
+    );
+    return Object.fromEntries((result.TagSet ?? []).map((tag) => [tag.Key ?? '', tag.Value ?? '']));
+  }
+
+  /** Stores the checked image at its final key. Writing the same key twice is harmless. */
+  async putChecked(key: string, body: Buffer): Promise<void> {
+    if (!STORAGE_KEY_PATTERN.test(key)) throw new Error('Invalid storage key');
+    if (this.driver === 's3' && this.s3) {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentTypeOfKey(key),
+          CacheControl: 'public, max-age=31536000, immutable',
+        }),
+      );
+      return;
+    }
     const path = this.localPath(key);
     await mkdir(dirname(path), { recursive: true });
-    // "wx": never overwrite an existing object.
-    await writeFile(path, body, { flag: 'wx' });
+    try {
+      await writeFile(path, body, { flag: 'wx' });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+  }
+
+  /** Removes the uploaded original once its checked copy exists (or it was refused). */
+  async removeUpload(key: string): Promise<void> {
+    const incoming = incomingKeyFor(key);
+    try {
+      if (this.driver === 's3' && this.s3) {
+        await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: incoming }));
+      } else {
+        await rm(resolve(this.localDir, incoming), { force: true });
+      }
+    } catch (error) {
+      // The bucket's lifecycle rule removes leftovers after a day.
+      this.logger.warn(`Could not remove ${incoming}: ${(error as Error).message}`);
+    }
   }
 
   localPath(key: string): string {

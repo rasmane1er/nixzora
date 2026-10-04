@@ -44,7 +44,7 @@ These are built and waiting on accounts or a run; they gate the phase.
 | 2    | p9-04 | Connect `account.updated` webhook, so seller verification changes arrive without a refresh                                                          | Claude                                    |
 | 2    | p9-05 | Seller shipments: verify tracking numbers with carrier webhooks before earnings are released                                                        | Claude                                    |
 | 3    | p9-06 | Content Security Policy nonces instead of inline scripts (storefront and Ops Center)                                                                | Claude                                    |
-| 3    | p9-07 | Uploads: re-encode images (strips EXIF, resizes) and scan for malware in a background job                                                           | Claude                                    |
+| 3    | p9-07 | Uploads: re-encode images (strips EXIF, resizes) and scan for malware before they are served                                                        | Claude                                    |
 | 3–4  | p9-08 | External penetration test of staging using the [pen-test checklist](../security/pentest-checklist.md); fix findings, add a regression test for each | Owner hires; Claude fixes                 |
 | 4    | p9-09 | Legal and policies reviewed: Terms, Privacy, seller agreement, returns, cookie notice; sales-tax registration where required                        | Owner (with a professional)               |
 | 4    | p9-10 | Backups in a second region (AWS Backup copy), then a production restore drill                                                                       | Claude builds; owner runs                 |

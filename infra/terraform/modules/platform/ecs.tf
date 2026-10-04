@@ -103,7 +103,14 @@ resource "aws_iam_role_policy" "api_task" {
         Sid      = "Media"
         Effect   = "Allow"
         Action   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
-        Resource = "${aws_s3_bucket.media.arn}/products/*"
+        Resource = ["${aws_s3_bucket.media.arn}/products/*", "${aws_s3_bucket.media.arn}/incoming/*"]
+      },
+      {
+        # The malware scan result GuardDuty tags uploads with.
+        Sid      = "MediaScanResult"
+        Effect   = "Allow"
+        Action   = ["s3:GetObjectTagging"]
+        Resource = "${aws_s3_bucket.media.arn}/incoming/*"
       },
       {
         Sid      = "Email"
@@ -149,6 +156,7 @@ locals {
       S3_BUCKET             = aws_s3_bucket.media.id
       S3_REGION             = data.aws_region.current.region
       ASSETS_BASE_URL       = "https://${local.hosts.media}"
+      MEDIA_MALWARE_SCAN    = var.media_malware_scan ? "guardduty" : "off"
       MAIL_DRIVER           = "ses"
       MAIL_FROM             = "NIXZORA <orders@${var.domain_name}>"
       SES_REGION            = data.aws_region.current.region

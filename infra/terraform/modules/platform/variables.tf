@@ -229,3 +229,9 @@ variable "observability" {
   })
   default = { managed_prometheus = false }
 }
+
+variable "media_malware_scan" {
+  description = "Scan uploads with Amazon GuardDuty Malware Protection for S3 before the API accepts them (ADR-0025). Billed per GB scanned."
+  type        = bool
+  default     = true
+}

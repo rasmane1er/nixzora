@@ -37,3 +37,15 @@ describe('StorageService.publicUrl', () => {
     }
   });
 });
+
+describe('StorageService.createUpload', () => {
+  it('uploads to incoming/ while the ticket names the key the checked image will have', async () => {
+    process.env.AWS_ACCESS_KEY_ID ??= 'test';
+    process.env.AWS_SECRET_ACCESS_KEY ??= 'test';
+    const ticket = await storage('s3').createUpload('image/jpeg', 1000);
+    expect(ticket.storageKey).toMatch(/^products\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.jpg$/);
+    const url = new URL(ticket.uploadUrl);
+    expect(url.pathname).toBe(`/${ticket.storageKey.replace(/^products\//, 'incoming/')}`);
+    expect(ticket.publicUrl).toBe(`https://media.example.com/${ticket.storageKey}`);
+  });
+});

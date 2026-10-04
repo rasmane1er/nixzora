@@ -1,5 +1,12 @@
+import { createRequire } from 'node:module';
 import { expect, test } from '@playwright/test';
 import { signUp } from './sign-up';
+
+// sharp comes with the API; it makes a real JPEG with EXIF data for the logo upload.
+type Sharp = (options: object) => {
+  withExif: (exif: object) => { jpeg: () => { toBuffer: () => Promise<Buffer> } };
+};
+const sharp = createRequire(require.resolve('../../api/package.json'))('sharp') as Sharp;
 
 /** A customer opens a store through the six-step application, leaving and coming back midway. */
 test('a customer applies to sell in six steps and can finish later', async ({ page }) => {
@@ -37,7 +44,22 @@ test('a customer applies to sell in six steps and can finish later', async ({ pa
   await expect(page.getByLabel(/Date of birth/)).toHaveValue('1990-05-02');
   await page.getByRole('button', { name: 'Continue →' }).click();
 
-  // 3–5. Store, shipping and returns, fees.
+  // 3–5. Store (with a logo: checked and re-encoded before the preview shows), shipping and
+  // returns, fees.
+  const logo = await sharp({
+    create: { width: 300, height: 300, channels: 3, background: { r: 20, g: 90, b: 160 } },
+  })
+    .withExif({ IFD0: { Artist: 'Ada Lovelace' } })
+    .jpeg()
+    .toBuffer();
+  await page
+    .getByLabel('Store logo')
+    .setInputFiles({ name: 'logo.jpg', mimeType: 'image/jpeg', buffer: logo });
+  const preview = page.getByRole('img', { name: 'Store logo' });
+  await expect(preview).toBeVisible();
+  await expect
+    .poll(() => preview.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+    .toBe(300);
   await page.getByLabel(/About your store/).fill('Desk speakers, tuned in Baltimore.');
   await page.getByRole('button', { name: 'Continue →' }).click();
   await page.getByLabel(/I have read and agree/).check();

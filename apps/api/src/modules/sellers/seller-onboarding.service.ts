@@ -11,6 +11,7 @@ import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
+import { MediaIntakeService } from '../media/media-intake.service';
 import { StorageService } from '../media/storage.service';
 import { SellerPii } from './seller-pii';
 import { SellersService } from './sellers.service';
@@ -25,6 +26,7 @@ export class SellerOnboardingService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
     private readonly sellers: SellersService,
     private readonly pii: SellerPii,
   ) {}
@@ -75,7 +77,7 @@ export class SellerOnboardingService {
       throw new ConflictException('You already have a seller account.');
     }
     for (const key of [input.logoKey, input.bannerKey]) {
-      if (key && !(await this.storage.exists(key))) {
+      if (key && !(await this.intake.ensureReady(key))) {
         throw new BadRequestException('Upload the image again: we could not find it.');
       }
     }

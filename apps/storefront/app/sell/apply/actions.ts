@@ -130,3 +130,18 @@ export async function requestBrandingUpload(
     return { ok: false, error: errorMessage(error) };
   }
 }
+
+/** Checks and prepares an uploaded logo or banner now, so its preview can be shown. */
+export async function prepareBrandingImage(
+  storageKey: string,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  try {
+    const data = await api<{ publicUrl: string }>('/media/ready', {
+      method: 'POST',
+      body: { storageKey },
+    });
+    return { ok: true, url: data.publicUrl };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}

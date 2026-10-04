@@ -288,6 +288,11 @@ export type CategoryNode = {
   children: CategoryNode[];
 };
 
+/** An uploaded image to check and prepare before it is shown (a preview before saving). */
+export const UploadReadySchema = z.object({
+  storageKey: z.string().regex(/^products\/[a-z0-9/-]+\.(jpg|png|webp|avif)$/),
+});
+
 export const UploadTicketSchema = z.object({
   storageKey: z.string(),
   uploadUrl: z.string(),
@@ -316,6 +321,7 @@ export type Variant = z.infer<typeof VariantSchema>;
 export type ProductLookupQuery = z.infer<typeof ProductLookupQuerySchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type UploadTicket = z.infer<typeof UploadTicketSchema>;
+export type UploadReady = z.infer<typeof UploadReadySchema>;
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 
 export type PagedResult<T> = {

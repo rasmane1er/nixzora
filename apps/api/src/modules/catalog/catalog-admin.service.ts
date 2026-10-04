@@ -24,7 +24,7 @@ import { isForeignKeyViolation, isNotFound, isUniqueViolation } from '../../comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
-import { StorageService } from '../media/storage.service';
+import { MediaIntakeService } from '../media/media-intake.service';
 import { CatalogQueryService } from './catalog-query.service';
 import { ancestorsOf } from './category-tree';
 
@@ -38,7 +38,7 @@ export class CatalogAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
     private readonly query: CatalogQueryService,
   ) {}
 
@@ -317,7 +317,7 @@ export class CatalogAdminService {
     actor: ActorContext,
   ): Promise<ProductDetail> {
     await this.requireProduct(productId);
-    if (!(await this.storage.exists(input.storageKey))) {
+    if (!(await this.intake.ensureReady(input.storageKey))) {
       throw new BadRequestException('Upload the file first, then attach it.');
     }
     const image = await this.prisma.$transaction(async (tx) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { requestBrandingUpload } from '@/app/sell/apply/actions';
+import { prepareBrandingImage, requestBrandingUpload } from '@/app/sell/apply/actions';
 import { useT } from '@/components/I18nProvider';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -47,7 +47,10 @@ export function BrandingUpload({
       body: file,
     }).catch(() => null);
     if (!put?.ok) return setStatus({ error: t('uploadFailed') });
-    setImage({ key: ticket.data.storageKey, url: ticket.data.publicUrl });
+    // The upload is checked and re-encoded before it can be shown anywhere.
+    const ready = await prepareBrandingImage(ticket.data.storageKey);
+    if (!ready.ok) return setStatus({ error: ready.error });
+    setImage({ key: ticket.data.storageKey, url: ready.url });
     setStatus({});
   }
 

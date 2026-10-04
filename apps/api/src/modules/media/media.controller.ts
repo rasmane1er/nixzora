@@ -16,6 +16,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import {
+  type UploadReady,
+  UploadReadySchema,
   type UploadRequest,
   UploadRequestSchema,
   type UploadTicket,
@@ -26,12 +28,16 @@ import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Public, RequirePermissions } from '../identity/guards/decorators';
 import { CONTENT_TYPE_BY_EXT, isDeclaredType, STORAGE_KEY_PATTERN } from './image-type';
+import { MediaIntakeService } from './media-intake.service';
 import { StorageService } from './storage.service';
 
 @ApiTags('media')
 @Controller({ path: '', version: '1' })
 export class MediaController {
-  constructor(private readonly storage: StorageService) {}
+  constructor(
+    private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
+  ) {}
 
   /** Step 1 of an image upload: get a short-lived, single-object upload link. */
   @Post('admin/uploads')
@@ -75,11 +81,28 @@ export class MediaController {
     }
 
     try {
-      await this.storage.writeLocal(claims.key, body);
+      await this.storage.writeLocalUpload(claims.key, body);
     } catch {
       throw new ForbiddenException('This upload link has already been used.');
     }
     return { storageKey: claims.key };
+  }
+
+  /**
+   * Step 3 (optional): check and prepare an upload now, to show a preview before the form that
+   * uses it is saved. Saving does the same, so most screens skip this.
+   */
+  @Post('media/ready')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiZodBody(UploadReadySchema)
+  async ready(
+    @Body(new ZodValidationPipe(UploadReadySchema)) body: UploadReady,
+  ): Promise<{ storageKey: string; publicUrl: string }> {
+    if (!(await this.intake.ensureReady(body.storageKey))) {
+      throw new BadRequestException('Upload the file first.');
+    }
+    return { storageKey: body.storageKey, publicUrl: this.storage.publicUrl(body.storageKey) };
   }
 
   /** Serves locally stored images (development). In production CloudFront serves them from S3. */

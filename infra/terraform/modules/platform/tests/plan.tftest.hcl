@@ -184,6 +184,10 @@ run "staging" {
     condition     = length(aws_eks_cluster.main) == 0 && output.kubernetes == null
     error_message = "EKS costs money: it stays off unless kubernetes.enabled."
   }
+  assert {
+    condition     = length(aws_guardduty_malware_protection_plan.media) == 1 && output.api_environment["MEDIA_MALWARE_SCAN"] == "guardduty"
+    error_message = "uploads must be scanned for malware before the API accepts them (ADR-0025)."
+  }
 }
 
 run "event_streaming" {

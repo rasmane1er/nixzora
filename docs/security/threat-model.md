@@ -235,27 +235,26 @@ signing keys, API keys and secrets.
 
 ## Phase 8 additions (services, platform, fraud)
 
-| Threat                                                       | Mitigation                                                                                                  | Status |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------ |
-| A caller other than the API reaches the search or AI service | Internal key on every call (constant-time check), private network only, Kubernetes network policies         | ✔      |
-| Events on Kafka read or forged                               | MSK with IAM auth and TLS only; topics written by the worker's role, read by the search service's role      | ✔      |
-| Metrics port leaks data or is reachable from outside         | Separate port never behind the load balancer; route patterns, not URLs, as labels (no ids or emails)        | ✔      |
-| Stale reads from the replica used for money decisions        | Replica only for catalog and recommendations; prices and stock re-checked on the primary at checkout        | ✔      |
-| Stolen cards and card testing                                | Fraud signals: declined over the block score, held for review over the review score (ADR-0024)              | ✔      |
-| A seller cashes out fraudulent sales                         | Payouts paused on chargebacks, self-purchases, refund spikes; reviewed in the Ops Center                    | ✔      |
-| Cluster takeover through a pod                               | Pods run non-root with a read-only filesystem and no capabilities; deploy role limited to the app namespace | ✔      |
-| Clickjacking, injected scripts                               | Content Security Policy with a per-request script nonce on the storefront and Ops Center, no framing, HSTS  | ✔      |
-| Open redirect after sign-in                                  | Same-site paths only; whitespace and backslashes rejected                                                   | ✔      |
-| Losing the database                                          | Point-in-time recovery and AWS Backup, rehearsed by `scripts/dr/restore-drill.sh`                           | ✔      |
-| Sign-up details (phone, consent) exposed or forged           | Phone validated as E.164 and shown only to staff with `users.read`; terms acceptance stored with its time   | ✔      |
+| Threat                                                            | Mitigation                                                                                                                     | Status |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| A caller other than the API reaches the search or AI service      | Internal key on every call (constant-time check), private network only, Kubernetes network policies                            | ✔      |
+| Events on Kafka read or forged                                    | MSK with IAM auth and TLS only; topics written by the worker's role, read by the search service's role                         | ✔      |
+| Metrics port leaks data or is reachable from outside              | Separate port never behind the load balancer; route patterns, not URLs, as labels (no ids or emails)                           | ✔      |
+| Stale reads from the replica used for money decisions             | Replica only for catalog and recommendations; prices and stock re-checked on the primary at checkout                           | ✔      |
+| Stolen cards and card testing                                     | Fraud signals: declined over the block score, held for review over the review score (ADR-0024)                                 | ✔      |
+| A seller cashes out fraudulent sales                              | Payouts paused on chargebacks, self-purchases, refund spikes; reviewed in the Ops Center                                       | ✔      |
+| Cluster takeover through a pod                                    | Pods run non-root with a read-only filesystem and no capabilities; deploy role limited to the app namespace                    | ✔      |
+| Clickjacking, injected scripts                                    | Content Security Policy with a per-request script nonce on the storefront and Ops Center, no framing, HSTS                     | ✔      |
+| Open redirect after sign-in                                       | Same-site paths only; whitespace and backslashes rejected                                                                      | ✔      |
+| Losing the database                                               | Point-in-time recovery and AWS Backup, rehearsed by `scripts/dr/restore-drill.sh`                                              | ✔      |
+| Sign-up details (phone, consent) exposed or forged                | Phone validated as E.164 and shown only to staff with `users.read`; terms acceptance stored with its time                      | ✔      |
+| Malware or hidden scripts in uploaded images; EXIF location leaks | GuardDuty scans uploads in `incoming/`; images re-encoded without metadata into `products/`, the only prefix served (ADR-0025) | ✔      |
 
 Pen-test scope, automated checks and the item-by-item status:
 [pentest-checklist.md](pentest-checklist.md).
 
 ## Open items
 
-- Image re-encoding (strip EXIF, resize) in a background worker, and malware scanning of uploads
-  in S3.
 - Stripe Connect `account.updated` webhook so verification changes arrive without a refresh.
 - Seller staff invitations (STAFF members) with their own audit trail.
 - Verify seller tracking numbers with carrier webhooks before releasing earnings.

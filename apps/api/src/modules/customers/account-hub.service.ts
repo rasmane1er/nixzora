@@ -16,6 +16,7 @@ import {
 import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type ImageContentType } from '../media/image-type';
+import { MediaIntakeService } from '../media/media-intake.service';
 import { StorageService } from '../media/storage.service';
 import { TRACKING_URLS, returnableUntil } from '../orders/order-links';
 
@@ -59,6 +60,7 @@ export class AccountHubService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
   ) {}
 
   async profile(userId: string): Promise<AccountProfile> {
@@ -91,7 +93,7 @@ export class AccountHubService {
   }
 
   async setAvatar(userId: string, storageKey: string): Promise<AccountProfile> {
-    if (!(await this.storage.exists(storageKey))) {
+    if (!(await this.intake.ensureReady(storageKey))) {
       throw new BadRequestException('Upload the photo first.');
     }
     await this.prisma.user.update({ where: { id: userId }, data: { avatarKey: storageKey } });

@@ -49,6 +49,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
       days_after_initiation = 1
     }
   }
+  # Uploads wait in incoming/ until the API checks and re-encodes them into products/ (ADR-0025).
+  # Anything never used (an abandoned form, a refused file) is deleted the next day.
+  rule {
+    id     = "incoming-uploads"
+    status = "Enabled"
+    filter {
+      prefix = "incoming/"
+    }
+    expiration {
+      days = 1
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
 }
 
 # Browsers upload directly with presigned PUTs from the Ops Center and the seller portal.
@@ -116,9 +131,10 @@ resource "aws_cloudfront_distribution" "media" {
 
 data "aws_iam_policy_document" "media" {
   statement {
-    sid       = "CloudFrontRead"
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.media.arn}/*"]
+    sid     = "CloudFrontRead"
+    actions = ["s3:GetObject"]
+    # Only checked images; uploads in incoming/ are never served.
+    resources = ["${aws_s3_bucket.media.arn}/products/*"]
     principals {
       type        = "Service"
       identifiers = ["cloudfront.amazonaws.com"]

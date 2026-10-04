@@ -122,6 +122,13 @@ export const EnvSchema = z
     S3_REGION: z.string().default('us-east-1'),
     /** CloudFront (or bucket) URL that serves uploaded files. */
     ASSETS_BASE_URL: z.url().optional(),
+    /**
+     * Malware scanning of uploads before they are accepted: "guardduty" waits for Amazon GuardDuty
+     * Malware Protection for S3 to tag the upload; "off" relies on re-encoding alone.
+     */
+    MEDIA_MALWARE_SCAN: z.enum(['off', 'guardduty']).default('off'),
+    /** How long an attach waits for the scan result before asking the user to try again. */
+    MEDIA_SCAN_WAIT_SECONDS: z.coerce.number().int().min(0).max(60).default(20),
 
     // ── Checkout ──
     /** "fake" confirms payments without a card (development and tests); "stripe" is real. */
@@ -320,6 +327,13 @@ export const EnvSchema = z
             message: 'is required when STORAGE_DRIVER=s3',
           });
       }
+    }
+    if (env.MEDIA_MALWARE_SCAN === 'guardduty' && env.STORAGE_DRIVER !== 's3') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MEDIA_MALWARE_SCAN'],
+        message: 'guardduty scanning needs STORAGE_DRIVER=s3',
+      });
     }
     if (env.PAYMENTS_PROVIDER === 'stripe') {
       for (const key of [
