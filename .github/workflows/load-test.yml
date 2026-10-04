@@ -51,7 +51,7 @@ jobs:
       API_URL: ${{ vars.API_URL }}
       K6_NO_USAGE_REPORT: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: grafana/setup-k6-action@v1
         with:
