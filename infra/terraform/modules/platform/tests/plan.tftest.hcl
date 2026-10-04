@@ -351,7 +351,7 @@ run "production" {
     error_message = "the Ops Center allow-list must block everyone else."
   }
   assert {
-    condition     = length(aws_backup_vault.copy) == 1 && length(aws_backup_plan.main.rule) == 2
+    condition     = length(aws_backup_vault.copy) == 1 && output.backup_copy_vault.region == "us-west-2"
     error_message = "production backups must be copied to a second region (p9-10)."
   }
   assert {
