@@ -43,6 +43,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# The CLI waiter gives up after 30 minutes, and a restore plus its first backup can take longer.
+# Wait up to an hour, and stop early if the instance ends in a state it cannot leave.
+wait_available() {
+  local state
+  for _ in $(seq 1 120); do
+    state=$(aws rds describe-db-instances --db-instance-identifier "$1" \
+      --query 'DBInstances[0].DBInstanceStatus' --output text)
+    case "$state" in
+      available) return 0 ;;
+      failed | incompatible-restore | incompatible-parameters | incompatible-network | storage-full)
+        echo "The instance is ${state}." >&2
+        return 1
+        ;;
+    esac
+    sleep 30
+  done
+  echo "Still not available after an hour." >&2
+  return 1
+}
+
 # ── 1. The source instance ──────────────────────────────────────────────────────────────────
 say "Reading ${PREFIX}"
 source=$(aws rds describe-db-instances --db-instance-identifier "$PREFIX" --query 'DBInstances[0]')
@@ -67,7 +87,7 @@ aws rds restore-db-instance-to-point-in-time \
   --no-multi-az --no-publicly-accessible --no-deletion-protection \
   --tags Key=purpose,Value=dr-drill Key=project,Value=nixzora >/dev/null
 created="$DRILL"
-aws rds wait db-instance-available --db-instance-identifier "$DRILL"
+wait_available "$DRILL"
 restored_after=$(since)
 echo "Available after ${restored_after}s"
 
@@ -90,7 +110,7 @@ if [[ -n "$secret_arn" ]]; then
     [[ "$status" != "available" ]] && break
     sleep 5
   done
-  aws rds wait db-instance-available --db-instance-identifier "$DRILL"
+  wait_available "$DRILL"
 fi
 host=$(aws rds describe-db-instances --db-instance-identifier "$DRILL" \
   --query 'DBInstances[0].Endpoint.Address' --output text)
