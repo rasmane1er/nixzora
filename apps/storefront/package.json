@@ -18,6 +18,7 @@
     "@nixzora/i18n": "workspace:*",
     "@nixzora/ui": "workspace:*",
     "@nixzora/validation": "workspace:*",
+    "@simplewebauthn/browser": "14.0.0",
     "@stripe/react-stripe-js": "7.0.0",
     "@stripe/stripe-js": "10.0.0",
     "next": "16.3.8",

@@ -137,6 +137,30 @@ export const account = defineMessages({
     thisDevice: 'This device',
     sessionLine: 'Signed in {signedIn} · last active {lastActive}',
     unrecognisedDevice: "Don't recognise a device? Sign it out and change your password.",
+    passkeysTitle: 'Passkeys',
+    passkeysIntro:
+      'Sign in with your fingerprint, face or screen lock instead of a password. A passkey can’t be guessed or phished, and it also counts as two-step verification.',
+    addPasskey: 'Add a passkey',
+    addingPasskey: 'Waiting for your device…',
+    passkeyAdded: 'Passkey added. Next time, choose “Sign in with a passkey”.',
+    passkeyRemoved: 'Passkey removed.',
+    removePasskey: 'Remove',
+    removePasskeyLabel: 'Remove passkey {name}',
+    noPasskeys: 'No passkeys yet.',
+    passkeySynced: 'Synced',
+    passkeySyncedHint: 'Works on your other devices signed in to the same password manager.',
+    passkeyLine: 'Added {added} · {used}',
+    passkeyLastUsed: 'last used {date}',
+    passkeyNeverUsed: 'not used yet',
+    passkeysUnsupported:
+      'This browser can’t create passkeys. Try an up-to-date Chrome, Safari, Edge or Firefox.',
+    passkeyCancelled: 'No passkey was added.',
+    appSignInTitle: 'Face ID / fingerprint in the app',
+    appSignInIntro: 'Phones where you turned on Face ID / fingerprint sign-in in the NIXZORA app.',
+    appSignInLine: 'Turned on {added} · {used}',
+    appSignInOff: 'Turn off',
+    appSignInOffLabel: 'Turn off Face ID / fingerprint sign-in on {name}',
+    appSignInRevoked: 'Face ID / fingerprint sign-in turned off for that phone.',
     browserOnOs: '{browser} on {os}',
     unknownDevice: 'Unknown device',
 
@@ -354,6 +378,33 @@ export const account = defineMessages({
     sessionLine: 'Connecté le {signedIn} · dernière activité le {lastActive}',
     unrecognisedDevice:
       'Vous ne reconnaissez pas un appareil ? Déconnectez-le et changez votre mot de passe.',
+    passkeysTitle: 'Clés d’accès',
+    passkeysIntro:
+      'Connectez-vous avec votre empreinte, votre visage ou le verrouillage de l’écran au lieu d’un mot de passe. Une clé d’accès ne peut être ni devinée ni hameçonnée, et elle vaut aussi validation en deux étapes.',
+    addPasskey: 'Ajouter une clé d’accès',
+    addingPasskey: 'En attente de votre appareil…',
+    passkeyAdded:
+      'Clé d’accès ajoutée. La prochaine fois, choisissez « Se connecter avec une clé d’accès ».',
+    passkeyRemoved: 'Clé d’accès supprimée.',
+    removePasskey: 'Supprimer',
+    removePasskeyLabel: 'Supprimer la clé d’accès {name}',
+    noPasskeys: 'Aucune clé d’accès pour le moment.',
+    passkeySynced: 'Synchronisée',
+    passkeySyncedHint:
+      'Fonctionne sur vos autres appareils connectés au même gestionnaire de mots de passe.',
+    passkeyLine: 'Ajoutée le {added} · {used}',
+    passkeyLastUsed: 'dernière utilisation le {date}',
+    passkeyNeverUsed: 'pas encore utilisée',
+    passkeysUnsupported:
+      'Ce navigateur ne peut pas créer de clés d’accès. Essayez une version récente de Chrome, Safari, Edge ou Firefox.',
+    passkeyCancelled: 'Aucune clé d’accès n’a été ajoutée.',
+    appSignInTitle: 'Face ID / empreinte dans l’application',
+    appSignInIntro:
+      'Les téléphones sur lesquels vous avez activé la connexion par Face ID / empreinte dans l’application NIXZORA.',
+    appSignInLine: 'Activée le {added} · {used}',
+    appSignInOff: 'Désactiver',
+    appSignInOffLabel: 'Désactiver la connexion par Face ID / empreinte sur {name}',
+    appSignInRevoked: 'Connexion par Face ID / empreinte désactivée pour ce téléphone.',
     browserOnOs: '{browser} sur {os}',
     unknownDevice: 'Appareil inconnu',
 
@@ -567,6 +618,33 @@ export const account = defineMessages({
     thisDevice: 'Este dispositivo',
     sessionLine: 'Sesión iniciada el {signedIn} · última actividad el {lastActive}',
     unrecognisedDevice: '¿No reconoces un dispositivo? Cierra su sesión y cambia tu contraseña.',
+    passkeysTitle: 'Llaves de acceso',
+    passkeysIntro:
+      'Inicia sesión con tu huella, tu rostro o el bloqueo de pantalla en lugar de una contraseña. Una llave de acceso no se puede adivinar ni robar con phishing, y también cuenta como verificación en dos pasos.',
+    addPasskey: 'Agregar una llave de acceso',
+    addingPasskey: 'Esperando a tu dispositivo…',
+    passkeyAdded:
+      'Llave de acceso agregada. La próxima vez, elige “Iniciar sesión con una llave de acceso”.',
+    passkeyRemoved: 'Llave de acceso eliminada.',
+    removePasskey: 'Eliminar',
+    removePasskeyLabel: 'Eliminar la llave de acceso {name}',
+    noPasskeys: 'Aún no tienes llaves de acceso.',
+    passkeySynced: 'Sincronizada',
+    passkeySyncedHint:
+      'Funciona en tus otros dispositivos conectados al mismo administrador de contraseñas.',
+    passkeyLine: 'Agregada el {added} · {used}',
+    passkeyLastUsed: 'último uso el {date}',
+    passkeyNeverUsed: 'aún no se usa',
+    passkeysUnsupported:
+      'Este navegador no puede crear llaves de acceso. Prueba una versión reciente de Chrome, Safari, Edge o Firefox.',
+    passkeyCancelled: 'No se agregó ninguna llave de acceso.',
+    appSignInTitle: 'Face ID / huella en la app',
+    appSignInIntro:
+      'Teléfonos en los que activaste el inicio de sesión con Face ID / huella en la app de NIXZORA.',
+    appSignInLine: 'Activado el {added} · {used}',
+    appSignInOff: 'Desactivar',
+    appSignInOffLabel: 'Desactivar el inicio de sesión con Face ID / huella en {name}',
+    appSignInRevoked: 'Inicio de sesión con Face ID / huella desactivado para ese teléfono.',
     browserOnOs: '{browser} en {os}',
     unknownDevice: 'Dispositivo desconocido',
 

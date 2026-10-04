@@ -2,6 +2,7 @@ import { rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthCard, Submit } from '@/components/AuthCard';
+import { PasskeySignIn } from '@/components/PasskeySignIn';
 import { SocialSignIn } from '@/components/SocialSignIn';
 import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
@@ -25,12 +26,17 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
       error={param(params, 'error')}
       notice={param(params, 'reset') ? t('passwordChangedNotice') : undefined}
     >
+      <PasskeySignIn
+        next={next}
+        divider={!providers.google?.webClientId && !providers.apple?.servicesId}
+      />
       <SocialSignIn providers={providers} next={next} intent="signin" />
       <form action={signIn} className="form">
         <input type="hidden" name="next" value={next} />
         <label>
           {t('email')}
-          <input name="email" type="email" autoComplete="email" required autoFocus />
+          {/* "webauthn" lets the browser offer saved passkeys right here. */}
+          <input name="email" type="email" autoComplete="username webauthn" required autoFocus />
         </label>
         <label>
           {t('password')}

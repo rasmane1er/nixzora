@@ -10,6 +10,9 @@ export const auth = defineMessages({
     email: 'Email',
     password: 'Password',
     signInButton: 'Sign in',
+    signInWithPasskey: 'Sign in with a passkey',
+    passkeyHint: 'Use your fingerprint, face or screen lock',
+    passkeyFailed: 'No passkey was used. Try again or sign in with your password.',
     forgotPassword: 'Forgot your password?',
     newToNixzora: 'New to NIXZORA? <link>Create an account</link>',
 
@@ -58,6 +61,10 @@ export const auth = defineMessages({
     email: 'E-mail',
     password: 'Mot de passe',
     signInButton: 'Se connecter',
+    signInWithPasskey: 'Se connecter avec une clé d’accès',
+    passkeyHint: 'Utilisez votre empreinte, votre visage ou le verrouillage de l’écran',
+    passkeyFailed:
+      'Aucune clé d’accès n’a été utilisée. Réessayez ou connectez-vous avec votre mot de passe.',
     forgotPassword: 'Mot de passe oublié ?',
     newToNixzora: 'Nouveau sur NIXZORA ? <link>Créer un compte</link>',
 
@@ -102,6 +109,10 @@ export const auth = defineMessages({
     email: 'Correo electrónico',
     password: 'Contraseña',
     signInButton: 'Iniciar sesión',
+    signInWithPasskey: 'Iniciar sesión con una llave de acceso',
+    passkeyHint: 'Usa tu huella, tu rostro o el bloqueo de pantalla',
+    passkeyFailed:
+      'No se usó ninguna llave de acceso. Inténtalo de nuevo o inicia sesión con tu contraseña.',
     forgotPassword: '¿Olvidaste tu contraseña?',
     newToNixzora: '¿Eres nuevo en NIXZORA? <link>Crea una cuenta</link>',
 

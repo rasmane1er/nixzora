@@ -6,7 +6,9 @@ import {
 } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { type AuthTokens } from '@nixzora/validation';
 import { jwtVerify, SignJWT } from 'jose';
+import { type Session } from '../../../generated/prisma/client';
 import { type Env } from '../../../config/env';
 
 export type AccessClaims = {
@@ -19,6 +21,16 @@ export type AccessClaims = {
 export type MfaChallengeClaims = {
   sub: string;
   deviceName?: string;
+};
+
+/** A WebAuthn challenge we issued: for adding a passkey (with the user) or for signing in. */
+export type PasskeyChallengeClaims = {
+  purpose: 'register' | 'sign-in';
+  challenge: string;
+  /** Set for "register": the signed-in user adding a passkey. */
+  sub?: string;
+  /** A random id, so a used challenge can be refused the second time. */
+  jti: string;
 };
 
 const ALG = 'EdDSA';
@@ -88,6 +100,17 @@ export class TokenService {
     }
   }
 
+  /** Access token plus the opaque refresh token, as every sign-in returns them. */
+  async authTokens(session: Session, refreshToken: string, amr: string[]): Promise<AuthTokens> {
+    return {
+      accessToken: await this.signAccessToken({ sub: session.userId, sid: session.id, amr }),
+      accessTokenExpiresIn: this.accessTtlSeconds,
+      refreshToken,
+      refreshTokenExpiresAt: session.expiresAt.toISOString(),
+      sessionId: session.id,
+    };
+  }
+
   /** Proves the password step passed; exchanged for tokens once the TOTP code is checked. */
   signMfaChallenge(claims: MfaChallengeClaims): Promise<string> {
     return new SignJWT({ deviceName: claims.deviceName })
@@ -112,6 +135,49 @@ export class TokenService {
       return {
         sub: payload.sub,
         deviceName: typeof payload.deviceName === 'string' ? payload.deviceName : undefined,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Passkey ceremonies stay stateless: the challenge travels in a short-lived signed token, and
+   * the server checks the browser signed exactly that challenge.
+   */
+  signPasskeyChallenge(claims: PasskeyChallengeClaims): Promise<string> {
+    return new SignJWT({ purpose: claims.purpose, challenge: claims.challenge })
+      .setProtectedHeader({ alg: ALG, typ: 'passkey-challenge+jwt' })
+      .setSubject(claims.sub ?? '')
+      .setJti(claims.jti)
+      .setIssuer(this.issuer)
+      .setAudience(this.audience)
+      .setIssuedAt()
+      .setExpirationTime('5m')
+      .sign(this.privateKey);
+  }
+
+  async verifyPasskeyChallenge(token: string): Promise<PasskeyChallengeClaims | null> {
+    try {
+      const { payload } = await jwtVerify(token, this.publicKey, {
+        algorithms: [ALG],
+        issuer: this.issuer,
+        audience: this.audience,
+        typ: 'passkey-challenge+jwt',
+      });
+      const purpose = payload.purpose;
+      if (
+        (purpose !== 'register' && purpose !== 'sign-in') ||
+        typeof payload.challenge !== 'string' ||
+        typeof payload.jti !== 'string'
+      ) {
+        return null;
+      }
+      return {
+        purpose,
+        challenge: payload.challenge,
+        sub: payload.sub || undefined,
+        jti: payload.jti,
       };
     } catch {
       return null;

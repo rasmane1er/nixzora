@@ -1,7 +1,14 @@
 import { INTL_LOCALE, rich, type Translate } from '@nixzora/i18n';
-import { type AccountProfile, type MeResponse, type SessionSummary } from '@nixzora/validation';
+import {
+  type AccountProfile,
+  type DeviceSignInSummary,
+  type MeResponse,
+  type PasskeySummary,
+  type SessionSummary,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { AccountHeader, Notices } from '@/components/AccountHeader';
+import { PasskeyAdd } from '@/components/PasskeyAdd';
 import { accountApi } from '@/lib/account';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
@@ -12,6 +19,7 @@ import {
   signOutDevice,
   signOutOtherDevices,
 } from '../hub-actions';
+import { removePasskey, revokeDeviceSignIn } from '../passkey-actions';
 import { TwoStepSetup } from './TwoStep';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -49,10 +57,12 @@ function deviceLabel(session: SessionSummary, t: Translate<'account'>): string {
 
 export default async function SecurityPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const [profile, me, sessions] = await Promise.all([
+  const [profile, me, sessions, passkeys, appSignIns] = await Promise.all([
     accountApi<AccountProfile>('/me/profile', '/account/security'),
     accountApi<MeResponse>('/auth/me', '/account/security'),
     accountApi<SessionSummary[]>('/me/sessions', '/account/security'),
+    accountApi<PasskeySummary[]>('/me/passkeys', '/account/security'),
+    accountApi<DeviceSignInSummary[]>('/me/device-sign-ins', '/account/security'),
   ]);
   const others = sessions.filter((s) => !s.current).length;
   const [t, tc, f, locale] = await Promise.all([
@@ -202,6 +212,87 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
           )}
         </section>
       </div>
+
+      <section className="card stack" id="passkeys" aria-labelledby="passkeys-title">
+        <h2 id="passkeys-title">{t('passkeysTitle')}</h2>
+        <p className="muted" style={{ margin: 0 }}>
+          {t('passkeysIntro')}
+        </p>
+        {passkeys.length ? (
+          <ul className="devices">
+            {passkeys.map((passkey) => (
+              <li key={passkey.id}>
+                <div className="stack" style={{ gap: 2 }}>
+                  <strong>
+                    {passkey.name}{' '}
+                    {passkey.synced ? (
+                      <span className="pill pill--delivered" title={t('passkeySyncedHint')}>
+                        {t('passkeySynced')}
+                      </span>
+                    ) : null}
+                  </strong>
+                  <span className="muted" style={{ fontSize: 14 }}>
+                    {t('passkeyLine', {
+                      added: f.date(passkey.createdAt),
+                      used: passkey.lastUsedAt
+                        ? t('passkeyLastUsed', { date: f.date(passkey.lastUsedAt) })
+                        : t('passkeyNeverUsed'),
+                    })}
+                  </span>
+                </div>
+                <form action={removePasskey}>
+                  <input type="hidden" name="id" value={passkey.id} />
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    type="submit"
+                    aria-label={t('removePasskeyLabel', { name: passkey.name })}
+                  >
+                    {t('removePasskey')}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ margin: 0 }}>{t('noPasskeys')}</p>
+        )}
+        <PasskeyAdd />
+        {appSignIns.length ? (
+          <div className="stack" style={{ gap: 8, marginTop: 8 }}>
+            <h3 style={{ margin: 0 }}>{t('appSignInTitle')}</h3>
+            <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+              {t('appSignInIntro')}
+            </p>
+            <ul className="devices">
+              {appSignIns.map((device) => (
+                <li key={device.id}>
+                  <div className="stack" style={{ gap: 2 }}>
+                    <strong>{device.deviceName}</strong>
+                    <span className="muted" style={{ fontSize: 14 }}>
+                      {t('appSignInLine', {
+                        added: f.date(device.createdAt),
+                        used: device.lastUsedAt
+                          ? t('passkeyLastUsed', { date: f.date(device.lastUsedAt) })
+                          : t('passkeyNeverUsed'),
+                      })}
+                    </span>
+                  </div>
+                  <form action={revokeDeviceSignIn}>
+                    <input type="hidden" name="id" value={device.id} />
+                    <button
+                      className="btn btn--secondary btn--sm"
+                      type="submit"
+                      aria-label={t('appSignInOffLabel', { name: device.deviceName })}
+                    >
+                      {t('appSignInOff')}
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
 
       <section className="card stack" id="devices">
         <div className="section-head" style={{ marginBottom: 0 }}>

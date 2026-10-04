@@ -315,6 +315,18 @@ export const appAccount = defineMessages({
     lockSignOutInstead: 'Sign out instead',
     unlockPrompt: 'Unlock NIXZORA',
     biometricOnPrompt: 'Turn on Face ID / fingerprint unlock',
+    bioSignInTitle: 'Sign in with {method}',
+    bioSignInBody: 'Skip your password next time on this phone.',
+    bioSignInAs: 'as {email}',
+    bioSignInPrompt: 'Sign in to NIXZORA',
+    bioSignInOnPrompt: 'Turn on Face ID / fingerprint sign-in',
+    bioSignInOfferTitle: 'Sign in faster next time?',
+    bioSignInOfferBody:
+      'Use {method} instead of your password on this phone. You can turn it off in Settings.',
+    bioSignInOfferYes: 'Turn on',
+    bioSignInOfferNo: 'Not now',
+    bioSignInFailed: 'We could not confirm it’s you. Try again or use your password.',
+    orUsePassword: 'or use your password',
 
     // Rate a seller
     rateYourRating: 'Your rating: {value} of 5 · Change',
@@ -627,6 +639,19 @@ export const appAccount = defineMessages({
     lockSignOutInstead: 'Me déconnecter',
     unlockPrompt: 'Déverrouiller NIXZORA',
     biometricOnPrompt: 'Activer le déverrouillage par Face ID / empreinte digitale',
+    bioSignInTitle: 'Se connecter avec {method}',
+    bioSignInBody: 'Plus besoin du mot de passe la prochaine fois sur ce téléphone.',
+    bioSignInAs: 'en tant que {email}',
+    bioSignInPrompt: 'Se connecter à NIXZORA',
+    bioSignInOnPrompt: 'Activer la connexion par Face ID / empreinte digitale',
+    bioSignInOfferTitle: 'Se connecter plus vite la prochaine fois ?',
+    bioSignInOfferBody:
+      'Utilisez {method} au lieu de votre mot de passe sur ce téléphone. Vous pouvez le désactiver dans les Réglages.',
+    bioSignInOfferYes: 'Activer',
+    bioSignInOfferNo: 'Pas maintenant',
+    bioSignInFailed:
+      'Nous n’avons pas pu confirmer votre identité. Réessayez ou utilisez votre mot de passe.',
+    orUsePassword: 'ou utilisez votre mot de passe',
 
     rateYourRating: 'Votre note : {value} sur 5 · Modifier',
     rateSeller: 'Noter {seller}',
@@ -937,6 +962,18 @@ export const appAccount = defineMessages({
     lockSignOutInstead: 'Mejor cerrar sesión',
     unlockPrompt: 'Desbloquear NIXZORA',
     biometricOnPrompt: 'Activar el desbloqueo con Face ID / huella digital',
+    bioSignInTitle: 'Iniciar sesión con {method}',
+    bioSignInBody: 'Sin contraseña la próxima vez en este teléfono.',
+    bioSignInAs: 'como {email}',
+    bioSignInPrompt: 'Iniciar sesión en NIXZORA',
+    bioSignInOnPrompt: 'Activar el inicio de sesión con Face ID / huella digital',
+    bioSignInOfferTitle: '¿Iniciar sesión más rápido la próxima vez?',
+    bioSignInOfferBody:
+      'Usa {method} en lugar de tu contraseña en este teléfono. Puedes desactivarlo en Ajustes.',
+    bioSignInOfferYes: 'Activar',
+    bioSignInOfferNo: 'Ahora no',
+    bioSignInFailed: 'No pudimos confirmar que eres tú. Inténtalo de nuevo o usa tu contraseña.',
+    orUsePassword: 'o usa tu contraseña',
 
     rateYourRating: 'Tu calificación: {value} de 5 · Cambiar',
     rateSeller: 'Calificar a {seller}',

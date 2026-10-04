@@ -23,6 +23,16 @@ export const apiErrors = defineMessages({
     codeMismatch: 'That code did not match.',
     codeMismatchTime: 'That code did not match. Check the time on your phone and try again.',
     signInToContinue: 'Sign in to continue.',
+    passkeyNotRecognized: 'We did not recognize that passkey. Try another way to sign in.',
+    passkeyNotConfirmed: 'We could not confirm your passkey. Try again.',
+    passkeyMax: 'You have the maximum number of passkeys. Remove one first.',
+    passkeyExists: 'This passkey is already on your account.',
+    passkeyNotFound: 'Passkey not found.',
+    deviceSignInGone:
+      'Face ID / fingerprint sign-in is no longer set up on this device. Sign in with your password.',
+    deviceSignInMax:
+      'Face ID / fingerprint sign-in is on for too many devices. Turn it off on one first.',
+    deviceNotFound: 'Device not found.',
     sessionExpired: 'Your session has expired. Sign in again.',
     sessionEnded: 'Your session has ended. Sign in again.',
     noAccess: 'You do not have access to this action.',
@@ -170,6 +180,17 @@ export const apiErrors = defineMessages({
     codeMismatchTime:
       'Ce code ne correspond pas. Vérifiez l’heure de votre téléphone et réessayez.',
     signInToContinue: 'Connectez-vous pour continuer.',
+    passkeyNotRecognized:
+      'Nous n’avons pas reconnu cette clé d’accès. Essayez une autre façon de vous connecter.',
+    passkeyNotConfirmed: 'Nous n’avons pas pu confirmer votre clé d’accès. Réessayez.',
+    passkeyMax: 'Vous avez atteint le nombre maximal de clés d’accès. Supprimez-en une d’abord.',
+    passkeyExists: 'Cette clé d’accès est déjà associée à votre compte.',
+    passkeyNotFound: 'Clé d’accès introuvable.',
+    deviceSignInGone:
+      'La connexion par Face ID / empreinte n’est plus configurée sur cet appareil. Connectez-vous avec votre mot de passe.',
+    deviceSignInMax:
+      'La connexion par Face ID / empreinte est activée sur trop d’appareils. Désactivez-la sur l’un d’eux d’abord.',
+    deviceNotFound: 'Appareil introuvable.',
     sessionExpired: 'Votre session a expiré. Reconnectez-vous.',
     sessionEnded: 'Votre session est terminée. Reconnectez-vous.',
     noAccess: 'Vous n’avez pas accès à cette action.',
@@ -314,6 +335,17 @@ export const apiErrors = defineMessages({
     codeMismatchTime:
       'Ese código no coincide. Revisa la hora de tu teléfono y vuelve a intentarlo.',
     signInToContinue: 'Inicia sesión para continuar.',
+    passkeyNotRecognized:
+      'No reconocimos esa llave de acceso. Prueba otra forma de iniciar sesión.',
+    passkeyNotConfirmed: 'No pudimos confirmar tu llave de acceso. Inténtalo de nuevo.',
+    passkeyMax: 'Tienes el número máximo de llaves de acceso. Elimina una primero.',
+    passkeyExists: 'Esta llave de acceso ya está en tu cuenta.',
+    passkeyNotFound: 'No se encontró la llave de acceso.',
+    deviceSignInGone:
+      'El inicio de sesión con Face ID / huella ya no está configurado en este dispositivo. Inicia sesión con tu contraseña.',
+    deviceSignInMax:
+      'El inicio de sesión con Face ID / huella está activado en demasiados dispositivos. Desactívalo en uno primero.',
+    deviceNotFound: 'No se encontró el dispositivo.',
     sessionExpired: 'Tu sesión venció. Vuelve a iniciar sesión.',
     sessionEnded: 'Tu sesión terminó. Vuelve a iniciar sesión.',
     noAccess: 'No tienes acceso a esta acción.',

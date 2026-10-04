@@ -1,3 +1,4 @@
+import { errorMessage } from '@nixzora/api-client';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { type Locale, LOCALE_LABEL, LOCALES, type MessageKey } from '@nixzora/i18n';
 import { useFocusEffect } from 'expo-router';
@@ -8,6 +9,7 @@ import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { applySavedTheme, setTheme, type ThemeChoice } from '@/lib/appearance';
 import { availableBiometric, type BiometricKind } from '@/lib/biometrics';
 import { api } from '@/lib/api';
+import { deviceSignIn, useDeviceSignInAccount } from '@/lib/device-sign-in';
 import { APP_VARIANT, APP_VERSION } from '@/lib/config';
 import { language, useLocale, useT } from '@/lib/i18n';
 import { enablePush, pushStatus, type PushStatus } from '@/lib/push';
@@ -62,7 +64,9 @@ function SettingRow({
 /** Appearance, this phone (notifications, unlock), and region. */
 export default function SettingsScreen() {
   const p = usePalette();
-  const { biometricLock, status } = useSession();
+  const { biometricLock, status, user } = useSession();
+  const deviceAccount = useDeviceSignInAccount();
+  const [bioBusy, setBioBusy] = useState(false);
   const [theme, setChoice] = useState<ThemeChoice | null>(null);
   const [push, setPush] = useState<PushStatus | null>(null);
   const [biometric, setBiometric] = useState<BiometricKind | null>(null);
@@ -76,7 +80,22 @@ export default function SettingsScreen() {
   useEffect(() => {
     void applySavedTheme().then(setChoice);
     void availableBiometric().then(setBiometric);
+    void deviceSignIn.load();
   }, []);
+
+  const toggleDeviceSignIn = async (on: boolean) => {
+    if (!user) return;
+    setError(null);
+    setBioBusy(true);
+    try {
+      if (on) await deviceSignIn.enable(user.email);
+      else await deviceSignIn.disable();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBioBusy(false);
+    }
+  };
   // Re-read when coming back from the phone's settings app.
   useFocusEffect(
     useCallback(() => {
@@ -186,6 +205,22 @@ export default function SettingsScreen() {
                     accessibilityLabel={t('unlockWith', { method: biometricName })}
                   />
                 </SettingRow>
+                {user ? (
+                  <>
+                    <Divider />
+                    <SettingRow
+                      title={t('bioSignInTitle', { method: biometricName })}
+                      body={t('bioSignInBody')}
+                    >
+                      <Switch
+                        value={deviceAccount === user.email}
+                        disabled={bioBusy}
+                        onValueChange={(on) => void toggleDeviceSignIn(on)}
+                        accessibilityLabel={t('bioSignInTitle', { method: biometricName })}
+                      />
+                    </SettingRow>
+                  </>
+                ) : null}
               </>
             ) : null}
           </Card>

@@ -9,6 +9,11 @@ export const email = defineMessages({
     // Account (auth.*)
     auth_duplicate_subject: 'Someone tried to create a NIXZORA account with your email',
     auth_duplicate_text: 'If this was you, sign in or reset your password at {link}.',
+    auth_signin_added_subject: 'A new way to sign in was added to your NIXZORA account',
+    auth_signin_added_text:
+      '{method} was added to your NIXZORA account: {name}.\nIf this was not you, remove it and change your password: {link}',
+    auth_method_passkey: 'A passkey',
+    auth_method_device: 'Face ID / fingerprint sign-in',
     auth_verify_subject: 'Confirm your email for NIXZORA',
     auth_verify_text: 'Confirm your email address: {link}\nThis link expires in 24 hours.',
     auth_reset_subject: 'Reset your NIXZORA password',
@@ -94,6 +99,11 @@ export const email = defineMessages({
       'Quelqu’un a essayé de créer un compte NIXZORA avec votre adresse e-mail',
     auth_duplicate_text:
       'Si c’était vous, connectez-vous ou réinitialisez votre mot de passe sur {link}.',
+    auth_signin_added_subject: 'Un nouveau moyen de connexion a été ajouté à votre compte NIXZORA',
+    auth_signin_added_text:
+      '{method} a été ajouté(e) à votre compte NIXZORA : {name}.\nSi ce n’était pas vous, supprimez-le et changez votre mot de passe : {link}',
+    auth_method_passkey: 'Une clé d’accès',
+    auth_method_device: 'La connexion par Face ID / empreinte',
     auth_verify_subject: 'Confirmez votre adresse e-mail pour NIXZORA',
     auth_verify_text: 'Confirmez votre adresse e-mail : {link}\nCe lien expire dans 24 heures.',
     auth_reset_subject: 'Réinitialiser votre mot de passe NIXZORA',
@@ -174,6 +184,11 @@ export const email = defineMessages({
   es: {
     auth_duplicate_subject: 'Alguien intentó crear una cuenta de NIXZORA con tu correo electrónico',
     auth_duplicate_text: 'Si fuiste tú, inicia sesión o restablece tu contraseña en {link}.',
+    auth_signin_added_subject: 'Se agregó una nueva forma de iniciar sesión a tu cuenta de NIXZORA',
+    auth_signin_added_text:
+      'Se agregó {method} a tu cuenta de NIXZORA: {name}.\nSi no fuiste tú, elimínalo y cambia tu contraseña: {link}',
+    auth_method_passkey: 'una llave de acceso',
+    auth_method_device: 'el inicio de sesión con Face ID / huella',
     auth_verify_subject: 'Confirma tu correo electrónico para NIXZORA',
     auth_verify_text:
       'Confirma tu dirección de correo electrónico: {link}\nEste enlace vence en 24 horas.',

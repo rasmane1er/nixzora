@@ -185,3 +185,95 @@ export type MeResponse = z.infer<typeof MeResponseSchema>;
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
 export type MfaSetupResponse = z.infer<typeof MfaSetupResponseSchema>;
 export type MfaEnabledResponse = z.infer<typeof MfaEnabledResponseSchema>;
+
+// ───────────── Passkeys and fingerprint sign-in (ADR-0019) ─────────────
+
+/**
+ * A WebAuthn credential response as the browser serializes it (PublicKeyCredential.toJSON()).
+ * Only the shape is checked here; the server's WebAuthn library verifies the contents.
+ */
+export const WebAuthnCredentialJsonSchema = z
+  .object({
+    id: z.string().min(1).max(1024),
+    rawId: z.string().min(1).max(1024),
+    type: z.literal('public-key'),
+    response: z.record(z.string(), z.unknown()),
+    clientExtensionResults: z.record(z.string(), z.unknown()).default({}),
+    authenticatorAttachment: z.enum(['platform', 'cross-platform']).optional(),
+  })
+  .loose();
+
+/** Options for navigator.credentials (passed to the browser as-is) plus a signed challenge. */
+export const PasskeyOptionsResponseSchema = z.object({
+  challengeToken: z.string(),
+  options: z.record(z.string(), z.unknown()),
+});
+
+export const PasskeyRegisterRequestSchema = z.object({
+  challengeToken: z.string().min(1).max(4096),
+  credential: WebAuthnCredentialJsonSchema,
+  /** "MacBook (Chrome)"; defaults to one made from the browser. */
+  name: z.string().trim().min(1).max(60).optional(),
+});
+
+export const PasskeySignInRequestSchema = z.object({
+  challengeToken: z.string().min(1).max(4096),
+  credential: WebAuthnCredentialJsonSchema,
+  deviceName: DeviceNameSchema,
+});
+
+export const PasskeyRenameRequestSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+});
+
+export const PasskeySummarySchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  /** Synced passkeys (iCloud Keychain, Google Password Manager…) work on the person's other devices. */
+  synced: z.boolean(),
+  createdAt: z.iso.datetime(),
+  lastUsedAt: z.iso.datetime().nullable(),
+});
+
+/** Turns on "Sign in with Face ID / fingerprint" for this phone. */
+export const DeviceSignInEnableRequestSchema = z.object({
+  deviceName: z.string().trim().min(1).max(100),
+  platform: z.enum(['ios', 'android', 'web']),
+});
+
+/** The device secret is shown once; the app keeps it behind the biometric check. */
+export const DeviceSignInCredentialSchema = z.object({
+  id: z.uuid(),
+  secret: z.string(),
+});
+
+export const DeviceSignInRequestSchema = z.object({
+  id: z.uuid(),
+  secret: z.string().min(32).max(200),
+  deviceName: DeviceNameSchema,
+});
+
+/** A successful device sign-in: session tokens plus the rotated device secret. */
+export const DeviceSignInResponseSchema = AuthTokensSchema.extend({
+  deviceSecret: z.string(),
+});
+
+export const DeviceSignInSummarySchema = z.object({
+  id: z.uuid(),
+  deviceName: z.string(),
+  platform: z.string(),
+  createdAt: z.iso.datetime(),
+  lastUsedAt: z.iso.datetime().nullable(),
+});
+
+export type WebAuthnCredentialJson = z.infer<typeof WebAuthnCredentialJsonSchema>;
+export type PasskeyOptionsResponse = z.infer<typeof PasskeyOptionsResponseSchema>;
+export type PasskeyRegisterRequest = z.infer<typeof PasskeyRegisterRequestSchema>;
+export type PasskeySignInRequest = z.infer<typeof PasskeySignInRequestSchema>;
+export type PasskeyRenameRequest = z.infer<typeof PasskeyRenameRequestSchema>;
+export type PasskeySummary = z.infer<typeof PasskeySummarySchema>;
+export type DeviceSignInEnableRequest = z.infer<typeof DeviceSignInEnableRequestSchema>;
+export type DeviceSignInCredential = z.infer<typeof DeviceSignInCredentialSchema>;
+export type DeviceSignInRequest = z.infer<typeof DeviceSignInRequestSchema>;
+export type DeviceSignInResponse = z.infer<typeof DeviceSignInResponseSchema>;
+export type DeviceSignInSummary = z.infer<typeof DeviceSignInSummarySchema>;

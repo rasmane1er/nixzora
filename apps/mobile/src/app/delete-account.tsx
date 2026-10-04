@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Banner, Button, Field, Screen, Text } from '@/components/ui';
 import { signOut } from '@/lib/account-actions';
+import { deviceSignIn } from '@/lib/device-sign-in';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -23,6 +24,7 @@ export default function DeleteAccountScreen() {
     try {
       await api.account.delete(usesPassword ? { password } : { confirm: 'DELETE' });
       // The API already ended every session and removed this phone's push registration.
+      await deviceSignIn.forget();
       await signOut({ serverEnded: true });
       router.dismissAll();
       router.replace({ pathname: '/account', params: { deleted: '1' } });

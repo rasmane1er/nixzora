@@ -43,6 +43,20 @@ export const EnvSchema = z
     WEB_APP_URL: z.url().default('http://localhost:3000'),
 
     // ── Identity ──
+    /**
+     * Passkeys: the domain they belong to and the web origins allowed to use them. Both default
+     * to WEB_APP_URL (e.g. "staging.nixzora.com" and "https://staging.nixzora.com").
+     */
+    WEBAUTHN_RP_ID: z.string().optional(),
+    WEBAUTHN_ORIGINS: z
+      .string()
+      .optional()
+      .transform((value) =>
+        (value ?? '')
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean),
+      ),
     JWT_ISSUER: z.string().default('nixzora-api'),
     JWT_AUDIENCE: z.string().default('nixzora'),
     /** Ed25519 key pair (base64 of PEM). Generate with: pnpm --filter @nixzora/api keys:generate */

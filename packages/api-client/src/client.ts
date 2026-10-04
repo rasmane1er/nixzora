@@ -1,4 +1,10 @@
 import type {
+  DeviceSignInCredential,
+  DeviceSignInEnableRequest,
+  DeviceSignInRequest,
+  DeviceSignInResponse,
+  DeviceSignInSummary,
+  PasskeySummary,
   AccountCoupon,
   SupportRequestCreate,
   SupportRequestView,
@@ -199,6 +205,9 @@ export function createApiClient(options: ClientOptions) {
         request<LoginResponse>('POST', '/auth/social', { body, auth: 'none' }),
       forgotPassword: (email: string) =>
         request<void>('POST', '/auth/password/forgot', { body: { email }, auth: 'none' }),
+      /** Face ID / fingerprint sign-in: answers with a session and the rotated device secret. */
+      deviceSignIn: (body: DeviceSignInRequest) =>
+        request<DeviceSignInResponse>('POST', '/auth/device', { body, auth: 'none' }),
       me: () => request<MeResponse>('GET', '/auth/me'),
     },
 
@@ -324,6 +333,13 @@ export function createApiClient(options: ClientOptions) {
       sessions: () => request<SessionSummary[]>('GET', '/me/sessions'),
       revokeSession: (id: string) => request<void>('DELETE', `/me/sessions/${enc(id)}`),
       revokeOtherSessions: () => request<void>('DELETE', '/me/sessions'),
+      passkeys: () => request<PasskeySummary[]>('GET', '/me/passkeys'),
+      removePasskey: (id: string) => request<void>('DELETE', `/me/passkeys/${enc(id)}`),
+      deviceSignIns: () => request<DeviceSignInSummary[]>('GET', '/me/device-sign-ins'),
+      /** Turns on Face ID / fingerprint sign-in for this phone; the secret is shown once. */
+      enableDeviceSignIn: (body: DeviceSignInEnableRequest) =>
+        request<DeviceSignInCredential>('POST', '/me/device-sign-ins', { body }),
+      revokeDeviceSignIn: (id: string) => request<void>('DELETE', `/me/device-sign-ins/${enc(id)}`),
       changePassword: (body: { currentPassword: string; newPassword: string }) =>
         request<void>('POST', '/auth/password/change', { body }),
       createAddress: (body: AddressCreate) =>

@@ -65,8 +65,55 @@ model User {
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
+  passkeys           Passkey[]
+  deviceSignIns      DeviceSignIn[]
 
   @@map("users")
+}
+
+/// A passkey (WebAuthn credential): sign in with Touch ID, Face ID, Windows Hello, a phone's
+/// fingerprint or a security key, instead of a password. See ADR-0019.
+model Passkey {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  /// The authenticator's credential id (base64url).
+  credentialId String    @unique @map("credential_id")
+  /// COSE public key; the private key never leaves the person's device.
+  publicKey    Bytes     @map("public_key")
+  /// Signature counter, to spot cloned authenticators (0 when the authenticator does not count).
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  /// "singleDevice" or "multiDevice" (synced, e.g. iCloud Keychain or Google Password Manager).
+  deviceType   String    @map("device_type")
+  backedUp     Boolean   @default(false) @map("backed_up")
+  /// Shown in the account: "MacBook Chrome", "iPhone"... editable by the person.
+  name         String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("passkeys")
+}
+
+/// "Sign in with Face ID / fingerprint" in the app: a device secret kept in the phone's secure
+/// storage behind the biometric check. Rotated on every use; revoked from the account page.
+model DeviceSignIn {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  /// SHA-256 of the current device secret.
+  secretHash String    @unique @map("secret_hash")
+  deviceName String    @map("device_name")
+  platform   String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_sign_ins")
 }
 
 enum IdentityProvider {
