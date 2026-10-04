@@ -101,7 +101,7 @@ module "platform" {
   ops_allowed_cidrs  = var.ops_allowed_cidrs
 
   nat_gateway_count     = 2
-  db_instance_class     = "db.t4g.medium"
+  db_instance_class     = "db.t3.medium" # db.t4g.medium is not Multi-AZ capable for PG16 in us-east-1 (checked 2026-10-04)
   db_multi_az           = true
   backup_retention_days = 14
   redis_node_type       = "cache.t4g.small"
