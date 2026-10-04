@@ -23,6 +23,8 @@ export async function removeTestData(prisma: PrismaService, run: string): Promis
   await prisma.payment.deleteMany({ where: { orderId: { in: orderIds } } });
   await prisma.inventoryReservation.deleteMany({ where: { orderId: { in: orderIds } } });
   await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+  // Declined checkouts have no order (the rest go with their order or store).
+  await prisma.riskAssessment.deleteMany({ where: { email: { contains: tag } } });
 
   const categories = await prisma.category.findMany({
     where: { slug: { endsWith: tag } },

@@ -23,6 +23,11 @@ export const EnvSchema = z
     APP_VERSION: z.string().default('0.2.0'),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+    /**
+     * PostgreSQL read replica for stale-tolerant reads (ADR-0022). Built from
+     * DATABASE_REPLICA_HOST like DATABASE_URL; unset means everything reads the primary.
+     */
+    DATABASE_REPLICA_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
     CORS_ORIGINS: z
       .string()
       .default('http://localhost:3000')
@@ -141,6 +146,16 @@ export const EnvSchema = z
     PAYOUT_MIN_CENTS: z.coerce.number().int().min(100).default(1000),
     /** Send available balances automatically once a day (off in tests). */
     PAYOUTS_AUTO: booleanString.default(true),
+    // ── Fraud signals (ADR-0024) ──
+    /**
+     * "enforce" declines high-risk checkouts and holds risky orders and payouts for review;
+     * "shadow" only records the scores (to tune thresholds, and for load tests); "off" skips them.
+     */
+    RISK_CHECKS: z.enum(['enforce', 'shadow', 'off']).default('enforce'),
+    /** From this score an order or payout waits for a person to clear it. */
+    RISK_REVIEW_SCORE: z.coerce.number().int().min(1).max(200).default(50),
+    /** From this score a checkout is declined outright. */
+    RISK_BLOCK_SCORE: z.coerce.number().int().min(1).max(200).default(80),
     /** Flat shipping rate, free above the threshold. */
     SHIPPING_FLAT_CENTS: z.coerce.number().int().min(0).default(999),
     FREE_SHIPPING_THRESHOLD_CENTS: z.coerce.number().int().min(0).default(9900),
@@ -236,8 +251,16 @@ export const EnvSchema = z
      * the notifications worker (worker-main.ts) runs them.
      */
     BACKGROUND_JOBS: booleanString.default(true),
+    /** Prometheus metrics port (ADR-0023), never behind the load balancer. 0 turns it off. */
+    METRICS_PORT: z.coerce.number().int().min(0).max(65535).default(9464),
     /** Health endpoint port of the notifications worker. */
     WORKER_PORT: z.coerce.number().int().positive().default(4300),
+
+    /**
+     * Drop audit-log months older than this (ADR-0022). Unset keeps the audit log forever, which
+     * is the default: it is append-only by design.
+     */
+    AUDIT_RETENTION_MONTHS: z.coerce.number().int().min(12).max(120).optional(),
 
     // ── Event streaming (ADR-0020) ──
     /**
@@ -317,6 +340,13 @@ export const EnvSchema = z
         code: 'custom',
         path: ['STRIPE_SECRET_KEY'],
         message: 'is required when PAYOUTS_PROVIDER=stripe',
+      });
+    }
+    if (env.RISK_BLOCK_SCORE <= env.RISK_REVIEW_SCORE) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RISK_BLOCK_SCORE'],
+        message: 'must be higher than RISK_REVIEW_SCORE',
       });
     }
     if (env.SHIPPING_PROVIDER === 'easypost' && !env.EASYPOST_API_KEY) {

@@ -16,6 +16,7 @@ import {
   SearchEventsConsumer,
 } from '../modules/search/search-events.consumer';
 import { SearchEngine } from '../modules/search/search-engine';
+import { MetricsModule } from '../metrics/metrics.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisModule } from '../redis/redis.module';
@@ -75,6 +76,7 @@ class StartupReindex implements OnApplicationBootstrap {
       }),
     }),
     PrismaModule,
+    MetricsModule,
     RedisModule,
     KafkaModule,
     SearchCoreModule,

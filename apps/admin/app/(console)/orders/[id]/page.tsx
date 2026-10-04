@@ -1,4 +1,10 @@
-import { CARRIERS, type OrderView, type ReturnView } from '@nixzora/validation';
+import {
+  CARRIERS,
+  type OrderView,
+  type PagedResult,
+  type ReturnView,
+  type RiskAssessmentView,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -10,6 +16,7 @@ import { param, type SearchParams } from '@/lib/format';
 import { getFormat, getT } from '@/lib/i18n';
 import { buyLabel, fulfill, refund } from '../actions';
 import { ReturnList } from '../../returns/ReturnList';
+import { RiskList } from '../../risk/RiskList';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('opsOrders');
@@ -40,6 +47,12 @@ export default async function OrderPage({
   }
   const canFulfill = can(me, 'orders.fulfill');
   const returns = await load<ReturnView[]>(`/admin/orders/${id}/returns`);
+  const canReviewRisk = can(me, 'risk.review');
+  const risk = canReviewRisk
+    ? (await load<PagedResult<RiskAssessmentView>>(`/admin/risk?orderId=${id}`)).items
+    : [];
+  const held = risk.some((r) => r.order?.riskHold);
+  const tRisk = await getT('opsRisk');
   const refundable = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'].includes(
     order.status,
   );
@@ -52,7 +65,8 @@ export default async function OrderPage({
   const open = ['PAID', 'FULFILLING'].includes(order.status);
   // Marketplace orders: staff ship only NIXZORA's own items; sellers ship theirs.
   const ownPart = order.shipments.find((part) => !part.seller);
-  const shipOwn = open && (!order.shipments.length || ownPart?.status === 'PROCESSING');
+  // Held by a fraud review: no packing or shipping until it is cleared (cancelling still works).
+  const shipOwn = open && !held && (!order.shipments.length || ownPart?.status === 'PROCESSING');
   const a = order.shippingAddress;
   const statusLabel = (status: string) => {
     const key = `status_${status}`;
@@ -75,6 +89,21 @@ export default async function OrderPage({
         }
       />
       <Banner notice={param(search, 'notice')} error={param(search, 'error')} />
+      {held ? (
+        <p className="banner banner--error" role="alert">
+          {tRisk('orderHeld')}
+        </p>
+      ) : null}
+      {risk.some((r) => r.status) ? (
+        <section style={{ marginBottom: 16 }}>
+          <h2>{tRisk('metaRisk')}</h2>
+          <RiskList
+            reviews={risk.filter((r) => r.status)}
+            canReview={canReviewRisk}
+            back={`/orders/${id}`}
+          />
+        </section>
+      ) : null}
 
       <div className="two-col">
         <div>
@@ -188,7 +217,7 @@ export default async function OrderPage({
             <section className="card">
               <h2>{t('fulfillment')}</h2>
               <div className="form">
-                {order.status === 'PAID' ? (
+                {order.status === 'PAID' && !held ? (
                   <ActionButton
                     action={fulfill}
                     label={t('startPacking')}

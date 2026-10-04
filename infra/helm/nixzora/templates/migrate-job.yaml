@@ -1,0 +1,94 @@
+{{- if .Values.migrations.enabled }}
+{{- $name := include "nixzora.name" (dict "root" . "component" "migrate") }}
+{{- $labels := include "nixzora.labels" (dict "root" . "component" "migrate") }}
+# "prisma migrate deploy" with the release's migrate image, before the new pods start. A failed
+# migration fails the install/upgrade and leaves the running release untouched. Hooks run before
+# the release's own resources exist on a first install, so the job brings its own settings,
+# secret and service account (created first: lower hook weight).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  labels: {{- $labels | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-10'
+    helm.sh/hook-delete-policy: before-hook-creation
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels: {{- $labels | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-10'
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  {{- include "nixzora.apiEnv" . | nindent 2 }}
+---
+{{- if and .Values.externalSecrets.enabled .Values.externalSecrets.remote.database }}
+# The database password only: migrations need nothing else.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ $name }}
+  labels: {{- $labels | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-10'
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  refreshInterval: {{ .Values.externalSecrets.refreshInterval }}
+  secretStoreRef:
+    kind: {{ .Values.externalSecrets.storeKind }}
+    name: {{ .Values.externalSecrets.storeName }}
+  target:
+    name: {{ $name }}
+  data:
+    - secretKey: DATABASE_PASSWORD
+      remoteRef: { key: {{ .Values.externalSecrets.remote.database | quote }}, property: password }
+---
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}
+  labels: {{- $labels | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '0'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {{- $labels | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: {{ printf "%s/nixzora/api:%s-migrate" .Values.image.registry (toString .Values.image.tag) }}
+          envFrom:
+            - configMapRef:
+                name: {{ $name }}
+            - secretRef:
+                name: {{ $name }}
+                # Without External Secrets, create this Secret (DATABASE_PASSWORD) yourself.
+                optional: false
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+{{- end }}

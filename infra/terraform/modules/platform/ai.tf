@@ -48,7 +48,7 @@ resource "aws_cloudwatch_log_group" "ai" {
 resource "aws_iam_role" "ai_task" {
   count              = local.ai_enabled ? 1 : 0
   name               = "${local.prefix}-ai-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.app_assume.json
   tags               = local.tags
 }
 
@@ -65,7 +65,7 @@ resource "aws_ecs_task_definition" "ai" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode(concat([{
     name         = "ai"
     image        = "${var.image_repositories.api}:${var.image_tag}"
     essential    = true
@@ -92,7 +92,9 @@ resource "aws_ecs_task_definition" "ai" {
       }
     }
     linuxParameters = { initProcessEnabled = true }
-  }])
+    }],
+    local.amp_enabled ? [local.metrics_sidecar["ai"]] : [],
+  ))
   tags = local.tags
 }
 

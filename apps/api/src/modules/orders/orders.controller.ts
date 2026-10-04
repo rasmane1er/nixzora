@@ -73,7 +73,9 @@ const TokenQuery = z.object({
 });
 const FakeConfirmSchema = z.object({
   clientSecret: z.string().min(10).max(200),
-  outcome: z.enum(['succeeded', 'failed', 'canceled']),
+  outcome: z.enum(['succeeded', 'failed', 'canceled', 'disputed']),
+  /** What Stripe Radar would say about the card (fraud review tests). */
+  riskLevel: z.enum(['normal', 'elevated', 'highest']).optional(),
 });
 
 function orderNumber(value: string): string {
@@ -241,6 +243,7 @@ export class PaymentsController {
       throw new ForbiddenException('Test payments are off.');
     const paymentId = body.clientSecret.split('_secret_')[0] ?? '';
     const amount = await this.orders.paymentAmount(paymentId);
+    if (body.riskLevel) this.gateway.setPaymentRisk(paymentId, body.riskLevel);
     const event = this.gateway.event(
       body.clientSecret,
       body.outcome,

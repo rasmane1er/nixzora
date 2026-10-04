@@ -9,3 +9,6 @@ apps/api/prisma/migrations
 dist-web
 dist-test
 .expo
+
+# Helm templates are Go templates, not YAML
+infra/helm/nixzora/templates/

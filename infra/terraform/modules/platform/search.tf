@@ -57,7 +57,7 @@ resource "aws_cloudwatch_log_group" "search" {
 resource "aws_iam_role" "search_task" {
   count              = local.search_enabled ? 1 : 0
   name               = "${local.prefix}-search-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.app_assume.json
   tags               = local.tags
 }
 
@@ -74,7 +74,7 @@ resource "aws_ecs_task_definition" "search" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode(concat([{
     name         = "search"
     image        = "${var.image_repositories.api}:${var.image_tag}"
     essential    = true
@@ -100,7 +100,9 @@ resource "aws_ecs_task_definition" "search" {
       }
     }
     linuxParameters = { initProcessEnabled = true }
-  }])
+    }],
+    local.amp_enabled ? [local.metrics_sidecar["search"]] : [],
+  ))
   tags = local.tags
 }
 

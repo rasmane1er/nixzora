@@ -1,0 +1,9 @@
+{{/* Settings for the API image's processes; web apps get theirs inline (see deployments). */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "nixzora.name" (dict "root" . "component" "api-config") }}
+  labels:
+    {{- include "nixzora.labels" (dict "root" . "component" "config") | nindent 4 }}
+data:
+  {{- include "nixzora.apiEnv" . | nindent 2 }}

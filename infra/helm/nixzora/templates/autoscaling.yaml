@@ -1,0 +1,44 @@
+{{- range $component, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.autoscaling }}
+{{- $ctx := dict "root" $ "component" $component }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "nixzora.name" $ctx }}
+  labels:
+    {{- include "nixzora.labels" $ctx | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "nixzora.name" $ctx }}
+  minReplicas: {{ $svc.autoscaling.min }}
+  maxReplicas: {{ $svc.autoscaling.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: {{ $svc.autoscaling.cpu }} }
+  behavior:
+    # Scale out fast, scale in slowly (same cooldowns as the ECS services).
+    scaleUp:
+      stabilizationWindowSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+{{- if gt (int $svc.autoscaling.min) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "nixzora.name" $ctx }}
+  labels:
+    {{- include "nixzora.labels" $ctx | nindent 4 }}
+spec:
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "nixzora.selectorLabels" $ctx | nindent 6 }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

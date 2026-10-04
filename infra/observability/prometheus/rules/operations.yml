@@ -1,0 +1,105 @@
+# NIXZORA operational alerts (ADR-0023). Each points at the runbook section to start from.
+groups:
+  - name: nixzora-operations
+    rules:
+      - alert: TargetDown
+        expr: up{job=~"nixzora-.*"} == 0
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: '{{ $labels.job }} on {{ $labels.instance }} is not answering metrics scrapes'
+          description: 'The process is down or its metrics port is unreachable.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#first-five-minutes
+
+      - alert: OutboxDeliveryStalled
+        expr: time() - max(nixzora_outbox_last_run_timestamp_seconds{queue="deliver"}) > 300
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: 'Emails, push and search indexing stopped: the outbox has not run for {{ $value | humanizeDuration }}'
+          description: 'The notifications worker is down or stuck.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#emails-or-push-notifications-not-arriving
+
+      - alert: OutboxBacklogHigh
+        expr: max(nixzora_outbox_backlog{queue="deliver"}) > 500
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} outbox events waiting for delivery'
+          description: 'Delivery is slower than events arrive (provider throttling or a failing handler).'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#emails-or-push-notifications-not-arriving
+
+      - alert: OutboxEventsFailed
+        expr: max(nixzora_outbox_failed) > 0
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} outbox events failed every retry'
+          description: 'Look at last_error on outbox_events rows with attempts >= 10.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#emails-or-push-notifications-not-arriving
+
+      - alert: KafkaStreamBacklog
+        expr: max(nixzora_outbox_backlog{queue="stream"}) > 1000
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} events not yet in Kafka'
+          description: 'The worker cannot reach MSK, or is falling behind.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/event-streaming.md#something-is-wrong
+
+      - alert: ReadReplicaFallback
+        expr: max(nixzora_db_replica_usable) == 0
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: 'Catalog reads fell back to the primary database'
+          description: 'The read replica is down or more than 30 s behind; the primary carries all reads.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#common-alarms
+
+      - alert: DependencyErrors
+        expr: |
+          sum by (dependency) (rate(nixzora_dependency_request_duration_seconds_count{outcome="error"}[10m]))
+          /
+          clamp_min(sum by (dependency) (rate(nixzora_dependency_request_duration_seconds_count[10m])), 1e-9)
+          > 0.2
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $labels.dependency }} calls failing ({{ $value | humanizePercentage }})'
+          description: 'Search falls back to keywords and the assistant to its local driver, but answers degrade.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#common-alarms
+
+      - alert: EventLoopLag
+        expr: max by (service) (nixzora_nodejs_eventloop_lag_p99_seconds) > 0.5
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $labels.service }}: event loop blocked {{ $value | humanizeDuration }} at p99'
+          description: 'CPU-bound work on the request path; every request in that process waits.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#common-alarms
+
+      - alert: MemoryNearLimit
+        expr: max by (service) (nixzora_process_resident_memory_bytes) > 900 * 1024 * 1024
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $labels.service }} uses {{ $value | humanize1024 }}B of memory'
+          description: 'Close to the 1 GiB task/pod limit: look for a leak or raise the size.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/incident-response.md#common-alarms
+
+      # Fraud signals (ADR-0024)
+      - alert: CheckoutDeclinesSpike
+        expr: sum(increase(nixzora_business_events_total{type="risk.checkout_declined"}[30m])) > 20
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value | humanize }} checkouts declined by fraud checks in 30 minutes'
+          description: 'A card-testing attack, or a rule declining real shoppers. Look at the Declined at checkout tab.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/fraud-review.md#many-declined-checkouts
+
+      - alert: FraudReviewsPiling
+        expr: sum(increase(nixzora_business_events_total{type="risk.review_opened"}[6h])) > 25
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value | humanize }} fraud reviews opened in 6 hours'
+          description: 'Held orders wait to ship and stores wait to be paid until someone reviews them.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/runbooks/fraud-review.md#daily-review

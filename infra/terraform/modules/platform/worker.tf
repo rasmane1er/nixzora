@@ -35,7 +35,7 @@ resource "aws_ecs_task_definition" "worker" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode(concat([{
     name        = "worker"
     image       = "${var.image_repositories.api}:${var.image_tag}"
     essential   = true
@@ -60,7 +60,9 @@ resource "aws_ecs_task_definition" "worker" {
       }
     }
     linuxParameters = { initProcessEnabled = true }
-  }])
+    }],
+    local.amp_enabled ? [local.metrics_sidecar["worker"]] : [],
+  ))
   tags = local.tags
 }
 

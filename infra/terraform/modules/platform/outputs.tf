@@ -55,3 +55,36 @@ output "secret_names" {
     ai  = local.ai_enabled ? [for s in concat(local.base_secrets, local.ai_secrets) : s.name] : []
   }
 }
+
+output "kubernetes" {
+  description = "EKS cluster and the settings values-<env>.yaml needs (ADR-0021). Null when off."
+  value = local.eks_enabled ? {
+    cluster_name      = aws_eks_cluster.main[0].name
+    endpoint          = aws_eks_cluster.main[0].endpoint
+    namespace         = var.kubernetes.namespace
+    update_kubeconfig = "aws eks update-kubeconfig --name ${aws_eks_cluster.main[0].name} --region ${data.aws_region.current.region}"
+    helm_values = {
+      aws = {
+        region       = data.aws_region.current.region
+        databaseHost = aws_db_instance.main.address
+        replicaHost  = var.db_read_replica.enabled ? aws_db_instance.replica[0].address : ""
+        databaseName = aws_db_instance.main.db_name
+        databaseUser = aws_db_instance.main.username
+        redisHost    = aws_elasticache_replication_group.main.primary_endpoint_address
+        mediaBucket  = aws_s3_bucket.media.id
+        mediaHost    = local.hosts.media
+      }
+      hosts = local.hosts
+      externalSecrets = {
+        remote = {
+          app      = aws_secretsmanager_secret.app.name
+          ai       = aws_secretsmanager_secret.ai.name
+          redis    = aws_secretsmanager_secret.redis.name
+          internal = aws_secretsmanager_secret.internal.name
+          database = local.db_secret
+        }
+      }
+      networkPolicies = { vpcCidr = var.vpc_cidr }
+    }
+  } : null
+}

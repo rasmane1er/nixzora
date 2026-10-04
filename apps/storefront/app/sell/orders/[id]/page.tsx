@@ -55,7 +55,13 @@ export default async function SellerOrderPage({
           </span>{' '}
           <span className="muted">{t('placedOn', { date: date(order.placedAt) })}</span>
         </p>
-        {order.status === 'PAID' ? <p className="banner banner--info">{t('shipWithin')}</p> : null}
+        {order.underReview ? (
+          <p className="banner banner--error" role="alert">
+            {t('underReviewDoNotShip')}
+          </p>
+        ) : order.status === 'PAID' ? (
+          <p className="banner banner--info">{t('shipWithin')}</p>
+        ) : null}
         {order.status === 'CANCELLED' ? (
           <p className="banner banner--error">{t('cancelledDoNotShip')}</p>
         ) : null}
@@ -128,7 +134,7 @@ export default async function SellerOrderPage({
             {t('earningsAfterHold', { days: seller.payoutHoldDays })}
           </p>
 
-          {order.status === 'PAID' ? (
+          {order.status === 'PAID' && !order.underReview ? (
             <form action={shipSellerOrder} className="form">
               <h3>{t('markAsShipped')}</h3>
               <input type="hidden" name="id" value={order.id} />

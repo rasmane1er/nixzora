@@ -1,0 +1,26 @@
+{{- range $component, $svc := .Values.services }}
+{{- if and $svc.enabled (ne $component "worker") }}
+{{- $ctx := dict "root" $ "component" $component }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nixzora.name" $ctx }}
+  labels:
+    {{- include "nixzora.labels" $ctx | nindent 4 }}
+  {{- if $svc.public }}
+  annotations:
+    # The ALB checks each target group on the app's own health path.
+    alb.ingress.kubernetes.io/healthcheck-path: {{ $svc.health | quote }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "nixzora.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $svc.port }}
+      targetPort: http
+      protocol: TCP
+---
+{{- end }}
+{{- end }}

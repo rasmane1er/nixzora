@@ -1,0 +1,7 @@
+apiVersion: v2
+name: nixzora
+description: NIXZORA on Kubernetes (EKS) — API, worker, search, AI, storefront and Ops Center (ADR-0021)
+type: application
+version: 0.1.0
+appVersion: '0.2.0'
+home: https://github.com/rasmane1er/nixzora

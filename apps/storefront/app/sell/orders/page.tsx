@@ -82,6 +82,14 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
                       <span className={`pill pill--seller-order-${order.status.toLowerCase()}`}>
                         {t(`order_${order.status}`)}
                       </span>
+                      {order.underReview ? (
+                        <>
+                          {' '}
+                          <span className="pill pill--seller-order-cancelled">
+                            {t('underReview')}
+                          </span>
+                        </>
+                      ) : null}
                     </td>
                     <td className="num">{f.money(order.netCents, order.currency)}</td>
                   </tr>

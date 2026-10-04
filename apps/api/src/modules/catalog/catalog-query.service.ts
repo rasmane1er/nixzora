@@ -11,7 +11,7 @@ import {
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Category, Prisma } from '../../generated/prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { ReadDatabase } from '../../prisma/read-database';
 import { SearchIndexService } from '../search/search-index.service';
 import { StorageService } from '../media/storage.service';
 import { ratingSummary } from '../../common/rating';
@@ -34,11 +34,16 @@ const MAX_CANDIDATES = 2000;
 @Injectable()
 export class CatalogQueryService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly read: ReadDatabase,
     private readonly storage: StorageService,
     private readonly search: SearchIndexService,
     private readonly config: ConfigService<Env, true>,
   ) {}
+
+  /** Public catalog reads tolerate a second of staleness: the read replica when there is one. */
+  private get prisma() {
+    return this.read.client;
+  }
 
   private readonly url = (key: string) => this.storage.publicUrl(key);
 

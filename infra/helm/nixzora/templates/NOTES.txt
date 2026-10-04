@@ -1,0 +1,7 @@
+NIXZORA {{ .Values.image.tag }} is rolling out in {{ .Release.Namespace }}.
+
+  Storefront: https://{{ .Values.hosts.storefront }}
+  API:        https://{{ .Values.hosts.api }}/api/v1/health
+  Ops Center: https://{{ .Values.hosts.admin }}
+
+Watch it: kubectl -n {{ .Release.Namespace }} get pods,hpa -l app.kubernetes.io/instance={{ .Release.Name }}

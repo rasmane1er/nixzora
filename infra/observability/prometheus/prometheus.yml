@@ -1,0 +1,25 @@
+# Local Prometheus for the NIXZORA processes running on your machine (pnpm obs:up).
+# In AWS the ADOT collector next to each task scrapes the same ports (ADR-0023).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+  external_labels: { environment: local }
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs: [{ targets: ['alertmanager:9093'] }]
+
+scrape_configs:
+  # Each process listens on its own METRICS_PORT when run side by side on one machine:
+  # API 9464 (default), worker 9465, search 9466, AI 9467.
+  - job_name: nixzora-api
+    static_configs: [{ targets: ['host.docker.internal:9464'] }]
+  - job_name: nixzora-worker
+    static_configs: [{ targets: ['host.docker.internal:9465'] }]
+  - job_name: nixzora-search
+    static_configs: [{ targets: ['host.docker.internal:9466'] }]
+  - job_name: nixzora-ai
+    static_configs: [{ targets: ['host.docker.internal:9467'] }]

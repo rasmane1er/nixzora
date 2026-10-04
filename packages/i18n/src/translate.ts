@@ -1,3 +1,4 @@
+import { numberFormat, plurals } from './intl';
 import { INTL_LOCALE, type Locale } from './locale';
 
 export type Vars = Record<string, string | number>;
@@ -17,11 +18,8 @@ export function format(locale: Locale, message: string, vars: Vars = {}): string
     const choices = new Map<string, string>();
     for (const [, key, text] of options.matchAll(OPTION)) choices.set(key!, text!);
     const chosen =
-      choices.get(`=${n}`) ??
-      choices.get(new Intl.PluralRules(tag).select(n)) ??
-      choices.get('other') ??
-      '';
-    return chosen.replace(/#/g, new Intl.NumberFormat(tag).format(n));
+      choices.get(`=${n}`) ?? choices.get(plurals(tag).select(n)) ?? choices.get('other') ?? '';
+    return chosen.replace(/#/g, numberFormat(tag).format(n));
   });
   return withPlurals.replace(VAR, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,

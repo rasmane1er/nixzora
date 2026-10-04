@@ -67,6 +67,7 @@ model User {
   sellerApplication  SellerApplicationDraft?
   passkeys           Passkey[]
   deviceSignIns      DeviceSignIn[]
+  riskReviews        RiskAssessment[]        @relation("RiskReviewer")
 
   @@map("users")
 }
@@ -448,14 +449,17 @@ model Order {
   shippedAt       DateTime?   @map("shipped_at")
   deliveredAt     DateTime?   @map("delivered_at")
   cancelledAt     DateTime?   @map("cancelled_at")
+  /// Fraud review (ADR-0024): paid but not to be shipped until staff clear it.
+  riskHold        Boolean     @default(false) @map("risk_hold")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items        OrderItem[]
-  payments     Payment[]
-  returns      ReturnRequest[]
-  sellerOrders SellerOrder[]
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items           OrderItem[]
+  payments        Payment[]
+  returns         ReturnRequest[]
+  sellerOrders    SellerOrder[]
+  riskAssessments RiskAssessment[]
 
   @@index([userId, createdAt])
   @@index([status])
@@ -512,6 +516,8 @@ model Payment {
   status            PaymentStatus
   amountCents       Int             @map("amount_cents")
   currency          String          @db.Char(3)
+  /// The card holder disputed the charge (chargeback).
+  disputedAt        DateTime?       @map("disputed_at")
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
@@ -555,6 +561,8 @@ enum ActorType {
 }
 
 /// Append-only. UPDATE and DELETE are blocked by a database trigger.
+/// Partitioned by month on created_at (ADR-0022): primary key (id, created_at) in the database,
+/// partitions in the "partitions" schema, structure owned by migrations (external table).
 model AuditLog {
   id         BigInt    @id @default(autoincrement())
   actorType  ActorType @map("actor_type")
@@ -576,6 +584,8 @@ model AuditLog {
 
 /// Transactional outbox: written in the same transaction as the change,
 /// then published by a worker (BullMQ now, Kafka in Phase 8).
+/// Partitioned by month on created_at (ADR-0022): primary key (id, created_at) in the database,
+/// partitions in the "partitions" schema, structure owned by migrations (external table).
 model OutboxEvent {
   id            String    @id @default(uuid(7)) @db.Uuid
   aggregateType String    @map("aggregate_type")
@@ -829,6 +839,8 @@ enum ProductEventType {
 
 /// Shopping signals for recommendations (p6-08): who looked at what, and when. Guests are a
 /// random visitor id from the app or browser, never an IP address. Kept for 180 days.
+/// Partitioned by month on created_at (ADR-0022): primary key (id, created_at) in the database,
+/// partitions in the "partitions" schema, structure owned by migrations (external table).
 model ProductEvent {
   id        String           @id @default(uuid(7)) @db.Uuid
   productId String           @map("product_id") @db.Uuid
@@ -982,15 +994,18 @@ model Seller {
   carriers             String[]      @default([])
   shipRegions          String[]      @default(["US_CONTIGUOUS"]) @map("ship_regions")
   agreementsAcceptedAt DateTime?     @map("agreements_accepted_at")
+  /// Fraud review (ADR-0024): no payouts, automatic or manual, until staff clear it.
+  payoutsHeld          Boolean       @default(false) @map("payouts_held")
 
-  members    SellerMember[]
-  owner      SellerOwner?
-  products   Product[]
-  orderItems OrderItem[]
-  orders     SellerOrder[]
-  ledger     SellerLedgerEntry[]
-  payouts    Payout[]
-  ratings    SellerRating[]
+  members         SellerMember[]
+  riskAssessments RiskAssessment[]
+  owner           SellerOwner?
+  products        Product[]
+  orderItems      OrderItem[]
+  orders          SellerOrder[]
+  ledger          SellerLedgerEntry[]
+  payouts         Payout[]
+  ratings         SellerRating[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -1139,4 +1154,56 @@ model Payout {
   @@index([sellerId, createdAt])
   @@index([status])
   @@map("payouts")
+}
+
+/// Fraud signals (ADR-0024)
+enum RiskSubject {
+  CHECKOUT
+  PAYOUT
+  CHARGEBACK
+}
+
+enum RiskDecision {
+  ALLOW
+  REVIEW
+  BLOCK
+}
+
+enum RiskReviewStatus {
+  OPEN
+  CLEARED
+  CONFIRMED
+}
+
+/// One scored decision: a checkout, a payout, or a chargeback. Signals are [{ code, points, detail }].
+model RiskAssessment {
+  id           String            @id @default(uuid(7)) @db.Uuid
+  subject      RiskSubject
+  orderId      String?           @map("order_id") @db.Uuid
+  sellerId     String?           @map("seller_id") @db.Uuid
+  userId       String?           @map("user_id") @db.Uuid
+  email        String?
+  ipAddress    String?           @map("ip_address")
+  amountCents  Int?              @map("amount_cents")
+  score        Int
+  decision     RiskDecision
+  signals      Json
+  /// Enforced, or only recorded (RISK_CHECKS=shadow).
+  enforced     Boolean           @default(true)
+  status       RiskReviewStatus?
+  reviewedById String?           @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?         @map("reviewed_at")
+  reviewNote   String?           @map("review_note")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  order      Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller     Seller? @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  reviewedBy User?   @relation("RiskReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@index([sellerId, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([email, createdAt])
+  @@map("risk_assessments")
 }

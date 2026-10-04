@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { type ProductCard, type Recommendations, type RelatedProducts } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ReadDatabase } from '../../prisma/read-database';
 import { CatalogQueryService } from '../catalog/catalog-query.service';
 import { runsBackgroundJobs } from '../../common/background-jobs';
 
@@ -40,6 +41,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
   private sweeper?: NodeJS.Timeout;
 
   constructor(
+    private readonly read: ReadDatabase,
     private readonly prisma: PrismaService,
     private readonly catalog: CatalogQueryService,
     private readonly config: ConfigService<Env, true>,
@@ -122,7 +124,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
 
   /** Nearest products in the semantic index, same category first. */
   async similarIds(productId: string, limit: number): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+    const rows = await this.read.client.$queryRaw<{ id: string }[]>`
       WITH target AS (
         SELECT d.embedding, d.embedding_model, p.category_id, c.parent_id AS department_id
         FROM product_search_docs d
@@ -151,7 +153,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
 
   /** Products that appear in the same paid orders, most often first. */
   async boughtTogetherIds(productId: string, limit: number): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+    const rows = await this.read.client.$queryRaw<{ id: string }[]>`
       SELECT v2.product_id::text AS id
       FROM order_items a
       JOIN product_variants v1 ON v1.id = a.variant_id
@@ -169,7 +171,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
 
   /** Products viewed by shoppers who viewed this one (at least MIN_CO_VIEWERS of them). */
   async alsoViewedIds(productId: string, limit: number): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+    const rows = await this.read.client.$queryRaw<{ id: string }[]>`
       WITH viewers AS (
         SELECT DISTINCT COALESCE(user_id::text, visitor_id) AS shopper
         FROM product_events
@@ -232,7 +234,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
 
   /** Products closest to the average of what the shopper looked at. */
   private async nearCentroidIds(seedIds: string[], exclude: string[], limit: number) {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+    const rows = await this.read.client.$queryRaw<{ id: string }[]>`
       WITH seeds AS (
         SELECT embedding, embedding_model FROM product_search_docs
         WHERE product_id = ANY(${seedIds}::uuid[]) AND embedding IS NOT NULL
@@ -260,7 +262,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
 
   /** Most viewed and bought in the last 30 days (orders count triple); newest fill the rest. */
   async popularIds(limit: number): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+    const rows = await this.read.client.$queryRaw<{ id: string }[]>`
       WITH score AS (
         SELECT product_id, COUNT(*)::float AS points FROM product_events
         WHERE created_at > now() - interval '30 days' GROUP BY product_id

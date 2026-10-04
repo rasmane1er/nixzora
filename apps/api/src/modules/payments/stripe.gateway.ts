@@ -12,6 +12,7 @@ const EVENT_TYPES: Record<string, PaymentEventType> = {
   'payment_intent.processing': 'processing',
   'payment_intent.payment_failed': 'failed',
   'payment_intent.canceled': 'canceled',
+  'charge.dispute.created': 'disputed',
 };
 
 /**
@@ -63,6 +64,14 @@ export class StripeGateway implements PaymentGateway {
     return { id: refund.id, status: refund.status ?? 'pending' };
   }
 
+  async paymentRisk(paymentId: string): Promise<string | null> {
+    const intent = await this.stripe.paymentIntents.retrieve(paymentId, {
+      expand: ['latest_charge'],
+    });
+    const charge = intent.latest_charge;
+    return typeof charge === 'object' && charge ? (charge.outcome?.risk_level ?? null) : null;
+  }
+
   parseWebhook(rawBody: Buffer, signature: string | undefined): PaymentEvent | null {
     if (!signature) throw new BadRequestException('Missing Stripe signature.');
     let event: Stripe.Event;
@@ -73,6 +82,21 @@ export class StripeGateway implements PaymentGateway {
     }
     const type = EVENT_TYPES[event.type];
     if (!type) return null;
+    if (type === 'disputed') {
+      const dispute = event.data.object as Stripe.Dispute;
+      const paymentIntent =
+        typeof dispute.payment_intent === 'string'
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id;
+      if (!paymentIntent) return null;
+      return {
+        id: event.id,
+        type,
+        paymentId: paymentIntent,
+        amountCents: dispute.amount,
+        currency: dispute.currency.toUpperCase(),
+      };
+    }
     const intent = event.data.object as Stripe.PaymentIntent;
     return {
       id: event.id,

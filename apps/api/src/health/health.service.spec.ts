@@ -4,6 +4,7 @@ import { type Env } from '../config/env';
 import { type OutboxStreamer, type StreamStats } from '../modules/outbox/outbox-streamer';
 import { type OutboxService, type OutboxStats } from '../modules/outbox/outbox.service';
 import { type PrismaService } from '../prisma/prisma.service';
+import { type ReadDatabase } from '../prisma/read-database';
 import { type RedisService } from '../redis/redis.service';
 import { HealthService } from './health.service';
 
@@ -20,7 +21,8 @@ function build(
   } as unknown as ConfigService<Env, true>;
   const outbox = { stats: () => Promise.resolve(stats) } as unknown as OutboxService;
   const streamer = { stats: () => Promise.resolve(streamed) } as unknown as OutboxStreamer;
-  return new HealthService(prisma, redis, config, outbox, streamer);
+  const read = { status: () => ({ configured: false, usable: false }) } as unknown as ReadDatabase;
+  return new HealthService(prisma, redis, config, outbox, streamer, read);
 }
 
 const ok = () => Promise.resolve([{ '?column?': 1 }]);

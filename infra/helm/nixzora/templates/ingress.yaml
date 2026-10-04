@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled }}
+{{- $ing := .Values.ingress }}
+{{- $routes := list (list .Values.hosts.storefront "storefront") (list .Values.hosts.api "api") (list .Values.hosts.admin "admin") }}
+# One internet-facing ALB (AWS Load Balancer Controller) for the storefront, API and Ops Center:
+# HTTPS only, HTTP redirects, pods registered by IP.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "nixzora.name" (dict "root" . "component" "public") }}
+  labels:
+    {{- include "nixzora.labels" (dict "root" . "component" "ingress") | nindent 4 }}
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/load-balancer-attributes: routing.http.drop_invalid_header_fields.enabled=true
+    {{- with $ing.certificateArn }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ . | quote }}
+    {{- end }}
+    {{- with $ing.wafAclArn }}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: {{ . | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ $ing.className }}
+  tls:
+    - hosts:
+        {{- range $routes }}
+        - {{ index . 0 | quote }}
+        {{- end }}
+  rules:
+    {{- range $routes }}
+    {{- $component := index . 1 }}
+    {{- if (index $.Values.services $component).enabled }}
+    - host: {{ index . 0 | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "nixzora.name" (dict "root" $ "component" $component) }}
+                port: { name: http }
+    {{- end }}
+    {{- end }}
+{{- end }}

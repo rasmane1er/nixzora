@@ -35,6 +35,28 @@ data "aws_iam_policy_document" "ecs_assume" {
   }
 }
 
+# The app roles (API, search, AI, web): ECS tasks, and on Kubernetes the pods' service accounts
+# through EKS Pod Identity (ADR-0021), so both platforms run with the same permissions.
+data "aws_iam_policy_document" "app_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+  dynamic "statement" {
+    for_each = var.kubernetes.enabled ? [1] : []
+    content {
+      actions = ["sts:AssumeRole", "sts:TagSession"]
+      principals {
+        type        = "Service"
+        identifiers = ["pods.eks.amazonaws.com"]
+      }
+    }
+  }
+}
+
 # Used by ECS itself: pull images, write logs, read the secrets it injects.
 resource "aws_iam_role" "execution" {
   name               = "${local.prefix}-ecs-execution"
@@ -68,7 +90,7 @@ resource "aws_iam_role_policy" "execution_secrets" {
 # Used by the API code: media uploads and email. Nothing else.
 resource "aws_iam_role" "api_task" {
   name               = "${local.prefix}-api-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.app_assume.json
   tags               = local.tags
 }
 
@@ -98,7 +120,7 @@ resource "aws_iam_role_policy" "api_task" {
 
 resource "aws_iam_role" "web_task" {
   name               = "${local.prefix}-web-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.app_assume.json
   tags               = local.tags
 }
 
@@ -141,6 +163,8 @@ locals {
     local.worker_enabled ? { BACKGROUND_JOBS = "false" } : {},
     # Kafka on MSK (ADR-0020): brokers and IAM auth for the worker and the search service.
     local.msk_environment,
+    # Read replica (ADR-0022): stale-tolerant reads go there.
+    var.db_read_replica.enabled ? { DATABASE_REPLICA_HOST = aws_db_instance.replica[0].address } : {},
     var.app_config,
   )
 
@@ -203,7 +227,7 @@ resource "aws_ecs_task_definition" "app" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode(concat([{
     name                   = each.key
     image                  = each.value.image
     essential              = true
@@ -220,7 +244,10 @@ resource "aws_ecs_task_definition" "app" {
       }
     }
     linuxParameters = { initProcessEnabled = true }
-  }])
+    }],
+    # Prometheus metrics collector next to the API (ADR-0023).
+    each.key == "api" && local.amp_enabled ? [local.metrics_sidecar["api"]] : [],
+  ))
   tags = local.tags
 }
 

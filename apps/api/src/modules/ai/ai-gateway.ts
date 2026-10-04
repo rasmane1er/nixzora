@@ -1,3 +1,4 @@
+import { timeDependency } from '../../metrics/metrics';
 import { type ProductFacts } from '../insights/product-copy';
 import {
   type ExplainInput,
@@ -32,14 +33,16 @@ export class AiGatewayClient {
   ) {}
 
   async post<T>(path: string, body: unknown, timeoutMs = this.timeoutMs): Promise<T> {
-    const res = await this.fetchImpl(`${this.url.replace(/\/+$/, '')}${path}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-internal-key': this.key },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+    return timeDependency('ai', path, async () => {
+      const res = await this.fetchImpl(`${this.url.replace(/\/+$/, '')}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-internal-key': this.key },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) throw new Error(`AI service answered ${res.status} for ${path}`);
+      return (await res.json()) as T;
     });
-    if (!res.ok) throw new Error(`AI service answered ${res.status} for ${path}`);
-    return (await res.json()) as T;
   }
 }
 

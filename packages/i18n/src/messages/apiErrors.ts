@@ -79,6 +79,9 @@ export const apiErrors = defineMessages({
     checkoutCouponUsedUp: '{code} was just used up. Remove it to continue.',
     notEnoughStock: 'Not enough stock for {skus}.',
     paymentsUnavailable: 'Payments are temporarily unavailable. You have not been charged.',
+    orderDeclined:
+      'We could not accept this order. If you think this is a mistake, contact support and we will look into it.',
+    orderUnderReview: 'This order is being reviewed. Do not ship it yet.',
     orderCancelled: 'This order was cancelled.',
     orderAlreadyPaid: 'This order is already paid.',
     noPayment: 'No payment found for this order.',
@@ -160,6 +163,7 @@ export const apiErrors = defineMessages({
     payoutMinimum: 'Payouts start at {minimum}; available now: {available}.',
     payoutNotVerified: 'The store has not finished payout verification.',
     payoutOnlyApproved: 'Only approved stores are paid.',
+    payoutsOnHold: 'Payouts for this store are on hold while we review recent activity.',
 
     // Support
     supportEmailNeeded: 'Enter your email so we can answer you.',
@@ -239,6 +243,9 @@ export const apiErrors = defineMessages({
     notEnoughStock: 'Stock insuffisant pour {skus}.',
     paymentsUnavailable:
       'Les paiements sont temporairement indisponibles. Vous n’avez pas été débité.',
+    orderDeclined:
+      'Nous n’avons pas pu accepter cette commande. Si vous pensez qu’il s’agit d’une erreur, contactez le service client et nous vérifierons.',
+    orderUnderReview: 'Cette commande est en cours de vérification. Ne l’expédiez pas encore.',
     orderCancelled: 'Cette commande a été annulée.',
     orderAlreadyPaid: 'Cette commande est déjà payée.',
     noPayment: 'Aucun paiement trouvé pour cette commande.',
@@ -317,6 +324,8 @@ export const apiErrors = defineMessages({
     payoutMinimum: 'Les versements commencent à {minimum} ; disponible actuellement : {available}.',
     payoutNotVerified: 'La boutique n’a pas terminé la vérification pour les versements.',
     payoutOnlyApproved: 'Seules les boutiques validées reçoivent des versements.',
+    payoutsOnHold:
+      'Les versements de cette boutique sont suspendus pendant que nous vérifions l’activité récente.',
 
     supportEmailNeeded: 'Saisissez votre adresse e-mail pour que nous puissions vous répondre.',
     supportNotFound: 'Demande d’assistance introuvable.',
@@ -395,6 +404,9 @@ export const apiErrors = defineMessages({
     notEnoughStock: 'No hay suficiente inventario de {skus}.',
     paymentsUnavailable:
       'Los pagos no están disponibles temporalmente. No se te hizo ningún cargo.',
+    orderDeclined:
+      'No pudimos aceptar este pedido. Si crees que es un error, contacta con soporte y lo revisaremos.',
+    orderUnderReview: 'Este pedido está en revisión. No lo envíes todavía.',
     orderCancelled: 'Este pedido fue cancelado.',
     orderAlreadyPaid: 'Este pedido ya está pagado.',
     noPayment: 'No se encontró ningún pago para este pedido.',
@@ -471,6 +483,8 @@ export const apiErrors = defineMessages({
     payoutMinimum: 'Los pagos empiezan desde {minimum}; disponible ahora: {available}.',
     payoutNotVerified: 'La tienda no ha terminado la verificación para recibir pagos.',
     payoutOnlyApproved: 'Solo se paga a las tiendas aprobadas.',
+    payoutsOnHold:
+      'Los pagos de esta tienda están en pausa mientras revisamos la actividad reciente.',
 
     supportEmailNeeded: 'Ingresa tu correo electrónico para que podamos responderte.',
     supportNotFound: 'No se encontró la solicitud de soporte.',

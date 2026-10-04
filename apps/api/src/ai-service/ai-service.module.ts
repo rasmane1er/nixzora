@@ -2,6 +2,7 @@ import { Controller, Get, Inject, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { InternalKeyGuard } from '../common/internal-key.guard';
+import { MetricsModule } from '../metrics/metrics.module';
 import { type Env, validateEnv } from '../config/env';
 import { LANGUAGE_MODEL, type LanguageModel } from '../modules/assistant/language-model';
 import { EMBEDDINGS, type EmbeddingsProvider } from '../modules/ai/embeddings';
@@ -35,6 +36,7 @@ class HealthController {
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    MetricsModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({

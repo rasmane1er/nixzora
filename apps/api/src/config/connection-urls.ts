@@ -4,6 +4,7 @@
  * build it from the parts so the password never has to be stored inside a URL anywhere.
  *
  *   DATABASE_HOST, DATABASE_PORT=5432, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
+ *   DATABASE_REPLICA_HOST (read replica, same credentials),
  *   DATABASE_SSL=verify-full | require | disable
  *   REDIS_HOST, REDIS_PORT=6379, REDIS_PASSWORD, REDIS_TLS=true
  */
@@ -21,6 +22,13 @@ export function withConnectionUrls(env: Env): Env {
     out.DATABASE_URL =
       `postgresql://${auth}@${out.DATABASE_HOST}:${out.DATABASE_PORT ?? '5432'}/${enc(out.DATABASE_NAME)}` +
       `?schema=public${ssl === 'disable' ? '' : `&sslmode=${ssl}`}`;
+  }
+  // The read replica (ADR-0022): same database, user and password as the primary.
+  if (!out.DATABASE_REPLICA_URL && out.DATABASE_REPLICA_HOST && out.DATABASE_URL) {
+    const url = new URL(out.DATABASE_URL);
+    url.hostname = out.DATABASE_REPLICA_HOST;
+    if (out.DATABASE_REPLICA_PORT) url.port = out.DATABASE_REPLICA_PORT;
+    out.DATABASE_REPLICA_URL = url.toString();
   }
   if (!out.REDIS_URL && out.REDIS_HOST) {
     const scheme = out.REDIS_TLS === 'false' ? 'redis' : 'rediss';

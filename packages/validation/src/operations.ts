@@ -223,3 +223,80 @@ export type ReturnCreate = z.infer<typeof ReturnCreateSchema>;
 export type ReturnDecision = z.infer<typeof ReturnDecisionSchema>;
 export type AdminReturnQuery = z.infer<typeof AdminReturnQuerySchema>;
 export type LabelPurchase = z.infer<typeof LabelPurchaseSchema>;
+
+// ───────────── Fraud signals (ADR-0024) ─────────────
+
+export const RISK_SIGNAL_CODES = [
+  'ip_velocity',
+  'email_velocity',
+  'emails_per_ip',
+  'failed_payments',
+  'prior_fraud',
+  'new_account_high_value',
+  'guest_high_value',
+  'high_value',
+  'above_usual',
+  'bulk_quantity',
+  'disposable_email',
+  'trusted_customer',
+  'radar_elevated',
+  'radar_highest',
+  'chargeback',
+  'new_store_large_payout',
+  'refund_rate',
+  'sales_spike',
+  'self_purchase',
+  'store_chargebacks',
+  'store_fraud_orders',
+] as const;
+export type RiskSignalCode = (typeof RISK_SIGNAL_CODES)[number];
+
+export const RiskSubjectSchema = z.enum(['CHECKOUT', 'PAYOUT', 'CHARGEBACK']);
+export const RiskDecisionSchema = z.enum(['ALLOW', 'REVIEW', 'BLOCK']);
+export const RiskReviewStatusSchema = z.enum(['OPEN', 'CLEARED', 'CONFIRMED']);
+
+export type RiskSignal = {
+  code: RiskSignalCode;
+  /** Added to the score (negative for signals that lower it). */
+  points: number;
+  /** Numbers behind the signal, for the reviewer (counts, amounts in cents). */
+  values?: Record<string, number | string>;
+};
+
+export type RiskAssessmentView = {
+  id: string;
+  subject: z.infer<typeof RiskSubjectSchema>;
+  score: number;
+  decision: z.infer<typeof RiskDecisionSchema>;
+  signals: RiskSignal[];
+  enforced: boolean;
+  status: z.infer<typeof RiskReviewStatusSchema> | null;
+  amountCents: number | null;
+  currency: string;
+  order: { id: string; number: string; status: string; email: string; riskHold: boolean } | null;
+  seller: { id: string; handle: string; displayName: string; payoutsHeld: boolean } | null;
+  email: string | null;
+  ipAddress: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+};
+
+export const AdminRiskQuerySchema = z.object({
+  status: RiskReviewStatusSchema.optional(),
+  decision: RiskDecisionSchema.optional(),
+  subject: RiskSubjectSchema.optional(),
+  orderId: z.uuid().optional(),
+  sellerId: z.uuid().optional(),
+  page: z.coerce.number().int().min(1).max(1000).default(1),
+});
+
+/** Clear: release the hold. Confirm: it was fraud (a paid order is cancelled and refunded). */
+export const RiskReviewSchema = z.object({
+  outcome: z.enum(['clear', 'confirm']),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export type AdminRiskQuery = z.infer<typeof AdminRiskQuerySchema>;
+export type RiskReview = z.infer<typeof RiskReviewSchema>;

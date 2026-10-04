@@ -68,6 +68,7 @@ export default async function SellerPage({
   ).length;
   const { payouts } = seller;
   const { money, dateTime } = f;
+  const tRisk = await getT('opsRisk');
 
   return (
     <>
@@ -212,6 +213,11 @@ export default async function SellerPage({
               </tbody>
             </table>
           </div>
+          {balance.payoutsPaused ? (
+            <p className="banner banner--error" role="alert">
+              {tRisk('payoutsHeld')} <Link href="/risk?tab=OPEN">{tRisk('openReview')}</Link>
+            </p>
+          ) : null}
           {balance.availableCents >= 1000 &&
           seller.status === 'ACTIVE' &&
           payouts.payoutsEnabled ? (

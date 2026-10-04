@@ -14,7 +14,8 @@ export type CreateIntentInput = {
   idempotencyKey: string;
 };
 
-export type PaymentEventType = 'succeeded' | 'processing' | 'failed' | 'canceled';
+/** "disputed": the card holder opened a chargeback (ADR-0024). */
+export type PaymentEventType = 'succeeded' | 'processing' | 'failed' | 'canceled' | 'disputed';
 
 /** A provider webhook, verified and reduced to what NIXZORA needs. */
 export type PaymentEvent = {
@@ -38,6 +39,11 @@ export interface PaymentGateway {
     amountCents: number,
     reason: string,
   ): Promise<{ id: string; status: string }>;
+  /**
+   * The provider's own fraud verdict on a succeeded payment ("normal", "elevated", "highest"),
+   * when it has one (Stripe Radar). Optional: null means no opinion.
+   */
+  paymentRisk?(paymentId: string): Promise<string | null>;
   /** Verifies the signature. Throws on a forged payload; returns null for event types we ignore. */
   parseWebhook(rawBody: Buffer, signature: string | undefined): PaymentEvent | null;
 }

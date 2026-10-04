@@ -45,6 +45,24 @@ variable "ops_allowed_cidrs" {
   default = []
 }
 
+variable "managed_prometheus_enabled" {
+  description = "Amazon Managed Service for Prometheus with SLO alerts (ADR-0023). A few USD a month at staging volume."
+  type        = bool
+  default     = false
+}
+
+variable "db_read_replica_enabled" {
+  description = "A PostgreSQL read replica for catalog reads (ADR-0022). About 15 USD a month at db.t4g.micro."
+  type        = bool
+  default     = false
+}
+
+variable "kubernetes_enabled" {
+  description = "EKS Auto Mode next to ECS (ADR-0021). About 73 USD a month for the control plane, plus nodes."
+  type        = bool
+  default     = false
+}
+
 variable "event_streaming_enabled" {
   description = "Kafka on Amazon MSK (ADR-0020). About 70 USD a month: two kafka.t3.small brokers."
   type        = bool
@@ -116,6 +134,9 @@ module "platform" {
   }, var.sign_in_client_ids)
   mobile_app_links = var.mobile_app_links
   event_streaming  = { enabled = var.event_streaming_enabled }
+  kubernetes       = { enabled = var.kubernetes_enabled }
+  db_read_replica  = { enabled = var.db_read_replica_enabled }
+  observability    = { managed_prometheus = var.managed_prometheus_enabled }
 
   # Until production exists, the main domain sends visitors to the staging demo. Remove this
   # line before creating production (it takes these names over).

@@ -13,6 +13,22 @@ describe('withConnectionUrls', () => {
     );
   });
 
+  it('points the read replica URL at the replica host, with the same credentials', () => {
+    const env = withConnectionUrls({
+      DATABASE_HOST: 'db.internal',
+      DATABASE_REPLICA_HOST: 'db-replica.internal',
+      DATABASE_NAME: 'nixzora',
+      DATABASE_USER: 'nixzora_app',
+      DATABASE_PASSWORD: 'p@ss/word#1',
+    });
+    expect(env.DATABASE_REPLICA_URL).toBe(
+      'postgresql://nixzora_app:p%40ss%2Fword%231@db-replica.internal:5432/nixzora?schema=public&sslmode=verify-full',
+    );
+    expect(
+      withConnectionUrls({ DATABASE_HOST: 'db.internal' }).DATABASE_REPLICA_URL,
+    ).toBeUndefined();
+  });
+
   it('builds a rediss URL with the auth token', () => {
     expect(
       withConnectionUrls({ REDIS_HOST: 'cache.internal', REDIS_PASSWORD: 'tok:en' }).REDIS_URL,

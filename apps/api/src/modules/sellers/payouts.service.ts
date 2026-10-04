@@ -18,6 +18,7 @@ import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { MailService } from '../notifications/mail.service';
 import { PAYOUT_GATEWAY, type PayoutGateway } from '../payments/payout-gateway';
+import { RiskService } from '../risk/risk.service';
 import { SellersService } from './sellers.service';
 import { runsBackgroundJobs } from '../../common/background-jobs';
 
@@ -43,6 +44,7 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
     private readonly audit: AuditService,
     private readonly mail: MailService,
     private readonly sellers: SellersService,
+    private readonly risk: RiskService,
     private readonly config: ConfigService<Env, true>,
     @Inject(PAYOUT_GATEWAY) private readonly gateway: PayoutGateway,
   ) {}
@@ -79,6 +81,7 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
         seller: {
           status: 'ACTIVE',
           payoutsEnabled: true,
+          payoutsHeld: false,
           payoutProvider: this.gateway.name,
           payouts: { none: { createdAt: { gt: new Date(now.getTime() - DAY) } } },
         },
@@ -112,6 +115,17 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
     if (seller.payoutProvider !== this.gateway.name) {
       throw new ConflictException(
         'The store verified with another payout provider. Ask it to update its payout details.',
+      );
+    }
+
+    // Fraud signals (ADR-0024): a store under review is not paid, by the timer or by staff.
+    const due = await this.prisma.sellerLedgerEntry.aggregate({
+      where: { sellerId, availableAt: { lte: new Date() } },
+      _sum: { amountCents: true },
+    });
+    if (await this.risk.checkPayout(sellerId, due._sum.amountCents ?? 0)) {
+      throw new ConflictException(
+        'Payouts for this store are on hold while we review recent activity.',
       );
     }
 

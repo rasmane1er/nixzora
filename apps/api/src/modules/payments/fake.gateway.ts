@@ -34,6 +34,17 @@ export class FakeGateway implements PaymentGateway {
 
   async cancel(): Promise<void> {}
 
+  /** Lets tests play Stripe Radar: the confirm endpoint can mark a payment as risky. */
+  private readonly risk = new Map<string, string>();
+
+  setPaymentRisk(paymentId: string, level: string): void {
+    this.risk.set(paymentId, level);
+  }
+
+  async paymentRisk(paymentId: string): Promise<string | null> {
+    return this.risk.get(paymentId) ?? null;
+  }
+
   async refund() {
     return { id: `fake_re_${randomUUID().replace(/-/g, '')}`, status: 'succeeded' };
   }

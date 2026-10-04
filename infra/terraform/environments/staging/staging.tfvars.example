@@ -13,6 +13,15 @@ alarm_email = "you@example.com"
 # Kafka on Amazon MSK (ADR-0020): about 70 USD a month. See docs/runbooks/event-streaming.md.
 # event_streaming_enabled = true
 
+# EKS Auto Mode next to ECS (ADR-0021): about 73 USD a month plus nodes. See docs/runbooks/kubernetes.md.
+# kubernetes_enabled = true
+
+# PostgreSQL read replica for catalog reads (ADR-0022): about 15 USD a month.
+# db_read_replica_enabled = true
+
+# Prometheus metrics, SLO dashboards and alerts in AWS (ADR-0023): a few USD a month.
+# managed_prometheus_enabled = true
+
 # Sign in with Google / Apple (public ids; leave out to hide the buttons). See docs/runbooks/sign-in-with-google-apple.md.
 # sign_in_client_ids = {
 #   GOOGLE_WEB_CLIENT_ID     = "1234-abc.apps.googleusercontent.com"

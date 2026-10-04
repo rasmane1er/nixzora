@@ -1,0 +1,306 @@
+# NIXZORA service level objectives (ADR-0023, docs/slo.md).
+# Recording rules: the bad-event ratio of each SLI over the burn-rate windows.
+# Alerts: multi-window, multi-burn-rate (Google SRE workbook): page when the 30-day error budget
+# would be gone in ~2 days (14.4x) or ~5 days (6x); open a ticket at a slow 1x-3x burn.
+groups:
+  - name: nixzora-sli-api-errors
+    interval: 30s
+    rules:
+      # Requests the API answered with a 5xx error, out of all requests.
+      - record: nixzora:api_errors:ratio_rate5m
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[5m])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate30m
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[30m]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[30m])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate1h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[1h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[1h])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate2h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[2h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[2h])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate6h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[6h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[6h])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate1d
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[1d]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[1d])), 1e-9)
+      - record: nixzora:api_errors:ratio_rate3d
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",status="5xx"}[3d]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[3d])), 1e-9)
+  - name: nixzora-sli-api-slow
+    interval: 30s
+    rules:
+      # Requests slower than 1 s, out of all requests.
+      - record: nixzora:api_slow:ratio_rate5m
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[5m]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[5m])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate30m
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[30m]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[30m])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate1h
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[1h]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[1h])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate2h
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[2h]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[2h])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate6h
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[6h]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[6h])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate1d
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[1d]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[1d])), 1e-9)
+          )
+      - record: nixzora:api_slow:ratio_rate3d
+        expr: |
+          1 - (
+            sum(rate(nixzora_http_request_duration_seconds_bucket{service="api",le="1"}[3d]))
+            /
+            clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api"}[3d])), 1e-9)
+          )
+  - name: nixzora-sli-checkout-errors
+    interval: 30s
+    rules:
+      # Checkout requests answered with a 5xx error.
+      - record: nixzora:checkout_errors:ratio_rate5m
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[5m])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate30m
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[30m]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[30m])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate1h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[1h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[1h])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate2h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[2h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[2h])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate6h
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[6h]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[6h])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate1d
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[1d]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[1d])), 1e-9)
+      - record: nixzora:checkout_errors:ratio_rate3d
+        expr: |
+          sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*",status="5xx"}[3d]))
+          /
+          clamp_min(sum(rate(nixzora_http_request_duration_seconds_count{service="api",route=~"/api/v1/checkout.*"}[3d])), 1e-9)
+  - name: nixzora-slo-alerts
+    rules:
+      - alert: ApiAvailabilityBudgetBurn
+        expr: |
+          nixzora:api_errors:ratio_rate1h > (14.4 * 0.005)
+          and
+          nixzora:api_errors:ratio_rate5m > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: api-errors
+          window: 1h
+        annotations:
+          summary: 'Api availability error budget burning 14.4x too fast (1h window)'
+          description: 'SLO: 99.5% of API requests succeed (no 5xx) over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apiavailability
+      - alert: ApiAvailabilityBudgetBurn
+        expr: |
+          nixzora:api_errors:ratio_rate6h > (6 * 0.005)
+          and
+          nixzora:api_errors:ratio_rate30m > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: page
+          slo: api-errors
+          window: 6h
+        annotations:
+          summary: 'Api availability error budget burning 6x too fast (6h window)'
+          description: 'SLO: 99.5% of API requests succeed (no 5xx) over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 6h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apiavailability
+      - alert: ApiAvailabilityBudgetBurn
+        expr: |
+          nixzora:api_errors:ratio_rate1d > (3 * 0.005)
+          and
+          nixzora:api_errors:ratio_rate2h > (3 * 0.005)
+        for: 1h
+        labels:
+          severity: ticket
+          slo: api-errors
+          window: 1d
+        annotations:
+          summary: 'Api availability error budget burning 3x too fast (1d window)'
+          description: 'SLO: 99.5% of API requests succeed (no 5xx) over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apiavailability
+      - alert: ApiAvailabilityBudgetBurn
+        expr: |
+          nixzora:api_errors:ratio_rate3d > (1 * 0.005)
+          and
+          nixzora:api_errors:ratio_rate6h > (1 * 0.005)
+        for: 3h
+        labels:
+          severity: ticket
+          slo: api-errors
+          window: 3d
+        annotations:
+          summary: 'Api availability error budget burning 1x too fast (3d window)'
+          description: 'SLO: 99.5% of API requests succeed (no 5xx) over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 3d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apiavailability
+      - alert: ApiLatencyBudgetBurn
+        expr: |
+          nixzora:api_slow:ratio_rate1h > (14.4 * 0.01)
+          and
+          nixzora:api_slow:ratio_rate5m > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: page
+          slo: api-slow
+          window: 1h
+        annotations:
+          summary: 'Api latency error budget burning 14.4x too fast (1h window)'
+          description: 'SLO: 99% of API requests answer within 1 s over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apilatency
+      - alert: ApiLatencyBudgetBurn
+        expr: |
+          nixzora:api_slow:ratio_rate6h > (6 * 0.01)
+          and
+          nixzora:api_slow:ratio_rate30m > (6 * 0.01)
+        for: 15m
+        labels:
+          severity: page
+          slo: api-slow
+          window: 6h
+        annotations:
+          summary: 'Api latency error budget burning 6x too fast (6h window)'
+          description: 'SLO: 99% of API requests answer within 1 s over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 6h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apilatency
+      - alert: ApiLatencyBudgetBurn
+        expr: |
+          nixzora:api_slow:ratio_rate1d > (3 * 0.01)
+          and
+          nixzora:api_slow:ratio_rate2h > (3 * 0.01)
+        for: 1h
+        labels:
+          severity: ticket
+          slo: api-slow
+          window: 1d
+        annotations:
+          summary: 'Api latency error budget burning 3x too fast (1d window)'
+          description: 'SLO: 99% of API requests answer within 1 s over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apilatency
+      - alert: ApiLatencyBudgetBurn
+        expr: |
+          nixzora:api_slow:ratio_rate3d > (1 * 0.01)
+          and
+          nixzora:api_slow:ratio_rate6h > (1 * 0.01)
+        for: 3h
+        labels:
+          severity: ticket
+          slo: api-slow
+          window: 3d
+        annotations:
+          summary: 'Api latency error budget burning 1x too fast (3d window)'
+          description: 'SLO: 99% of API requests answer within 1 s over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 3d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#apilatency
+      - alert: CheckoutAvailabilityBudgetBurn
+        expr: |
+          nixzora:checkout_errors:ratio_rate1h > (14.4 * 0.001)
+          and
+          nixzora:checkout_errors:ratio_rate5m > (14.4 * 0.001)
+        for: 2m
+        labels:
+          severity: page
+          slo: checkout-errors
+          window: 1h
+        annotations:
+          summary: 'Checkout availability error budget burning 14.4x too fast (1h window)'
+          description: 'SLO: 99.9% of checkout requests succeed over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#checkoutavailability
+      - alert: CheckoutAvailabilityBudgetBurn
+        expr: |
+          nixzora:checkout_errors:ratio_rate6h > (6 * 0.001)
+          and
+          nixzora:checkout_errors:ratio_rate30m > (6 * 0.001)
+        for: 15m
+        labels:
+          severity: page
+          slo: checkout-errors
+          window: 6h
+        annotations:
+          summary: 'Checkout availability error budget burning 6x too fast (6h window)'
+          description: 'SLO: 99.9% of checkout requests succeed over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 6h; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#checkoutavailability
+      - alert: CheckoutAvailabilityBudgetBurn
+        expr: |
+          nixzora:checkout_errors:ratio_rate1d > (3 * 0.001)
+          and
+          nixzora:checkout_errors:ratio_rate2h > (3 * 0.001)
+        for: 1h
+        labels:
+          severity: ticket
+          slo: checkout-errors
+          window: 1d
+        annotations:
+          summary: 'Checkout availability error budget burning 3x too fast (1d window)'
+          description: 'SLO: 99.9% of checkout requests succeed over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 1d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#checkoutavailability
+      - alert: CheckoutAvailabilityBudgetBurn
+        expr: |
+          nixzora:checkout_errors:ratio_rate3d > (1 * 0.001)
+          and
+          nixzora:checkout_errors:ratio_rate6h > (1 * 0.001)
+        for: 3h
+        labels:
+          severity: ticket
+          slo: checkout-errors
+          window: 3d
+        annotations:
+          summary: 'Checkout availability error budget burning 1x too fast (3d window)'
+          description: 'SLO: 99.9% of checkout requests succeed over 30 days. The bad-event ratio is {{ $value | humanizePercentage }} over 3d; at this rate the 30-day budget runs out early.'
+          runbook: https://github.com/rasmane1er/nixzora/blob/main/docs/slo.md#checkoutavailability

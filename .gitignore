@@ -56,3 +56,7 @@ infra/**/.terraform.lock.hcl
 dist-test/
 tools/demo-images/svg/
 tools/demo-images/sprites/
+
+# k6 run outputs
+tests/load/results/*
+!tests/load/results/README.md

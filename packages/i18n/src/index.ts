@@ -28,3 +28,4 @@ export function translator(locale: Locale, messages: Messages = messagesFor(loca
     (key, vars) =>
       format(locale, (messages[namespace] as Record<string, string>)[key] ?? String(key), vars);
 }
+export { dateFormat, numberFormat, plurals } from './intl';

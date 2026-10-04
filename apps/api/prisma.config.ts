@@ -14,9 +14,18 @@ export default defineConfig({
   datasource: {
     url: DATABASE_URL ?? '',
   },
-  // product_search_docs uses pgvector columns, a generated tsvector and an HNSW index that
-  // Prisma cannot describe. Its hand-written migration owns the structure; Prisma still
-  // generates the client model but leaves the table out of drift checks (ADR-0009).
+  // Tables whose hand-written migrations own the structure; Prisma still generates their client
+  // models but leaves them out of drift checks:
+  // - product_search_docs: pgvector columns, a generated tsvector and an HNSW index (ADR-0009);
+  // - audit_logs, product_events, outbox_events: partitioned by month, with their partitions in
+  //   the "partitions" schema (ADR-0022).
   experimental: { externalTables: true },
-  tables: { external: ['public.product_search_docs'] },
+  tables: {
+    external: [
+      'public.product_search_docs',
+      'public.audit_logs',
+      'public.product_events',
+      'public.outbox_events',
+    ],
+  },
 });

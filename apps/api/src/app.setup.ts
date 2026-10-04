@@ -4,6 +4,7 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { type NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { httpMetricsMiddleware } from './metrics/metrics';
 import { LocalizedErrorsFilter } from './common/localized-errors.filter';
 import { setInternalApiKey } from './common/request-meta';
 import { type Env } from './config/env';
@@ -18,6 +19,8 @@ export function configureApp(app: INestApplication): void {
   if (hops > 0) (app as NestExpressApplication).set('trust proxy', hops);
   setInternalApiKey(config.get('INTERNAL_API_KEY', { infer: true }));
 
+  // Prometheus: duration of every request by route pattern (ADR-0023).
+  app.use(httpMetricsMiddleware);
   app.use(helmet());
   // Image bodies arrive as raw bytes (local uploads); everything else stays JSON.
   (app as NestExpressApplication).useBodyParser('raw', {

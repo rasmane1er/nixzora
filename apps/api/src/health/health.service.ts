@@ -5,6 +5,7 @@ import { type Env } from '../config/env';
 import { OutboxStreamer } from '../modules/outbox/outbox-streamer';
 import { OutboxService } from '../modules/outbox/outbox.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReadDatabase } from '../prisma/read-database';
 import { RedisService } from '../redis/redis.service';
 
 const CHECK_TIMEOUT_MS = 1500;
@@ -44,6 +45,7 @@ export class HealthService {
     private readonly config: ConfigService<Env, true>,
     private readonly outbox: OutboxService,
     private readonly streamer: OutboxStreamer,
+    private readonly read: ReadDatabase,
   ) {}
 
   async check(): Promise<HealthResponse> {
@@ -61,6 +63,23 @@ export class HealthService {
       timestamp: new Date().toISOString(),
       checks: { database, redis },
       ...(jobs ? { jobs } : {}),
+      ...this.replica(),
+    };
+  }
+
+  private replica(): { replica?: HealthResponse['replica'] } {
+    const replica = this.read.status();
+    if (!replica.configured) return {};
+    const status = replica.usable
+      ? 'up'
+      : replica.lagSeconds !== undefined && replica.lagSeconds > 0
+        ? 'behind'
+        : 'down';
+    return {
+      replica: {
+        status,
+        ...(replica.lagSeconds !== undefined ? { lagSeconds: replica.lagSeconds } : {}),
+      },
     };
   }
 

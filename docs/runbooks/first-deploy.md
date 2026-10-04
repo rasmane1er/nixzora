@@ -53,8 +53,9 @@ shred -u /tmp/app.json
 ```
 
 Stripe webhook: in the Stripe dashboard add an endpoint
-`https://api.<staging host>/api/v1/payments/webhooks/stripe` for `payment_intent.*` events; its
-signing secret is `STRIPE_WEBHOOK_SECRET`.
+`https://api.<staging host>/api/v1/payments/webhooks/stripe` for `payment_intent.*` events and
+`charge.dispute.created` (chargebacks feed the fraud reviews, ADR-0024); its signing secret is
+`STRIPE_WEBHOOK_SECRET`.
 
 ## 6. Deploy and seed
 

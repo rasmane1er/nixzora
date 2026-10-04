@@ -34,10 +34,14 @@ export async function ProductCard({
   product: Card;
   priority?: boolean;
 }) {
-  const t = await getT('product');
-  const locale = await getLocale();
-  const f = await getFormat();
-  const wished = (await wishedIds()).has(product.id);
+  // Together, not one after another: under load every await waits in line again.
+  const [t, locale, f, wishlist] = await Promise.all([
+    getT('product'),
+    getLocale(),
+    getFormat(),
+    wishedIds(),
+  ]);
+  const wished = wishlist.has(product.id);
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
   const badge = onSale

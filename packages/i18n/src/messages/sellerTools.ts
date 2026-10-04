@@ -309,6 +309,11 @@ export const sellerTools = defineMessages({
     placedOn: 'Placed {date}',
     shipWithin: 'Ship within 2 business days, then add the tracking number below.',
     cancelledDoNotShip: 'The customer’s order was cancelled. Do not ship it.',
+    underReviewDoNotShip:
+      'We are checking this order before it ships. Do not ship it yet: we will email you as soon as it is cleared.',
+    underReview: 'On hold',
+    payoutsPaused:
+      'Payouts are paused while we review recent activity on your store. Your balance is safe; we will email you when they restart.',
     itemsToShip: 'Items to ship',
     shipTo: 'Ship to',
     yourEarnings: 'Your earnings',
@@ -630,6 +635,11 @@ export const sellerTools = defineMessages({
     placedOn: 'Passée le {date}',
     shipWithin: 'Expédiez sous 2 jours ouvrés, puis ajoutez le numéro de suivi ci-dessous.',
     cancelledDoNotShip: 'La commande du client a été annulée. Ne l’expédiez pas.',
+    underReviewDoNotShip:
+      'Nous vérifions cette commande avant son expédition. Ne l’expédiez pas encore : nous vous écrirons dès qu’elle sera validée.',
+    underReview: 'En attente',
+    payoutsPaused:
+      'Les versements sont suspendus pendant que nous vérifions l’activité récente de votre boutique. Votre solde est conservé ; nous vous écrirons à leur reprise.',
     itemsToShip: 'Articles à expédier',
     shipTo: 'Livrer à',
     yourEarnings: 'Vos gains',
@@ -949,6 +959,11 @@ export const sellerTools = defineMessages({
     placedOn: 'Realizado el {date}',
     shipWithin: 'Envíalo en un plazo de 2 días hábiles y luego agrega el número de rastreo abajo.',
     cancelledDoNotShip: 'El pedido del cliente se canceló. No lo envíes.',
+    underReviewDoNotShip:
+      'Estamos revisando este pedido antes del envío. No lo envíes todavía: te escribiremos en cuanto se apruebe.',
+    underReview: 'En espera',
+    payoutsPaused:
+      'Los pagos están en pausa mientras revisamos la actividad reciente de tu tienda. Tu saldo está a salvo; te escribiremos cuando se reanuden.',
     itemsToShip: 'Artículos por enviar',
     shipTo: 'Enviar a',
     yourEarnings: 'Tus ganancias',

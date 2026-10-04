@@ -82,6 +82,22 @@ mock_provider "aws" {
       bootstrap_brokers_sasl_iam = "b-1.events.kafka.us-east-1.amazonaws.com:9098,b-2.events.kafka.us-east-1.amazonaws.com:9098"
     }
   }
+  mock_resource "aws_eks_cluster" {
+    defaults = {
+      arn      = "arn:aws:eks:us-east-1:123456789012:cluster/nixzora-staging"
+      endpoint = "https://ABC.gr7.us-east-1.eks.amazonaws.com"
+    }
+  }
+  mock_resource "aws_prometheus_workspace" {
+    defaults = {
+      id                  = "ws-1234"
+      arn                 = "arn:aws:aps:us-east-1:123456789012:workspace/ws-1234"
+      prometheus_endpoint = "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-1234/"
+    }
+  }
+  mock_resource "aws_kms_key" {
+    defaults = { arn = "arn:aws:kms:us-east-1:123456789012:key/eks" }
+  }
   mock_resource "aws_msk_configuration" {
     defaults = { arn = "arn:aws:kafka:us-east-1:123456789012:configuration/nixzora-staging-kafka/x", latest_revision = 1 }
   }
@@ -156,6 +172,18 @@ run "staging" {
     condition     = length(aws_msk_cluster.main) == 0 && !contains(keys(output.api_environment), "KAFKA_BROKERS")
     error_message = "MSK costs money: it stays off unless event_streaming.enabled."
   }
+  assert {
+    condition     = length(aws_db_instance.replica) == 0 && !contains(keys(output.api_environment), "DATABASE_REPLICA_HOST")
+    error_message = "the read replica stays off unless db_read_replica.enabled."
+  }
+  assert {
+    condition     = length(aws_prometheus_workspace.main) == 0 && length(jsondecode(aws_ecs_task_definition.app["api"].container_definitions)) == 1
+    error_message = "Managed Prometheus stays off unless observability.managed_prometheus."
+  }
+  assert {
+    condition     = length(aws_eks_cluster.main) == 0 && output.kubernetes == null
+    error_message = "EKS costs money: it stays off unless kubernetes.enabled."
+  }
 }
 
 run "event_streaming" {
@@ -180,6 +208,85 @@ run "event_streaming" {
   assert {
     condition     = length(aws_iam_role_policy.search_task_kafka) == 1 && length(aws_vpc_security_group_ingress_rule.kafka_iam) == 1
     error_message = "the search service needs read access and the brokers need an ingress rule."
+  }
+}
+
+run "kubernetes" {
+  command = plan
+  variables {
+    environment         = "staging"
+    deletion_protection = false
+    kubernetes          = { enabled = true, deploy_role_arn = "arn:aws:iam::123456789012:role/nixzora-deploy" }
+  }
+  assert {
+    condition     = length(aws_eks_cluster.main) == 1 && aws_eks_cluster.main[0].compute_config[0].enabled
+    error_message = "Kubernetes runs as an EKS Auto Mode cluster."
+  }
+  assert {
+    condition     = toset(keys(aws_eks_pod_identity_association.app)) == toset(["api", "web", "search", "ai"])
+    error_message = "every chart service account must get its ECS task role through Pod Identity."
+  }
+  assert {
+    condition     = aws_eks_pod_identity_association.app["api"].service_account == "nixzora-api" && aws_eks_pod_identity_association.app["api"].namespace == "nixzora"
+    error_message = "service account names must match the Helm chart (<release>-<name>)."
+  }
+  assert {
+    condition     = aws_eks_access_policy_association.deploy[0].access_scope[0].type == "namespace"
+    error_message = "the deploy role is limited to the app namespace."
+  }
+  assert {
+    condition     = length(aws_vpc_security_group_ingress_rule.eks_data) == 2
+    error_message = "pods need PostgreSQL and Redis."
+  }
+  assert {
+    condition     = output.kubernetes.helm_values.hosts.api == "api.staging.nixzora-demo.com"
+    error_message = "the output must give the chart its host names."
+  }
+}
+
+run "read_replica" {
+  command = plan
+  variables {
+    environment         = "staging"
+    deletion_protection = false
+    db_read_replica     = { enabled = true }
+  }
+  assert {
+    condition     = length(aws_db_instance.replica) == 1 && aws_db_instance.replica[0].replicate_source_db == "nixzora-staging"
+    error_message = "the replica must follow the primary."
+  }
+  assert {
+    condition     = output.api_environment["DATABASE_REPLICA_HOST"] == aws_db_instance.replica[0].address
+    error_message = "the API must know the replica's address."
+  }
+  assert {
+    condition     = length(aws_cloudwatch_metric_alarm.replica_lag) == 1
+    error_message = "replica lag must page someone."
+  }
+}
+
+run "managed_prometheus" {
+  command = plan
+  variables {
+    environment         = "staging"
+    deletion_protection = false
+    observability       = { managed_prometheus = true }
+  }
+  assert {
+    condition     = length(aws_prometheus_rule_group_namespace.rules) == 2
+    error_message = "the SLO and operations rules must be loaded into the workspace."
+  }
+  assert {
+    condition     = length(jsondecode(aws_ecs_task_definition.worker[0].container_definitions)) == 2 && length(jsondecode(aws_ecs_task_definition.app["api"].container_definitions)) == 2
+    error_message = "the API and worker tasks need a metrics collector next to them."
+  }
+  assert {
+    condition     = length(jsondecode(aws_ecs_task_definition.app["storefront"].container_definitions)) == 1
+    error_message = "the web apps export no Prometheus metrics, so no collector."
+  }
+  assert {
+    condition     = toset(keys(aws_iam_role_policy.remote_write)) == toset(["api", "search", "ai"])
+    error_message = "every role running a collector may write to the workspace."
   }
 }
 

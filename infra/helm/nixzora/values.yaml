@@ -1,0 +1,188 @@
+# Defaults for every environment; values-staging.yaml overrides per environment.
+# Render locally: helm template nixzora infra/helm/nixzora -f infra/helm/nixzora/values-staging.yaml
+
+image:
+  # ECR repositories: <registry>/nixzora/api, …/storefront, …/admin. The migrate image is the
+  # API image tagged "<tag>-migrate" (see apps/api/Dockerfile).
+  registry: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Public host names (the ALB ingress routes by host).
+hosts:
+  storefront: staging.nixzora.com
+  api: api.staging.nixzora.com
+  admin: ops.staging.nixzora.com
+
+# Account-specific endpoints (Terraform outputs). Empty values are left out of the pods.
+aws:
+  region: us-east-1
+  databaseHost: ''
+  # Read replica (ADR-0022); empty: every read goes to the primary.
+  replicaHost: ''
+  databaseName: nixzora
+  databaseUser: nixzora
+  redisHost: ''
+  mediaBucket: ''
+  mediaHost: media.staging.nixzora.com
+  mailFrom: 'NIXZORA <orders@nixzora.com>'
+
+# Settings shared by the API image's processes (api, worker, search, ai). Same names as the ECS
+# task definitions (infra/terraform/modules/platform/ecs.tf).
+apiEnv:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  STORAGE_DRIVER: s3
+  MAIL_DRIVER: ses
+  PUSH_DRIVER: expo
+  PASSWORD_BREACH_CHECK: 'true'
+  DATABASE_SSL: verify-full
+  REDIS_TLS: 'true'
+  # The ALB adds one hop in front of the pods.
+  TRUST_PROXY_HOPS: '1'
+
+# Secrets come from AWS Secrets Manager through the External Secrets Operator: the same secrets
+# the ECS services use, so both platforms can run side by side during a migration.
+externalSecrets:
+  enabled: true
+  storeKind: ClusterSecretStore
+  storeName: aws-secrets-manager
+  refreshInterval: 1h
+  remote:
+    app: nixzora/staging/app # JSON: JWT keys, Stripe, EasyPost…
+    ai: nixzora/staging/ai # JSON: model provider keys (AI service only)
+    redis: nixzora/staging/redis # plain string
+    internal: nixzora/staging/internal # plain string
+    database: '' # the RDS-managed secret's name or ARN (JSON with "password")
+
+# Each workload. Disabled ones render nothing.
+services:
+  api:
+    enabled: true
+    image: api
+    command: ['node', '--enable-source-maps', 'dist/main.js']
+    port: 4000
+    health: /api/v1/health
+    public: true
+    serviceAccount: api
+    secrets: [app]
+    env:
+      API_PORT: '4000'
+    replicas: 2
+    autoscaling: { min: 2, max: 6, cpu: 60 }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+  worker:
+    enabled: true
+    image: api
+    command: ['node', '--enable-source-maps', 'dist/worker-main.js']
+    port: 4300
+    health: /health
+    serviceAccount: api
+    secrets: [app]
+    env:
+      BACKGROUND_JOBS: 'true'
+      WORKER_PORT: '4300'
+    replicas: 1
+    autoscaling: { min: 1, max: 3, cpu: 60 }
+    # Lets the current outbox batch finish (rows are claimed in a transaction).
+    terminationGracePeriodSeconds: 60
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+  search:
+    enabled: true
+    image: api
+    command: ['node', '--enable-source-maps', 'dist/search-main.js']
+    port: 4100
+    health: /health
+    serviceAccount: search
+    secrets: [app]
+    internalOnlyFrom: [api, worker]
+    env:
+      SEARCH_PORT: '4100'
+    replicas: 1
+    autoscaling: { min: 1, max: 3, cpu: 70 }
+    resources:
+      requests: { cpu: 250m, memory: 768Mi }
+      limits: { memory: 1536Mi }
+  ai:
+    enabled: true
+    image: api
+    command: ['node', '--enable-source-maps', 'dist/ai-main.js']
+    port: 4200
+    health: /health
+    serviceAccount: ai
+    secrets: [app, ai]
+    internalOnlyFrom: [api, worker]
+    env:
+      AI_PORT: '4200'
+    replicas: 1
+    autoscaling: { min: 1, max: 3, cpu: 70 }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+  storefront:
+    enabled: true
+    image: storefront
+    command: ['node', 'apps/storefront/server.js']
+    port: 3000
+    health: /
+    public: true
+    serviceAccount: web
+    secrets: [internal]
+    web: true
+    replicas: 2
+    autoscaling: { min: 2, max: 6, cpu: 60 }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+  admin:
+    enabled: true
+    image: admin
+    command: ['node', 'apps/admin/server.js']
+    port: 3001
+    health: /
+    public: true
+    serviceAccount: web
+    secrets: [internal]
+    web: true
+    replicas: 1
+    autoscaling: { min: 1, max: 2, cpu: 70 }
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { memory: 512Mi }
+
+# One AWS Application Load Balancer for every host (AWS Load Balancer Controller).
+ingress:
+  enabled: true
+  className: alb
+  certificateArn: ''
+  wafAclArn: ''
+  # Only these addresses may open the Ops Center (empty: everyone, like staging on ECS).
+  adminAllowedCidrs: []
+
+# "prisma migrate deploy" before every install and upgrade; the release stops if it fails.
+migrations:
+  enabled: true
+  activeDeadlineSeconds: 600
+
+# Pods only accept traffic they need: public apps from the load balancer (in the VPC), the
+# search and AI services only from the API and worker.
+networkPolicies:
+  enabled: true
+  vpcCidr: 10.40.0.0/16
+  # Namespace of the Prometheus that scrapes the pods' metrics port (ADR-0023).
+  metricsNamespace: monitoring
+
+podDisruptionBudget:
+  minAvailable: 1
+
+# IAM for pods: EKS Pod Identity associations (Terraform) need no annotation; set a role ARN
+# here only when using IRSA instead.
+serviceAccounts:
+  api: { roleArn: '' }
+  search: { roleArn: '' }
+  ai: { roleArn: '' }
+  web: { roleArn: '' }

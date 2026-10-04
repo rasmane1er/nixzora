@@ -17,7 +17,9 @@ resource "aws_subnet" "public" {
   availability_zone       = local.azs[count.index]
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
   map_public_ip_on_launch = false
-  tags                    = merge(local.tags, { Name = "${local.prefix}-public-${local.azs[count.index]}" })
+  tags = merge(local.tags, { Name = "${local.prefix}-public-${local.azs[count.index]}" },
+    # EKS (ADR-0021): where Kubernetes places internet-facing load balancers.
+  var.kubernetes.enabled ? { "kubernetes.io/role/elb" = "1" } : {})
 }
 
 resource "aws_subnet" "private" {
@@ -25,7 +27,8 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   availability_zone = local.azs[count.index]
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
-  tags              = merge(local.tags, { Name = "${local.prefix}-private-${local.azs[count.index]}" })
+  tags = merge(local.tags, { Name = "${local.prefix}-private-${local.azs[count.index]}" },
+  var.kubernetes.enabled ? { "kubernetes.io/role/internal-elb" = "1" } : {})
 }
 
 resource "aws_route_table" "public" {

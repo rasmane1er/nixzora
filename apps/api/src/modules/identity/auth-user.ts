@@ -27,4 +27,5 @@ export const STAFF_PERMISSIONS = new Set([
   'audit.read',
   'sellers.manage',
   'support.manage',
+  'risk.review',
 ]);

@@ -222,10 +222,14 @@ export type SellerOrderView = {
   shippedAt: string | null;
   deliveredAt: string | null;
   cancelledAt: string | null;
+  /** Held by fraud checks (ADR-0024): do not ship until it is cleared. */
+  underReview: boolean;
 };
 
 export type SellerBalance = {
   currency: string;
+  /** Payouts paused by a fraud review (ADR-0024). */
+  payoutsPaused: boolean;
   /** Net of paid orders the seller has not shipped yet. */
   pendingCents: number;
   /** Earned, waiting for the hold period to end. */

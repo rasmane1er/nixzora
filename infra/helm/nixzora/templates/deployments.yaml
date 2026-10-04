@@ -1,0 +1,148 @@
+{{- $secretNames := dict
+  "app" (include "nixzora.name" (dict "root" . "component" "app"))
+  "ai" (printf "%s-keys" (include "nixzora.name" (dict "root" . "component" "ai")))
+  "internal" (include "nixzora.name" (dict "root" . "component" "internal"))
+-}}
+{{- range $component, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $ctx := dict "root" $ "component" $component }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nixzora.name" $ctx }}
+  labels:
+    {{- include "nixzora.labels" $ctx | nindent 4 }}
+spec:
+  {{- if not $svc.autoscaling }}
+  replicas: {{ $svc.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "nixzora.selectorLabels" $ctx | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  template:
+    metadata:
+      labels:
+        {{- include "nixzora.labels" $ctx | nindent 8 }}
+      annotations:
+        # New settings roll the pods.
+        checksum/config: {{ include "nixzora.apiEnv" $ | sha256sum }}
+        {{- if not $svc.web }}
+        # Prometheus metrics on a port the ingress never routes to (ADR-0023).
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9464'
+        prometheus.io/path: /metrics
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "nixzora.name" (dict "root" $ "component" $svc.serviceAccount) }}
+      terminationGracePeriodSeconds: {{ $svc.terminationGracePeriodSeconds | default 30 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      # Spread replicas over availability zones, then nodes.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "nixzora.selectorLabels" $ctx | nindent 14 }}
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "nixzora.selectorLabels" $ctx | nindent 14 }}
+      containers:
+        - name: {{ $component }}
+          image: {{ include "nixzora.image" (dict "root" $ "repository" $svc.image) }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command: {{- toYaml $svc.command | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+              protocol: TCP
+            {{- if not $svc.web }}
+            - name: metrics
+              containerPort: 9464
+              protocol: TCP
+            {{- end }}
+          env:
+            {{- if $svc.web }}
+            - { name: NODE_ENV, value: production }
+            - { name: API_URL, value: {{ include "nixzora.url" (dict "root" $ "component" "api") | quote }} }
+            {{- if eq $component "storefront" }}
+            - { name: WEB_APP_URL, value: {{ printf "https://%s" $.Values.hosts.storefront | quote }} }
+            {{- else }}
+            - { name: STOREFRONT_URL, value: {{ printf "https://%s" $.Values.hosts.storefront | quote }} }
+            {{- end }}
+            {{- end }}
+            {{- range $key, $value := $svc.env }}
+            - { name: {{ $key }}, value: {{ $value | quote }} }
+            {{- end }}
+            {{- if eq $component "search" }}
+            # The search service is the index, and the AI service the model client: neither calls itself.
+            - { name: SEARCH_SERVICE_URL, value: '' }
+            {{- else if eq $component "ai" }}
+            - { name: AI_SERVICE_URL, value: '' }
+            {{- end }}
+            {{- range $secret := $svc.secrets }}
+            {{- if eq $secret "internal" }}
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ index $secretNames "internal" }}, key: INTERNAL_API_KEY }
+            {{- end }}
+            {{- end }}
+          {{- $fromSecrets := list }}
+          {{- range $secret := $svc.secrets }}{{ if ne $secret "internal" }}{{ $fromSecrets = append $fromSecrets $secret }}{{ end }}{{ end }}
+          {{- if or (not $svc.web) $fromSecrets }}
+          envFrom:
+            {{- if not $svc.web }}
+            - configMapRef:
+                name: {{ include "nixzora.name" (dict "root" $ "component" "api-config") }}
+            {{- end }}
+            {{- range $secret := $fromSecrets }}
+            - secretRef:
+                name: {{ index $secretNames $secret }}
+            {{- end }}
+          {{- end }}
+          startupProbe:
+            httpGet: { path: {{ $svc.health }}, port: http }
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet: { path: {{ $svc.health }}, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: { path: {{ $svc.health }}, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources: {{- toYaml $svc.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            {{- if $svc.web }}
+            # Next.js writes its image and fetch caches here.
+            - { name: next-cache, mountPath: {{ printf "/app/apps/%s/.next/cache" $component }} }
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 256Mi }
+        {{- if $svc.web }}
+        - name: next-cache
+          emptyDir: { sizeLimit: 512Mi }
+        {{- end }}
+---
+{{- end }}
+{{- end }}

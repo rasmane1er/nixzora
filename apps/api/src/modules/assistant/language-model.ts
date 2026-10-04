@@ -1,3 +1,4 @@
+import { timeDependency } from '../../metrics/metrics';
 import { z } from 'zod';
 import { type ProductFacts, templateCopy } from '../insights/product-copy';
 import { type ReviewAnalysis, templateSummary } from '../insights/review-analysis';
@@ -328,7 +329,11 @@ export class AnthropicLanguageModel implements LanguageModel {
     return { text, usage: this.usageOf(res) };
   }
 
-  private async call(body: unknown): Promise<AnthropicResponse> {
+  private call(body: unknown): Promise<AnthropicResponse> {
+    return timeDependency('anthropic', 'messages', () => this.request(body));
+  }
+
+  private async request(body: unknown): Promise<AnthropicResponse> {
     const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {

@@ -185,3 +185,47 @@ variable "event_streaming" {
     error_message = "search_index_events is \"outbox\" or \"kafka\"."
   }
 }
+
+variable "kubernetes" {
+  description = <<-EOT
+    EKS in Auto Mode, as an alternative to ECS for the same images (ADR-0021). Off by default:
+    the control plane is about 73 USD a month, plus nodes and the Auto Mode fee. The Helm chart
+    in infra/helm/nixzora deploys the apps; the ECS services keep running until DNS is switched.
+  EOT
+  type = object({
+    enabled             = bool
+    version             = optional(string, "1.33")
+    namespace           = optional(string, "nixzora")
+    release             = optional(string, "nixzora")
+    public_access_cidrs = optional(list(string), ["0.0.0.0/0"])
+    # IAM role (e.g. the GitHub Actions deploy role) allowed to install the chart.
+    deploy_role_arn = optional(string, "")
+  })
+  default = { enabled = false }
+}
+
+variable "db_read_replica" {
+  description = <<-EOT
+    A PostgreSQL read replica for the public catalog and recommendations (ADR-0022). Off by
+    default: it costs about as much as the primary instance (db.t4g.micro: ~15 USD a month).
+  EOT
+  type = object({
+    enabled        = bool
+    instance_class = optional(string)
+  })
+  default = { enabled = false }
+}
+
+variable "observability" {
+  description = <<-EOT
+    Prometheus metrics in AWS (ADR-0023). With managed_prometheus, an Amazon Managed Service for
+    Prometheus workspace stores the metrics, evaluates the SLO and operational rules from
+    infra/observability, and sends alerts to the alarm email; an ADOT collector next to each
+    API-image task scrapes its metrics port. Off by default (a few USD a month at staging volume).
+  EOT
+  type = object({
+    managed_prometheus = bool
+    collector_image    = optional(string, "public.ecr.aws/aws-observability/aws-otel-collector:v0.40.0")
+  })
+  default = { managed_prometheus = false }
+}

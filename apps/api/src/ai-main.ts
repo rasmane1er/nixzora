@@ -1,10 +1,13 @@
 // Must be the first import: tracing patches modules as they load.
 import './tracing';
+// Labels this process's metrics (ADR-0023).
+process.env.NIXZORA_PROCESS = 'ai';
 import 'reflect-metadata';
 import { type NestExpressApplication } from '@nestjs/platform-express';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import { httpMetricsMiddleware } from './metrics/metrics';
 import { Logger } from 'nestjs-pino';
 import { AiServiceModule } from './ai-service/ai-service.module';
 import { type Env } from './config/env';
@@ -15,6 +18,7 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
   app.useLogger(app.get(Logger));
+  app.use(httpMetricsMiddleware);
   app.use(helmet());
   // Indexing sends up to 1,000 product texts in one call.
   app.useBodyParser('json', { limit: '4mb' });

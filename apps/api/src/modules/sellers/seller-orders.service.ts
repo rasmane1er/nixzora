@@ -36,6 +36,7 @@ const include = {
       placedAt: true,
       shippingAddress: true,
       items: true,
+      riskHold: true,
     },
   },
 } satisfies Prisma.SellerOrderInclude;
@@ -58,6 +59,51 @@ export class SellerOrdersService implements OnModuleInit {
 
   onModuleInit(): void {
     this.outbox.on('seller.order.created', ({ aggregateId }) => this.notifyNewOrder(aggregateId));
+    // Fraud reviews (ADR-0024): tell stores when a held order may ship, and when payouts restart.
+    this.outbox.on('risk.order_cleared', ({ aggregateId }) => this.notifyCleared(aggregateId));
+    this.outbox.on('risk.payouts_released', ({ aggregateId }) =>
+      this.notifyPayoutsResumed(aggregateId),
+    );
+  }
+
+  private get webUrl(): string {
+    return this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '');
+  }
+
+  private async notifyCleared(orderId: string): Promise<void> {
+    const parts = await this.prisma.sellerOrder.findMany({
+      where: { orderId, status: 'PAID' },
+      include: { order: { select: { number: true } }, seller: true },
+    });
+    for (const part of parts) {
+      const t = translator(await this.sellers.ownerLocale(part.sellerId))('email');
+      const link = `${this.webUrl}/sell/orders/${part.id}`;
+      await this.mail.trySend({
+        to: part.seller.contactEmail,
+        subject: t('seller_orderCleared_subject', { number: part.order.number }),
+        text: t('seller_orderCleared_text', {
+          store: part.seller.displayName,
+          number: part.order.number,
+          link,
+        }),
+        template: 'sellers.order-cleared',
+        data: { number: part.order.number, link },
+      });
+    }
+  }
+
+  private async notifyPayoutsResumed(sellerId: string): Promise<void> {
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) return;
+    const t = translator(await this.sellers.ownerLocale(sellerId))('email');
+    const link = `${this.webUrl}/sell/earnings`;
+    await this.mail.trySend({
+      to: seller.contactEmail,
+      subject: t('seller_payoutsResumed_subject', { store: seller.displayName }),
+      text: t('seller_payoutsResumed_text', { store: seller.displayName, link }),
+      template: 'sellers.payouts-resumed',
+      data: { link },
+    });
   }
 
   async list(
@@ -93,6 +139,9 @@ export class SellerOrdersService implements OnModuleInit {
   async ship(id: string, input: SellerOrderShip, actor: ActorContext): Promise<SellerOrderView> {
     const { seller } = await this.sellers.require(actor.user.id, { write: true });
     const part = await this.owned(id, actor);
+    if (part.order.riskHold) {
+      throw new ConflictException('This order is being reviewed. Do not ship it yet.');
+    }
     if (part.status !== 'PAID') {
       throw new ConflictException(
         part.status === 'CANCELLED' ? 'This order was cancelled.' : 'Already shipped.',
@@ -150,7 +199,7 @@ export class SellerOrdersService implements OnModuleInit {
 
   async balance(sellerId: string): Promise<SellerBalance> {
     const now = new Date();
-    const [pending, held, available, lifetime, next] = await Promise.all([
+    const [pending, held, available, lifetime, next, store] = await Promise.all([
       this.prisma.sellerOrder.aggregate({
         where: { sellerId, status: 'PAID' },
         _sum: { netCents: true },
@@ -172,9 +221,11 @@ export class SellerOrdersService implements OnModuleInit {
         orderBy: { availableAt: 'asc' },
         select: { availableAt: true },
       }),
+      this.prisma.seller.findUnique({ where: { id: sellerId }, select: { payoutsHeld: true } }),
     ]);
     return {
       currency: 'USD',
+      payoutsPaused: store?.payoutsHeld ?? false,
       pendingCents: pending._sum.netCents ?? 0,
       onHoldCents: held._sum.amountCents ?? 0,
       availableCents: available._sum.amountCents ?? 0,
@@ -274,6 +325,7 @@ export class SellerOrdersService implements OnModuleInit {
       shippedAt: row.shippedAt?.toISOString() ?? null,
       deliveredAt: row.deliveredAt?.toISOString() ?? null,
       cancelledAt: row.cancelledAt?.toISOString() ?? null,
+      underReview: row.order.riskHold,
     };
   }
 
@@ -285,7 +337,7 @@ export class SellerOrdersService implements OnModuleInit {
     });
     if (!row) return;
     const view = this.view(row);
-    const link = `${this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '')}/sell/orders/${row.id}`;
+    const link = `${this.webUrl}/sell/orders/${row.id}`;
     const locale = await this.sellers.ownerLocale(row.sellerId);
     const t = translator(locale)('email');
     const { money, number } = formatters(locale);
@@ -299,17 +351,21 @@ export class SellerOrdersService implements OnModuleInit {
         }),
       )
       .join('\n');
+    const text = t('seller_newOrder_text', {
+      store: row.seller.displayName,
+      number: view.orderNumber,
+      lines,
+      amount: money(view.netCents, view.currency),
+      commission: number(row.commissionBps / 100),
+      link,
+    });
+    // Held by a fraud review (ADR-0024): tell the store not to ship it yet.
     await this.mail.trySend({
       to: row.seller.contactEmail,
-      subject: t('seller_newOrder_subject', { number: view.orderNumber }),
-      text: t('seller_newOrder_text', {
-        store: row.seller.displayName,
+      subject: t(view.underReview ? 'seller_newOrder_heldSubject' : 'seller_newOrder_subject', {
         number: view.orderNumber,
-        lines,
-        amount: money(view.netCents, view.currency),
-        commission: number(row.commissionBps / 100),
-        link,
       }),
+      text: view.underReview ? `${t('seller_newOrder_heldNote')}\n\n${text}` : text,
       template: 'sellers.new-order',
       data: { number: view.orderNumber, link },
     });

@@ -1,0 +1,9 @@
+# The app namespace. "restricted" Pod Security: every pod must run as non-root, drop all
+# capabilities, use the runtime's seccomp profile and never escalate privileges (the chart does).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nixzora
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

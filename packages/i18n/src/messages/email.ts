@@ -74,6 +74,15 @@ export const email = defineMessages({
       'We sent {amount} to the bank account on file for {store}. (Test mode: no money moved.)\n\nDetails: {link}\n',
     seller_newOrder_subject: 'New order {number}: ship within 2 business days',
     seller_newOrder_line: '  {quantity} × {product} ({variant}), SKU {sku}',
+    seller_newOrder_heldSubject: 'New order {number}: on hold, do not ship yet',
+    seller_orderCleared_subject: 'Order {number} is cleared: ship it now',
+    seller_orderCleared_text:
+      '{store}: we finished checking order {number}. Ship it and add the tracking number here: {link}\n',
+    seller_payoutsResumed_subject: 'Payouts to {store} have restarted',
+    seller_payoutsResumed_text:
+      'We finished reviewing recent activity on {store}. Payouts have restarted: your available balance goes out with the next daily payout.\n\nEarnings: {link}\n',
+    seller_newOrder_heldNote:
+      'We are checking this order before it ships. Do not ship it yet: we will email you as soon as it is cleared.',
     seller_newOrder_text:
       '{store} has a new order.\n\nOrder {number}\n{lines}\n\nYou earn {amount} after the {commission}% commission.\n\nShip it and add the tracking number here: {link}\n',
 
@@ -161,6 +170,16 @@ export const email = defineMessages({
       'Nous avons envoyé {amount} sur le compte bancaire enregistré pour {store}. (Mode test : aucun argent n’a été transféré.)\n\nDétails : {link}\n',
     seller_newOrder_subject: 'Nouvelle commande {number} : à expédier sous 2 jours ouvrés',
     seller_newOrder_line: '  {quantity} × {product} ({variant}), SKU {sku}',
+    seller_newOrder_heldSubject:
+      'Nouvelle commande {number} : en attente, ne l’expédiez pas encore',
+    seller_orderCleared_subject: 'Commande {number} validée : expédiez-la maintenant',
+    seller_orderCleared_text:
+      '{store} : nous avons fini de vérifier la commande {number}. Expédiez-la et ajoutez le numéro de suivi ici : {link}\n',
+    seller_payoutsResumed_subject: 'Les versements à {store} ont repris',
+    seller_payoutsResumed_text:
+      'Nous avons fini de vérifier l’activité récente de {store}. Les versements ont repris : votre solde disponible part avec le prochain versement quotidien.\n\nRevenus : {link}\n',
+    seller_newOrder_heldNote:
+      'Nous vérifions cette commande avant son expédition. Ne l’expédiez pas encore : nous vous écrirons dès qu’elle sera validée.',
     seller_newOrder_text:
       '{store} a reçu une nouvelle commande.\n\nCommande {number}\n{lines}\n\nVous recevez {amount} après la commission de {commission} %.\n\nExpédiez-la et ajoutez le numéro de suivi ici : {link}\n',
 
@@ -247,6 +266,15 @@ export const email = defineMessages({
       'Enviamos {amount} a la cuenta bancaria registrada de {store}. (Modo de prueba: no se movió dinero).\n\nDetalles: {link}\n',
     seller_newOrder_subject: 'Nuevo pedido {number}: envíalo en un plazo de 2 días hábiles',
     seller_newOrder_line: '  {quantity} × {product} ({variant}), SKU {sku}',
+    seller_newOrder_heldSubject: 'Nuevo pedido {number}: en espera, no lo envíes todavía',
+    seller_orderCleared_subject: 'Pedido {number} aprobado: envíalo ya',
+    seller_orderCleared_text:
+      '{store}: terminamos de revisar el pedido {number}. Envíalo y añade el número de seguimiento aquí: {link}\n',
+    seller_payoutsResumed_subject: 'Los pagos a {store} se han reanudado',
+    seller_payoutsResumed_text:
+      'Terminamos de revisar la actividad reciente de {store}. Los pagos se han reanudado: tu saldo disponible sale con el próximo pago diario.\n\nGanancias: {link}\n',
+    seller_newOrder_heldNote:
+      'Estamos revisando este pedido antes del envío. No lo envíes todavía: te escribiremos en cuanto se apruebe.',
     seller_newOrder_text:
       '{store} tiene un nuevo pedido.\n\nPedido {number}\n{lines}\n\nGanas {amount} después de la comisión del {commission} %.\n\nEnvíalo y agrega el número de rastreo aquí: {link}\n',
 

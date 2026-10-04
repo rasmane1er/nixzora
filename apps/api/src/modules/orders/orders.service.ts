@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
@@ -33,6 +34,7 @@ import { type CartOwner, CartService } from '../cart/cart.service';
 import { type AuthUser } from '../identity/auth-user';
 import { InventoryService } from '../inventory/inventory.service';
 import { CouponsService } from '../promotions/coupons.service';
+import { type CheckoutAssessment, RiskService } from '../risk/risk.service';
 import { RefundsService } from './refunds.service';
 import {
   PAYMENT_GATEWAY,
@@ -81,6 +83,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService<Env, true>,
     private readonly coupons: CouponsService,
     private readonly refunds: RefundsService,
+    private readonly risk: RiskService,
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGateway,
   ) {}
 
@@ -146,6 +149,34 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       variantId: line.variantId,
       quantity: line.quantity,
     }));
+
+    // Fraud signals (ADR-0024): decline the worst before holding any stock.
+    const assessment = await this.risk.assessCheckout({
+      email: user?.email ?? input.email,
+      userId: user?.id ?? null,
+      ipAddress: meta.ipAddress,
+      totalCents: cart.totals.totalCents,
+      quantities: items.map((item) => item.quantity),
+    });
+    if (assessment?.decision === 'BLOCK' && assessment.enforced) {
+      await this.risk.recordCheckout(assessment, null);
+      await this.audit.record({
+        action: 'orders.checkout.declined',
+        actorId: user?.id ?? null,
+        entityType: 'checkout',
+        entityId: user?.id ?? assessment.email,
+        meta,
+        metadata: { score: assessment.score, signals: assessment.signals.map((s) => s.code) },
+      });
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'ORDER_DECLINED',
+        message:
+          'We could not accept this order. If you think this is a mistake, contact support and we will look into it.',
+      });
+    }
+
     const holdMinutes = this.config.get('CHECKOUT_HOLD_MINUTES', { infer: true });
     const holds = await this.inventory.reserve(items, null, holdMinutes);
 
@@ -159,6 +190,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         holds,
         cart.coupon && !cart.coupon.problem ? cart.coupon.code : null,
         locale,
+        assessment,
       );
     } catch (error) {
       await this.inventory.release(holds);
@@ -274,6 +306,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     holds: string[],
     couponCode: string | null,
     language: Locale,
+    assessment: CheckoutAssessment | null,
   ): Promise<OrderRow> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -312,6 +345,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,
               shippingAddress: input.shippingAddress as Prisma.InputJsonObject,
+              riskHold: assessment?.decision === 'REVIEW' && assessment.enforced,
               items: {
                 create: lines.map((line) => ({
                   variantId: line.variantId,
@@ -331,6 +365,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             where: { id: { in: holds } },
             data: { orderId: order.id },
           });
+          if (assessment) await this.risk.recordCheckout(assessment, order.id, tx);
           await tx.outboxEvent.create({
             data: {
               aggregateType: 'order',
@@ -408,6 +443,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         case 'failed':
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
           return 'applied' as const;
+        case 'disputed':
+          await tx.payment.updateMany({
+            where: { id: payment.id, disputedAt: null },
+            data: { disputedAt: new Date() },
+          });
+          return 'applied' as const;
         case 'canceled': {
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'CANCELED' } });
           cancelledUnpaid = await tx.order.updateMany({
@@ -463,7 +504,20 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    if (result === 'applied' && event.type === 'disputed') {
+      await this.risk.onDispute(payment.orderId);
+      await this.audit.record({
+        action: 'orders.disputed',
+        actorType: 'SYSTEM',
+        entityType: 'order',
+        entityId: payment.orderId,
+        metadata: { number: payment.order.number, amountCents: event.amountCents },
+      });
+    }
     if (result === 'applied' && event.type === 'succeeded') {
+      await this.risk
+        .afterPayment(payment.orderId, payment.providerPaymentId)
+        .catch((error: Error) => this.logger.warn(`Payment risk check failed: ${error.message}`));
       await this.emptyCart(payment.orderId);
       await this.audit.record({
         action: 'orders.paid',
@@ -616,6 +670,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       include: { ...orderInclude, payments: true },
     });
     if (!order) throw new NotFoundException('Order not found.');
+    if (order.riskHold && (input.action === 'start' || input.action === 'ship')) {
+      throw new ConflictException('This order is being reviewed. Do not ship it yet.');
+    }
     const now = new Date();
 
     const transition = async (

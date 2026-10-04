@@ -30,7 +30,10 @@ import { ShippingModule } from './modules/shipping/shipping.module';
 import { SupportModule } from './modules/support/support.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { DatabaseMaintenanceModule } from './database/database-maintenance.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { MetricsCollectors } from './metrics/metrics.collectors';
+import { MetricsModule } from './metrics/metrics.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -69,6 +72,7 @@ import { RedisModule } from './redis/redis.module';
     PrismaModule,
     RedisModule,
     KafkaModule,
+    MetricsModule,
     AuditModule,
     AssistantModule,
     RecommendationsModule,
@@ -77,6 +81,7 @@ import { RedisModule } from './redis/redis.module';
     NotificationsModule,
     SupportModule,
     OutboxModule,
+    DatabaseMaintenanceModule,
     // Feature modules, added phase by phase.
     IdentityModule,
     UsersModule,
@@ -97,6 +102,7 @@ import { RedisModule } from './redis/redis.module';
     { provide: APP_GUARD, useClass: ClientThrottlerGuard },
     { provide: APP_GUARD, useClass: AccessTokenGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    MetricsCollectors,
   ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import { InsightsModule } from '../insights/insights.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { MediaModule } from '../media/media.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { RiskModule } from '../risk/risk.module';
 import { PayoutsService } from './payouts.service';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { SellerFeedbackService } from './seller-feedback.service';
@@ -20,7 +21,14 @@ import { SellersService } from './sellers.service';
 
 /** Marketplace sellers (Phase 7, ADR-0012). */
 @Module({
-  imports: [CatalogModule, InsightsModule, InventoryModule, MediaModule, PaymentsModule],
+  imports: [
+    CatalogModule,
+    InsightsModule,
+    InventoryModule,
+    MediaModule,
+    PaymentsModule,
+    RiskModule,
+  ],
   controllers: [SellerController, SellersAdminController, SellersPublicController],
   providers: [
     SellersService,

@@ -21,6 +21,7 @@ export { ops } from './ops';
 export { opsCatalog } from './opsCatalog';
 export { opsOrders } from './opsOrders';
 export { opsPeople } from './opsPeople';
+export { opsRisk } from './opsRisk';
 export { order } from './order';
 export { product } from './product';
 export { productPage } from './productPage';

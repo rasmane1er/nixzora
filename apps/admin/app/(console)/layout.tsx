@@ -16,6 +16,7 @@ const NAV: { href: string; label: MessageKey<'ops'>; permission: string }[] = [
   { href: '/', label: 'nav_dashboard', permission: 'admin.access' },
   { href: '/orders', label: 'nav_orders', permission: 'orders.read.all' },
   { href: '/returns', label: 'nav_returns', permission: 'orders.read.all' },
+  { href: '/risk', label: 'nav_risk', permission: 'risk.review' },
   { href: '/products', label: 'nav_products', permission: 'catalog.write' },
   { href: '/categories', label: 'nav_categories', permission: 'catalog.write' },
   { href: '/inventory', label: 'nav_inventory', permission: 'inventory.write' },

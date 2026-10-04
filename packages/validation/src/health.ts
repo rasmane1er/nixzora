@@ -44,6 +44,13 @@ export const HealthResponseSchema = z.object({
     database: DependencyCheckSchema,
     redis: DependencyCheckSchema,
   }),
+  /** The read replica (ADR-0022), when configured. Informational: reads fall back to the primary. */
+  replica: z
+    .object({
+      status: z.enum(['up', 'behind', 'down']),
+      lagSeconds: z.number().nonnegative().optional(),
+    })
+    .optional(),
   jobs: JobsCheckSchema.optional(),
 });
 

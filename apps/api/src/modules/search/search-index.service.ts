@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type Env } from '../../config/env';
+import { timeDependency } from '../../metrics/metrics';
 import { type RetrieveOptions, SearchEngine, type ScoredIds } from './search-engine';
 
 export type { RetrieveOptions, ScoredIds } from './search-engine';
@@ -105,15 +106,20 @@ export class SearchIndexService {
   ): Promise<T> {
     if (breaker && Date.now() < this.openUntil) throw new Error('search service paused');
     try {
-      const res = await fetch(`${this.url}${path}`, {
-        method,
-        headers: {
-          'x-internal-key': this.key ?? '',
-          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      const res = await timeDependency(
+        'search',
+        `${method} ${path.split('/').slice(0, 4).join('/')}`,
+        () =>
+          fetch(`${this.url}${path}`, {
+            method,
+            headers: {
+              'x-internal-key': this.key ?? '',
+              ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+            signal: AbortSignal.timeout(timeoutMs),
+          }),
+      );
       if (!res.ok) throw new Error(`search service answered ${res.status}`);
       return (await res.json()) as T;
     } catch (error) {

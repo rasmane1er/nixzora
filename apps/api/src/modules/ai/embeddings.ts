@@ -1,3 +1,4 @@
+import { timeDependency } from '../../metrics/metrics';
 import { createHash } from 'node:crypto';
 import { CONCEPTS_VERSION, conceptOf, stem, tokenize } from './concepts';
 
@@ -100,17 +101,19 @@ export class VoyageEmbeddings implements EmbeddingsProvider {
     // The API accepts up to 1,000 inputs per request; batches of 100 keep requests small.
     for (let start = 0; start < texts.length; start += 100) {
       const batch = texts.slice(start, start + 100);
-      const res = await this.fetchImpl('https://api.voyageai.com/v1/embeddings', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${this.apiKey}` },
-        body: JSON.stringify({
-          input: batch,
-          model: this.model,
-          input_type: purpose,
-          output_dimension: EMBEDDING_DIMENSIONS,
+      const res = await timeDependency('voyage', 'embeddings', () =>
+        this.fetchImpl('https://api.voyageai.com/v1/embeddings', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${this.apiKey}` },
+          body: JSON.stringify({
+            input: batch,
+            model: this.model,
+            input_type: purpose,
+            output_dimension: EMBEDDING_DIMENSIONS,
+          }),
+          signal: AbortSignal.timeout(20_000),
         }),
-        signal: AbortSignal.timeout(20_000),
-      });
+      );
       if (!res.ok) throw new Error(`Voyage embeddings failed with HTTP ${res.status}`);
       const body = (await res.json()) as VoyageResponse;
       this.lastTokens += body.usage?.total_tokens ?? 0;

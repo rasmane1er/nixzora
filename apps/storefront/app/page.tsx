@@ -17,10 +17,12 @@ export default async function HomePage() {
       `/recommendations${visitor ? `?visitorId=${encodeURIComponent(visitor)}` : ''}`,
     ).catch(() => null),
   ]);
-  const t = await getT('home');
-  const p = await getT('product');
+  const [t, p, names] = await Promise.all([
+    getT('home'),
+    getT('product'),
+    Promise.all(categories.map((category) => departmentName(category))),
+  ]);
   const prompts = [t('prompt1'), t('prompt2'), t('prompt3'), t('prompt4')];
-  const names = await Promise.all(categories.map((category) => departmentName(category)));
   // Featured: what shoppers like right now (or, for a returning visitor, picks for them).
   const featured = (picks?.products.length ? picks.products : (newest?.items ?? [])).slice(0, 8);
   const featuredTitle = picks?.basis === 'history' ? t('recommended') : t('featured');

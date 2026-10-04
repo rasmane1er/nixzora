@@ -39,6 +39,11 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     private readonly redis: RedisService,
   ) {}
 
+  /** Event types something in this process delivers (the rest are only streamed). */
+  handledTypes(): string[] {
+    return [...this.handlers.keys()];
+  }
+
   on(type: string, handler: OutboxHandler): void {
     this.handlers.set(type, [...(this.handlers.get(type) ?? []), handler]);
   }

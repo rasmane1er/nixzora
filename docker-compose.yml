@@ -40,6 +40,40 @@ services:
       - '16686:16686' # Jaeger UI
       - '4318:4318' # OTLP over HTTP (the API sends traces here)
 
+  # Metrics, dashboards and alerts (ADR-0023), with the observability profile:
+  # Prometheus http://localhost:9090 · Grafana http://localhost:3002 · Alertmanager :9093
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: nixzora-prometheus
+    profiles: ['observability']
+    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.retention.time=15d']
+    ports: ['9090:9090']
+    extra_hosts: ['host.docker.internal:host-gateway'] # the apps run on your machine
+    volumes:
+      - ./infra/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/prometheus/rules:/etc/prometheus/rules:ro
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: nixzora-alertmanager
+    profiles: ['observability']
+    ports: ['9093:9093']
+    volumes:
+      - ./infra/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    container_name: nixzora-grafana
+    profiles: ['observability']
+    ports: ['3002:3000'] # 3000/3001 are the storefront and Ops Center
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true' # local only
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/service-health.json
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
   # Optional event streaming (ADR-0020). Start with: pnpm events:up, then set
   # KAFKA_BROKERS=localhost:9092 in apps/api/.env.
   kafka:
