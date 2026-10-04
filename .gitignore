@@ -60,3 +60,6 @@ tools/demo-images/sprites/
 # k6 run outputs
 tests/load/results/*
 !tests/load/results/README.md
+
+# Demo video renders (tools/demo-video/record.mjs)
+tools/demo-video/out/

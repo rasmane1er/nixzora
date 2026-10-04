@@ -2,13 +2,15 @@
 
 **AI-native commerce platform.** Shoppers describe what they need; NIXZORA finds it, explains it and builds the cart.
 
-This repository is a monorepo for the web storefront, the iOS and Android app, the API, the Ops Center and the shared packages they use. It is built in public, phase by phase.
+This repository is a monorepo for the web storefront, the iOS and Android app, the API, the Ops Center and the shared packages they use. It is built in public, phase by phase. Start with the **[case study](docs/case-study.md)**.
 
-|                     |                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------- |
-| **Status**          | Phase 5 · Mobile app: iOS and Android app built, store test builds ready to ship |
-| **Launch vertical** | Computers and electronics                                                        |
-| **Next release**    | v1.0 · AI shopping assistant (May 2027)                                          |
+![NIXZORA shopping assistant](docs/media/demo-assistant.jpg)
+
+|                     |                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| **Status**          | Phase 8 · Scale and hardening: load-tested, fraud signals, security review, DR drill        |
+| **Launch vertical** | Computers and electronics                                                                   |
+| **Case study**      | [How NIXZORA was built, in numbers](docs/case-study.md) (with demo stills and video script) |
 
 ## Stack
 
@@ -127,18 +129,24 @@ Then open:
 - **Deployment**: Docker images for each app, Terraform for AWS (ECS Fargate, RDS, ElastiCache, S3 + CloudFront, WAF, Secrets Manager, backups, alarms, SES), and a GitHub Actions pipeline with migrations, rolling deploys, automatic rollback and production approval.
 - **Mobile app** (`apps/mobile`): browse, search, product pages, cart with promo codes, checkout with Stripe PaymentSheet (cards, Apple Pay, Google Pay), order history with a delivery timeline, saved products, barcode and QR scanning, push notifications for order updates, Face ID / fingerprint unlock, universal links, and a catalog that stays browsable offline.
 - **Observability**: OpenTelemetry traces (optional Jaeger), JSON logs with trace ids.
+- **AI shopping**: a shopping assistant that answers in plain words with grounded picks, semantic search on pgvector, recommendations and review insights (Anthropic and Voyage, or free local drivers).
+- **Marketplace**: six-step seller onboarding, listing review, commission ledger and Stripe Connect payouts.
+- **Scale and hardening**: search and AI services, notifications worker, optional Kafka and EKS, read replica, Prometheus/Grafana SLOs, k6 load tests, fraud signals, CSP and a pen-test checklist, scripted restore drills.
 
 Try it in Swagger at http://localhost:4000/docs, or see [Authentication flows](docs/architecture/auth-flows.md). In development, emails (verification and reset links) are printed in the API log.
 
 ## Documentation
 
+- **[Case study](docs/case-study.md)**: the problem, architecture, decisions, results and lessons
 - [Authentication flows and endpoints](docs/architecture/auth-flows.md)
 - [Checkout and payment flow](docs/architecture/checkout-flow.md)
 - [Mobile app architecture](docs/architecture/mobile.md) and [mobile release runbook](docs/runbooks/mobile-release.md)
-- [Deployment architecture](docs/architecture/deployment.md) and runbooks: [first deploy](docs/runbooks/first-deploy.md) · [deploy and roll back](docs/runbooks/deploy-and-rollback.md) · [restore the database](docs/runbooks/restore-database.md) · [incident response](docs/runbooks/incident-response.md) · [rotate secrets](docs/runbooks/rotate-secrets.md)
+- [Deployment architecture](docs/architecture/deployment.md) and runbooks: [first deploy](docs/runbooks/first-deploy.md) · [deploy and roll back](docs/runbooks/deploy-and-rollback.md) · [restore the database](docs/runbooks/restore-database.md) · [disaster recovery](docs/runbooks/disaster-recovery.md) · [incident response](docs/runbooks/incident-response.md) · [rotate secrets](docs/runbooks/rotate-secrets.md) · [fraud review](docs/runbooks/fraud-review.md) · [all runbooks](docs/runbooks/)
 - [Data model (ERD)](docs/architecture/erd.md)
-- [Threat model](docs/security/threat-model.md)
-- Decisions: [0001 Modular monolith](docs/adr/0001-modular-monolith-first.md) · [0002 Authentication](docs/adr/0002-authentication.md) · [0003 Payments](docs/adr/0003-payments-provider-interface.md) · [0004 Toolchain and data](docs/adr/0004-toolchain-and-data-access.md) · [0005 Media and search](docs/adr/0005-media-storage-and-search.md) · [0006 Cart and checkout](docs/adr/0006-cart-and-checkout.md) · [0007 AWS hosting](docs/adr/0007-aws-hosting.md) · [0008 Mobile app](docs/adr/0008-mobile-app.md)
+- [Service level objectives](docs/slo.md) · [load testing](docs/performance/load-testing.md) and the [October 2026 report](docs/performance/load-test-report-2026-10.md)
+- [Shopping assistant evaluation](docs/evaluation/assistant.md)
+- [Threat model](docs/security/threat-model.md) · [pen-test checklist](docs/security/pentest-checklist.md)
+- Decisions: [0001 Start as a modular monolith](docs/adr/0001-modular-monolith-first.md) · [0002 Authentication and sessions](docs/adr/0002-authentication.md) · [0003 Stripe behind a payment-provider interface](docs/adr/0003-payments-provider-interface.md) · [0004 Toolchain versions and data access](docs/adr/0004-toolchain-and-data-access.md) · [0005 Product media storage and catalog search](docs/adr/0005-media-storage-and-search.md) · [0006 Cart, checkout and order lifecycle](docs/adr/0006-cart-and-checkout.md) · [0007 Hosting on AWS with ECS Fargate](docs/adr/0007-aws-hosting.md) · [0008 Mobile app with Expo (React Native)](docs/adr/0008-mobile-app.md) · [0009 AI layer](docs/adr/0009-ai-layer-and-semantic-search.md) · [0010 Recommendations from the search index](docs/adr/0010-recommendations.md) · [0011 Review insights and product copy suggestions](docs/adr/0011-review-insights-and-product-copy.md) · [0012 Marketplace sellers](docs/adr/0012-marketplace-sellers.md) · [0013 Marketplace orders](docs/adr/0013-marketplace-orders-and-earnings.md) · [0014 Seller payouts](docs/adr/0014-seller-payouts.md) · [0015 Extract search into its own service](docs/adr/0015-search-service.md) · [0016 An AI service in front of the model providers](docs/adr/0016-ai-service.md) · [0017 A notifications worker for the background jobs](docs/adr/0017-notifications-worker.md) · [0018 Seller onboarding in six steps](docs/adr/0018-seller-onboarding.md) · [0019 Passkeys on the web](docs/adr/0019-passkeys-and-biometric-sign-in.md) · [0020 Event streaming with Kafka (Amazon MSK)](docs/adr/0020-event-streaming-kafka.md) · [0021 Kubernetes on EKS (Auto Mode) with a Helm chart](docs/adr/0021-kubernetes-eks-helm.md) · [0022 Read replica for catalog reads; monthly partitions for the event tables](docs/adr/0022-read-replica-and-partitioning.md) · [0023 Prometheus metrics](docs/adr/0023-prometheus-grafana-slos.md) · [0024 Fraud signals on checkout and payouts](docs/adr/0024-fraud-signals.md)
 
 ## Roadmap
 
