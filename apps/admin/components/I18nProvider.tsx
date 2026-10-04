@@ -1,6 +1,6 @@
 'use client';
 
-import { formatters, type Locale, type Messages, type Namespace, translator } from '@nixzora/i18n';
+import { type Locale, type Messages, type Namespace, translator } from '@nixzora/i18n';
 import { createContext, useContext, useMemo } from 'react';
 
 const I18nContext = createContext<{ locale: Locale; messages: Messages } | null>(null);
@@ -33,9 +33,4 @@ export function useLocale(): Locale {
 export function useT<N extends Namespace>(namespace: N) {
   const { locale, messages } = useI18n();
   return useMemo(() => translator(locale, messages)(namespace), [locale, messages, namespace]);
-}
-
-export function useFormat() {
-  const { locale } = useI18n();
-  return useMemo(() => formatters(locale), [locale]);
 }

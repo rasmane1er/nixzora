@@ -17,6 +17,7 @@ import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { param, query, type SearchParams } from '@/lib/format';
+import { isUuid } from '@/lib/forms';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { ROLE_KEYS, roleLabel } from '@/lib/roles';
 import { addNote, grantRole, revokeRole, setStatus } from '../actions';
@@ -26,10 +27,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: common('account') };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 async function loadUser(id: string): Promise<AdminUser> {
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   try {
     return await load<AdminUser>(`/admin/users/${id}`);
   } catch (error) {

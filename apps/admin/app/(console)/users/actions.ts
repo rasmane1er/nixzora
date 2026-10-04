@@ -1,14 +1,13 @@
 'use server';
 
+import { RoleKeySchema } from '@nixzora/validation';
 import { api } from '@/lib/api';
 import { perform, text, uuidField } from '@/lib/forms';
 import { getT } from '@/lib/i18n';
 
-const ROLES = new Set(['customer', 'support', 'catalog_manager', 'admin']);
-
 function role(form: FormData): string {
-  const value = text(form, 'roleKey') ?? '';
-  return ROLES.has(value) ? value : 'invalid';
+  const parsed = RoleKeySchema.safeParse(text(form, 'roleKey'));
+  return parsed.success ? parsed.data : 'invalid';
 }
 
 export async function grantRole(form: FormData): Promise<void> {

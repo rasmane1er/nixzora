@@ -127,6 +127,23 @@ export const InventoryAdjustReasonSchema = z.enum([
   'RETURNED',
 ]);
 
+/** "Low stock" in the Ops Center: this many units free to sell, or fewer. */
+export const LOW_STOCK_THRESHOLD = 5;
+/** Most rows one stock list returns. */
+export const STOCK_LIST_LIMIT = 500;
+
+/** One variant's stock, as the Ops Center lists it. */
+export type StockRow = {
+  variantId: string;
+  sku: string;
+  variantTitle: string;
+  productId: string;
+  productTitle: string;
+  onHand: number;
+  reserved: number;
+  available: number;
+};
+
 export const InventoryAdjustSchema = z.object({
   delta: z
     .number()
@@ -308,6 +325,15 @@ export type PagedResult<T> = {
   total: number;
   totalPages: number;
 };
+
+/** One page of `total` results; an empty list still has one page. */
+export function pagedResult<T>(
+  items: T[],
+  total: number,
+  { page, pageSize }: { page: number; pageSize: number },
+): PagedResult<T> {
+  return { items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+}
 
 /** "Kestrel 14 Pro (2027)!" → "kestrel-14-pro-2027" */
 export function slugify(input: string): string {

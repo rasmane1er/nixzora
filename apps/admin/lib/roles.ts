@@ -1,7 +1,7 @@
 import { type MessageKey, type Translate } from '@nixzora/i18n';
+import { ROLE_KEYS } from '@nixzora/validation';
 
-/** Every role the API knows, in the order staff see them. */
-export const ROLE_KEYS = ['customer', 'support', 'catalog_manager', 'admin'] as const;
+export { ROLE_KEYS };
 
 /** "catalog_manager" → "Catalog manager" in the staff member's language; unknown keys as-is. */
 export function roleLabel(t: Translate<'ops'>, key: string): string {

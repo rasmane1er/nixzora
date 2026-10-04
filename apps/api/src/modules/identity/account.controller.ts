@@ -27,6 +27,7 @@ import {
 import { z } from 'zod';
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
+import { perMinute } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from './auth-user';
@@ -51,7 +52,7 @@ export class AccountController {
   /** Deletes the caller's account after re-checking the password. Signs out everywhere. */
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(perMinute(5))
   @ApiZodBody(DeleteAccountRequestSchema)
   deleteAccount(
     @CurrentUser() user: AuthUser,
@@ -122,7 +123,7 @@ export class AccountController {
   }
 
   @Post('mfa/enable')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(MfaCodeRequestSchema)
   @ApiZodResponse(
     MfaEnabledResponseSchema,
@@ -139,7 +140,7 @@ export class AccountController {
 
   @Post('mfa/disable')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(MfaCodeRequestSchema)
   disableMfa(
     @CurrentUser() user: AuthUser,

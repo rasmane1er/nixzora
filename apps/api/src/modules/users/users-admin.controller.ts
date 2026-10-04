@@ -13,11 +13,9 @@ import {
 } from '@nixzora/validation';
 import { ApiZodBody } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
-import { PrismaService } from '../../prisma/prisma.service';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
 import { RequirePermissions } from '../identity/guards/decorators';
-import { AuditService } from '../audit/audit.service';
-import { InventoryService } from '../inventory/inventory.service';
+import { OpsSummaryService } from './ops-summary.service';
 import { UsersAdminService } from './users-admin.service';
 
 const uuid = new ParseUUIDPipe();
@@ -28,48 +26,14 @@ const uuid = new ParseUUIDPipe();
 export class UsersAdminController {
   constructor(
     private readonly users: UsersAdminService,
-    private readonly prisma: PrismaService,
-    private readonly inventory: InventoryService,
-    private readonly audit: AuditService,
+    private readonly summaryService: OpsSummaryService,
   ) {}
 
   /** Numbers for the Ops Center home screen. */
   @Get('summary')
   @RequirePermissions('admin.access')
-  async summary() {
-    const weekAgo = new Date(Date.now() - 7 * 24 * 3600_000);
-    const [products, customers, staff, lowStock, recent, toShip, sales] = await Promise.all([
-      this.prisma.product.groupBy({ by: ['status'], _count: { _all: true } }),
-      this.prisma.user.count({ where: { roles: { some: { role: { key: 'customer' } } } } }),
-      this.prisma.user.count({
-        where: { roles: { some: { role: { key: { not: 'customer' } } } } },
-      }),
-      this.inventory.list({ lowStockThreshold: 5 }),
-      this.prisma.auditLog.findMany({ orderBy: { id: 'desc' }, take: 8 }),
-      this.prisma.order.count({ where: { status: { in: ['PAID', 'FULFILLING'] } } }),
-      this.prisma.order.aggregate({
-        where: { placedAt: { gte: weekAgo }, status: { notIn: ['PENDING_PAYMENT', 'CANCELLED'] } },
-        _sum: { totalCents: true },
-        _count: { _all: true },
-      }),
-    ]);
-    return {
-      products: Object.fromEntries(products.map((row) => [row.status, row._count._all])),
-      customers,
-      staff,
-      lowStockCount: lowStock.length,
-      ordersToShip: toShip,
-      salesLast7Days: { cents: sales._sum.totalCents ?? 0, orders: sales._count._all },
-      lowStock: lowStock.slice(0, 5),
-      recentActivity: recent.map((row) => ({
-        id: row.id.toString(),
-        action: row.action,
-        actorId: row.actorId,
-        entityType: row.entityType,
-        entityId: row.entityId,
-        createdAt: row.createdAt.toISOString(),
-      })),
-    };
+  summary() {
+    return this.summaryService.summary();
   }
 
   @Get('users')
@@ -123,65 +87,24 @@ export class UsersAdminController {
 
   @Get('users/:id/orders')
   @RequirePermissions('orders.read.all')
-  async orders(@Param('id', uuid) id: string) {
-    const rows = await this.prisma.order.findMany({
-      where: { userId: id },
-      include: { items: { select: { quantity: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return rows.map((order) => ({
-      id: order.id,
-      number: order.number,
-      status: order.status,
-      totalCents: order.totalCents,
-      refundedCents: order.refundedCents,
-      currency: order.currency,
-      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-      createdAt: order.createdAt.toISOString(),
-    }));
+  orders(@Param('id', uuid) id: string) {
+    return this.users.orders(id);
   }
 
   @Get('users/:id/notes')
   @RequirePermissions('customers.notes')
-  async notes(@Param('id', uuid) id: string): Promise<CustomerNoteView[]> {
-    const rows = await this.prisma.customerNote.findMany({
-      where: { userId: id },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
-    return rows.map((row) => ({
-      id: row.id,
-      body: row.body,
-      authorEmail: row.authorEmail,
-      createdAt: row.createdAt.toISOString(),
-    }));
+  notes(@Param('id', uuid) id: string): Promise<CustomerNoteView[]> {
+    return this.users.notes(id);
   }
 
   @Post('users/:id/notes')
   @RequirePermissions('customers.notes')
   @ApiZodBody(CustomerNoteCreateSchema)
-  async addNote(
+  addNote(
     @Param('id', uuid) id: string,
     @Body(new ZodValidationPipe(CustomerNoteCreateSchema)) body: CustomerNoteCreate,
     @Actor() actor: ActorContext,
   ): Promise<CustomerNoteView> {
-    await this.users.get(id);
-    const note = await this.prisma.customerNote.create({
-      data: { userId: id, authorId: actor.user.id, authorEmail: actor.user.email, body: body.body },
-    });
-    await this.audit.record({
-      action: 'customers.note.added',
-      actorId: actor.user.id,
-      entityType: 'user',
-      entityId: id,
-      meta: actor.meta,
-    });
-    return {
-      id: note.id,
-      body: note.body,
-      authorEmail: note.authorEmail,
-      createdAt: note.createdAt.toISOString(),
-    };
+    return this.users.addNote(id, body.body, actor);
   }
 }

@@ -80,7 +80,11 @@ await ask.click();
 await ask.pressSequentially('A quiet laptop for coding under $1,500', { delay: 45 });
 await page.getByRole('button', { name: 'Find it' }).click();
 await page.locator('.answer').first().waitFor();
-await scene(page, 'The assistant understands the need and compares real products from the catalog', 4000);
+await scene(
+  page,
+  'The assistant understands the need and compares real products from the catalog',
+  4000,
+);
 await page.locator('.answer .pick').first().scrollIntoViewIfNeeded();
 await scene(page, 'Every pick is grounded: live product, real price, within budget', 3500);
 
@@ -92,7 +96,10 @@ const refined = page.locator('.answer').nth(1);
 await refined.waitFor();
 await refined.scrollIntoViewIfNeeded();
 await scene(page, 'Follow-ups refine the same conversation', 3000);
-await refined.getByRole('button', { name: /^Add .* to cart$/ }).first().click();
+await refined
+  .getByRole('button', { name: /^Add .* to cart$/ })
+  .first()
+  .click();
 await scene(page, 'One tap adds a pick to the normal cart', 2500);
 
 await page.goto(`${WEB}/cart`);
@@ -112,17 +119,33 @@ await page.getByLabel('State').selectOption('MD');
 await typeInto('ZIP code', '20613');
 await page.getByRole('button', { name: 'Continue to payment' }).click();
 await page.getByRole('heading', { name: 'Payment' }).waitFor();
-await scene(page, 'Live payments use Stripe (this demo: built-in test mode); card data never reaches our servers', 3500);
+await scene(
+  page,
+  'Live payments use Stripe (this demo: built-in test mode); card data never reaches our servers',
+  3500,
+);
 await page.getByRole('button', { name: /^Pay .* \(test\)$/ }).click();
 await page
   .getByRole('heading', { level: 1, name: 'Thank you! Your order is confirmed.' })
   .waitFor({ timeout: 20_000 });
-await scene(page, 'Paid by a signed webhook, stock committed, receipt emailed: all in one transaction', 4000);
+await scene(
+  page,
+  'Paid by a signed webhook, stock committed, receipt emailed: all in one transaction',
+  4000,
+);
 
 await page.goto(`${WEB}/account/register`);
-await scene(page, 'Sign-up with live password checks, consent recorded, in English, French and Spanish', 3500);
+await scene(
+  page,
+  'Sign-up with live password checks, consent recorded, in English, French and Spanish',
+  3500,
+);
 await page.goto(`${WEB}/sell`);
-await scene(page, 'Independent stores sell on NIXZORA: six-step onboarding, payouts through Stripe Connect', 3500);
+await scene(
+  page,
+  'Independent stores sell on NIXZORA: six-step onboarding, payouts through Stripe Connect',
+  3500,
+);
 await scene(page, '', 300);
 const parts = [];
 const shopVideo = page.video();
@@ -141,7 +164,10 @@ if (STAFF_EMAIL && STAFF_PASSWORD && STAFF_TOTP_SECRET) {
   await lp.getByRole('button', { name: /sign in/i }).click();
   await lp.waitForURL(/verify/);
   await lp.getByLabel(/code/i).first().fill(totp(STAFF_TOTP_SECRET));
-  await lp.getByRole('button', { name: /verify|continue|sign in/i }).first().click();
+  await lp
+    .getByRole('button', { name: /verify|continue|sign in/i })
+    .first()
+    .click();
   await lp.waitForURL((url) => !url.pathname.startsWith('/login'));
   const cookies = await login.cookies();
   await login.close();
@@ -154,11 +180,19 @@ if (STAFF_EMAIL && STAFF_PASSWORD && STAFF_TOTP_SECRET) {
   await ops.addInitScript(CAPTION);
   const op = await ops.newPage();
   await op.goto(OPS);
-  await scene(op, 'The Ops Center: staff tools behind roles and required two-step verification', 3500);
+  await scene(
+    op,
+    'The Ops Center: staff tools behind roles and required two-step verification',
+    3500,
+  );
   await op.goto(`${OPS}/orders`);
   await scene(op, 'Orders, returns, refunds and shipping labels', 3000);
   await op.goto(`${OPS}/risk`);
-  await scene(op, 'Fraud signals hold risky orders and payouts; each reason is shown in words', 4500);
+  await scene(
+    op,
+    'Fraud signals hold risky orders and payouts; each reason is shown in words',
+    4500,
+  );
   await op.goto(`${OPS}/audit`);
   await scene(op, 'Every privileged action lands in an append-only audit log', 3500);
   await scene(op, '', 300);
@@ -174,15 +208,34 @@ const inputs = parts.flatMap((part) => ['-i', part]);
 const card =
   "drawtext=text='NIXZORA':fontcolor=white:fontsize=72:x=(w-text_w)/2:y=(h-text_h)/2-40," +
   "drawtext=text='github.com/rasmane1er/nixzora':fontcolor=0xE8622C:fontsize=30:x=(w-text_w)/2:y=(h-text_h)/2+50";
-execFileSync('ffmpeg', [
-  '-y',
-  ...inputs,
-  '-f', 'lavfi', '-t', '4', '-i', `color=c=0x0F172A:s=${SIZE.width}x${SIZE.height}:r=25`,
-  '-filter_complex',
-  `${parts.map((_, i) => `[${i}:v]fps=25,setsar=1[v${i}]`).join(';')};[${parts.length}:v]${card},setsar=1[end];` +
-    `${parts.map((_, i) => `[v${i}]`).join('')}[end]concat=n=${parts.length + 1}:v=1:a=0[out]`,
-  '-map', '[out]',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '26', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
-  join(OUT, 'nixzora-demo.mp4'),
-], { stdio: 'inherit' });
+execFileSync(
+  'ffmpeg',
+  [
+    '-y',
+    ...inputs,
+    '-f',
+    'lavfi',
+    '-t',
+    '4',
+    '-i',
+    `color=c=0x0F172A:s=${SIZE.width}x${SIZE.height}:r=25`,
+    '-filter_complex',
+    `${parts.map((_, i) => `[${i}:v]fps=25,setsar=1[v${i}]`).join(';')};[${parts.length}:v]${card},setsar=1[end];` +
+      `${parts.map((_, i) => `[v${i}]`).join('')}[end]concat=n=${parts.length + 1}:v=1:a=0[out]`,
+    '-map',
+    '[out]',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'slow',
+    '-crf',
+    '26',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    join(OUT, 'nixzora-demo.mp4'),
+  ],
+  { stdio: 'inherit' },
+);
 console.log(`wrote ${join(OUT, 'nixzora-demo.mp4')}`);

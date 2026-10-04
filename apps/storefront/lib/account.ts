@@ -41,7 +41,3 @@ export function returnStatusText(t: Translate<'accountActivity'>, status: string
     ? t(`returnStatus_${status as (typeof RETURN_STATUSES)[number]}`)
     : status;
 }
-
-/** English-only date; localized pages use `(await getFormat()).date(iso)` instead. */
-export const day = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso));

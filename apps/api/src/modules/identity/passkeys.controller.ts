@@ -39,13 +39,12 @@ import {
 import { z } from 'zod';
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
+import { perMinute, SIGN_IN_LIMIT } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from './auth-user';
 import { CurrentUser, Public, RequirePermissions } from './guards/decorators';
 import { DeviceSignInService } from './services/device-sign-in.service';
 import { PasskeyService } from './services/passkey.service';
-
-const SIGN_IN = { default: { limit: 10, ttl: 60_000 } };
 
 /** Signing in with a passkey or with the app's Face ID / fingerprint sign-in (ADR-0019). */
 @ApiTags('auth')
@@ -59,7 +58,7 @@ export class PasskeySignInController {
   @Public()
   @Post('passkey/options')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle(perMinute(30))
   @ApiZodResponse(PasskeyOptionsResponseSchema, 200, 'A challenge for navigator.credentials.get.')
   passkeyOptions(): Promise<PasskeyOptionsResponse> {
     return this.passkeys.signInOptions();
@@ -68,7 +67,7 @@ export class PasskeySignInController {
   @Public()
   @Post('passkey')
   @HttpCode(HttpStatus.OK)
-  @Throttle(SIGN_IN)
+  @Throttle(SIGN_IN_LIMIT)
   @ApiZodBody(PasskeySignInRequestSchema)
   @ApiZodResponse(AuthTokensSchema, 200, 'Signed in. A passkey counts as two-step verification.')
   passkeySignIn(
@@ -81,7 +80,7 @@ export class PasskeySignInController {
   @Public()
   @Post('device')
   @HttpCode(HttpStatus.OK)
-  @Throttle(SIGN_IN)
+  @Throttle(SIGN_IN_LIMIT)
   @ApiZodBody(DeviceSignInRequestSchema)
   @ApiZodResponse(DeviceSignInResponseSchema, 200, 'Signed in; the device secret is rotated.')
   deviceSignIn(
@@ -111,7 +110,7 @@ export class PasskeysController {
 
   @Post('passkeys/options')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodResponse(
     PasskeyOptionsResponseSchema,
     200,
@@ -122,7 +121,7 @@ export class PasskeysController {
   }
 
   @Post('passkeys')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(PasskeyRegisterRequestSchema)
   @ApiZodResponse(PasskeySummarySchema, 201)
   register(
@@ -161,7 +160,7 @@ export class PasskeysController {
   }
 
   @Post('device-sign-ins')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(DeviceSignInEnableRequestSchema)
   @ApiZodResponse(DeviceSignInCredentialSchema, 201, 'The device secret, shown only once.')
   enableDevice(

@@ -1,5 +1,5 @@
 import { rich } from '@nixzora/i18n';
-import { type ProductDetail } from '@nixzora/validation';
+import { InventoryAdjustReasonSchema, type ProductDetail } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -9,6 +9,7 @@ import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { catalogOptions } from '@/lib/catalog';
 import { centsInput, pairsText, param, type SearchParams } from '@/lib/format';
+import { isUuid } from '@/lib/forms';
 import { getFormat, getT } from '@/lib/i18n';
 import { addVariant, adjustStock, updateProduct, updateVariant } from '../actions';
 import { CopySuggestion } from './CopySuggestion';
@@ -20,10 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('metaEditProduct') };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 async function loadProduct(id: string): Promise<ProductDetail> {
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   try {
     return await load<ProductDetail>(`/admin/products/${id}`);
   } catch (error) {
@@ -265,10 +264,11 @@ export default async function ProductPage({
                           style={{ width: 70 }}
                         />
                         <select name="reason" aria-label={t('reason')} defaultValue="RECEIVED">
-                          <option value="RECEIVED">{t('reason_RECEIVED')}</option>
-                          <option value="CORRECTION">{t('reason_CORRECTION')}</option>
-                          <option value="DAMAGED">{t('reason_DAMAGED')}</option>
-                          <option value="RETURNED">{t('reason_RETURNED')}</option>
+                          {InventoryAdjustReasonSchema.options.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {t(`reason_${reason}`)}
+                            </option>
+                          ))}
                         </select>
                         <SubmitButton tone="secondary">{t('apply')}</SubmitButton>
                       </form>

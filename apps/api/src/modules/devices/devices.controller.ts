@@ -8,6 +8,7 @@ import {
   PushDeviceRemoveSchema,
 } from '@nixzora/validation';
 import { ApiZodBody } from '../../common/api-docs';
+import { perMinute } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type AuthUser } from '../identity/auth-user';
@@ -24,7 +25,7 @@ export class DevicesController {
   /** Idempotent. A token that belonged to another account moves to this one (shared phone). */
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(PushDeviceRegisterSchema)
   async register(
     @CurrentUser() user: AuthUser,

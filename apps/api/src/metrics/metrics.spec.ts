@@ -26,7 +26,10 @@ describe('metrics', () => {
     const { values } = await httpRequests.get();
     const counts = values
       .filter((v) => v.metricName === 'nixzora_http_request_duration_seconds_count')
-      .map((v) => [v.labels.route, v.labels.status, v.value]);
+      .map((v) => {
+        const labels: Partial<Record<string, string | number>> = v.labels;
+        return [labels.route, labels.status, v.value];
+      });
     expect(counts).toEqual(
       expect.arrayContaining([
         ['/api/v1/products/:slug', '2xx', 2],

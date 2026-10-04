@@ -13,6 +13,7 @@ import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { param, type SearchParams } from '@/lib/format';
+import { isUuid } from '@/lib/forms';
 import { getFormat, getT } from '@/lib/i18n';
 import { buyLabel, fulfill, refund } from '../actions';
 import { ReturnList } from '../../returns/ReturnList';
@@ -23,8 +24,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('metaOrder') };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export default async function OrderPage({
   params,
   searchParams,
@@ -34,7 +33,7 @@ export default async function OrderPage({
 }) {
   const { id } = await params;
   const search = await searchParams;
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const me = await currentStaff();
   const [t, tOrder, f] = await Promise.all([getT('opsOrders'), getT('order'), getFormat()]);
   const money = f.money;

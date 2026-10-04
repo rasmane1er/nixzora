@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
 import { ReqLocale } from '../../common/locale';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
+import { perHour } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
 import {
@@ -32,7 +33,7 @@ export class SupportController {
   /** Contact us / Report a problem. Signed out too, with an email address. */
   @Post('support/requests')
   @OptionalAuth()
-  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
+  @Throttle(perHour(5))
   @ApiZodBody(SupportRequestCreateSchema)
   create(
     @Body(new ZodValidationPipe(SupportRequestCreateSchema)) body: SupportRequestCreate,

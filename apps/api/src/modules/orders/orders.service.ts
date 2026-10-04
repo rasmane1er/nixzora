@@ -19,6 +19,7 @@ import {
   type OrderFulfillment,
   type OrderSummary,
   type OrderView,
+  pagedResult,
   type PagedResult,
   type PaymentSession,
   type RefundRequest,
@@ -645,13 +646,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => ({ ...summary(row), email: row.email })),
-      page: query.page,
-      pageSize: query.pageSize,
+    return pagedResult(
+      rows.map((row) => ({ ...summary(row), email: row.email })),
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async byIdForAdmin(id: string): Promise<OrderView> {

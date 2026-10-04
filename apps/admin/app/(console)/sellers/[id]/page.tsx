@@ -19,6 +19,7 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { param, type SearchParams } from '@/lib/format';
+import { isUuid } from '@/lib/forms';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import {
   changeSellerStatus,
@@ -32,11 +33,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('metaSeller') };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STOREFRONT = process.env.STOREFRONT_URL ?? 'http://localhost:3000';
 
 async function loadSeller(id: string): Promise<AdminSellerView> {
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   try {
     return await load<AdminSellerView>(`/admin/sellers/${id}`);
   } catch (error) {

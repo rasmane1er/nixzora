@@ -7,7 +7,7 @@ import {
 } from '@nixzora/validation';
 import { revalidatePath } from 'next/cache';
 import { api, ApiError, errorMessage } from '@/lib/api';
-import { cents, checked, integer, pairs, perform, text, uuidField } from '@/lib/forms';
+import { cents, checked, integer, isUuid, pairs, perform, text, uuidField } from '@/lib/forms';
 import { getT } from '@/lib/i18n';
 
 /** "RAM (GB)" → "ram_gb": attribute names are snake_case so the store can filter on them. */
@@ -33,7 +33,6 @@ function typedAttributes(raw: Record<string, string>): Record<string, string | n
 }
 
 const VARIANT_ROWS = 5;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function createProduct(form: FormData): Promise<void> {
   const t = await getT('opsCatalog');
@@ -183,7 +182,7 @@ export async function attachImage(
   storageKey: string,
   alt: string,
 ): Promise<Result<null>> {
-  if (!UUID.test(productId)) {
+  if (!isUuid(productId)) {
     return { ok: false, error: (await getT('opsCatalog'))('errorUnknownProduct') };
   }
   try {
@@ -207,7 +206,7 @@ export type CopyDraft = {
 
 /** A draft description for the editor (p6-03). It only fills the form; staff decide to save. */
 export async function suggestCopy(productId: string): Promise<CopyDraft> {
-  if (!/^[0-9a-f-]{36}$/i.test(productId)) {
+  if (!isUuid(productId)) {
     return { error: (await getT('opsCatalog'))('errorUnknownProduct') };
   }
   try {
@@ -220,7 +219,7 @@ export async function suggestCopy(productId: string): Promise<CopyDraft> {
 }
 
 export async function reorderImages(productId: string, imageIds: string[]): Promise<Result<null>> {
-  if (!UUID.test(productId) || !imageIds.every((i) => UUID.test(i))) {
+  if (!isUuid(productId) || !imageIds.every((i) => isUuid(i))) {
     return { ok: false, error: (await getT('opsCatalog'))('errorUnknownProduct') };
   }
   try {
@@ -233,7 +232,7 @@ export async function reorderImages(productId: string, imageIds: string[]): Prom
 }
 
 export async function deleteImage(productId: string, imageId: string): Promise<Result<null>> {
-  if (!UUID.test(productId) || !UUID.test(imageId)) {
+  if (!isUuid(productId) || !isUuid(imageId)) {
     return { ok: false, error: (await getT('opsCatalog'))('errorUnknownImage') };
   }
   try {

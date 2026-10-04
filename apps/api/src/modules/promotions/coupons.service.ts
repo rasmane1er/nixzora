@@ -107,7 +107,9 @@ export class CouponsService {
           isPublic: input.isPublic,
         },
       });
-      await this.record('promotions.coupon.created', coupon.id, actor, { code: coupon.code });
+      await this.audit.recordFor(actor, 'promotions.coupon.created', 'coupon', coupon.id, {
+        code: coupon.code,
+      });
       return toCouponView(coupon);
     } catch (error) {
       if (isUniqueViolation(error))
@@ -131,26 +133,10 @@ export class CouponsService {
         ...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
       },
     });
-    await this.record('promotions.coupon.updated', id, actor, {
+    await this.audit.recordFor(actor, 'promotions.coupon.updated', 'coupon', id, {
       code: coupon.code,
       changes: Object.keys(input),
     });
     return toCouponView(coupon);
-  }
-
-  private record(
-    action: string,
-    id: string,
-    actor: ActorContext,
-    metadata: Record<string, unknown>,
-  ) {
-    return this.audit.record({
-      action,
-      actorId: actor.user.id,
-      entityType: 'coupon',
-      entityId: id,
-      meta: actor.meta,
-      metadata,
-    });
   }
 }

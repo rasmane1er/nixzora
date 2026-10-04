@@ -10,6 +10,7 @@ import {
 import {
   type InventoryAdjust,
   type PagedResult,
+  pagedResult,
   type ProductCopySuggestion,
   type ProductDetail,
   type ProductImageAttach,
@@ -113,13 +114,11 @@ export class SellerListingsService {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => toListingRow(row, (key) => this.storage.publicUrl(key))),
-      page: query.page,
-      pageSize: query.pageSize,
+    return pagedResult(
+      rows.map((row) => toListingRow(row, (key) => this.storage.publicUrl(key))),
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async get(productId: string, actor: ActorContext): Promise<ProductDetail> {

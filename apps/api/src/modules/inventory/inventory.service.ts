@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
-import { type InventoryAdjust } from '@nixzora/validation';
+import { type InventoryAdjust, STOCK_LIST_LIMIT, type StockRow } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -16,23 +16,22 @@ import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { runsBackgroundJobs } from '../../common/background-jobs';
+import {
+  availableOf,
+  DEFAULT_HOLD_MINUTES,
+  holdExpiry,
+  planCommit,
+  type ReservationRequest,
+  sumByVariant,
+} from './stock-math';
 
-export type ReservationRequest = { variantId: string; quantity: number };
-
-export type StockRow = {
-  variantId: string;
-  sku: string;
-  variantTitle: string;
-  productId: string;
-  productTitle: string;
-  onHand: number;
-  reserved: number;
-  available: number;
-};
+export type { ReservationRequest } from './stock-math';
+export type { StockRow } from '@nixzora/validation';
 
 type LockedRow = { variant_id: string; on_hand: number; reserved: number };
 
 const SWEEP_INTERVAL_MS = 60_000;
+
 const SWEEP_LOCK = 'inventory:sweep-lock';
 
 /**
@@ -95,20 +94,12 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
       return { before, after };
     });
 
-    await this.audit.record({
-      action: 'inventory.adjusted',
-      actorType: actor.actorType ?? 'ADMIN',
-      actorId: actor.user.id,
-      entityType: 'variant',
-      entityId: variantId,
-      meta: actor.meta,
-      metadata: {
-        sku: variant.sku,
-        delta: input.delta,
-        reason: input.reason,
-        note: input.note,
-        ...result,
-      },
+    await this.audit.recordFor(actor, 'inventory.adjusted', 'variant', variantId, {
+      sku: variant.sku,
+      delta: input.delta,
+      reason: input.reason,
+      note: input.note,
+      ...result,
     });
     return this.stockFor(variantId);
   }
@@ -120,50 +111,54 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
   async reserve(
     items: ReservationRequest[],
     orderId: string | null,
-    ttlMinutes = 15,
+    ttlMinutes = DEFAULT_HOLD_MINUTES,
   ): Promise<string[]> {
-    const wanted = new Map<string, number>();
-    for (const item of items)
-      wanted.set(item.variantId, (wanted.get(item.variantId) ?? 0) + item.quantity);
+    return this.prisma.$transaction((tx) => this.reserveIn(tx, items, orderId, ttlMinutes));
+  }
+
+  private async reserveIn(
+    tx: Prisma.TransactionClient,
+    items: ReservationRequest[],
+    orderId: string | null,
+    ttlMinutes: number,
+  ): Promise<string[]> {
+    const wanted = sumByVariant(items);
     const variantIds = [...wanted.keys()];
+    const rows = await this.lock(tx, variantIds);
+    const byId = new Map(rows.map((row) => [row.variant_id, row]));
 
-    return this.prisma.$transaction(async (tx) => {
-      const rows = await this.lock(tx, variantIds);
-      const byId = new Map(rows.map((row) => [row.variant_id, row]));
-
-      const short = variantIds.filter((id) => {
-        const row = byId.get(id);
-        return !row || row.on_hand - row.reserved < wanted.get(id)!;
-      });
-      if (short.length) {
-        const skus = await tx.productVariant.findMany({
-          where: { id: { in: short } },
-          select: { sku: true },
-        });
-        throw new ConflictException({
-          statusCode: 409,
-          error: 'Conflict',
-          code: 'INSUFFICIENT_STOCK',
-          message: `Not enough stock for ${skus.map((s) => s.sku).join(', ')}.`,
-          variantIds: short,
-        });
-      }
-
-      const expiresAt = new Date(Date.now() + ttlMinutes * 60_000);
-      const ids: string[] = [];
-      for (const variantId of variantIds) {
-        const quantity = wanted.get(variantId)!;
-        await tx.inventoryItem.update({
-          where: { variantId },
-          data: { reserved: { increment: quantity } },
-        });
-        const reservation = await tx.inventoryReservation.create({
-          data: { variantId, orderId, quantity, expiresAt },
-        });
-        ids.push(reservation.id);
-      }
-      return ids;
+    const short = variantIds.filter((id) => {
+      const row = byId.get(id);
+      return !row || row.on_hand - row.reserved < wanted.get(id)!;
     });
+    if (short.length) {
+      const skus = await tx.productVariant.findMany({
+        where: { id: { in: short } },
+        select: { sku: true },
+      });
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'INSUFFICIENT_STOCK',
+        message: `Not enough stock for ${skus.map((s) => s.sku).join(', ')}.`,
+        variantIds: short,
+      });
+    }
+
+    const expiresAt = holdExpiry(ttlMinutes);
+    const ids: string[] = [];
+    for (const variantId of variantIds) {
+      const quantity = wanted.get(variantId)!;
+      await tx.inventoryItem.update({
+        where: { variantId },
+        data: { reserved: { increment: quantity } },
+      });
+      const reservation = await tx.inventoryReservation.create({
+        data: { variantId, orderId, quantity, expiresAt },
+      });
+      ids.push(reservation.id);
+    }
+    return ids;
   }
 
   /** Gives held stock back (checkout abandoned or cancelled). Safe to call twice. */
@@ -223,28 +218,17 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
     orderId: string,
     items: ReservationRequest[],
   ): Promise<{ variantId: string; missing: number }[]> {
-    const wanted = new Map<string, number>();
-    for (const item of items)
-      wanted.set(item.variantId, (wanted.get(item.variantId) ?? 0) + item.quantity);
+    const wanted = sumByVariant(items);
     const rows = await this.lock(tx, [...wanted.keys()]);
-    const byId = new Map(rows.map((row) => [row.variant_id, row]));
-    const holds = await tx.inventoryReservation.findMany({ where: { orderId } });
-    const held = new Map<string, number>();
-    for (const hold of holds)
-      held.set(hold.variantId, (held.get(hold.variantId) ?? 0) + hold.quantity);
+    const stock = new Map(
+      rows.map((row) => [row.variant_id, { onHand: row.on_hand, reserved: row.reserved }]),
+    );
+    const held = sumByVariant(await tx.inventoryReservation.findMany({ where: { orderId } }));
 
     const shortfall: { variantId: string; missing: number }[] = [];
-    for (const [variantId, quantity] of wanted) {
-      const row = byId.get(variantId);
-      if (!row) {
-        shortfall.push({ variantId, missing: quantity });
-        continue;
-      }
-      const fromHold = Math.min(held.get(variantId) ?? 0, quantity);
-      const free = row.on_hand - row.reserved;
-      const fromFree = Math.min(Math.max(0, free), quantity - fromHold);
-      const missing = quantity - fromHold - fromFree;
+    for (const { variantId, fromHold, fromFree, missing } of planCommit(wanted, stock, held)) {
       if (missing > 0) shortfall.push({ variantId, missing });
+      if (!stock.has(variantId)) continue;
       await tx.inventoryItem.update({
         where: { variantId },
         data: {
@@ -291,21 +275,24 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Re-holds stock for an order whose holds expired while the customer was paying. */
+  /**
+   * Re-holds stock for an order whose holds expired while the customer was paying, or extends
+   * the holds it still has. One transaction with a per-order lock, so two calls at once (a
+   * double-click on "Pay") cannot each create a full set of holds.
+   */
   async holdForOrder(
     orderId: string,
     items: ReservationRequest[],
     ttlMinutes: number,
   ): Promise<void> {
-    const existing = await this.prisma.inventoryReservation.count({ where: { orderId } });
-    if (existing > 0) {
-      await this.prisma.inventoryReservation.updateMany({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hold:${orderId}`}))`;
+      const extended = await tx.inventoryReservation.updateMany({
         where: { orderId },
-        data: { expiresAt: new Date(Date.now() + ttlMinutes * 60_000) },
+        data: { expiresAt: holdExpiry(ttlMinutes) },
       });
-      return;
-    }
-    await this.reserve(items, orderId, ttlMinutes);
+      if (extended.count === 0) await this.reserveIn(tx, items, orderId, ttlMinutes);
+    });
   }
 
   async stockFor(variantId: string): Promise<StockRow> {
@@ -317,24 +304,62 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
   async list(
     filter: { q?: string; lowStockThreshold?: number; variantIds?: string[] } = {},
   ): Promise<StockRow[]> {
+    if (filter.lowStockThreshold !== undefined) {
+      // Filter and sort in SQL: the lowest stock first, wherever it sits in the catalog.
+      const ids = await this.lowStockIds(filter.lowStockThreshold, filter.q, STOCK_LIST_LIMIT);
+      const rows = await this.rowsFor({ id: { in: ids } });
+      const order = new Map(ids.map((id, index) => [id, index]));
+      return rows.sort((a, b) => order.get(a.variantId)! - order.get(b.variantId)!);
+    }
+    return this.rowsFor({
+      ...(filter.variantIds ? { id: { in: filter.variantIds } } : {}),
+      ...(filter.q ? this.searchWhere(filter.q) : {}),
+    });
+  }
+
+  /** How many variants have at most `threshold` units free to sell. */
+  async countLowStock(threshold: number): Promise<number> {
+    const [row] = await this.prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT count(*) AS count
+      FROM product_variants v
+      LEFT JOIN inventory_items i ON i.variant_id = v.id
+      WHERE GREATEST(COALESCE(i.on_hand, 0) - COALESCE(i.reserved, 0), 0) <= ${threshold}`;
+    return Number(row?.count ?? 0);
+  }
+
+  // ───────────── Internals ─────────────
+
+  private searchWhere(q: string): Prisma.ProductVariantWhereInput {
+    return {
+      OR: [
+        { sku: { contains: q, mode: 'insensitive' } },
+        { product: { title: { contains: q, mode: 'insensitive' } } },
+      ],
+    };
+  }
+
+  private async lowStockIds(threshold: number, q: string | undefined, limit: number) {
+    const like = q ? `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT v.id::text AS id
+      FROM product_variants v
+      JOIN products p ON p.id = v.product_id
+      LEFT JOIN inventory_items i ON i.variant_id = v.id
+      WHERE GREATEST(COALESCE(i.on_hand, 0) - COALESCE(i.reserved, 0), 0) <= ${threshold}
+        AND (${like}::text IS NULL OR v.sku ILIKE ${like} OR p.title ILIKE ${like})
+      ORDER BY GREATEST(COALESCE(i.on_hand, 0) - COALESCE(i.reserved, 0), 0), p.title, v.sku
+      LIMIT ${limit}`;
+    return rows.map((row) => row.id);
+  }
+
+  private async rowsFor(where: Prisma.ProductVariantWhereInput): Promise<StockRow[]> {
     const variants = await this.prisma.productVariant.findMany({
-      where: {
-        ...(filter.variantIds ? { id: { in: filter.variantIds } } : {}),
-        ...(filter.q
-          ? {
-              OR: [
-                { sku: { contains: filter.q, mode: 'insensitive' } },
-                { product: { title: { contains: filter.q, mode: 'insensitive' } } },
-              ],
-            }
-          : {}),
-      },
+      where,
       include: { inventory: true, product: { select: { id: true, title: true } } },
       orderBy: [{ product: { title: 'asc' } }, { sku: 'asc' }],
-      take: 500,
+      take: STOCK_LIST_LIMIT,
     });
-
-    const rows = variants.map((variant) => {
+    return variants.map((variant) => {
       const onHand = variant.inventory?.onHand ?? 0;
       const reserved = variant.inventory?.reserved ?? 0;
       return {
@@ -345,18 +370,10 @@ export class InventoryService implements OnModuleInit, OnModuleDestroy {
         productTitle: variant.product.title,
         onHand,
         reserved,
-        available: Math.max(0, onHand - reserved),
+        available: availableOf(onHand, reserved),
       };
     });
-
-    return filter.lowStockThreshold === undefined
-      ? rows
-      : rows
-          .filter((row) => row.available <= filter.lowStockThreshold!)
-          .sort((a, b) => a.available - b.available);
   }
-
-  // ───────────── Internals ─────────────
 
   /** Locks inventory rows in a fixed order (by id) to rule out deadlocks between checkouts. */
   private lock(tx: Prisma.TransactionClient, variantIds: string[]): Promise<LockedRow[]> {

@@ -1,5 +1,5 @@
 import { type NextFunction, type Request, type Response } from 'express';
-import { collectDefaultMetrics, Counter, Gauge, Histogram, register } from 'prom-client';
+import { collectDefaultMetrics, Counter, Gauge, Histogram, register } from '@prometheus-io/client';
 
 /**
  * Prometheus metrics (ADR-0023). One registry per process; every series carries `service`

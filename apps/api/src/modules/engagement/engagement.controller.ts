@@ -27,6 +27,7 @@ import {
 } from '@nixzora/validation';
 import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
+import { perHour } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
@@ -61,7 +62,7 @@ export class ReviewsController {
   @Post('catalog/products/:slug/reviews')
   @ApiBearerAuth()
   @RequirePermissions('account.manage.own')
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle(perHour(10))
   @ApiZodBody(ReviewCreateSchema)
   submit(
     @Param('slug', slugPipe) slug: string,

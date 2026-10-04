@@ -5,6 +5,7 @@ import { Empty, PageHeader } from '@/components/ui';
 import { load } from '@/lib/api';
 import { type MessageKey } from '@nixzora/i18n';
 import { dateTime, param, query, type SearchParams } from '@/lib/format';
+import { isUuid } from '@/lib/forms';
 import { getLocale, getT } from '@/lib/i18n';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,13 +27,11 @@ type Entry = {
   createdAt: string;
 };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export default async function AuditPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const action = param(params, 'action');
   const rawActor = param(params, 'actorId');
-  const actorId = rawActor && UUID.test(rawActor) ? rawActor : undefined;
+  const actorId = rawActor && isUuid(rawActor) ? rawActor : undefined;
   const cursor = param(params, 'cursor');
   const page = await load<Page<Entry>>(
     `/admin/audit-logs${query({ action, actorId, cursor, limit: 50 })}`,

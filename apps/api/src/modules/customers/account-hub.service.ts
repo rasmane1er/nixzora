@@ -9,6 +9,7 @@ import {
   type AccountReview,
   type Address,
   type BuyAgainItem,
+  pagedResult,
   type PagedResult,
   type ProfileUpdate,
 } from '@nixzora/validation';
@@ -234,13 +235,11 @@ export class AccountHubService {
       }),
       this.reviewedProductIds(userId),
     ]);
-    return {
-      items: rows.map((row) => this.toAccountOrder(row, reviewed)),
-      page: query.page,
-      pageSize: query.pageSize,
+    return pagedResult(
+      rows.map((row) => this.toAccountOrder(row, reviewed)),
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   /** Products from delivered orders that are still on sale, most recently bought first. */

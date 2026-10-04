@@ -1,0 +1,35 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "types": "off"
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["tests/load/*.js", "tools/**/*.mjs"],
+      "ignoreDependencies": ["k6", "@playwright/test"]
+    },
+    "apps/api": {
+      "entry": [
+        "src/main.ts",
+        "src/{search,ai,worker}-main.ts",
+        "src/cli/*.ts",
+        "scripts/**/*.ts",
+        "prisma/seed*.ts",
+        "test/**/*.e2e-spec.ts"
+      ],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "prisma/**/*.ts"],
+      "ignoreDependencies": ["@prisma/client", "pino-pretty"]
+    },
+    "apps/mobile": {
+      "entry": ["src/**/*.web.ts"],
+      "ignoreDependencies": ["expo-application", "expo-updates", "@nixzora/tsconfig"]
+    },
+    "packages/ui": {
+      "ignoreDependencies": ["react", "@types/react"]
+    },
+    "packages/tsconfig": {
+      "ignoreUnresolved": ["next"]
+    }
+  }
+}

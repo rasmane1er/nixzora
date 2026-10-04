@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { ROLE_KEYS, RoleGrantSchema } from './admin';
 import {
   BarcodeSchema,
   InventoryAdjustSchema,
+  pagedResult,
   isValidGtin,
   ProductCreateSchema,
   ProductListQuerySchema,
@@ -55,4 +57,20 @@ test('barcodes must carry a valid GS1 check digit', () => {
   assert.equal(isValidGtin('4006381333932'), false);
   assert.equal(isValidGtin('12345'), false);
   assert.equal(BarcodeSchema.safeParse(' 036000291452 ').data, '036000291452');
+});
+
+test('pagedResult counts pages and keeps one page for an empty list', () => {
+  assert.deepEqual(pagedResult(['a'], 51, { page: 2, pageSize: 25 }), {
+    items: ['a'],
+    page: 2,
+    pageSize: 25,
+    total: 51,
+    totalPages: 3,
+  });
+  assert.equal(pagedResult([], 0, { page: 1, pageSize: 25 }).totalPages, 1);
+});
+
+test('role keys and the role grant schema agree', () => {
+  for (const roleKey of ROLE_KEYS) assert.ok(RoleGrantSchema.safeParse({ roleKey }).success);
+  assert.equal(RoleGrantSchema.safeParse({ roleKey: 'owner' }).success, false);
 });

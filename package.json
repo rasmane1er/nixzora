@@ -20,11 +20,13 @@
     "db:migrate": "pnpm --filter @nixzora/api prisma:migrate",
     "db:studio": "pnpm --filter @nixzora/api exec prisma studio",
     "obs:up": "docker compose --profile observability up -d jaeger prometheus alertmanager grafana",
-    "events:up": "docker compose --profile events up -d kafka"
+    "events:up": "docker compose --profile events up -d kafka",
+    "knip": "knip"
   },
   "devDependencies": {
+    "knip": "5.88.1",
     "prettier": "3.9.9",
-    "turbo": "2.11.6",
+    "turbo": "2.11.7",
     "typescript": "5.9.3"
   }
 }

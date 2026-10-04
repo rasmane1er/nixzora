@@ -32,7 +32,7 @@ async function main(): Promise<void> {
       restoreTime: restoreTime ? new Date(restoreTime) : undefined,
       expectMigration: flag('--expect-migration'),
     });
-    console.log(JSON.stringify(report, null, 2));
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     if (!report.ok) process.exitCode = 1;
   } finally {
     await prisma.$disconnect();

@@ -33,13 +33,18 @@ export function text(form: FormData, name: string): string | undefined {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** True for a well-formed id (safe to put in an API path). */
+export function isUuid(value: string | undefined | null): value is string {
+  return typeof value === 'string' && UUID.test(value);
+}
+
 /**
  * An id that is safe to put in an API path. Anything else becomes "invalid", which the API
  * rejects, so a tampered field can never point a request at a different endpoint.
  */
 export function uuidField(form: FormData, name: string): string {
   const value = text(form, name);
-  return value && UUID.test(value) ? value : 'invalid';
+  return isUuid(value) ? value : 'invalid';
 }
 
 export function integer(form: FormData, name: string): number | undefined {

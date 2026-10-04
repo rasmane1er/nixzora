@@ -47,6 +47,7 @@ import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
 import { ReqLocale } from '../../common/locale';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
+import { perMinute } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
 import { Actor, type ActorContext } from '../identity/guards/actor.decorator';
@@ -95,7 +96,7 @@ export class CheckoutController {
   /** Creates the order and a payment session. Totals are always recomputed here. */
   @Post('checkout')
   @OptionalAuth()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiZodBody(CheckoutRequestSchema)
   checkout(
     @Body(new ZodValidationPipe(CheckoutRequestSchema)) body: CheckoutRequest,
@@ -134,7 +135,7 @@ export class CheckoutController {
   /** Start a return (delivered orders, within 30 days). */
   @Post('orders/:number/returns')
   @OptionalAuth()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiQuery({ name: 'token', required: false })
   @ApiZodBody(ReturnCreateSchema)
   async requestReturn(
@@ -162,7 +163,7 @@ export class CheckoutController {
   @Post('orders/:number/seller-ratings')
   @OptionalAuth()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle(perMinute(10))
   @ApiQuery({ name: 'token', required: false })
   @ApiZodBody(SellerRatingCreateSchema)
   async rateSeller(
@@ -234,7 +235,7 @@ export class PaymentsController {
   @Post('fake/confirm')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Throttle(perMinute(20))
   @ApiZodBody(FakeConfirmSchema)
   async fakeConfirm(
     @Body(new ZodValidationPipe(FakeConfirmSchema)) body: z.infer<typeof FakeConfirmSchema>,

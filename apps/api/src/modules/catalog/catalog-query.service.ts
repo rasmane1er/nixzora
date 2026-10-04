@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   type AdminProductListQuery,
   type CategoryNode,
+  pagedResult,
   type PagedResult,
   type ProductCard,
   type ProductDetail,
@@ -14,7 +15,8 @@ import { type Category, Prisma } from '../../generated/prisma/client';
 import { ReadDatabase } from '../../prisma/read-database';
 import { SearchIndexService } from '../search/search-index.service';
 import { StorageService } from '../media/storage.service';
-import { ratingSummary } from '../../common/rating';
+import { ratingSummary, roundRating } from '../../common/rating';
+import { ancestorsOf, descendantIds } from './category-tree';
 import {
   productInclude,
   type ProductWithRelations,
@@ -184,6 +186,18 @@ export class CatalogQueryService {
     if (query.brand) where.brand = { slug: query.brand };
     if (query.seller) where.seller = { handle: query.seller };
 
+    // Newest first with no search or computed filters: let the database page it, so the
+    // total is exact and only one page of products is loaded.
+    if (
+      !query.q &&
+      query.sort === 'newest' &&
+      query.minPrice === undefined &&
+      query.maxPrice === undefined &&
+      query.inStock === undefined
+    ) {
+      return this.pageNewest(query, where, activeVariantsOnly);
+    }
+
     let rank: Map<string, number> | null = null;
     if (query.q) {
       rank = await this.searchRank(query.q, baseWhere.status as string | undefined);
@@ -232,15 +246,41 @@ export class CatalogQueryService {
 
     const total = cards.length;
     const start = (query.page - 1) * query.pageSize;
-    return {
-      items: await this.withRatings(
+    return pagedResult(
+      await this.withRatings(
         cards.slice(start, start + query.pageSize).map(({ createdAt: _c, ...card }) => card),
       ),
-      page: query.page,
-      pageSize: query.pageSize,
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
+  }
+
+  private async pageNewest(
+    query: ProductListQuery,
+    where: Prisma.ProductWhereInput,
+    activeVariantsOnly: boolean,
+  ): Promise<PagedResult<ProductCard>> {
+    const filtered: Prisma.ProductWhereInput = activeVariantsOnly
+      ? { ...where, variants: { some: { isActive: true } } }
+      : where;
+    const [rows, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where: filtered,
+        include: productInclude,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.product.count({ where: filtered }),
+    ]);
+    const cards = rows.map((row) => ({
+      ...toCard(
+        activeVariantsOnly ? { ...row, variants: row.variants.filter((v) => v.isActive) } : row,
+        this.url,
+      ),
+      status: row.status,
+    }));
+    return pagedResult(await this.withRatings(cards), total, query);
   }
 
   /**
@@ -318,24 +358,20 @@ export class CatalogQueryService {
       select: { id: true, slug: true, parentId: true },
     });
     const root = categories.find((category) => category.slug === slug);
-    if (!root) return [];
-    const ids = [root.id];
-    for (let i = 0; i < ids.length; i++) {
-      for (const child of categories) if (child.parentId === ids[i]) ids.push(child.id);
-    }
-    return ids;
+    return root ? descendantIds(root.id, categories) : [];
   }
 
+  /** Root first, ending with the category itself. One query for the whole (small) tree. */
   private async breadcrumb(category: Category): Promise<{ slug: string; name: string }[]> {
-    const trail = [{ slug: category.slug, name: category.name }];
-    let parentId = category.parentId;
-    for (let depth = 0; parentId && depth < 10; depth++) {
-      const parent = await this.prisma.category.findUnique({ where: { id: parentId } });
-      if (!parent) break;
-      trail.unshift({ slug: parent.slug, name: parent.name });
-      parentId = parent.parentId;
-    }
-    return trail;
+    if (!category.parentId) return [{ slug: category.slug, name: category.name }];
+    const categories = await this.prisma.category.findMany({
+      select: { id: true, parentId: true, slug: true, name: true },
+    });
+    const byId = new Map(categories.map((row) => [row.id, row]));
+    byId.set(category.id, category);
+    return [category, ...ancestorsOf(category.id, byId)]
+      .reverse()
+      .map(({ slug, name }) => ({ slug, name }));
   }
 
   /** Live product cards in the order given (wishlists, recommendations). */
@@ -372,7 +408,7 @@ export class CatalogQueryService {
       return {
         ...card,
         rating: {
-          average: average == null ? null : Math.round(average * 10) / 10,
+          average: average == null ? null : roundRating(average),
           count: row?._count._all ?? 0,
         },
       };
@@ -394,7 +430,7 @@ export class CatalogQueryService {
     return {
       ...toCard(view, this.url),
       rating: {
-        average: rating._avg.rating === null ? null : Math.round(rating._avg.rating * 10) / 10,
+        average: rating._avg.rating === null ? null : roundRating(rating._avg.rating),
         count: rating._count._all,
       },
       description: product.description,

@@ -72,6 +72,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Unused files, exports and dependencies (knip)
+        run: pnpm knip
+
       - name: Unit tests
         run: pnpm test
 

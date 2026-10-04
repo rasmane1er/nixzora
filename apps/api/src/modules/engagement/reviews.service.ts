@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   type AdminReviewQuery,
   type AdminReviewView,
+  pagedResult,
   type PagedResult,
   type RatingSummary,
   type ReviewCreate,
@@ -13,6 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from '../identity/auth-user';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { REVIEWS_CHANGED } from '../insights/events';
+import { roundRating } from '../../common/rating';
 
 const reviewInclude = {
   user: { select: { firstName: true, lastName: true, email: true } },
@@ -72,7 +74,7 @@ export class ReviewsService {
       rows.map((row) => [
         row.productId,
         {
-          average: row._avg.rating === null ? null : Math.round(row._avg.rating * 10) / 10,
+          average: row._avg.rating === null ? null : roundRating(row._avg.rating),
           count: row._count._all,
         },
       ]),
@@ -101,7 +103,7 @@ export class ReviewsService {
     const count = distribution.reduce((a, b) => a + b, 0);
     const sum = distribution.reduce((acc, n, i) => acc + n * (i + 1), 0);
     return {
-      summary: { average: count ? Math.round((sum / count) * 10) / 10 : null, count, distribution },
+      summary: { average: count ? roundRating(sum / count) : null, count, distribution },
       reviews: rows.map(toView),
       page,
       totalPages: Math.max(1, Math.ceil(count / pageSize)),
@@ -163,18 +165,16 @@ export class ReviewsService {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => ({
+    return pagedResult(
+      rows.map((row) => ({
         ...toView(row),
         status: row.status,
         product: row.product,
         authorEmail: row.user.email,
       })),
-      page: query.page,
-      pageSize: query.pageSize,
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async moderate(

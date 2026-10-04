@@ -105,7 +105,13 @@ export class SellersService {
       }
     }
     const updated = await this.prisma.seller.update({ where: { id: seller.id }, data: input });
-    await this.record('seller.profile.updated', seller.id, actor, { changes: Object.keys(input) });
+    await this.audit.recordFor(
+      { ...actor, actorType: 'USER' },
+      'seller.profile.updated',
+      'seller',
+      seller.id,
+      { changes: Object.keys(input) },
+    );
     return this.view(updated);
   }
 
@@ -130,9 +136,15 @@ export class SellersService {
           requirementsDue: [],
         },
       });
-      await this.record('seller.payouts.account_created', seller.id, actor, {
-        provider: this.payouts.name,
-      });
+      await this.audit.recordFor(
+        { ...actor, actorType: 'USER' },
+        'seller.payouts.account_created',
+        'seller',
+        seller.id,
+        {
+          provider: this.payouts.name,
+        },
+      );
     }
     const base = this.config.get('WEB_APP_URL', { infer: true }).replace(/\/$/, '');
     const url = await this.payouts.onboardingLink(seller.payoutAccountId!, {
@@ -225,22 +237,5 @@ export class SellersService {
     );
     if (!taken.has(base)) return base;
     for (let n = 2; ; n++) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`;
-  }
-
-  private record(
-    action: string,
-    sellerId: string,
-    actor: ActorContext,
-    metadata?: Record<string, unknown>,
-  ) {
-    return this.audit.record({
-      action,
-      actorType: 'USER',
-      actorId: actor.user.id,
-      entityType: 'seller',
-      entityId: sellerId,
-      meta: actor.meta,
-      metadata,
-    });
   }
 }

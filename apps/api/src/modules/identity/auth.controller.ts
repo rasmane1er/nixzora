@@ -31,15 +31,12 @@ import {
 } from '@nixzora/validation';
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
 import { ReqMeta, type RequestMeta } from '../../common/request-meta';
+import { perMinute, SIGN_IN_LIMIT, STRICT_LIMIT } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from './auth-user';
 import { CurrentUser, Public } from './guards/decorators';
 import { AuthService } from './services/auth.service';
 import { SocialIdentityService } from './services/social-identity.service';
-
-// Tighter per-IP limits on endpoints attackers target (on top of the global limit).
-const STRICT = { default: { limit: 5, ttl: 60_000 } };
-const SIGN_IN = { default: { limit: 10, ttl: 60_000 } };
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -51,7 +48,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @Throttle(STRICT)
+  @Throttle(STRICT_LIMIT)
   @ApiZodBody(RegisterRequestSchema)
   @ApiZodResponse(AuthTokensSchema, 201, 'Account created and signed in.')
   register(
@@ -64,7 +61,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle(SIGN_IN)
+  @Throttle(SIGN_IN_LIMIT)
   @ApiZodBody(LoginRequestSchema)
   @ApiZodResponse(
     LoginResponseSchema,
@@ -88,7 +85,7 @@ export class AuthController {
   @Public()
   @Post('social')
   @HttpCode(HttpStatus.OK)
-  @Throttle(SIGN_IN)
+  @Throttle(SIGN_IN_LIMIT)
   @ApiZodBody(SocialSignInRequestSchema)
   @ApiZodResponse(
     LoginResponseSchema,
@@ -105,7 +102,7 @@ export class AuthController {
   @Public()
   @Post('mfa/challenge')
   @HttpCode(HttpStatus.OK)
-  @Throttle(SIGN_IN)
+  @Throttle(SIGN_IN_LIMIT)
   @ApiZodBody(MfaChallengeRequestSchema)
   @ApiZodResponse(AuthTokensSchema)
   completeMfa(
@@ -118,7 +115,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle(perMinute(30))
   @ApiZodBody(RefreshRequestSchema)
   @ApiZodResponse(AuthTokensSchema, 200, 'New access token and a new (rotated) refresh token.')
   refresh(
@@ -148,7 +145,7 @@ export class AuthController {
 
   @Post('email/verify/resend')
   @HttpCode(HttpStatus.ACCEPTED)
-  @Throttle(STRICT)
+  @Throttle(STRICT_LIMIT)
   @ApiBearerAuth()
   resendVerification(@CurrentUser() user: AuthUser): Promise<void> {
     return this.auth.resendEmailVerification(user);
@@ -157,7 +154,7 @@ export class AuthController {
   @Public()
   @Post('password/forgot')
   @HttpCode(HttpStatus.ACCEPTED)
-  @Throttle(STRICT)
+  @Throttle(STRICT_LIMIT)
   @ApiZodBody(ForgotPasswordRequestSchema)
   forgotPassword(
     @Body(new ZodValidationPipe(ForgotPasswordRequestSchema)) body: ForgotPasswordRequest,
@@ -169,7 +166,7 @@ export class AuthController {
   @Public()
   @Post('password/reset')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle(STRICT)
+  @Throttle(STRICT_LIMIT)
   @ApiZodBody(ResetPasswordRequestSchema)
   resetPassword(
     @Body(new ZodValidationPipe(ResetPasswordRequestSchema)) body: ResetPasswordRequest,
@@ -180,7 +177,7 @@ export class AuthController {
 
   @Post('password/change')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle(STRICT)
+  @Throttle(STRICT_LIMIT)
   @ApiBearerAuth()
   @ApiZodBody(ChangePasswordRequestSchema)
   changePassword(

@@ -1,4 +1,10 @@
 import { rich } from '@nixzora/i18n';
+import {
+  InventoryAdjustReasonSchema,
+  LOW_STOCK_THRESHOLD,
+  STOCK_LIST_LIMIT,
+  type StockRow,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/SubmitButton';
@@ -13,17 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('opsCatalog');
   return { title: t('metaInventory') };
 }
-
-type StockRow = {
-  variantId: string;
-  sku: string;
-  variantTitle: string;
-  productId: string;
-  productTitle: string;
-  onHand: number;
-  reserved: number;
-  available: number;
-};
 
 export default async function InventoryPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
@@ -57,7 +52,9 @@ export default async function InventoryPage({ searchParams }: { searchParams: Se
           <select name="lowStock" defaultValue={lowStock ?? ''}>
             <option value="">{t('allVariants')}</option>
             <option value="0">{t('soldOut')}</option>
-            <option value="5">{t('orFewerAvailable', { n: 5 })}</option>
+            <option value={LOW_STOCK_THRESHOLD}>
+              {t('orFewerAvailable', { n: LOW_STOCK_THRESHOLD })}
+            </option>
             <option value="20">{t('orFewerAvailable', { n: 20 })}</option>
           </select>
         </label>
@@ -103,7 +100,9 @@ export default async function InventoryPage({ searchParams }: { searchParams: Se
                     </td>
                     <td className="num">{row.onHand}</td>
                     <td className="num">{row.reserved}</td>
-                    <td className={`num${row.available <= 5 ? ' low' : ''}`}>{row.available}</td>
+                    <td className={`num${row.available <= LOW_STOCK_THRESHOLD ? ' low' : ''}`}>
+                      {row.available}
+                    </td>
                     <td>
                       <form action={adjustStock} className="inline-form">
                         <input type="hidden" name="variantId" value={row.variantId} />
@@ -117,10 +116,11 @@ export default async function InventoryPage({ searchParams }: { searchParams: Se
                           style={{ width: 70 }}
                         />
                         <select name="reason" defaultValue="RECEIVED" aria-label={t('reason')}>
-                          <option value="RECEIVED">{t('reason_RECEIVED')}</option>
-                          <option value="CORRECTION">{t('reason_CORRECTION')}</option>
-                          <option value="DAMAGED">{t('reason_DAMAGED')}</option>
-                          <option value="RETURNED">{t('reason_RETURNED')}</option>
+                          {InventoryAdjustReasonSchema.options.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {t(`reason_${reason}`)}
+                            </option>
+                          ))}
                         </select>
                         <input
                           name="note"
@@ -137,7 +137,9 @@ export default async function InventoryPage({ searchParams }: { searchParams: Se
             </table>
           </div>
         )}
-        {rows.length === 500 ? <p className="muted">{t('firstRows', { count: 500 })}</p> : null}
+        {rows.length === STOCK_LIST_LIMIT ? (
+          <p className="muted">{t('firstRows', { count: STOCK_LIST_LIMIT })}</p>
+        ) : null}
       </section>
     </>
   );

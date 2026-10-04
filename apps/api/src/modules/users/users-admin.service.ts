@@ -1,5 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { type AdminUser, type PagedResult, type UserListQuery } from '@nixzora/validation';
+import {
+  type AdminUser,
+  type CustomerNoteView,
+  type PagedResult,
+  pagedResult,
+  type UserListQuery,
+} from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -48,13 +54,7 @@ export class UsersAdminService {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map(toAdminUser),
-      page: query.page,
-      pageSize: query.pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+    return pagedResult(rows.map(toAdminUser), total, query);
   }
 
   async get(id: string): Promise<AdminUser> {
@@ -70,7 +70,7 @@ export class UsersAdminService {
       create: { user: { connect: { id: userId } }, role: { connect: { key: roleKey } } },
       update: {},
     });
-    await this.record('users.role.granted', userId, actor, { roleKey });
+    await this.audit.recordFor(actor, 'users.role.granted', 'user', userId, { roleKey });
     return this.get(userId);
   }
 
@@ -80,7 +80,7 @@ export class UsersAdminService {
     }
     await this.get(userId);
     await this.prisma.userRole.deleteMany({ where: { userId, role: { key: roleKey } } });
-    await this.record('users.role.revoked', userId, actor, { roleKey });
+    await this.audit.recordFor(actor, 'users.role.revoked', 'user', userId, { roleKey });
     return this.get(userId);
   }
 
@@ -103,35 +103,59 @@ export class UsersAdminService {
           ]
         : []),
     ]);
-    await this.record(
-      status === 'SUSPENDED' ? 'users.suspended' : 'users.reactivated',
-      userId,
+    await this.audit.recordFor(
       actor,
+      status === 'SUSPENDED' ? 'users.suspended' : 'users.reactivated',
+      'user',
+      userId,
     );
     return this.get(userId);
+  }
+
+  // ───── Customer support ─────
+
+  /** A customer's last 100 orders, newest first. */
+  async orders(userId: string) {
+    const rows = await this.prisma.order.findMany({
+      where: { userId },
+      include: { items: { select: { quantity: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return rows.map((order) => ({
+      id: order.id,
+      number: order.number,
+      status: order.status,
+      totalCents: order.totalCents,
+      refundedCents: order.refundedCents,
+      currency: order.currency,
+      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      createdAt: order.createdAt.toISOString(),
+    }));
+  }
+
+  async notes(userId: string): Promise<CustomerNoteView[]> {
+    const rows = await this.prisma.customerNote.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return rows.map(toNoteView);
+  }
+
+  async addNote(userId: string, body: string, actor: ActorContext): Promise<CustomerNoteView> {
+    await this.get(userId);
+    const note = await this.prisma.customerNote.create({
+      data: { userId, authorId: actor.user.id, authorEmail: actor.user.email, body },
+    });
+    await this.audit.recordFor(actor, 'customers.note.added', 'user', userId);
+    return toNoteView(note);
   }
 
   private async roleId(key: string): Promise<string> {
     const role = await this.prisma.role.findUnique({ where: { key } });
     if (!role) throw new BadRequestException('Unknown role.');
     return role.id;
-  }
-
-  private record(
-    action: string,
-    userId: string,
-    actor: ActorContext,
-    metadata?: Record<string, unknown>,
-  ) {
-    return this.audit.record({
-      action,
-      actorType: 'ADMIN',
-      actorId: actor.user.id,
-      entityType: 'user',
-      entityId: userId,
-      meta: actor.meta,
-      metadata,
-    });
   }
 }
 
@@ -154,5 +178,19 @@ function toAdminUser(user: UserRow): AdminUser {
     socialSignIns: user.identities.map((identity) => identity.provider).sort(),
     passkeys: user._count.passkeys,
     hasPassword: user.passwordHash !== null,
+  };
+}
+
+function toNoteView(note: {
+  id: string;
+  body: string;
+  authorEmail: string;
+  createdAt: Date;
+}): CustomerNoteView {
+  return {
+    id: note.id,
+    body: note.body,
+    authorEmail: note.authorEmail,
+    createdAt: note.createdAt.toISOString(),
   };
 }

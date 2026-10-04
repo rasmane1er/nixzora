@@ -1,12 +1,5 @@
 import { INTL_LOCALE, type Locale } from '@nixzora/i18n';
 
-/** Prefer `(await getFormat()).money` in pages; `locale` defaults to English. */
-export function money(cents: number, currency = 'USD', locale: Locale = 'en'): string {
-  return new Intl.NumberFormat(INTL_LOCALE[locale], { style: 'currency', currency }).format(
-    cents / 100,
-  );
-}
-
 /** 129999 → "1299.99" for form inputs. */
 export function centsInput(cents: number | null | undefined): string {
   return cents == null ? '' : (cents / 100).toFixed(2);

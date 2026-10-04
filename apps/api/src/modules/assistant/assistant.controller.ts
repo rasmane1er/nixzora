@@ -8,6 +8,7 @@ import {
   AssistantChatResponseSchema,
 } from '@nixzora/validation';
 import { ApiZodResponse } from '../../common/api-docs';
+import { perMinute } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Public } from '../identity/guards/decorators';
 import { AssistantService } from './assistant.service';
@@ -22,7 +23,7 @@ export class AssistantController {
 
   @Post('chat')
   @HttpCode(200)
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Throttle(perMinute(20))
   @ApiZodResponse(AssistantChatResponseSchema)
   /** Answers in the shopper's language (Accept-Language: en, fr or es; English otherwise). */
   chat(

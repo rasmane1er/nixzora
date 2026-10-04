@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { type ActorType, Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type RequestMeta } from '../../common/request-meta';
+import { type ActorContext } from '../identity/guards/actor.decorator';
 
 export type AuditEvent = {
   action: string;
@@ -40,5 +41,27 @@ export class AuditService {
     } catch (error) {
       this.logger.error(`Failed to write audit event ${event.action}: ${(error as Error).message}`);
     }
+  }
+
+  /**
+   * Records what a signed-in person did to one entity. Staff actions are logged as ADMIN unless
+   * the actor says otherwise (customers and sellers acting on their own things: USER).
+   */
+  recordFor(
+    actor: ActorContext,
+    action: string,
+    entityType: string,
+    entityId: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    return this.record({
+      action,
+      actorType: actor.actorType ?? 'ADMIN',
+      actorId: actor.user.id,
+      entityType,
+      entityId,
+      meta: actor.meta,
+      metadata,
+    });
   }
 }

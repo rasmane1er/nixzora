@@ -104,6 +104,13 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
         .send({ parentId: child.body.id })
         .expect(400);
 
+      // A parent that does not exist is the staff member's mistake (400), not a server error.
+      await http()
+        .patch(`/api/v1/admin/categories/${child.body.id}`)
+        .set(bearer(staffToken))
+        .send({ parentId: '00000000-0000-4000-8000-000000000000' })
+        .expect(400);
+
       const tree = await http().get('/api/v1/admin/categories').set(bearer(staffToken)).expect(200);
       const node = tree.body.find((c: { id: string }) => c.id === parent.body.id);
       expect(node.children.map((c: { id: string }) => c.id)).toEqual([child.body.id]);
@@ -304,6 +311,19 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       expect(low.body.map((row: { sku: string }) => row.sku)).toEqual([
         `ZB-32-${run}`.toUpperCase(),
       ]);
+
+      // Without a search, low stock is found anywhere in the catalog, lowest first.
+      const all = await http()
+        .get('/api/v1/admin/inventory')
+        .query({ lowStock: 2 })
+        .set(bearer(staffToken))
+        .expect(200);
+      const available = all.body.map((row: { available: number }) => row.available);
+      expect(available.every((n: number) => n <= 2)).toBe(true);
+      expect(available).toEqual([...available].sort((a, b) => a - b));
+      expect(all.body.map((row: { sku: string }) => row.sku)).toContain(
+        `ZB-32-${run}`.toUpperCase(),
+      );
     });
   });
 
@@ -483,6 +503,23 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       const summary = await http().get('/api/v1/admin/summary').set(bearer(staffToken)).expect(200);
       expect(summary.body.products.ACTIVE).toBeGreaterThan(0);
       expect(Array.isArray(summary.body.recentActivity)).toBe(true);
+      expect(summary.body.lowStockCount).toBeGreaterThanOrEqual(summary.body.lowStock.length);
+      expect(summary.body.lowStock.length).toBeLessThanOrEqual(5);
+    });
+
+    it('pages the newest products in the database, with an exact total', async () => {
+      const page = (n: number) =>
+        http()
+          .get('/api/v1/admin/products')
+          .query({ sort: 'newest', page: n, pageSize: 2 })
+          .set(bearer(staffToken))
+          .expect(200);
+      const [first, second] = [(await page(1)).body, (await page(2)).body];
+      const total = await prisma.product.count();
+      expect(first.total).toBe(total);
+      expect(first.totalPages).toBe(Math.max(1, Math.ceil(total / 2)));
+      const ids = [...first.items, ...second.items].map((item: { id: string }) => item.id);
+      expect(new Set(ids).size).toBe(ids.length);
     });
   });
 });

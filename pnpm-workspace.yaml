@@ -18,6 +18,8 @@ overrides:
   deepmerge-ts: ^8.0.0
   mysql2: ^3.23.1
   'js-yaml@>=5.0.0 <5.4.1': ^5.4.1
+  # xcode (Expo config plugins, build time) still asks for uuid 7; 11.1.1+ has the same v4().
+  'xcode>uuid': ^11.1.1
 
 # Reviewed advisories that do not affect what we ship. Re-check when upgrading Expo.
 auditConfig:
@@ -28,3 +30,7 @@ auditConfig:
     # braces (no fixed version yet), reached only through the Expo CLI's file watcher
     # (@expo/metro-file-map > micromatch) at build time; it never parses untrusted input.
     - GHSA-vfj7-8cjw-p6xm
+    # decode-uri-component 0.2 (via expo-router > query-string 7). The fix (0.5) is ESM-only and
+    # query-string 7 loads it with require(). Worst case is a slow parse of a crafted link on the
+    # shopper's own device; no server parses it. Drop when expo-router moves to query-string 9.
+    - GHSA-vcc3-ghjq-m6fr

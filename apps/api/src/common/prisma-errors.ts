@@ -11,3 +11,10 @@ export function isNotFound(error: unknown): boolean {
     typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2025'
   );
 }
+
+/** True when a write broke a foreign key: the row it points to is gone, or rows still point at it. */
+export function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2003'
+  );
+}

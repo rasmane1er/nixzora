@@ -7,8 +7,12 @@ export const UserListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
 });
 
+/** Every role the API knows, in the order staff see them. */
+export const ROLE_KEYS = ['customer', 'support', 'catalog_manager', 'admin'] as const;
+export const RoleKeySchema = z.enum(ROLE_KEYS);
+
 export const RoleGrantSchema = z.object({
-  roleKey: z.enum(['customer', 'support', 'catalog_manager', 'admin']),
+  roleKey: RoleKeySchema,
 });
 
 export const AdminUserSchema = z.object({

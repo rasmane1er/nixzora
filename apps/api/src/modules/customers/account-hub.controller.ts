@@ -29,6 +29,7 @@ import {
 } from '@nixzora/validation';
 import { type Response } from 'express';
 import { ApiZodBody } from '../../common/api-docs';
+import { perHour } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
 import { CurrentUser, RequirePermissions } from '../identity/guards/decorators';
@@ -142,7 +143,7 @@ export class AccountHubController {
 
   /** A copy of the customer's data as a JSON file (a few downloads per hour). */
   @Get('export')
-  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
+  @Throttle(perHour(5))
   @Header('Cache-Control', 'no-store')
   async export(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
     res.setHeader(

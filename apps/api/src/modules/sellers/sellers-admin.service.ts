@@ -7,6 +7,7 @@ import {
   type ListingReviewDecision,
   type ListingReviewQuery,
   type ListingReviewRow,
+  pagedResult,
   type PagedResult,
   type ProductDetail,
 } from '@nixzora/validation';
@@ -63,13 +64,11 @@ export class SellersAdminService {
       this.prisma,
       rows.map((row) => row.id),
     );
-    return {
-      items: rows.map((row) => this.adminView(row, counts.get(row.id))),
-      page: query.page,
-      pageSize: query.pageSize,
+    return pagedResult(
+      rows.map((row) => this.adminView(row, counts.get(row.id))),
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async get(id: string): Promise<AdminSellerView> {
@@ -86,7 +85,7 @@ export class SellersAdminService {
   async refreshPayouts(id: string, actor: ActorContext): Promise<AdminSellerView> {
     const seller = await this.require(id);
     await this.sellers.syncPayoutStatus(seller);
-    await this.record('seller.payouts.refreshed', id, actor);
+    await this.audit.recordFor(actor, 'seller.payouts.refreshed', 'seller', id);
     return this.get(id);
   }
 
@@ -157,7 +156,7 @@ export class SellersAdminService {
       return live.map((product) => product.id);
     });
 
-    await this.record(action, id, actor, {
+    await this.audit.recordFor(actor, action, 'seller', id, {
       from: seller.status,
       to: input.status,
       reason: input.reason,
@@ -173,7 +172,7 @@ export class SellersAdminService {
   ): Promise<AdminSellerView> {
     const seller = await this.require(id);
     await this.prisma.seller.update({ where: { id }, data: input });
-    await this.record('seller.terms.updated', id, actor, {
+    await this.audit.recordFor(actor, 'seller.terms.updated', 'seller', id, {
       ...(input.commissionBps !== undefined
         ? { commissionFrom: seller.commissionBps, commissionTo: input.commissionBps }
         : {}),
@@ -197,8 +196,8 @@ export class SellersAdminService {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => ({
+    return pagedResult(
+      rows.map((row) => ({
         ...toListingRow(row, (key) => this.storage.publicUrl(key)),
         seller: {
           id: row.seller!.id,
@@ -206,11 +205,9 @@ export class SellersAdminService {
           displayName: row.seller!.displayName,
         },
       })),
-      page: query.page,
-      pageSize: query.pageSize,
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async decide(
@@ -298,22 +295,5 @@ export class SellersAdminService {
     const seller = await this.prisma.seller.findUnique({ where: { id } });
     if (!seller) throw new NotFoundException('Seller not found.');
     return seller;
-  }
-
-  private record(
-    action: string,
-    sellerId: string,
-    actor: ActorContext,
-    metadata?: Record<string, unknown>,
-  ) {
-    return this.audit.record({
-      action,
-      actorType: 'ADMIN',
-      actorId: actor.user.id,
-      entityType: 'seller',
-      entityId: sellerId,
-      meta: actor.meta,
-      metadata,
-    });
   }
 }

@@ -20,15 +20,13 @@ import {
   type VariantUpdate,
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
-import { isNotFound, isUniqueViolation } from '../../common/prisma-errors';
-import { type RequestMeta } from '../../common/request-meta';
+import { isForeignKeyViolation, isNotFound, isUniqueViolation } from '../../common/prisma-errors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { type AuthUser } from '../identity/auth-user';
+import { type ActorContext } from '../identity/guards/actor.decorator';
 import { StorageService } from '../media/storage.service';
 import { CatalogQueryService } from './catalog-query.service';
-
-type Actor = { user: AuthUser; meta: RequestMeta; actorType?: 'ADMIN' | 'USER' };
+import { ancestorsOf } from './category-tree';
 
 /**
  * Write side of the catalog, used by the Ops Center.
@@ -46,7 +44,7 @@ export class CatalogAdminService {
 
   // ───────────── Categories ─────────────
 
-  async createCategory(input: CategoryCreate, actor: Actor) {
+  async createCategory(input: CategoryCreate, actor: ActorContext) {
     if (input.parentId) await this.requireCategory(input.parentId);
     try {
       const category = await this.prisma.category.create({
@@ -59,7 +57,7 @@ export class CatalogAdminService {
           isActive: input.isActive ?? true,
         },
       });
-      await this.record('catalog.category.created', 'category', category.id, actor, {
+      await this.audit.recordFor(actor, 'catalog.category.created', 'category', category.id, {
         slug: category.slug,
       });
       return category;
@@ -70,29 +68,32 @@ export class CatalogAdminService {
     }
   }
 
-  async updateCategory(id: string, input: CategoryUpdate, actor: Actor) {
+  async updateCategory(id: string, input: CategoryUpdate, actor: ActorContext) {
     await this.requireCategory(id);
     if (input.parentId) {
       if (input.parentId === id)
         throw new BadRequestException('A category cannot be its own parent.');
+      await this.requireCategory(input.parentId);
       if (await this.isDescendant(input.parentId, id)) {
         throw new BadRequestException('A category cannot move under one of its own subcategories.');
       }
     }
     try {
       const category = await this.prisma.category.update({ where: { id }, data: input });
-      await this.record('catalog.category.updated', 'category', id, actor, {
+      await this.audit.recordFor(actor, 'catalog.category.updated', 'category', id, {
         changes: Object.keys(input),
       });
       return category;
     } catch (error) {
       if (isUniqueViolation(error))
         throw new ConflictException('A category with this slug already exists.');
+      if (isForeignKeyViolation(error))
+        throw new BadRequestException('That parent category no longer exists.');
       throw error;
     }
   }
 
-  async deleteCategory(id: string, actor: Actor): Promise<void> {
+  async deleteCategory(id: string, actor: ActorContext): Promise<void> {
     await this.requireCategory(id);
     const [children, products] = await Promise.all([
       this.prisma.category.count({ where: { parentId: id } }),
@@ -103,18 +104,29 @@ export class CatalogAdminService {
         `Move its ${products} product(s) and ${children} subcategory(ies) first, or deactivate it instead.`,
       );
     }
-    await this.prisma.category.delete({ where: { id } });
-    await this.record('catalog.category.deleted', 'category', id, actor);
+    try {
+      await this.prisma.category.delete({ where: { id } });
+    } catch (error) {
+      // A product or subcategory was added since the count above.
+      if (isForeignKeyViolation(error))
+        throw new ConflictException(
+          'Something was just added to this category. Reload and try again.',
+        );
+      throw error;
+    }
+    await this.audit.recordFor(actor, 'catalog.category.deleted', 'category', id);
   }
 
   // ───────────── Brands ─────────────
 
-  async createBrand(input: BrandCreate, actor: Actor) {
+  async createBrand(input: BrandCreate, actor: ActorContext) {
     try {
       const brand = await this.prisma.brand.create({
         data: { name: input.name, slug: input.slug ?? slugify(input.name) },
       });
-      await this.record('catalog.brand.created', 'brand', brand.id, actor, { slug: brand.slug });
+      await this.audit.recordFor(actor, 'catalog.brand.created', 'brand', brand.id, {
+        slug: brand.slug,
+      });
       return brand;
     } catch (error) {
       if (isUniqueViolation(error))
@@ -123,10 +135,10 @@ export class CatalogAdminService {
     }
   }
 
-  async updateBrand(id: string, input: BrandUpdate, actor: Actor) {
+  async updateBrand(id: string, input: BrandUpdate, actor: ActorContext) {
     try {
       const brand = await this.prisma.brand.update({ where: { id }, data: input });
-      await this.record('catalog.brand.updated', 'brand', id, actor, {
+      await this.audit.recordFor(actor, 'catalog.brand.updated', 'brand', id, {
         changes: Object.keys(input),
       });
       return brand;
@@ -143,7 +155,7 @@ export class CatalogAdminService {
   /** `sellerId` makes it a marketplace listing owned by that seller (ADR-0012). */
   async createProduct(
     input: ProductCreate,
-    actor: Actor,
+    actor: ActorContext,
     options: { sellerId?: string } = {},
   ): Promise<ProductDetail> {
     await this.requireCategory(input.categoryId);
@@ -175,7 +187,7 @@ export class CatalogAdminService {
         });
         return created;
       });
-      await this.record('catalog.product.created', 'product', product.id, actor, {
+      await this.audit.recordFor(actor, 'catalog.product.created', 'product', product.id, {
         slug,
         variants: input.variants.length,
       });
@@ -190,7 +202,11 @@ export class CatalogAdminService {
     }
   }
 
-  async updateProduct(id: string, input: ProductUpdate, actor: Actor): Promise<ProductDetail> {
+  async updateProduct(
+    id: string,
+    input: ProductUpdate,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
     const existing = await this.prisma.product.findUnique({
       where: { id },
       include: { variants: true },
@@ -223,11 +239,15 @@ export class CatalogAdminService {
       input.status && input.status !== existing.status
         ? `catalog.product.${input.status === 'ACTIVE' ? 'published' : input.status === 'ARCHIVED' ? 'archived' : 'unpublished'}`
         : 'catalog.product.updated';
-    await this.record(action, 'product', id, actor, { changes: Object.keys(input) });
+    await this.audit.recordFor(actor, action, 'product', id, { changes: Object.keys(input) });
     return this.query.productById(id);
   }
 
-  async addVariant(productId: string, input: VariantCreate, actor: Actor): Promise<ProductDetail> {
+  async addVariant(
+    productId: string,
+    input: VariantCreate,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
     await this.requireProduct(productId);
     try {
       const variant = await this.prisma.$transaction(async (tx) => {
@@ -237,7 +257,7 @@ export class CatalogAdminService {
         await this.outbox(tx, 'catalog.product.updated', productId, { variantAdded: created.sku });
         return created;
       });
-      await this.record('catalog.variant.created', 'variant', variant.id, actor, {
+      await this.audit.recordFor(actor, 'catalog.variant.created', 'variant', variant.id, {
         sku: variant.sku,
         productId,
       });
@@ -252,7 +272,7 @@ export class CatalogAdminService {
   async updateVariant(
     variantId: string,
     input: VariantUpdate,
-    actor: Actor,
+    actor: ActorContext,
   ): Promise<ProductDetail> {
     const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
     if (!variant) throw new NotFoundException('Variant not found.');
@@ -279,7 +299,7 @@ export class CatalogAdminService {
         throw new ConflictException('That barcode belongs to another variant.');
       throw error;
     }
-    await this.record('catalog.variant.updated', 'variant', variantId, actor, {
+    await this.audit.recordFor(actor, 'catalog.variant.updated', 'variant', variantId, {
       sku: variant.sku,
       changes: Object.keys(input),
       ...(input.priceCents !== undefined
@@ -294,7 +314,7 @@ export class CatalogAdminService {
   async attachImage(
     productId: string,
     input: ProductImageAttach,
-    actor: Actor,
+    actor: ActorContext,
   ): Promise<ProductDetail> {
     await this.requireProduct(productId);
     if (!(await this.storage.exists(input.storageKey))) {
@@ -319,7 +339,9 @@ export class CatalogAdminService {
       await this.outbox(tx, 'catalog.product.updated', productId, { imageAdded: created.id });
       return created;
     });
-    await this.record('catalog.image.attached', 'product', productId, actor, { imageId: image.id });
+    await this.audit.recordFor(actor, 'catalog.image.attached', 'product', productId, {
+      imageId: image.id,
+    });
     return this.query.productById(productId);
   }
 
@@ -327,7 +349,7 @@ export class CatalogAdminService {
   async reorderImages(
     productId: string,
     input: ProductImageOrder,
-    actor: Actor,
+    actor: ActorContext,
   ): Promise<ProductDetail> {
     await this.requireProduct(productId);
     const images = await this.prisma.productImage.findMany({
@@ -348,13 +370,17 @@ export class CatalogAdminService {
       }
       await this.outbox(tx, 'catalog.product.updated', productId, { imagesReordered: true });
     });
-    await this.record('catalog.image.reordered', 'product', productId, actor, {
+    await this.audit.recordFor(actor, 'catalog.image.reordered', 'product', productId, {
       order: input.imageIds,
     });
     return this.query.productById(productId);
   }
 
-  async removeImage(productId: string, imageId: string, actor: Actor): Promise<ProductDetail> {
+  async removeImage(
+    productId: string,
+    imageId: string,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
     const count = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.productImage.deleteMany({ where: { id: imageId, productId } });
       if (count) {
@@ -363,7 +389,7 @@ export class CatalogAdminService {
       return count;
     });
     if (!count) throw new NotFoundException('Image not found.');
-    await this.record('catalog.image.removed', 'product', productId, actor, { imageId });
+    await this.audit.recordFor(actor, 'catalog.image.removed', 'product', productId, { imageId });
     return this.query.productById(productId);
   }
 
@@ -389,28 +415,22 @@ export class CatalogAdminService {
     if (duplicate) throw new BadRequestException(`SKU ${duplicate} is listed twice.`);
   }
 
+  /** `base`, or `base-2`, `base-3`… Reads only those slugs (not every slug starting with base). */
   private async availableSlug(base: string): Promise<string> {
-    const taken = new Set(
-      (
-        await this.prisma.product.findMany({
-          where: { slug: { startsWith: base } },
-          select: { slug: true },
-        })
-      ).map((row) => row.slug),
-    );
+    const pattern = `^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-[0-9]+$`;
+    const rows = await this.prisma.$queryRaw<{ slug: string }[]>`
+      SELECT slug FROM products WHERE slug = ${base} OR slug ~ ${pattern}`;
+    const taken = new Set(rows.map((row) => row.slug));
     if (!taken.has(base)) return base;
     for (let n = 2; ; n++) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`;
   }
 
   private async isDescendant(candidateId: string, ancestorId: string): Promise<boolean> {
-    let current = await this.prisma.category.findUnique({ where: { id: candidateId } });
-    for (let depth = 0; current && depth < 20; depth++) {
-      if (current.parentId === ancestorId) return true;
-      current = current.parentId
-        ? await this.prisma.category.findUnique({ where: { id: current.parentId } })
-        : null;
-    }
-    return false;
+    const categories = await this.prisma.category.findMany({
+      select: { id: true, parentId: true },
+    });
+    const byId = new Map(categories.map((category) => [category.id, category]));
+    return ancestorsOf(candidateId, byId).some((category) => category.id === ancestorId);
   }
 
   private async requireCategory(id: string): Promise<void> {
@@ -444,24 +464,6 @@ export class CatalogAdminService {
         type,
         payload: { productId, ...payload } as Prisma.InputJsonObject,
       },
-    });
-  }
-
-  private record(
-    action: string,
-    entityType: string,
-    entityId: string,
-    actor: Actor,
-    metadata?: Record<string, unknown>,
-  ) {
-    return this.audit.record({
-      action,
-      actorType: actor.actorType ?? 'ADMIN',
-      actorId: actor.user.id,
-      entityType,
-      entityId,
-      meta: actor.meta,
-      metadata,
     });
   }
 }

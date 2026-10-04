@@ -11,6 +11,7 @@ import {
   VisitorIdSchema,
 } from '@nixzora/validation';
 import { ApiZodBody, ApiZodResponse } from '../../common/api-docs';
+import { perMinute } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { type AuthUser } from '../identity/auth-user';
 import { MaybeUser, OptionalAuth, Public } from '../identity/guards/decorators';
@@ -27,7 +28,7 @@ export class RecommendationsController {
   @OptionalAuth()
   @Post('events/views')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle(perMinute(60))
   @ApiZodBody(ProductViewEventSchema)
   async view(
     @Body(new ZodValidationPipe(ProductViewEventSchema)) body: ProductViewEvent,

@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { formatters, translator } from '@nixzora/i18n';
 import {
   type Address,
+  pagedResult,
   type PagedResult,
   type SellerBalance,
   type SellerLedgerEntryView,
@@ -123,13 +124,11 @@ export class SellerOrdersService implements OnModuleInit {
         take: query.pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => this.view(row)),
-      page: query.page,
-      pageSize: query.pageSize,
+    return pagedResult(
+      rows.map((row) => this.view(row)),
       total,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-    };
+      query,
+    );
   }
 
   async get(id: string, actor: ActorContext): Promise<SellerOrderView> {

@@ -15,7 +15,7 @@ our own objectives.
 
 ## Decision
 
-**Prometheus metrics in every process of the API image** (`prom-client`), served on
+**Prometheus metrics in every process of the API image** (`@prometheus-io/client`, formerly `prom-client`), served on
 `METRICS_PORT` (9464), a port the load balancer never routes to:
 
 | Metric                                                             | What                                                                             |
