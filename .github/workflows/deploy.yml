@@ -48,8 +48,20 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - uses: aws-actions/amazon-ecr-login@v2
+      # Tags are immutable in ECR: when a re-run finds this release's image already pushed
+      # (say the first attempt failed after the push), it is reused instead of failing.
+      - name: Already pushed?
+        id: existing
+        run: |
+          if aws ecr describe-images --repository-name "nixzora/${{ matrix.app }}" \
+            --image-ids "imageTag=${TAG}${{ matrix.suffix }}" >/dev/null 2>&1; then
+            echo "Image ${TAG}${{ matrix.suffix }} is already in ECR: skipping the build."
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: docker/setup-buildx-action@v3
+        if: steps.existing.outputs.found != 'true'
       - name: Build and push nixzora/${{ matrix.app }}:${{ env.TAG }}${{ matrix.suffix }}
+        if: steps.existing.outputs.found != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
