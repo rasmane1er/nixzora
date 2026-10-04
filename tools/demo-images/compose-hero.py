@@ -1,4 +1,8 @@
-"""Places the product cut-outs on the hero desk and writes the web and app images.
+"""
+NOTE (October 2026): the hero now uses a photo supplied by the owner (see git history for
+apps/storefront/public/home/hero-desk.webp). Running this script replaces it with the old
+generated artwork.
+Places the product cut-outs on the hero desk and writes the web and app images.
 
 Each product is cropped to its outline, scaled to a height, and stood on the desk line with a
 soft contact shadow. Outputs:
