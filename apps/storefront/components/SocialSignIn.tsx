@@ -57,10 +57,13 @@ export function SocialSignIn({
   providers,
   next,
   intent = 'signin',
+  scriptNonce,
 }: {
   providers: SocialProvidersResponse;
   next: string;
   intent?: 'signin' | 'signup';
+  /** This page view's Content Security Policy nonce, for the Google and Apple scripts. */
+  scriptNonce?: string;
 }) {
   const googleClientId = providers.google?.webClientId ?? null;
   const appleServicesId = providers.apple?.servicesId ?? null;
@@ -168,6 +171,7 @@ export function SocialSignIn({
           <Script
             src="https://accounts.google.com/gsi/client"
             strategy="afterInteractive"
+            nonce={scriptNonce}
             onReady={() => setGoogleReady(true)}
           />
           <div ref={googleButton} className="social__google" />
@@ -178,6 +182,7 @@ export function SocialSignIn({
           <Script
             src={`https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/${APPLE_LOCALE[locale]}/appleid.auth.js`}
             strategy="afterInteractive"
+            nonce={scriptNonce}
             onReady={() => setAppleReady(true)}
           />
           <div

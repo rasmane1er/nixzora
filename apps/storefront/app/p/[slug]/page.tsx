@@ -15,6 +15,7 @@ import { SellerRating } from '@/components/SellerRating';
 import { ReviewInsights } from '@/components/ReviewInsights';
 import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
+import { cspNonce } from '@/lib/csp-nonce';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
@@ -168,6 +169,7 @@ export default async function ProductPage({ params }: Props) {
     <div className="wrap section">
       <script
         type="application/ld+json"
+        nonce={await cspNonce()}
         // JSON.stringify output with "<" escaped cannot break out of the script tag.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />

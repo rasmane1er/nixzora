@@ -26,10 +26,28 @@ test('pages send the security headers', async ({ request }) => {
   expect(csp).toContain("base-uri 'self'");
   expect(csp).toContain('https://js.stripe.com');
   expect(csp).not.toContain("'unsafe-eval'");
+  // Scripts need this page view's nonce: no blanket permission for inline scripts.
+  const scripts = /script-src ([^;]*)/.exec(csp)?.[1] ?? '';
+  expect(scripts).toMatch(/'nonce-[A-Za-z0-9+/=]{16,}'/);
+  expect(scripts).toContain("'strict-dynamic'");
+  expect(scripts).not.toContain("'unsafe-inline'");
   expect(headers['strict-transport-security']).toContain('max-age=31536000');
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['x-powered-by']).toBeUndefined();
+});
+
+test('every page view gets its own nonce, and the page scripts carry it', async ({ request }) => {
+  const nonceOf = (csp: string) => /'nonce-([^']+)'/.exec(csp)?.[1];
+  const first = await request.get('/');
+  const second = await request.get('/');
+  const nonce = nonceOf(first.headers()['content-security-policy'] ?? '');
+  expect(nonce).toBeTruthy();
+  expect(nonceOf(second.headers()['content-security-policy'] ?? '')).not.toBe(nonce);
+  const html = await first.text();
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>/g)].map((m) => m[1] ?? '');
+  expect(inline.length).toBeGreaterThan(0);
+  for (const attributes of inline) expect(attributes).toContain(`nonce="${nonce}"`);
 });
 
 test('the main pages run without breaking the Content Security Policy', async ({ page }) => {

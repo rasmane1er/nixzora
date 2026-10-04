@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AuthCard, Submit } from '@/components/AuthCard';
 import { PasskeySignIn } from '@/components/PasskeySignIn';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { cspNonce } from '@/lib/csp-nonce';
 import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { socialProviders } from '../social-actions';
@@ -30,7 +31,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         next={next}
         divider={!providers.google?.webClientId && !providers.apple?.servicesId}
       />
-      <SocialSignIn providers={providers} next={next} intent="signin" />
+      <SocialSignIn
+        providers={providers}
+        next={next}
+        intent="signin"
+        scriptNonce={await cspNonce()}
+      />
       <form action={signIn} className="form">
         <input type="hidden" name="next" value={next} />
         <label>

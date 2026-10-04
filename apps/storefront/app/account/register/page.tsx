@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { cspNonce } from '@/lib/csp-nonce';
 import { getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { socialProviders } from '../social-actions';
@@ -50,7 +51,12 @@ export default async function RegisterPage({ searchParams }: { searchParams: Sea
             {param(params, 'error')}
           </p>
         ) : null}
-        <SocialSignIn providers={providers} next={next} intent="signup" />
+        <SocialSignIn
+          providers={providers}
+          next={next}
+          intent="signup"
+          scriptNonce={await cspNonce()}
+        />
         <RegisterForm next={next} defaultCountry={country} />
         <p className="signup__foot">
           {rich(t('alreadyHaveOne'), {

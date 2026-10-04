@@ -59,22 +59,27 @@ function expiresSoon(token: string | undefined): boolean {
   }
 }
 
+/** Continue to the page, forwarding the request headers this proxy set (nonce, cookies). */
+function pass(request: NextRequest): NextResponse {
+  return NextResponse.next({ request: { headers: request.headers } });
+}
+
 async function session(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-    return NextResponse.next();
+    return pass(request);
   }
 
   const access = request.cookies.get('nx_at')?.value;
   const refresh = request.cookies.get('nx_rt')?.value;
-  if (!expiresSoon(access)) return NextResponse.next();
+  if (!expiresSoon(access)) return pass(request);
   if (!refresh) return NextResponse.redirect(new URL('/login', request.url));
 
   const res = await refreshOnce(refresh);
 
   if (!res.ok) {
     // The API is down: let the page render its own error rather than signing staff out.
-    if (res.status >= 500) return NextResponse.next();
+    if (res.status >= 500) return pass(request);
     const out = NextResponse.redirect(new URL('/login?expired=1', request.url));
     out.cookies.delete('nx_at');
     out.cookies.delete('nx_rt');
@@ -86,7 +91,7 @@ async function session(request: NextRequest): Promise<NextResponse> {
   // Hand the new token to this request's render, and to the browser for the next one.
   request.cookies.set('nx_at', tokens.accessToken);
   request.cookies.set('nx_rt', tokens.refreshToken);
-  const out = NextResponse.next({ request: { headers: request.headers } });
+  const out = pass(request);
   const base = { httpOnly: true, secure, sameSite: 'lax' as const, path: '/' };
   out.cookies.set('nx_at', tokens.accessToken, { ...base, maxAge: tokens.accessTokenExpiresIn });
   out.cookies.set('nx_rt', tokens.refreshToken, {
@@ -101,13 +106,17 @@ const DEV = process.env.NODE_ENV !== 'production';
 
 /** Every page: the session handling above, then the Content Security Policy. */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  const response = await session(request);
+  // A fresh nonce per page view. Next.js reads it from the request's policy header and puts it
+  // on its own scripts; any other inline script is refused by the browser.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const https =
     request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
-  response.headers.set(
-    'Content-Security-Policy',
-    contentSecurityPolicy({ apiOrigin: API_ORIGIN, https, dev: DEV }),
-  );
+  const policy = contentSecurityPolicy({ apiOrigin: API_ORIGIN, https, dev: DEV, nonce });
+  request.headers.set('x-nonce', nonce);
+  request.headers.set('Content-Security-Policy', policy);
+
+  const response = await session(request);
+  response.headers.set('Content-Security-Policy', policy);
   return response;
 }
 

@@ -2,9 +2,10 @@
  * Content Security Policy for the storefront (docs/security/threat-model.md). Built per request
  * in proxy.ts, because the API's address comes from the environment at run time.
  *
- * Scripts: our own plus Stripe (payment form), Google and Apple (sign-in buttons). Inline
- * scripts are still allowed because Next.js writes its page data inline; moving to per-request
- * nonces needs every page rendered on demand (open item in the pen-test checklist).
+ * Scripts: only those carrying this request's nonce (Next.js adds it to its own) and the ones
+ * they load ('strict-dynamic': Stripe's payment form, Google and Apple sign-in). No inline
+ * script without the nonce runs, so injected markup cannot execute. The host list is a fallback
+ * for browsers without 'strict-dynamic'. Every page renders on demand, which nonces need.
  * Everything else is narrow: no plugins, no framing of our pages, forms post only to us (and
  * Apple's sign-in), and the page talks only to us, the API, S3 uploads and the payment and
  * sign-in providers.
@@ -13,16 +14,19 @@ export function contentSecurityPolicy({
   apiOrigin,
   https,
   dev,
+  nonce,
 }: {
   apiOrigin: string;
   https: boolean;
   dev: boolean;
+  nonce: string;
 }): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",
-      "'unsafe-inline'",
+      `'nonce-${nonce}'`,
+      "'strict-dynamic'",
       ...(dev ? ["'unsafe-eval'"] : []),
       'https://js.stripe.com',
       'https://*.js.stripe.com',

@@ -244,7 +244,7 @@ signing keys, API keys and secrets.
 | Stolen cards and card testing                                | Fraud signals: declined over the block score, held for review over the review score (ADR-0024)              | ✔      |
 | A seller cashes out fraudulent sales                         | Payouts paused on chargebacks, self-purchases, refund spikes; reviewed in the Ops Center                    | ✔      |
 | Cluster takeover through a pod                               | Pods run non-root with a read-only filesystem and no capabilities; deploy role limited to the app namespace | ✔      |
-| Clickjacking, injected scripts calling out                   | Content Security Policy on the storefront and Ops Center (no framing, narrow connect-src), HSTS             | ✔      |
+| Clickjacking, injected scripts                               | Content Security Policy with a per-request script nonce on the storefront and Ops Center, no framing, HSTS  | ✔      |
 | Open redirect after sign-in                                  | Same-site paths only; whitespace and backslashes rejected                                                   | ✔      |
 | Losing the database                                          | Point-in-time recovery and AWS Backup, rehearsed by `scripts/dr/restore-drill.sh`                           | ✔      |
 | Sign-up details (phone, consent) exposed or forged           | Phone validated as E.164 and shown only to staff with `users.read`; terms acceptance stored with its time   | ✔      |
@@ -254,8 +254,6 @@ Pen-test scope, automated checks and the item-by-item status:
 
 ## Open items
 
-- Content Security Policy nonces instead of `'unsafe-inline'` scripts (needs every page rendered
-  on demand).
 - Image re-encoding (strip EXIF, resize) in a background worker, and malware scanning of uploads
   in S3.
 - Stripe Connect `account.updated` webhook so verification changes arrive without a refresh.
