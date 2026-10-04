@@ -29,3 +29,8 @@ alarm_email = "you@example.com"
 #   GOOGLE_ANDROID_CLIENT_ID = "1234-ghi.apps.googleusercontent.com"
 #   APPLE_SERVICES_ID        = "com.nixzora.shop.web"
 # }
+
+# On call (p9-11): page a phone for every alarm. A PagerDuty "Amazon CloudWatch" integration URL
+# (or Opsgenie / incident.io), and/or numbers to text. See docs/runbooks/incident-response.md.
+# oncall_webhook_url = "https://events.pagerduty.com/integration/<key>/enqueue"
+# oncall_sms_numbers = ["+13015550100"]

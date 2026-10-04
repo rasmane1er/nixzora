@@ -13,6 +13,7 @@ locals {
     api        = "api.${local.base}"
     admin      = "ops.${local.base}"
     media      = "media.${local.base}"
+    status     = "status.${local.base}"
   }
   azs = slice(data.aws_availability_zones.available.names, 0, var.az_count)
   ports = {

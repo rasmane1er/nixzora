@@ -48,7 +48,7 @@ These are built and waiting on accounts or a run; they gate the phase.
 | 3–4  | p9-08 | External penetration test of staging using the [pen-test checklist](../security/pentest-checklist.md); fix findings, add a regression test for each | Owner hires; Claude fixes                 |
 | 4    | p9-09 | Legal and policies reviewed: Terms, Privacy, seller agreement, returns, cookie notice; sales-tax registration where required                        | Owner (with a professional)               |
 | 4    | p9-10 | Backups in a second region (AWS Backup copy), then a production restore drill                                                                       | Claude builds; owner runs                 |
-| 5    | p9-11 | On-call: alerts to phone (not only email), a public status page, one practice incident using the incident runbook                                   | Claude builds; owner tests                |
+| 5    | p9-11 | On-call: alerts to phone (not only email), a public status page, one practice incident using the incident runbook (ADR-0027)                        | Claude builds; owner tests                |
 | 5    | p9-12 | App Store and Google Play public release: listings, screenshots, privacy labels, review                                                             | Owner submits; Claude prepares            |
 | 5    | p9-13 | Assistant on the paid models: evaluate Claude and Voyage on a larger set of real shopper questions; set the daily AI budget for production          | Claude                                    |
 | 6    | p9-14 | Soft launch: invite-only for two weeks, watch SLOs, fraud reviews and support; then open to the public                                              | Owner decides; Claude watches             |

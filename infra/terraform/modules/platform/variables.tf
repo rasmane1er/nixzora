@@ -241,3 +241,16 @@ variable "backup_copy_region" {
   type        = string
   default     = null
 }
+
+variable "oncall_webhook_url" {
+  description = "HTTPS endpoint that pages whoever is on call (p9-11), e.g. a PagerDuty Amazon CloudWatch integration URL. Every alarm goes there as well as to alarm_email. null: email only."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "oncall_sms_numbers" {
+  description = "Phone numbers (E.164) texted for every alarm. US numbers need an approved SMS origination identity in the account first (see docs/runbooks/incident-response.md)."
+  type        = list(string)
+  default     = []
+}

@@ -98,6 +98,12 @@ mock_provider "aws" {
   mock_resource "aws_kms_key" {
     defaults = { arn = "arn:aws:kms:us-east-1:123456789012:key/eks" }
   }
+  mock_resource "aws_lambda_function" {
+    defaults = { arn = "arn:aws:lambda:us-east-1:123456789012:function:nixzora-status-probe" }
+  }
+  mock_resource "aws_cloudwatch_event_rule" {
+    defaults = { arn = "arn:aws:events:us-east-1:123456789012:rule/nixzora-status-probe" }
+  }
   mock_resource "aws_msk_configuration" {
     defaults = { arn = "arn:aws:kafka:us-east-1:123456789012:configuration/nixzora-staging-kafka/x", latest_revision = 1 }
   }
@@ -105,11 +111,14 @@ mock_provider "aws" {
 
 mock_provider "aws" {
   alias = "us_east_1"
+  mock_resource "aws_sns_topic" {
+    defaults = { arn = "arn:aws:sns:us-east-1:123456789012:nixzora-outside-alarms" }
+  }
   mock_resource "aws_acm_certificate" {
     defaults = {
       arn = "arn:aws:acm:us-east-1:123456789012:certificate/media"
       domain_validation_options = [
-        for name in ["media.nixzora-demo.com", "media.staging.nixzora-demo.com"] :
+        for name in ["media.nixzora-demo.com", "media.staging.nixzora-demo.com", "status.nixzora-demo.com", "status.staging.nixzora-demo.com"] :
         { domain_name = name, resource_record_name = "_x.${name}", resource_record_type = "CNAME", resource_record_value = "_y.acm-validations.aws" }
       ]
     }
@@ -194,6 +203,14 @@ run "staging" {
   assert {
     condition     = length(aws_guardduty_malware_protection_plan.media) == 1 && output.api_environment["MEDIA_MALWARE_SCAN"] == "guardduty"
     error_message = "uploads must be scanned for malware before the API accepts them (ADR-0025)."
+  }
+  assert {
+    condition     = output.urls.status == "https://status.staging.nixzora-demo.com" && length(aws_route53_health_check.outside) == 2
+    error_message = "the status page and outside health checks must exist (p9-11)."
+  }
+  assert {
+    condition     = length(aws_sns_topic_subscription.alarms_pager) == 0 && length(aws_sns_topic_subscription.alarms_sms) == 0
+    error_message = "without on-call settings, alarms only email."
   }
   assert {
     condition     = output.api_environment["SES_CONFIGURATION_SET"] == "nixzora-staging-mail" && contains(aws_sesv2_configuration_set.mail.suppression_options[0].suppressed_reasons, "BOUNCE")
@@ -337,6 +354,7 @@ run "production" {
     db_multi_az        = true
     ops_allowed_cidrs  = ["203.0.113.10/32"]
     backup_copy_region = "us-west-2"
+    oncall_webhook_url = "https://events.pagerduty.com/integration/abc/enqueue"
   }
   assert {
     condition     = output.urls.storefront == "https://nixzora-demo.com"
@@ -353,6 +371,10 @@ run "production" {
   assert {
     condition     = length(aws_backup_vault.copy) == 1 && output.backup_copy_vault.region == "us-west-2"
     error_message = "production backups must be copied to a second region (p9-10)."
+  }
+  assert {
+    condition     = length(aws_sns_topic_subscription.alarms_pager) == 1 && length(aws_sns_topic_subscription.outside_pager) == 1
+    error_message = "with an on-call webhook, every alarm pages (p9-11)."
   }
   assert {
     condition     = output.api_environment["PAYMENTS_PROVIDER"] == "stripe"

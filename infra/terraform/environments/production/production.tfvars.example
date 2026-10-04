@@ -11,3 +11,8 @@ alarm_email = "you@example.com"
 # ops_allowed_cidrs = ["203.0.113.10/32"]
 # Second region for backup copies (p9-10); null turns the copy off.
 # backup_copy_region = "us-west-2"
+
+# On call (p9-11): page a phone for every alarm. A PagerDuty "Amazon CloudWatch" integration URL
+# (or Opsgenie / incident.io), and/or numbers to text. See docs/runbooks/incident-response.md.
+# oncall_webhook_url = "https://events.pagerduty.com/integration/<key>/enqueue"
+# oncall_sms_numbers = ["+13015550100"]

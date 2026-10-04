@@ -24,6 +24,17 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
+variable "oncall_webhook_url" {
+  description = "Paging service integration URL (p9-11). Keep it in the tfvars file, not in git."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+variable "oncall_sms_numbers" {
+  description = "Phone numbers (E.164) texted for every alarm (p9-11)."
+  type        = list(string)
+  default     = []
+}
 variable "backup_copy_region" {
   description = "Second region for backup copies (p9-10). null: no copy."
   type        = string
@@ -80,6 +91,8 @@ module "platform" {
 
   environment        = "production"
   backup_copy_region = var.backup_copy_region
+  oncall_webhook_url = var.oncall_webhook_url
+  oncall_sms_numbers = var.oncall_sms_numbers
   domain_name        = var.domain_name
   hosted_zone_id     = var.hosted_zone_id
   image_repositories = var.image_repositories

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NIXZORA status</title>
+    <meta name="description" content="Is NIXZORA working? Live status of the store and checkout." />
+    <style>
+      :root {
+        --bg: #f6f5f1;
+        --card: #ffffff;
+        --ink: #0f172a;
+        --muted: #5b6474;
+        --line: #e4e2db;
+        --up: #1f8a4c;
+        --degraded: #b7791f;
+        --down: #c0392b;
+        --none: #d7d4cb;
+        --brand: #e8622c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1220;
+          --card: #121b2d;
+          --ink: #eef1f6;
+          --muted: #9aa5b8;
+          --line: #243049;
+          --none: #2a3550;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+      header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+      .logo { font-weight: 800; letter-spacing: 0.08em; font-size: 20px; }
+      .logo span { color: var(--brand); }
+      h1 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0; }
+      .summary {
+        border-radius: 14px;
+        padding: 18px 20px;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+        background: var(--muted);
+      }
+      .summary.up { background: var(--up); }
+      .summary.degraded { background: var(--degraded); }
+      .summary.down { background: var(--down); }
+      .note {
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand);
+        background: var(--card);
+        border-radius: 10px;
+        padding: 12px 16px;
+      }
+      .card {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 4px 20px;
+      }
+      .row { padding: 16px 0; border-top: 1px solid var(--line); }
+      .row:first-child { border-top: 0; }
+      .row-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
+      .pill { font-size: 14px; font-weight: 600; }
+      .pill.up { color: var(--up); }
+      .pill.degraded { color: var(--degraded); }
+      .pill.down { color: var(--down); }
+      .bars { display: flex; gap: 2px; height: 28px; margin-top: 10px; }
+      .bars i { flex: 1; border-radius: 2px; background: var(--none); }
+      .bars i.up { background: var(--up); }
+      .bars i.degraded { background: var(--degraded); }
+      .bars i.down { background: var(--down); }
+      .scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 6px; }
+      footer { margin-top: 20px; font-size: 14px; color: var(--muted); }
+      footer a { color: inherit; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="logo">NIX<span>Z</span>ORA</div>
+        <h1 id="title">System status</h1>
+      </header>
+      <div id="summary" class="summary" role="status" aria-live="polite">…</div>
+      <div id="note" class="note" hidden></div>
+      <section class="card" id="components" aria-label="Components"></section>
+      <footer>
+        <span id="checked"></span> · <a id="store-link" href="/">Go to the store</a>
+      </footer>
+    </main>
+    <script>
+      const TEXT = {
+        en: {
+          title: 'System status',
+          up: 'All systems working',
+          degraded: 'Some things are slow',
+          down: 'Something is not working',
+          stale: 'We cannot confirm the status right now',
+          store: 'Store and shopping assistant',
+          api: 'Accounts, checkout and orders',
+          s_up: 'Working',
+          s_degraded: 'Slow',
+          s_down: 'Not working',
+          checked: (m) => (m < 1 ? 'Checked just now' : `Checked ${m} min ago`),
+          days: '90 days ago',
+          today: 'Today',
+          uptime: (p) => `${p}% working`,
+          store_link: 'Go to the store',
+        },
+        fr: {
+          title: 'État des services',
+          up: 'Tout fonctionne',
+          degraded: 'Certains services sont lents',
+          down: 'Un service ne fonctionne pas',
+          stale: 'Impossible de confirmer l’état pour le moment',
+          store: 'Boutique et assistant d’achat',
+          api: 'Comptes, paiement et commandes',
+          s_up: 'Fonctionne',
+          s_degraded: 'Lent',
+          s_down: 'En panne',
+          checked: (m) => (m < 1 ? 'Vérifié à l’instant' : `Vérifié il y a ${m} min`),
+          days: 'Il y a 90 jours',
+          today: 'Aujourd’hui',
+          uptime: (p) => `${p} % en service`,
+          store_link: 'Aller à la boutique',
+        },
+        es: {
+          title: 'Estado del sistema',
+          up: 'Todo funciona',
+          degraded: 'Algunos servicios van lentos',
+          down: 'Algo no funciona',
+          stale: 'No podemos confirmar el estado ahora mismo',
+          store: 'Tienda y asistente de compras',
+          api: 'Cuentas, pago y pedidos',
+          s_up: 'Funciona',
+          s_degraded: 'Lento',
+          s_down: 'No funciona',
+          checked: (m) => (m < 1 ? 'Comprobado ahora mismo' : `Comprobado hace ${m} min`),
+          days: 'Hace 90 días',
+          today: 'Hoy',
+          uptime: (p) => `${p} % en servicio`,
+          store_link: 'Ir a la tienda',
+        },
+      };
+      const lang = (navigator.language || 'en').slice(0, 2);
+      const t = TEXT[lang] || TEXT.en;
+      document.documentElement.lang = TEXT[lang] ? lang : 'en';
+      document.getElementById('title').textContent = t.title;
+      document.getElementById('store-link').textContent = t.store_link;
+      document.getElementById('store-link').href = location.origin.replace('//status.', '//');
+
+      const el = (tag, cls, text) => {
+        const node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text != null) node.textContent = text;
+        return node;
+      };
+
+      function dayStatus(day) {
+        if (!day || !day.total) return '';
+        const ratio = day.up / day.total;
+        return ratio >= 0.999 ? 'up' : ratio >= 0.95 ? 'degraded' : 'down';
+      }
+
+      function render(data) {
+        const minutes = Math.floor((Date.now() - Date.parse(data.checkedAt)) / 60000);
+        const stale = minutes > 5;
+        const statuses = Object.values(data.components).map((c) => c.status);
+        const overall = statuses.includes('down') ? 'down' : statuses.includes('degraded') ? 'degraded' : 'up';
+        const summary = document.getElementById('summary');
+        summary.className = 'summary ' + (stale ? '' : overall);
+        summary.textContent = stale ? t.stale : t[overall];
+
+        const note = document.getElementById('note');
+        note.hidden = !data.note;
+        note.textContent = data.note || '';
+
+        const list = document.getElementById('components');
+        list.replaceChildren();
+        for (const [name, c] of Object.entries(data.components)) {
+          const row = el('div', 'row');
+          const head = el('div', 'row-head');
+          head.append(el('span', '', t[name] || name), el('span', 'pill ' + c.status, t['s_' + c.status]));
+          row.append(head);
+          const bars = el('div', 'bars');
+          const today = new Date();
+          let up = 0, total = 0;
+          for (let i = 89; i >= 0; i--) {
+            const date = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
+            const day = c.days && c.days[date];
+            if (day) { up += day.up; total += day.total; }
+            const bar = el('i', dayStatus(day));
+            bar.title = day ? `${date}: ${Math.round((day.up / day.total) * 1000) / 10}%` : date;
+            bars.append(bar);
+          }
+          row.append(bars);
+          const scale = el('div', 'scale');
+          scale.append(
+            el('span', '', t.days),
+            el('span', '', total ? t.uptime(Math.round((up / total) * 1000) / 10) : ''),
+            el('span', '', t.today),
+          );
+          row.append(scale);
+          list.append(row);
+        }
+        document.getElementById('checked').textContent = t.checked(Math.max(0, minutes));
+      }
+
+      async function load() {
+        try {
+          const res = await fetch('status.json', { cache: 'no-store' });
+          render(await res.json());
+        } catch {
+          const summary = document.getElementById('summary');
+          summary.className = 'summary';
+          summary.textContent = t.stale;
+        }
+      }
+      load();
+      setInterval(load, 60000);
+    </script>
+  </body>
+</html>
