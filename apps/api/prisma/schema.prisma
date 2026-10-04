@@ -1037,28 +1037,30 @@ enum SellerOrderStatus {
 
 /// One seller's part of a customer order (p7-05): what they ship and what they earn.
 model SellerOrder {
-  id              String            @id @default(uuid(7)) @db.Uuid
-  orderId         String            @map("order_id") @db.Uuid
-  sellerId        String            @map("seller_id") @db.Uuid
-  status          SellerOrderStatus @default(PAID)
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  orderId            String            @map("order_id") @db.Uuid
+  sellerId           String            @map("seller_id") @db.Uuid
+  status             SellerOrderStatus @default(PAID)
   /// The seller's items at the prices paid (before order-level coupons, which NIXZORA funds).
-  itemsCents      Int               @map("items_cents")
+  itemsCents         Int               @map("items_cents")
   /// The seller's share of the shipping the customer paid, passed through without commission.
-  shippingCents   Int               @map("shipping_cents")
+  shippingCents      Int               @map("shipping_cents")
   /// Commission rate when the order was paid, in basis points.
-  commissionBps   Int               @map("commission_bps")
-  commissionCents Int               @map("commission_cents")
+  commissionBps      Int               @map("commission_bps")
+  commissionCents    Int               @map("commission_cents")
   /// itemsCents + shippingCents - commissionCents
-  netCents        Int               @map("net_cents")
+  netCents           Int               @map("net_cents")
   /// Customer refunds attributed to this seller's items.
-  refundedCents   Int               @default(0) @map("refunded_cents")
-  trackingCarrier String?           @map("tracking_carrier")
-  trackingNumber  String?           @map("tracking_number")
-  shippedAt       DateTime?         @map("shipped_at")
-  deliveredAt     DateTime?         @map("delivered_at")
-  cancelledAt     DateTime?         @map("cancelled_at")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
+  refundedCents      Int               @default(0) @map("refunded_cents")
+  trackingCarrier    String?           @map("tracking_carrier")
+  trackingNumber     String?           @map("tracking_number")
+  shippedAt          DateTime?         @map("shipped_at")
+  /// First carrier scan of the seller's tracking number; earnings stay held until then (p9-05).
+  trackingVerifiedAt DateTime?         @map("tracking_verified_at")
+  deliveredAt        DateTime?         @map("delivered_at")
+  cancelledAt        DateTime?         @map("cancelled_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
 
   order  Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   seller Seller              @relation(fields: [sellerId], references: [id], onDelete: Restrict)

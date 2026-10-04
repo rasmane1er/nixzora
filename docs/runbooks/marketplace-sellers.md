@@ -49,6 +49,12 @@ id) before doing anything else.
 
 To slow down payouts for a new or risky store, raise its **payout hold** in Terms.
 
+With EasyPost on, a seller's earnings for an order start their hold only when the carrier first
+scans its tracking number (ADR-0026). A store with a shipment unscanned after 7 days gets a
+payout review in **Fraud reviews** ("tracking number no carrier has scanned"). Look up the
+tracking number on the carrier's site and ask the store: **Clear** if the parcel is real (its
+earnings are released), **Confirm** if it never shipped (refund the customer from the order).
+
 ## Switching payouts to Stripe Connect
 
 Test mode (`PAYOUTS_PROVIDER=fake`) verifies sellers instantly and moves no money. For real
@@ -61,5 +67,10 @@ sellers:
    secret as checkout). Use test keys first: Stripe's test onboarding accepts sample data.
 4. Deploy. Existing test-mode sellers keep their `fake_acct_…` ids; ask them to press
    **Update payout details** in Store settings, which creates a real Connect account.
+5. Add the Connect webhook (Developers → Webhooks → **Events on Connected accounts**,
+   `account.updated`, URL `…/api/v1/payments/webhooks/stripe-connect`) and put its signing
+   secret in `STRIPE_CONNECT_WEBHOOK_SECRET`. From then on a store's verification status updates
+   by itself, and the store is emailed when payouts start or when Stripe needs something. Without
+   it, the status changes only when the seller comes back from Stripe's onboarding pages.
 
 Never paste Stripe keys into chat, tickets or the repository: they go in AWS Secrets Manager.

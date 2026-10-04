@@ -7,7 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from '../identity/auth-user';
-import { markPartsDelivered, settleShipment } from '../orders/marketplace';
+import { markPartsDelivered, settleShipment, verifySellerShipment } from '../orders/marketplace';
 import { orderInclude, toOrderView } from '../orders/order-links';
 import {
   type ShipAddress,
@@ -145,11 +145,16 @@ export class LabelsService {
       .set(`webhook:shipping:${event.id}`, '1', 'EX', 7 * 86_400, 'NX')
       .catch(() => 'OK');
     if (first !== 'OK') return 'duplicate';
-    if (event.status !== 'delivered') return 'ignored';
+    if (event.status === 'other') return 'ignored';
+    // A seller's own shipment: the first scan releases its earnings to the normal hold (p9-05).
+    const sellerShipments = await this.prisma.$transaction((tx) =>
+      verifySellerShipment(tx, event.trackingNumber, event.status === 'delivered'),
+    );
+    if (event.status !== 'delivered') return sellerShipments ? 'applied' : 'ignored';
     const order = await this.prisma.order.findFirst({
       where: { trackingNumber: event.trackingNumber },
     });
-    if (!order) return 'ignored';
+    if (!order) return sellerShipments ? 'applied' : 'ignored';
     const done = await this.prisma.$transaction(async (tx) => {
       const result = await tx.order.updateMany({
         where: { id: order.id, status: 'SHIPPED' },

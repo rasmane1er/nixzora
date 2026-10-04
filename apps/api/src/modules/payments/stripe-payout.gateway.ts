@@ -1,3 +1,4 @@
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import Stripe from 'stripe';
 import {
   type PayoutAccountInput,
@@ -16,8 +17,32 @@ export class StripePayoutGateway implements PayoutGateway {
   readonly name = 'STRIPE' as const;
   private readonly stripe: Stripe;
 
-  constructor(secretKey: string) {
+  constructor(
+    secretKey: string,
+    private readonly connectWebhookSecret?: string,
+  ) {
     this.stripe = new Stripe(secretKey, { maxNetworkRetries: 2, timeout: 15_000 });
+  }
+
+  /**
+   * account.updated from the Connect webhook endpoint. Only the account id is used: the caller
+   * reads the current status, so events arriving late or out of order change nothing.
+   */
+  accountFromWebhook(rawBody: Buffer, signature: string | undefined): string | null {
+    if (!this.connectWebhookSecret) {
+      throw new ForbiddenException(
+        'Connect webhooks are not set up (STRIPE_CONNECT_WEBHOOK_SECRET).',
+      );
+    }
+    if (!signature) throw new BadRequestException('Missing Stripe signature.');
+    let event: Stripe.Event;
+    try {
+      event = this.stripe.webhooks.constructEvent(rawBody, signature, this.connectWebhookSecret);
+    } catch {
+      throw new BadRequestException('Invalid Stripe signature.');
+    }
+    if (event.type !== 'account.updated') return null;
+    return event.account ?? (event.data.object as Stripe.Account).id;
   }
 
   async createAccount(input: PayoutAccountInput) {

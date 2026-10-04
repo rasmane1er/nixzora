@@ -109,6 +109,8 @@ export const sellerTools = defineMessages({
     balAvailableHint: 'Ready for the next payout',
     balOnHold: 'On hold',
     balOnHoldHint: 'Shipped, inside the hold period',
+    balAwaitingScan: 'Waiting for carrier scan',
+    balAwaitingScanHint: 'Shipped; the hold starts once the carrier scans the tracking number',
     balWaiting: 'Waiting to ship',
     balWaitingHint: 'Paid orders you have not shipped',
     balLifetime: 'Lifetime',
@@ -312,6 +314,8 @@ export const sellerTools = defineMessages({
     underReviewDoNotShip:
       'We are checking this order before it ships. Do not ship it yet: we will email you as soon as it is cleared.',
     underReview: 'On hold',
+    awaitingCarrierScan:
+      'Shipped. The earnings for this order start their hold period once the carrier scans the tracking number. If it is never scanned, we will check with you.',
     payoutsPaused:
       'Payouts are paused while we review recent activity on your store. Your balance is safe; we will email you when they restart.',
     itemsToShip: 'Items to ship',
@@ -434,6 +438,9 @@ export const sellerTools = defineMessages({
     balAvailableHint: 'Prêt pour le prochain versement',
     balOnHold: 'En attente',
     balOnHoldHint: 'Expédié, pendant la période de blocage',
+    balAwaitingScan: 'En attente du scan transporteur',
+    balAwaitingScanHint:
+      'Expédié ; la période de blocage commence au premier scan du numéro de suivi',
     balWaiting: 'À expédier',
     balWaitingHint: 'Commandes payées que vous n’avez pas expédiées',
     balLifetime: 'Depuis le début',
@@ -638,6 +645,8 @@ export const sellerTools = defineMessages({
     underReviewDoNotShip:
       'Nous vérifions cette commande avant son expédition. Ne l’expédiez pas encore : nous vous écrirons dès qu’elle sera validée.',
     underReview: 'En attente',
+    awaitingCarrierScan:
+      'Expédiée. Les revenus de cette commande entrent en période de blocage dès que le transporteur scanne le numéro de suivi. S’il n’est jamais scanné, nous vous contacterons.',
     payoutsPaused:
       'Les versements sont suspendus pendant que nous vérifions l’activité récente de votre boutique. Votre solde est conservé ; nous vous écrirons à leur reprise.',
     itemsToShip: 'Articles à expédier',
@@ -761,6 +770,9 @@ export const sellerTools = defineMessages({
     balAvailableHint: 'Listo para el próximo pago',
     balOnHold: 'Retenido',
     balOnHoldHint: 'Enviado, dentro del período de retención',
+    balAwaitingScan: 'Esperando escaneo del transportista',
+    balAwaitingScanHint:
+      'Enviado; la retención empieza cuando el transportista escanea el número de seguimiento',
     balWaiting: 'Por enviar',
     balWaitingHint: 'Pedidos pagados que aún no enviaste',
     balLifetime: 'Total histórico',
@@ -962,6 +974,8 @@ export const sellerTools = defineMessages({
     underReviewDoNotShip:
       'Estamos revisando este pedido antes del envío. No lo envíes todavía: te escribiremos en cuanto se apruebe.',
     underReview: 'En espera',
+    awaitingCarrierScan:
+      'Enviado. Las ganancias de este pedido empiezan su retención cuando el transportista escanea el número de seguimiento. Si nunca se escanea, nos pondremos en contacto contigo.',
     payoutsPaused:
       'Los pagos están en pausa mientras revisamos la actividad reciente de tu tienda. Tu saldo está a salvo; te escribiremos cuando se reanuden.',
     itemsToShip: 'Artículos por enviar',

@@ -46,6 +46,12 @@ export interface PayoutGateway {
   accountStatus(accountId: string): Promise<PayoutAccountStatus>;
   /** Moves money from NIXZORA's balance to the seller's connected account. */
   transfer(input: TransferInput): Promise<{ id: string }>;
+  /**
+   * Verifies a provider webhook about a connected account and returns the account it concerns,
+   * or null when the event is not about account status. Throws on a bad signature; returns
+   * null when this provider has no such webhooks.
+   */
+  accountFromWebhook(rawBody: Buffer, signature: string | undefined): string | null;
 }
 
 export const PAYOUT_GATEWAY = Symbol('PAYOUT_GATEWAY');

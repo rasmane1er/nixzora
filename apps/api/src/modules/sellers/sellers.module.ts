@@ -5,12 +5,14 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { MediaModule } from '../media/media.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { RiskModule } from '../risk/risk.module';
+import { ShippingModule } from '../shipping/shipping.module';
 import { PayoutsService } from './payouts.service';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { SellerFeedbackService } from './seller-feedback.service';
 import { SellerImportService } from './seller-import.service';
 import { SellerListingsService } from './seller-listings.service';
 import { SellerOrdersService } from './seller-orders.service';
+import { ConnectWebhookController } from './connect-webhook.controller';
 import { SellerController } from './seller.controller';
 import { SellersAdminController } from './sellers-admin.controller';
 import { SellersAdminService } from './sellers-admin.service';
@@ -28,8 +30,14 @@ import { SellersService } from './sellers.service';
     MediaModule,
     PaymentsModule,
     RiskModule,
+    ShippingModule,
   ],
-  controllers: [SellerController, SellersAdminController, SellersPublicController],
+  controllers: [
+    SellerController,
+    SellersAdminController,
+    SellersPublicController,
+    ConnectWebhookController,
+  ],
   providers: [
     SellersService,
     SellerListingsService,

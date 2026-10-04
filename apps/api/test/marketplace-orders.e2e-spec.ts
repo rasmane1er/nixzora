@@ -210,6 +210,7 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
       expect(await balance()).toMatchObject({
         pendingCents: 17600,
         onHoldCents: 0,
+        awaitingScanCents: 0,
         availableCents: 0,
       });
 
@@ -276,6 +277,7 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
       expect(money).toMatchObject({
         pendingCents: 0,
         onHoldCents: 17600,
+        awaitingScanCents: 0,
         availableCents: 0,
         lifetimeNetCents: 17600,
       });
@@ -301,6 +303,7 @@ describe('Marketplace orders: split, shipping, commission and earnings (e2e)', (
         .expect(200);
       expect(await balance()).toMatchObject({
         onHoldCents: 17600,
+        awaitingScanCents: 0,
         availableCents: -8800,
         lifetimeNetCents: 8800,
       });

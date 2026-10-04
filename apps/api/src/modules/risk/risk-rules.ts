@@ -95,6 +95,8 @@ export type PayoutFacts = {
   selfPurchases: number;
   chargebacks90d: number;
   fraudOrders90d: number;
+  /** Shipments whose tracking number the carrier has not scanned within a week (p9-05). */
+  unscannedShipments: number;
 };
 
 export function payoutSignals(f: PayoutFacts): RiskSignal[] {
@@ -107,6 +109,10 @@ export function payoutSignals(f: PayoutFacts): RiskSignal[] {
     add('store_chargebacks', Math.min(60, 30 * f.chargebacks90d), { disputes: f.chargebacks90d });
   }
   if (f.selfPurchases > 0) add('self_purchase', 40, { orders: f.selfPurchases });
+  // A tracking number no carrier ever scanned: the goods may never have shipped.
+  if (f.unscannedShipments > 0) {
+    add('tracking_not_scanned', 50, { orders: f.unscannedShipments });
+  }
   if (f.storeAgeDays < 30 && f.amountCents >= 1000 * DOLLARS) {
     add('new_store_large_payout', 25, {
       amountCents: f.amountCents,

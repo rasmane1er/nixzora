@@ -214,15 +214,15 @@ signing keys, API keys and secrets.
 
 ## Marketplace orders and earnings (ADR-0013)
 
-| Threat                                                 | Mitigation                                                                                      | Status |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------ |
-| Seller sees customer contact details                   | Seller views include the ship-to name and address only; no email or phone                       | ✔      |
-| Seller ships or reads another store's order            | Every seller-order route is scoped to the caller's store; others read as 404                    | ✔      |
-| Seller marks an order shipped with a fake tracking no. | Earnings are held 14 days after shipping; refunds are debited from the seller; audit trail      | ◐      |
-| Commission changed after the sale                      | The rate is frozen on the seller order when the payment succeeds                                | ✔      |
-| Earnings counted twice (retried webhook or request)    | Ledger entries carry unique idempotency keys (one sale per part, one debit per refund and part) | ✔      |
-| Refund of NIXZORA's items charged to a seller          | Refunds follow the returned lines, or each party's share of the items, capped per part          | ✔      |
-| Cancelling an order a seller already shipped           | Refused: the order must be refunded instead                                                     | ✔      |
+| Threat                                                 | Mitigation                                                                                                                                         | Status |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Seller sees customer contact details                   | Seller views include the ship-to name and address only; no email or phone                                                                          | ✔      |
+| Seller ships or reads another store's order            | Every seller-order route is scoped to the caller's store; others read as 404                                                                       | ✔      |
+| Seller marks an order shipped with a fake tracking no. | Earnings wait for the carrier's first scan (EasyPost trackers); unscanned after 7 days → payout review (ADR-0026); refunds debited from the seller | ✔      |
+| Commission changed after the sale                      | The rate is frozen on the seller order when the payment succeeds                                                                                   | ✔      |
+| Earnings counted twice (retried webhook or request)    | Ledger entries carry unique idempotency keys (one sale per part, one debit per refund and part)                                                    | ✔      |
+| Refund of NIXZORA's items charged to a seller          | Refunds follow the returned lines, or each party's share of the items, capped per part                                                             | ✔      |
+| Cancelling an order a seller already shipped           | Refused: the order must be refunded instead                                                                                                        | ✔      |
 
 ## Seller payouts (ADR-0014)
 
@@ -257,5 +257,4 @@ Pen-test scope, automated checks and the item-by-item status:
 
 - Stripe Connect `account.updated` webhook so verification changes arrive without a refresh.
 - Seller staff invitations (STAFF members) with their own audit trail.
-- Verify seller tracking numbers with carrier webhooks before releasing earnings.
 - An independent pen-test of staging before taking real payments.

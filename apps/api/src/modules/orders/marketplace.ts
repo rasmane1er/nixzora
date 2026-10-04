@@ -276,3 +276,56 @@ export async function allocateRefund(
     });
   }
 }
+
+/**
+ * Earnings for a shipment the carrier has not scanned yet (p9-05): the ledger entry exists but
+ * is never "available", so no payout includes it, until the first scan sets the real date.
+ */
+export const AWAITING_CARRIER_SCAN = new Date('9999-01-01T00:00:00.000Z');
+
+/** Days a seller's tracking number may go unscanned before the store's payouts are reviewed. */
+export const UNSCANNED_SHIPMENT_DAYS = 7;
+
+const DAY_MS = 86_400_000;
+
+/**
+ * The carrier scanned a seller's shipment (in transit or delivered): its earnings start their
+ * normal hold from the day it shipped, and a delivered part is marked delivered. Returns how
+ * many seller shipments changed.
+ */
+export async function verifySellerShipment(
+  tx: Tx,
+  trackingNumber: string,
+  delivered: boolean,
+  at = new Date(),
+): Promise<number> {
+  const parts = await tx.sellerOrder.findMany({
+    where: {
+      trackingNumber: trackingNumber.toUpperCase(),
+      status: { in: ['SHIPPED', 'DELIVERED'] },
+    },
+    include: { seller: { select: { payoutHoldDays: true } } },
+  });
+  let changed = 0;
+  for (const part of parts) {
+    let touched = false;
+    if (!part.trackingVerifiedAt) {
+      await tx.sellerOrder.update({ where: { id: part.id }, data: { trackingVerifiedAt: at } });
+      const shippedAt = part.shippedAt ?? at;
+      await tx.sellerLedgerEntry.updateMany({
+        where: { idempotencyKey: `sale:${part.id}`, availableAt: AWAITING_CARRIER_SCAN },
+        data: { availableAt: new Date(shippedAt.getTime() + part.seller.payoutHoldDays * DAY_MS) },
+      });
+      touched = true;
+    }
+    if (delivered && part.status === 'SHIPPED') {
+      await tx.sellerOrder.update({
+        where: { id: part.id },
+        data: { status: 'DELIVERED', deliveredAt: at },
+      });
+      touched = true;
+    }
+    if (touched) changed++;
+  }
+  return changed;
+}

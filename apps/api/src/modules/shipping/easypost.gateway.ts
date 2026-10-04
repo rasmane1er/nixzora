@@ -77,6 +77,18 @@ export class EasyPostGateway implements ShippingGateway {
   }
 
   /** EasyPost signs bodies with HMAC-SHA256 of the NFKD-normalized secret ("hmac-sha256-hex=…"). */
+  /**
+   * Creates an EasyPost tracker; EasyPost then sends tracker.updated webhooks for it. Without a
+   * webhook secret those updates could not be verified, so nothing is tracked.
+   */
+  async trackShipment(input: { trackingNumber: string; carrier: string }): Promise<boolean> {
+    if (!this.webhookSecret) return false;
+    await this.call('/trackers', {
+      tracker: { tracking_code: input.trackingNumber, carrier: input.carrier },
+    });
+    return true;
+  }
+
   parseWebhook(
     rawBody: Buffer,
     headers: Record<string, string | string[] | undefined>,

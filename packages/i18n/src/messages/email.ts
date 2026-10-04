@@ -78,6 +78,12 @@ export const email = defineMessages({
     seller_orderCleared_subject: 'Order {number} is cleared: ship it now',
     seller_orderCleared_text:
       '{store}: we finished checking order {number}. Ship it and add the tracking number here: {link}\n',
+    seller_payoutsVerified_subject: 'Payouts to {store} are on',
+    seller_payoutsVerified_text:
+      'Stripe has verified {store}. Earnings now go to your bank account with the daily payout once their holding period ends.\n\nEarnings: {link}\n',
+    seller_payoutsActionNeeded_subject: 'Stripe needs something from {store}',
+    seller_payoutsActionNeeded_text:
+      'Stripe needs more information before it can pay {store}. Until then, earnings wait in your balance; nothing is lost.\n\nFinish it on Stripe: {link}\n',
     seller_payoutsResumed_subject: 'Payouts to {store} have restarted',
     seller_payoutsResumed_text:
       'We finished reviewing recent activity on {store}. Payouts have restarted: your available balance goes out with the next daily payout.\n\nEarnings: {link}\n',
@@ -175,6 +181,12 @@ export const email = defineMessages({
     seller_orderCleared_subject: 'Commande {number} validée : expédiez-la maintenant',
     seller_orderCleared_text:
       '{store} : nous avons fini de vérifier la commande {number}. Expédiez-la et ajoutez le numéro de suivi ici : {link}\n',
+    seller_payoutsVerified_subject: 'Les versements à {store} sont activés',
+    seller_payoutsVerified_text:
+      'Stripe a vérifié {store}. Vos revenus partent désormais sur votre compte bancaire avec le versement quotidien, une fois leur période de rétention terminée.\n\nRevenus : {link}\n',
+    seller_payoutsActionNeeded_subject: 'Stripe a besoin d’informations pour {store}',
+    seller_payoutsActionNeeded_text:
+      'Stripe a besoin d’informations supplémentaires avant de pouvoir payer {store}. D’ici là, vos revenus restent dans votre solde ; rien n’est perdu.\n\nTerminer sur Stripe : {link}\n',
     seller_payoutsResumed_subject: 'Les versements à {store} ont repris',
     seller_payoutsResumed_text:
       'Nous avons fini de vérifier l’activité récente de {store}. Les versements ont repris : votre solde disponible part avec le prochain versement quotidien.\n\nRevenus : {link}\n',
@@ -270,6 +282,12 @@ export const email = defineMessages({
     seller_orderCleared_subject: 'Pedido {number} aprobado: envíalo ya',
     seller_orderCleared_text:
       '{store}: terminamos de revisar el pedido {number}. Envíalo y añade el número de seguimiento aquí: {link}\n',
+    seller_payoutsVerified_subject: 'Los pagos a {store} están activados',
+    seller_payoutsVerified_text:
+      'Stripe verificó {store}. Tus ganancias ahora van a tu cuenta bancaria con el pago diario, cuando termina su periodo de retención.\n\nGanancias: {link}\n',
+    seller_payoutsActionNeeded_subject: 'Stripe necesita algo de {store}',
+    seller_payoutsActionNeeded_text:
+      'Stripe necesita más información antes de poder pagar a {store}. Mientras tanto, tus ganancias esperan en tu saldo; no se pierde nada.\n\nTermínalo en Stripe: {link}\n',
     seller_payoutsResumed_subject: 'Los pagos a {store} se han reanudado',
     seller_payoutsResumed_text:
       'Terminamos de revisar la actividad reciente de {store}. Los pagos se han reanudado: tu saldo disponible sale con el próximo pago diario.\n\nGanancias: {link}\n',

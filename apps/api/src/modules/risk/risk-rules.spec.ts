@@ -126,6 +126,7 @@ const store: PayoutFacts = {
   selfPurchases: 0,
   chargebacks90d: 0,
   fraudOrders90d: 0,
+  unscannedShipments: 0,
 };
 
 describe('payout rules', () => {
@@ -142,6 +143,13 @@ describe('payout rules', () => {
 
   it('holds a store with confirmed fraud orders', () => {
     expect(decide(score({ fraudOrders90d: 1 }), thresholds)).toBe('REVIEW');
+  });
+
+  it('holds a store whose tracking numbers no carrier has scanned', () => {
+    expect(decide(score({ unscannedShipments: 1 }), thresholds)).toBe('REVIEW');
+    expect(codes(payoutSignals({ ...store, unscannedShipments: 2 }))).toEqual([
+      'tracking_not_scanned',
+    ]);
   });
 
   it('caps chargeback points', () => {

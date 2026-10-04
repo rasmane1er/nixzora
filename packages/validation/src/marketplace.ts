@@ -224,6 +224,11 @@ export type SellerOrderView = {
   cancelledAt: string | null;
   /** Held by fraud checks (ADR-0024): do not ship until it is cleared. */
   underReview: boolean;
+  /**
+   * Shipped, but no carrier has scanned the tracking number yet: its earnings wait for the first
+   * scan (p9-05). False before shipping and once scanned.
+   */
+  awaitingCarrierScan: boolean;
 };
 
 export type SellerBalance = {
@@ -234,6 +239,8 @@ export type SellerBalance = {
   pendingCents: number;
   /** Earned, waiting for the hold period to end. */
   onHoldCents: number;
+  /** Shipped, waiting for the carrier's first scan before the hold period starts (p9-05). */
+  awaitingScanCents: number;
   /** Can be paid out now (may be negative after refunds). */
   availableCents: number;
   /** All sales minus refunds, ever. */

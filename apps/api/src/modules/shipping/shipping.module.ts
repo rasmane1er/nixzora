@@ -32,5 +32,6 @@ import { NoShippingGateway, SHIPPING_GATEWAY } from './shipping-gateway';
       },
     },
   ],
+  exports: [SHIPPING_GATEWAY],
 })
 export class ShippingModule {}

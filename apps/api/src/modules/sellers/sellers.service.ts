@@ -26,6 +26,7 @@ import { type ActorContext } from '../identity/guards/actor.decorator';
 import { PAYOUT_GATEWAY, type PayoutGateway } from '../payments/payout-gateway';
 import { MediaIntakeService } from '../media/media-intake.service';
 import { StorageService } from '../media/storage.service';
+import { payoutStatusChange } from './payout-status';
 import { listingCounts, NO_LISTINGS, toSellerView } from './seller-mappers';
 
 export type SellerContext = { seller: Seller; role: SellerMemberRole };
@@ -166,9 +167,22 @@ export class SellersService {
     // An account from another provider (test mode before Stripe was switched on) can't be read.
     if (!seller.payoutAccountId || seller.payoutProvider !== this.payouts.name) return seller;
     const status = await this.payouts.accountStatus(seller.payoutAccountId);
-    const updated = await this.prisma.seller.update({
-      where: { id: seller.id },
-      data: status,
+    const change = payoutStatusChange(seller, status);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.seller.update({ where: { id: seller.id }, data: status });
+      // The store hears about it by email (SellerOrdersService), after this commits.
+      if (change) {
+        await tx.outboxEvent.create({
+          data: {
+            aggregateType: 'seller',
+            aggregateId: seller.id,
+            type:
+              change === 'verified' ? 'seller.payouts_verified' : 'seller.payouts_action_needed',
+            payload: { requirementsDue: status.requirementsDue },
+          },
+        });
+      }
+      return row;
     });
     if (status.payoutsEnabled !== seller.payoutsEnabled) {
       await this.audit.record({
@@ -181,6 +195,17 @@ export class SellersService {
       });
     }
     return updated;
+  }
+
+  /**
+   * A provider webhook said a connected account changed (Stripe Connect account.updated). Reads
+   * the current status, so duplicate or out-of-order events are harmless.
+   */
+  async syncByPayoutAccount(accountId: string): Promise<'updated' | 'ignored'> {
+    const seller = await this.prisma.seller.findUnique({ where: { payoutAccountId: accountId } });
+    if (!seller) return 'ignored';
+    await this.syncPayoutStatus(seller);
+    return 'updated';
   }
 
   /** The public store page: only approved stores are visible. */

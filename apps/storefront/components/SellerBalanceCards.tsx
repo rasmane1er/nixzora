@@ -2,7 +2,8 @@ import { type SellerBalance } from '@nixzora/validation';
 import { getFormat, getT } from '@/lib/i18n';
 
 /**
- * The four seller balance figures: available, on hold, waiting to ship, lifetime; and a notice
+ * The seller balance figures: available, on hold (and waiting for a carrier scan, when any),
+ * waiting to ship, lifetime; and a notice
  * when a fraud review has paused payouts.
  */
 export async function SellerBalanceCards({ balance }: { balance: SellerBalance }) {
@@ -20,6 +21,16 @@ export async function SellerBalanceCards({ balance }: { balance: SellerBalance }
           [
             ['available', t('balAvailable'), money(balance.availableCents), t('balAvailableHint')],
             ['onHold', t('balOnHold'), money(balance.onHoldCents), t('balOnHoldHint')],
+            ...(balance.awaitingScanCents
+              ? ([
+                  [
+                    'awaitingScan',
+                    t('balAwaitingScan'),
+                    money(balance.awaitingScanCents),
+                    t('balAwaitingScanHint'),
+                  ],
+                ] as const)
+              : []),
             ['waiting', t('balWaiting'), money(balance.pendingCents), t('balWaitingHint')],
             ['lifetime', t('balLifetime'), money(balance.lifetimeNetCents), t('balLifetimeHint')],
           ] as const

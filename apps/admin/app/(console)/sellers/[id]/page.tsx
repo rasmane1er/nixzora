@@ -202,6 +202,12 @@ export default async function SellerPage({
                   <th scope="row">{t('onHold')}</th>
                   <td>{money(balance.onHoldCents)}</td>
                 </tr>
+                {balance.awaitingScanCents ? (
+                  <tr>
+                    <th scope="row">{t('awaitingScan')}</th>
+                    <td>{money(balance.awaitingScanCents)}</td>
+                  </tr>
+                ) : null}
                 <tr>
                   <th scope="row">{t('waitingToShip')}</th>
                   <td>{money(balance.pendingCents)}</td>

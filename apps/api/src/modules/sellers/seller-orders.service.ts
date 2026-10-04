@@ -1,6 +1,8 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
   type OnModuleInit,
 } from '@nestjs/common';
@@ -22,9 +24,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { MailService } from '../notifications/mail.service';
-import { settleShipment } from '../orders/marketplace';
+import { AWAITING_CARRIER_SCAN, settleShipment } from '../orders/marketplace';
 import { TRACKING_URLS } from '../orders/order-links';
 import { OutboxService } from '../outbox/outbox.service';
+import { SHIPPING_GATEWAY, type ShippingGateway } from '../shipping/shipping-gateway';
 import { SellersService } from './sellers.service';
 
 const DAY = 86_400_000;
@@ -49,6 +52,8 @@ type Row = Prisma.SellerOrderGetPayload<{ include: typeof include }>;
  */
 @Injectable()
 export class SellerOrdersService implements OnModuleInit {
+  private readonly logger = new Logger(SellerOrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -56,6 +61,7 @@ export class SellerOrdersService implements OnModuleInit {
     private readonly outbox: OutboxService,
     private readonly mail: MailService,
     private readonly config: ConfigService<Env, true>,
+    @Inject(SHIPPING_GATEWAY) private readonly shipping: ShippingGateway,
   ) {}
 
   onModuleInit(): void {
@@ -64,6 +70,13 @@ export class SellerOrdersService implements OnModuleInit {
     this.outbox.on('risk.order_cleared', ({ aggregateId }) => this.notifyCleared(aggregateId));
     this.outbox.on('risk.payouts_released', ({ aggregateId }) =>
       this.notifyPayoutsResumed(aggregateId),
+    );
+    // Stripe Connect verification changes (account.updated webhook or a manual refresh).
+    this.outbox.on('seller.payouts_verified', ({ aggregateId }) =>
+      this.notifyPayoutStatus(aggregateId, 'verified'),
+    );
+    this.outbox.on('seller.payouts_action_needed', ({ aggregateId }) =>
+      this.notifyPayoutStatus(aggregateId, 'action_needed'),
     );
   }
 
@@ -91,6 +104,28 @@ export class SellerOrdersService implements OnModuleInit {
         data: { number: part.order.number, link },
       });
     }
+  }
+
+  private async notifyPayoutStatus(
+    sellerId: string,
+    change: 'verified' | 'action_needed',
+  ): Promise<void> {
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) return;
+    const t = translator(await this.sellers.ownerLocale(sellerId))('email');
+    const verified = change === 'verified';
+    const link = `${this.webUrl}${verified ? '/sell/earnings' : '/sell/payouts/start'}`;
+    await this.mail.trySend({
+      to: seller.contactEmail,
+      subject: verified
+        ? t('seller_payoutsVerified_subject', { store: seller.displayName })
+        : t('seller_payoutsActionNeeded_subject', { store: seller.displayName }),
+      text: verified
+        ? t('seller_payoutsVerified_text', { store: seller.displayName, link })
+        : t('seller_payoutsActionNeeded_text', { store: seller.displayName, link }),
+      template: verified ? 'sellers.payouts-verified' : 'sellers.payouts-action-needed',
+      data: { link },
+    });
   }
 
   private async notifyPayoutsResumed(sellerId: string): Promise<void> {
@@ -147,6 +182,16 @@ export class SellerOrdersService implements OnModuleInit {
       );
     }
     const now = new Date();
+    const trackingNumber = input.trackingNumber.toUpperCase();
+    // With a tracking provider, the earnings wait for the carrier's first scan (p9-05): a made-up
+    // tracking number never gets paid out. Without one, the store's word is taken, as before.
+    const awaitingScan = await this.shipping
+      .trackShipment({ trackingNumber, carrier: input.carrier })
+      .catch((error: Error) => {
+        // The provider is down: still wait for a scan; the tracker can be created again later.
+        this.logger.warn(`Could not create a tracker for ${trackingNumber}: ${error.message}`);
+        return true;
+      });
     await this.prisma.$transaction(async (tx) => {
       const updated = await tx.sellerOrder.updateMany({
         where: { id, status: 'PAID' },
@@ -154,7 +199,8 @@ export class SellerOrdersService implements OnModuleInit {
           status: 'SHIPPED',
           shippedAt: now,
           trackingCarrier: input.carrier,
-          trackingNumber: input.trackingNumber.toUpperCase(),
+          trackingNumber,
+          trackingVerifiedAt: awaitingScan ? null : now,
         },
       });
       if (!updated.count) throw new ConflictException('Already shipped.');
@@ -164,7 +210,9 @@ export class SellerOrdersService implements OnModuleInit {
           sellerOrderId: id,
           type: 'SALE',
           amountCents: part.netCents,
-          availableAt: new Date(now.getTime() + seller.payoutHoldDays * DAY),
+          availableAt: awaitingScan
+            ? AWAITING_CARRIER_SCAN
+            : new Date(now.getTime() + seller.payoutHoldDays * DAY),
           description: `Order ${part.order.number}`,
           idempotencyKey: `sale:${id}`,
         },
@@ -198,13 +246,17 @@ export class SellerOrdersService implements OnModuleInit {
 
   async balance(sellerId: string): Promise<SellerBalance> {
     const now = new Date();
-    const [pending, held, available, lifetime, next, store] = await Promise.all([
+    const [pending, held, awaiting, available, lifetime, next, store] = await Promise.all([
       this.prisma.sellerOrder.aggregate({
         where: { sellerId, status: 'PAID' },
         _sum: { netCents: true },
       }),
       this.prisma.sellerLedgerEntry.aggregate({
-        where: { sellerId, availableAt: { gt: now } },
+        where: { sellerId, availableAt: { gt: now, lt: AWAITING_CARRIER_SCAN } },
+        _sum: { amountCents: true },
+      }),
+      this.prisma.sellerLedgerEntry.aggregate({
+        where: { sellerId, availableAt: AWAITING_CARRIER_SCAN },
         _sum: { amountCents: true },
       }),
       this.prisma.sellerLedgerEntry.aggregate({
@@ -216,7 +268,11 @@ export class SellerOrdersService implements OnModuleInit {
         _sum: { amountCents: true },
       }),
       this.prisma.sellerLedgerEntry.findFirst({
-        where: { sellerId, availableAt: { gt: now }, amountCents: { gt: 0 } },
+        where: {
+          sellerId,
+          availableAt: { gt: now, lt: AWAITING_CARRIER_SCAN },
+          amountCents: { gt: 0 },
+        },
         orderBy: { availableAt: 'asc' },
         select: { availableAt: true },
       }),
@@ -227,6 +283,7 @@ export class SellerOrdersService implements OnModuleInit {
       payoutsPaused: store?.payoutsHeld ?? false,
       pendingCents: pending._sum.netCents ?? 0,
       onHoldCents: held._sum.amountCents ?? 0,
+      awaitingScanCents: awaiting._sum.amountCents ?? 0,
       availableCents: available._sum.amountCents ?? 0,
       lifetimeNetCents: lifetime._sum.amountCents ?? 0,
       nextReleaseAt: next?.availableAt.toISOString() ?? null,
@@ -325,6 +382,7 @@ export class SellerOrdersService implements OnModuleInit {
       deliveredAt: row.deliveredAt?.toISOString() ?? null,
       cancelledAt: row.cancelledAt?.toISOString() ?? null,
       underReview: row.order.riskHold,
+      awaitingCarrierScan: row.status === 'SHIPPED' && !row.trackingVerifiedAt,
     };
   }
 

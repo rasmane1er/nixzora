@@ -22,6 +22,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { PAYMENT_GATEWAY, type PaymentGateway } from '../payments/payment-gateway';
+import { AWAITING_CARRIER_SCAN, UNSCANNED_SHIPMENT_DAYS } from '../orders/marketplace';
 import {
   checkoutSignals,
   type Decision,
@@ -411,53 +412,62 @@ export class RiskService implements OnModuleInit, OnModuleDestroy {
   private async payoutFacts(sellerId: string, amountCents: number) {
     const now = Date.now();
     const since = (days: number) => new Date(now - days * DAY);
-    const [seller, orders30d, refunded30d, weekly, self, chargebacks, fraud] = await Promise.all([
-      this.prisma.seller.findUnique({
-        where: { id: sellerId },
-        select: { approvedAt: true, createdAt: true },
-      }),
-      this.prisma.sellerOrder.count({ where: { sellerId, createdAt: { gt: since(30) } } }),
-      this.prisma.sellerOrder.count({
-        where: {
-          sellerId,
-          createdAt: { gt: since(30) },
-          OR: [{ status: 'CANCELLED' }, { refundedCents: { gt: 0 } }],
-        },
-      }),
-      this.prisma.$queryRaw<{ week: number; cents: bigint }[]>`
+    const [seller, orders30d, refunded30d, weekly, self, chargebacks, fraud, unscanned] =
+      await Promise.all([
+        this.prisma.seller.findUnique({
+          where: { id: sellerId },
+          select: { approvedAt: true, createdAt: true },
+        }),
+        this.prisma.sellerOrder.count({ where: { sellerId, createdAt: { gt: since(30) } } }),
+        this.prisma.sellerOrder.count({
+          where: {
+            sellerId,
+            createdAt: { gt: since(30) },
+            OR: [{ status: 'CANCELLED' }, { refundedCents: { gt: 0 } }],
+          },
+        }),
+        this.prisma.$queryRaw<{ week: number; cents: bigint }[]>`
         SELECT floor(extract(epoch FROM (now() - created_at)) / 604800)::int AS week,
                sum(items_cents)::bigint AS cents
         FROM seller_orders
         WHERE seller_id = ${sellerId}::uuid AND status <> 'CANCELLED'
           AND created_at > now() - interval '63 days'
         GROUP BY 1`,
-      this.prisma.sellerOrder.count({
-        where: {
-          sellerId,
-          order: {
-            OR: [
-              { user: { sellerMembership: { sellerId } } },
-              ...(await this.memberEmails(sellerId)).map((email) => ({
-                email: { equals: email, mode: 'insensitive' as const },
-              })),
-            ],
+        this.prisma.sellerOrder.count({
+          where: {
+            sellerId,
+            order: {
+              OR: [
+                { user: { sellerMembership: { sellerId } } },
+                ...(await this.memberEmails(sellerId)).map((email) => ({
+                  email: { equals: email, mode: 'insensitive' as const },
+                })),
+              ],
+            },
           },
-        },
-      }),
-      this.prisma.payment.count({
-        where: {
-          disputedAt: { gt: since(90) },
-          order: { sellerOrders: { some: { sellerId } } },
-        },
-      }),
-      this.prisma.sellerOrder.count({
-        where: {
-          sellerId,
-          createdAt: { gt: since(90) },
-          order: { riskAssessments: { some: { status: 'CONFIRMED', subject: 'CHECKOUT' } } },
-        },
-      }),
-    ]);
+        }),
+        this.prisma.payment.count({
+          where: {
+            disputedAt: { gt: since(90) },
+            order: { sellerOrders: { some: { sellerId } } },
+          },
+        }),
+        this.prisma.sellerOrder.count({
+          where: {
+            sellerId,
+            createdAt: { gt: since(90) },
+            order: { riskAssessments: { some: { status: 'CONFIRMED', subject: 'CHECKOUT' } } },
+          },
+        }),
+        this.prisma.sellerLedgerEntry.count({
+          where: {
+            sellerId,
+            type: 'SALE',
+            availableAt: AWAITING_CARRIER_SCAN,
+            createdAt: { lt: since(UNSCANNED_SHIPMENT_DAYS) },
+          },
+        }),
+      ]);
     const byWeek = new Map(weekly.map((row) => [row.week, Number(row.cents)]));
     const ageDays = (now - (seller?.approvedAt ?? seller?.createdAt ?? new Date()).getTime()) / DAY;
     const weeksOfHistory = Math.min(8, Math.max(0, Math.floor(ageDays / 7) - 1));
@@ -474,6 +484,7 @@ export class RiskService implements OnModuleInit, OnModuleDestroy {
       selfPurchases: self,
       chargebacks90d: chargebacks,
       fraudOrders90d: fraud,
+      unscannedShipments: unscanned,
     };
   }
 
@@ -591,6 +602,16 @@ export class RiskService implements OnModuleInit, OnModuleDestroy {
     }
     // A confirmed payout review keeps the store's payouts on hold until a later review clears it.
     if (row.subject === 'PAYOUT' && row.sellerId && status === 'CLEARED') {
+      // Clearing also accepts the store's unscanned shipments that staff looked at.
+      await tx.sellerLedgerEntry.updateMany({
+        where: {
+          sellerId: row.sellerId,
+          type: 'SALE',
+          availableAt: AWAITING_CARRIER_SCAN,
+          createdAt: { lt: row.createdAt },
+        },
+        data: { availableAt: new Date() },
+      });
       if (!(await stillOpen({ sellerId: row.sellerId }, ['PAYOUT']))) {
         await tx.seller.update({ where: { id: row.sellerId }, data: { payoutsHeld: false } });
         await tx.outboxEvent.create({

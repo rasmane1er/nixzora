@@ -145,6 +145,12 @@ export const EnvSchema = z
       .optional(),
     STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
     /**
+     * Signing secret of the Connect webhook endpoint (events from sellers' connected accounts,
+     * e.g. account.updated). Without it, a seller's status changes only when they return from
+     * Stripe's onboarding.
+     */
+    STRIPE_CONNECT_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
+    /**
      * Seller payouts (ADR-0012). "fake" verifies sellers instantly and moves no money
      * (development, tests, demo); "stripe" uses Stripe Connect Express accounts.
      */

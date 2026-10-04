@@ -55,6 +55,8 @@ export const opsRisk = defineMessages({
     signal_new_store_large_payout: 'Store approved {days} days ago, payout of {amount}',
     signal_refund_rate: '{refunded} of {orders} store orders refunded or cancelled in 30 days',
     signal_sales_spike: 'Sales of {sales} this week, against {average} a week before',
+    signal_tracking_not_scanned:
+      '{orders} shipments with a tracking number no carrier has scanned after a week',
     signal_self_purchase: '{orders} orders bought by the store’s own members',
     signal_store_chargebacks: '{disputes} chargebacks on the store’s orders in 90 days',
     signal_store_fraud_orders: '{orders} store orders confirmed as fraud in 90 days',
@@ -113,6 +115,8 @@ export const opsRisk = defineMessages({
     signal_new_store_large_payout: 'Boutique validée il y a {days} jours, versement de {amount}',
     signal_refund_rate: '{refunded} commandes sur {orders} remboursées ou annulées en 30 jours',
     signal_sales_spike: 'Ventes de {sales} cette semaine, contre {average} par semaine avant',
+    signal_tracking_not_scanned:
+      '{orders} envois dont aucun transporteur n’a scanné le numéro de suivi après une semaine',
     signal_self_purchase: '{orders} commandes passées par les membres de la boutique',
     signal_store_chargebacks:
       '{disputes} contestations sur les commandes de la boutique en 90 jours',
@@ -174,6 +178,8 @@ export const opsRisk = defineMessages({
     signal_refund_rate:
       '{refunded} de {orders} pedidos de la tienda reembolsados o cancelados en 30 días',
     signal_sales_spike: 'Ventas de {sales} esta semana, frente a {average} por semana antes',
+    signal_tracking_not_scanned:
+      '{orders} envíos cuyo número de seguimiento ningún transportista escaneó tras una semana',
     signal_self_purchase: '{orders} pedidos comprados por miembros de la propia tienda',
     signal_store_chargebacks: '{disputes} contracargos en pedidos de la tienda en 90 días',
     signal_store_fraud_orders: '{orders} pedidos de la tienda confirmados como fraude en 90 días',

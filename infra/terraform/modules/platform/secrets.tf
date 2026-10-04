@@ -15,6 +15,9 @@ locals {
     "STRIPE_SECRET_KEY",
     "STRIPE_PUBLISHABLE_KEY",
     "STRIPE_WEBHOOK_SECRET",
+    # Connect webhook (account.updated). Add the key to an existing secret before applying:
+    # ECS refuses to start a task whose secret JSON lacks a listed key.
+    "STRIPE_CONNECT_WEBHOOK_SECRET",
     "EASYPOST_API_KEY",
     "EASYPOST_WEBHOOK_SECRET",
     "EXPO_ACCESS_TOKEN",

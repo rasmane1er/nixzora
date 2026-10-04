@@ -302,6 +302,20 @@ describe('Marketplace sellers and listing review (e2e)', () => {
       detailsSubmitted: true,
       payoutsEnabled: true,
     });
+    // The store is told by email that payouts are on (one event, not one per refresh).
+    await http().post('/api/v1/seller/payouts/refresh').set(bearer(sellerToken)).expect(200);
+    expect(
+      await prisma.outboxEvent.count({
+        where: { aggregateId: sellerId, type: 'seller.payouts_verified' },
+      }),
+    ).toBe(1);
+
+    // Stripe Connect's account webhook exists only when Stripe pays the sellers.
+    await http()
+      .post('/api/v1/payments/webhooks/stripe-connect')
+      .set('stripe-signature', 't=1,v1=forged')
+      .send({ type: 'account.updated' })
+      .expect(403);
   });
 
   it('lets staff approve the store and set its terms', async () => {

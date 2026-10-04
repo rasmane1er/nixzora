@@ -39,6 +39,11 @@ export class FakeShippingGateway implements ShippingGateway {
     };
   }
 
+  /** No carrier behind it: seller shipments are taken at their word (development, demo). */
+  trackShipment(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
+
   parseWebhook(): null {
     throw new BadRequestException('The test shipping gateway has no webhooks.');
   }

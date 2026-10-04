@@ -57,6 +57,12 @@ Stripe webhook: in the Stripe dashboard add an endpoint
 `charge.dispute.created` (chargebacks feed the fraud reviews, ADR-0024); its signing secret is
 `STRIPE_WEBHOOK_SECRET`.
 
+Stripe Connect webhook (sellers): add a second endpoint
+`https://api.<staging host>/api/v1/payments/webhooks/stripe-connect`, choose **Events on
+Connected accounts**, event `account.updated`. Its signing secret is
+`STRIPE_CONNECT_WEBHOOK_SECRET`. The key must exist in the app secret (empty is fine) before a
+Terraform apply, or new tasks will not start.
+
 ## 6. Deploy and seed
 
 Re-run the **Deploy** workflow (staging). It runs migrations, rolls out the three services and

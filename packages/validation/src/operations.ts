@@ -248,6 +248,7 @@ export const RISK_SIGNAL_CODES = [
   'self_purchase',
   'store_chargebacks',
   'store_fraud_orders',
+  'tracking_not_scanned',
 ] as const;
 export type RiskSignalCode = (typeof RISK_SIGNAL_CODES)[number];
 

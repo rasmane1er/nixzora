@@ -39,6 +39,11 @@ export interface ShippingGateway {
     to: ShipAddress;
     parcel: Parcel;
   }): Promise<Label>;
+  /**
+   * Asks the carrier to report on a tracking number someone else bought (a seller's own label).
+   * True when updates will arrive by webhook; false when this gateway cannot track.
+   */
+  trackShipment(input: { trackingNumber: string; carrier: string }): Promise<boolean>;
   /** Verifies the webhook signature; returns null for events we ignore. */
   parseWebhook(
     rawBody: Buffer,
@@ -56,6 +61,10 @@ export class NoShippingGateway implements ShippingGateway {
     return Promise.reject(
       new ConflictException('Label buying is not set up. Enter the tracking number instead.'),
     );
+  }
+
+  trackShipment(): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
   parseWebhook(): TrackingEvent | null {

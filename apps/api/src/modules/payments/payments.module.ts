@@ -27,7 +27,10 @@ import { StripeGateway } from './stripe.gateway';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
         config.get('PAYOUTS_PROVIDER', { infer: true }) === 'stripe'
-          ? new StripePayoutGateway(config.get('STRIPE_SECRET_KEY', { infer: true })!)
+          ? new StripePayoutGateway(
+              config.get('STRIPE_SECRET_KEY', { infer: true })!,
+              config.get('STRIPE_CONNECT_WEBHOOK_SECRET', { infer: true }),
+            )
           : new FakePayoutGateway(),
     },
   ],

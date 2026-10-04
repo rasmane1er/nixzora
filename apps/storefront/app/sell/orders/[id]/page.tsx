@@ -61,6 +61,8 @@ export default async function SellerOrderPage({
           </p>
         ) : order.status === 'PAID' ? (
           <p className="banner banner--info">{t('shipWithin')}</p>
+        ) : order.awaitingCarrierScan ? (
+          <p className="banner banner--info">{t('awaitingCarrierScan')}</p>
         ) : null}
         {order.status === 'CANCELLED' ? (
           <p className="banner banner--error">{t('cancelledDoNotShip')}</p>
