@@ -22,6 +22,16 @@ export const AdminUserSchema = z.object({
   roles: z.array(z.string()),
   activeSessions: z.number().int(),
   createdAt: z.iso.datetime(),
+  /** From sign-up or the profile (E.164). */
+  phone: z.string().nullable(),
+  language: z.string(),
+  marketingEmails: z.boolean(),
+  /** When the customer accepted the Terms and Privacy Policy at sign-up (null for older accounts). */
+  termsAcceptedAt: z.iso.datetime().nullable(),
+  /** Google or Apple accounts linked for sign-in, and how many passkeys. */
+  socialSignIns: z.array(z.string()),
+  hasPassword: z.boolean(),
+  passkeys: z.number().int(),
 });
 
 export type UserListQuery = z.infer<typeof UserListQuerySchema>;

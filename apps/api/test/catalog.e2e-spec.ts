@@ -427,6 +427,34 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
         .expect(200);
       const user = found.body.items[0];
       expect(user.roles).toEqual(['customer']);
+      expect(user).toMatchObject({
+        hasPassword: true,
+        socialSignIns: [],
+        passkeys: 0,
+        phone: null,
+      });
+
+      // The sign-up details are there for support, and a phone number finds the customer.
+      const phoneEmail = `phone-${run}@example.com`;
+      await http()
+        .post('/api/v1/auth/register')
+        .send({
+          email: phoneEmail,
+          password: 'correct horse battery staple',
+          phone: '+13015550142',
+          acceptTerms: true,
+          marketingEmails: true,
+        })
+        .expect(201);
+      const byPhone = await http()
+        .get('/api/v1/admin/users')
+        .query({ q: '(301) 555-0142' })
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(byPhone.body.items.map((u: { email: string }) => u.email)).toContain(phoneEmail);
+      const withPhone = byPhone.body.items.find((u: { email: string }) => u.email === phoneEmail);
+      expect(withPhone).toMatchObject({ phone: '+13015550142', marketingEmails: true });
+      expect(withPhone.termsAcceptedAt).not.toBeNull();
 
       const granted = await http()
         .post(`/api/v1/admin/users/${user.id}/roles`)

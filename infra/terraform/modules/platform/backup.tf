@@ -1,5 +1,6 @@
 # Daily backups kept 35 days, plus monthly kept a year in production, in addition to RDS
-# point-in-time recovery. Restores are rehearsed with docs/runbooks/restore-database.md.
+# point-in-time recovery. Restores are rehearsed every quarter with scripts/dr/restore-drill.sh
+# (docs/runbooks/disaster-recovery.md).
 resource "aws_backup_vault" "main" {
   name = local.prefix
   tags = local.tags

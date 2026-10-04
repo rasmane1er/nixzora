@@ -7,7 +7,8 @@ import { type ActorContext } from '../identity/guards/actor.decorator';
 
 const userInclude = {
   roles: { include: { role: true } },
-  _count: { select: { sessions: { where: { revokedAt: null } } } },
+  identities: { select: { provider: true } },
+  _count: { select: { sessions: { where: { revokedAt: null } }, passkeys: true } },
 } satisfies Prisma.UserInclude;
 
 type UserRow = Prisma.UserGetPayload<{ include: typeof userInclude }>;
@@ -28,6 +29,10 @@ export class UsersAdminService {
               { email: { contains: query.q, mode: 'insensitive' } },
               { firstName: { contains: query.q, mode: 'insensitive' } },
               { lastName: { contains: query.q, mode: 'insensitive' } },
+              // Phone numbers are stored as +<digits>: match the digits typed, any format.
+              ...(query.q.replace(/\D/g, '').length >= 4
+                ? [{ phone: { contains: query.q.replace(/\D/g, '') } }]
+                : []),
             ],
           }
         : {}),
@@ -142,5 +147,12 @@ function toAdminUser(user: UserRow): AdminUser {
     roles: user.roles.map((userRole) => userRole.role.key).sort(),
     activeSessions: user._count.sessions,
     createdAt: user.createdAt.toISOString(),
+    phone: user.phone,
+    language: user.language,
+    marketingEmails: user.marketingEmails,
+    termsAcceptedAt: user.termsAcceptedAt?.toISOString() ?? null,
+    socialSignIns: user.identities.map((identity) => identity.provider).sort(),
+    passkeys: user._count.passkeys,
+    hasPassword: user.passwordHash !== null,
   };
 }

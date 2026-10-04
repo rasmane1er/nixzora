@@ -63,6 +63,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Shell scripts (deploy, disaster recovery)
+        run: shellcheck --severity=warning scripts/*.sh scripts/*/*.sh
+
       - name: Lint
         run: pnpm lint
 

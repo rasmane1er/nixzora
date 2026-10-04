@@ -131,6 +131,8 @@ code,
   position: sticky;
   top: 0;
   height: 100vh;
+  /* Many sections: the footer (language, sign out) scrolls into view on short screens. */
+  overflow-y: auto;
 }
 .side .logo {
   color: #fff;
@@ -210,6 +212,7 @@ code,
     position: sticky;
     z-index: 10;
     height: auto;
+    overflow: visible;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
@@ -805,4 +808,23 @@ pre.meta {
   min-width: 0;
   padding: 4px 28px 4px 8px;
   font-size: 13px;
+}
+/* On the dark sidebar the field is dark too, so its text stays readable. */
+.side .language-picker select {
+  background-color: #1d2838;
+  border-color: #3a4658;
+  color: #f4f1ec;
+}
+
+/* Read by screen readers, not shown. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

@@ -17,7 +17,7 @@ import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { param, query, type SearchParams } from '@/lib/format';
-import { getFormat, getT } from '@/lib/i18n';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { ROLE_KEYS, roleLabel } from '@/lib/roles';
 import { addNote, grantRole, revokeRole, setStatus } from '../actions';
 
@@ -61,6 +61,14 @@ export default async function UserPage({
   const self = me.id === user.id;
   const missing = ROLE_KEYS.filter((key) => !user.roles.includes(key));
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+  const locale = await getLocale();
+  const languageName = (code: string) => {
+    try {
+      return new Intl.DisplayNames([locale], { type: 'language' }).of(code) ?? code;
+    } catch {
+      return code;
+    }
+  };
 
   return (
     <>
@@ -132,6 +140,28 @@ export default async function UserPage({
             <dd>{f.number(user.activeSessions)}</dd>
             <dt className="muted">{t('joined')}</dt>
             <dd>{f.dateTime(user.createdAt)}</dd>
+            <dt className="muted">{t('mobilePhone')}</dt>
+            <dd>{user.phone ? <a href={`tel:${user.phone}`}>{user.phone}</a> : '—'}</dd>
+            <dt className="muted">{t('language')}</dt>
+            <dd>{languageName(user.language)}</dd>
+            <dt className="muted">{t('signInMethods')}</dt>
+            <dd>
+              {[
+                ...(user.hasPassword ? [t('method_password')] : []),
+                ...user.socialSignIns.map((provider) =>
+                  provider === 'GOOGLE' || provider === 'APPLE'
+                    ? t(`method_${provider}`)
+                    : provider,
+                ),
+                ...(user.passkeys ? [t('passkeyCount', { count: user.passkeys })] : []),
+              ].join(' · ') || '—'}
+            </dd>
+            <dt className="muted">{t('marketingEmails')}</dt>
+            <dd>{user.marketingEmails ? t('subscribed') : t('notSubscribed')}</dd>
+            <dt className="muted">{t('termsAccepted')}</dt>
+            <dd>
+              {user.termsAcceptedAt ? f.dateTime(user.termsAcceptedAt) : t('termsNotRecorded')}
+            </dd>
           </dl>
           {can(me, 'users.manage') && !self && user.status !== 'DELETED' ? (
             user.status === 'ACTIVE' ? (
