@@ -28,18 +28,44 @@
           --none: #2a3550;
         }
       }
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font:
+          16px/1.5 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
       }
-      main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
-      header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; }
-      .logo { font-weight: 800; letter-spacing: 0.08em; font-size: 20px; }
-      .logo span { color: var(--brand); }
-      h1 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0; }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .logo {
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        font-size: 20px;
+      }
+      .logo span {
+        color: var(--brand);
+      }
+      h1 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--muted);
+        margin: 0;
+      }
       .summary {
         border-radius: 14px;
         padding: 18px 20px;
@@ -48,9 +74,15 @@
         font-weight: 700;
         background: var(--muted);
       }
-      .summary.up { background: var(--up); }
-      .summary.degraded { background: var(--degraded); }
-      .summary.down { background: var(--down); }
+      .summary.up {
+        background: var(--up);
+      }
+      .summary.degraded {
+        background: var(--degraded);
+      }
+      .summary.down {
+        background: var(--down);
+      }
       .note {
         margin-top: 12px;
         border: 1px solid var(--line);
@@ -66,21 +98,67 @@
         border-radius: 14px;
         padding: 4px 20px;
       }
-      .row { padding: 16px 0; border-top: 1px solid var(--line); }
-      .row:first-child { border-top: 0; }
-      .row-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
-      .pill { font-size: 14px; font-weight: 600; }
-      .pill.up { color: var(--up); }
-      .pill.degraded { color: var(--degraded); }
-      .pill.down { color: var(--down); }
-      .bars { display: flex; gap: 2px; height: 28px; margin-top: 10px; }
-      .bars i { flex: 1; border-radius: 2px; background: var(--none); }
-      .bars i.up { background: var(--up); }
-      .bars i.degraded { background: var(--degraded); }
-      .bars i.down { background: var(--down); }
-      .scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 6px; }
-      footer { margin-top: 20px; font-size: 14px; color: var(--muted); }
-      footer a { color: inherit; }
+      .row {
+        padding: 16px 0;
+        border-top: 1px solid var(--line);
+      }
+      .row:first-child {
+        border-top: 0;
+      }
+      .row-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-weight: 600;
+      }
+      .pill {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .pill.up {
+        color: var(--up);
+      }
+      .pill.degraded {
+        color: var(--degraded);
+      }
+      .pill.down {
+        color: var(--down);
+      }
+      .bars {
+        display: flex;
+        gap: 2px;
+        height: 28px;
+        margin-top: 10px;
+      }
+      .bars i {
+        flex: 1;
+        border-radius: 2px;
+        background: var(--none);
+      }
+      .bars i.up {
+        background: var(--up);
+      }
+      .bars i.degraded {
+        background: var(--degraded);
+      }
+      .bars i.down {
+        background: var(--down);
+      }
+      .scale {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      footer a {
+        color: inherit;
+      }
     </style>
   </head>
   <body>
@@ -92,9 +170,7 @@
       <div id="summary" class="summary" role="status" aria-live="polite">…</div>
       <div id="note" class="note" hidden></div>
       <section class="card" id="components" aria-label="Components"></section>
-      <footer>
-        <span id="checked"></span> · <a id="store-link" href="/">Go to the store</a>
-      </footer>
+      <footer><span id="checked"></span> · <a id="store-link" href="/">Go to the store</a></footer>
     </main>
     <script>
       const TEXT = {
@@ -174,7 +250,11 @@
         const minutes = Math.floor((Date.now() - Date.parse(data.checkedAt)) / 60000);
         const stale = minutes > 5;
         const statuses = Object.values(data.components).map((c) => c.status);
-        const overall = statuses.includes('down') ? 'down' : statuses.includes('degraded') ? 'degraded' : 'up';
+        const overall = statuses.includes('down')
+          ? 'down'
+          : statuses.includes('degraded')
+            ? 'degraded'
+            : 'up';
         const summary = document.getElementById('summary');
         summary.className = 'summary ' + (stale ? '' : overall);
         summary.textContent = stale ? t.stale : t[overall];
@@ -188,15 +268,22 @@
         for (const [name, c] of Object.entries(data.components)) {
           const row = el('div', 'row');
           const head = el('div', 'row-head');
-          head.append(el('span', '', t[name] || name), el('span', 'pill ' + c.status, t['s_' + c.status]));
+          head.append(
+            el('span', '', t[name] || name),
+            el('span', 'pill ' + c.status, t['s_' + c.status]),
+          );
           row.append(head);
           const bars = el('div', 'bars');
           const today = new Date();
-          let up = 0, total = 0;
+          let up = 0,
+            total = 0;
           for (let i = 89; i >= 0; i--) {
             const date = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
             const day = c.days && c.days[date];
-            if (day) { up += day.up; total += day.total; }
+            if (day) {
+              up += day.up;
+              total += day.total;
+            }
             const bar = el('i', dayStatus(day));
             bar.title = day ? `${date}: ${Math.round((day.up / day.total) * 1000) / 10}%` : date;
             bars.append(bar);
