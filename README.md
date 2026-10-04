@@ -14,15 +14,16 @@ This repository is a monorepo for the web storefront, the iOS and Android app, t
 
 ## Stack
 
-| Layer          | Technology                                                                        |
-| -------------- | --------------------------------------------------------------------------------- |
-| Web storefront | Next.js 16, React 19, TypeScript                                                  |
-| Mobile app     | Expo SDK 57 (React Native 0.86), Expo Router, TanStack Query, Stripe PaymentSheet |
-| API            | NestJS 11 modular monolith, REST + OpenAPI                                        |
-| Data           | PostgreSQL 16 with Prisma 7, Redis 7                                              |
-| Shared code    | Zod schemas (`@nixzora/validation`), shared types (`@nixzora/types`)              |
-| Tooling        | pnpm workspaces, Turborepo, ESLint, Prettier, Jest, GitHub Actions                |
-| Later phases   | OpenSearch, BullMQ → Kafka, EKS                                                   |
+| Layer          | Technology                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Web storefront | Next.js 16, React 19, TypeScript                                                                                                        |
+| Mobile app     | Expo SDK 57 (React Native 0.86), Expo Router, TanStack Query, Stripe PaymentSheet                                                       |
+| API            | NestJS 11 modular monolith, REST + OpenAPI                                                                                              |
+| Data           | PostgreSQL 16 with Prisma 7 and pgvector (read replica optional), Redis 7                                                               |
+| AI             | Anthropic (assistant, summaries), Voyage (embeddings), free local drivers for development and CI                                        |
+| Shared code    | Zod schemas (`@nixzora/validation`), shared types (`@nixzora/types`)                                                                    |
+| Tooling        | pnpm workspaces, Turborepo, ESLint, Prettier, Jest, Playwright, k6, knip, GitHub Actions                                                |
+| Platform       | AWS (ECS Fargate, RDS, ElastiCache, S3/CloudFront, WAF, SES) via Terraform; optional EKS + Helm and Kafka (MSK); Prometheus and Grafana |
 
 Why it is shaped this way: [ADR-0001 Modular monolith first](docs/adr/0001-modular-monolith-first.md).
 
@@ -31,25 +32,29 @@ Why it is shaped this way: [ADR-0001 Modular monolith first](docs/adr/0001-modul
 ```
 nixzora/
 ├─ apps/
-│  ├─ api/            NestJS API: identity, catalog, inventory, media, admin, audit log, health
-│  ├─ storefront/     Next.js store: browse, search, cart, checkout, orders, account (port 3000)
+│  ├─ api/            NestJS API (port 4000). The same image also runs the search service,
+│  │                  the AI service and the notifications worker (src/*-main.ts)
+│  ├─ storefront/     Next.js store: shop, assistant, checkout, account, seller pages (port 3000)
 │  ├─ admin/          Next.js Ops Center for staff (port 3001)
-│  └─ mobile/         Expo app for iOS and Android: shop, scan, pay, track (see its README)
+│  └─ mobile/         Expo app for iOS and Android (see its README)
 ├─ packages/
-│  ├─ ui/             Design system: brand tokens, logo, price (used by both web apps)
-│  ├─ api-client/     Typed API client with token refresh (used by the mobile app)
-│  ├─ validation/     Zod schemas shared by API and clients
+│  ├─ validation/     Zod schemas and shared rules, used by every app and the API
+│  ├─ i18n/           English, French and Spanish messages and formatters
+│  ├─ api-client/     Typed API client with token refresh (mobile app)
+│  ├─ ui/             Brand tokens, logo, price (web apps)
 │  ├─ types/          Shared TypeScript types
 │  ├─ tsconfig/       Base TypeScript configs
 │  └─ eslint-config/  Shared lint rules
-├─ docs/
-│  ├─ adr/            Architecture decision records
-│  ├─ architecture/   ERD and diagrams
-│  └─ security/       Threat model
-├─ infra/terraform/   AWS infrastructure (bootstrap, platform module, staging/production)
-├─ scripts/deploy/    Release scripts used by the Deploy workflow
-├─ docker-compose.yml PostgreSQL + Redis for local development
-└─ .github/           CI and Dependabot
+├─ docs/              Case study, ADRs, architecture, runbooks, security, SLOs, reports
+├─ infra/
+│  ├─ terraform/      AWS (bootstrap, platform module, staging/production)
+│  ├─ helm/           Kubernetes charts (optional EKS path, ADR-0021)
+│  └─ observability/  Prometheus rules, Alertmanager, Grafana dashboards
+├─ scripts/           Deploy and disaster-recovery scripts
+├─ tests/load/        k6 load tests
+├─ tools/             Demo image and video recorders
+├─ docker-compose.yml PostgreSQL, Redis, and optional Jaeger, Prometheus, Grafana, Kafka
+└─ .github/           CI, CodeQL, security scan, deploys, load test, mobile release
 ```
 
 ## Getting started

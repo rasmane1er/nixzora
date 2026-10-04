@@ -1,6 +1,6 @@
 # Authentication flows
 
-Design decisions: [ADR-0002](../adr/0002-authentication.md). Endpoints are documented live at `http://localhost:4000/docs` (development only).
+Design decisions: [ADR-0002](../adr/0002-authentication.md) (passwords, sessions, two-step), [ADR-0019](../adr/0019-passkeys-and-biometric-sign-in.md) (passkeys, Face ID / fingerprint) and the [Google / Apple runbook](../runbooks/sign-in-with-google-apple.md). Endpoints are documented live at `http://localhost:4000/docs` (development only).
 
 ## Endpoints
 
@@ -9,6 +9,11 @@ Design decisions: [ADR-0002](../adr/0002-authentication.md). Endpoints are docum
 | POST   | `/api/v1/auth/register`            | public · 5/min       | Create a customer account and sign in                     |
 | POST   | `/api/v1/auth/login`               | public · 10/min      | Password step; returns tokens or an MFA challenge         |
 | POST   | `/api/v1/auth/mfa/challenge`       | public · 10/min      | Exchange the challenge + TOTP or recovery code for tokens |
+| GET    | `/api/v1/auth/social/providers`    | public               | Which of Google and Apple are configured                  |
+| POST   | `/api/v1/auth/social`              | public · 10/min      | Sign in with a Google or Apple ID token (verified here)   |
+| POST   | `/api/v1/auth/passkey/options`     | public · 30/min      | Start a passkey sign-in (WebAuthn challenge)              |
+| POST   | `/api/v1/auth/passkey`             | public · 10/min      | Finish a passkey sign-in; returns tokens                  |
+| POST   | `/api/v1/auth/device`              | public · 10/min      | App sign-in with Face ID / fingerprint (device key)       |
 | POST   | `/api/v1/auth/refresh`             | public · 30/min      | Rotate the refresh token, get a new access token          |
 | POST   | `/api/v1/auth/logout`              | signed in            | End this session                                          |
 | GET    | `/api/v1/auth/me`                  | signed in            | Profile, roles and permissions                            |
@@ -23,6 +28,14 @@ Design decisions: [ADR-0002](../adr/0002-authentication.md). Endpoints are docum
 | POST   | `/api/v1/me/mfa/setup`             | `account.manage.own` | Start two-step verification (secret + otpauth URL)        |
 | POST   | `/api/v1/me/mfa/enable`            | `account.manage.own` | Confirm with a code; returns 10 recovery codes once       |
 | POST   | `/api/v1/me/mfa/disable`           | `account.manage.own` | Turn off with a code                                      |
+| GET    | `/api/v1/me/passkeys`              | `account.manage.own` | Saved passkeys                                            |
+| POST   | `/api/v1/me/passkeys/options`      | `account.manage.own` | Start adding a passkey                                    |
+| POST   | `/api/v1/me/passkeys`              | `account.manage.own` | Save a passkey                                            |
+| PATCH  | `/api/v1/me/passkeys/:id`          | `account.manage.own` | Rename a passkey                                          |
+| DELETE | `/api/v1/me/passkeys/:id`          | `account.manage.own` | Remove a passkey                                          |
+| GET    | `/api/v1/me/device-sign-ins`       | `account.manage.own` | Phones with Face ID / fingerprint sign-in on              |
+| POST   | `/api/v1/me/device-sign-ins`       | `account.manage.own` | Turn it on for this phone                                 |
+| DELETE | `/api/v1/me/device-sign-ins/:id`   | `account.manage.own` | Turn it off for a phone                                   |
 | GET    | `/api/v1/admin/audit-logs`         | `audit.read` + MFA   | Paginated audit history                                   |
 
 ## Sign-in with two-step verification

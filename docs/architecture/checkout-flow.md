@@ -16,18 +16,35 @@ sequenceDiagram
   B->>W: Submit address
   W->>A: POST /checkout
   A->>R: read cart
-  A->>DB: re-price, hold stock (FOR UPDATE), create order + outbox (one tx)
+  A->>A: fraud signals (score: allow · hold for review · decline 403)
+  A->>DB: re-price, apply coupon, hold stock (FOR UPDATE), create order, risk record, outbox (one tx)
   A->>S: create PaymentIntent (idempotency key = order id)
   A-->>W: order number, signed link token, client secret
   W-->>B: /checkout/pay/NX-…?token=…
   B->>S: confirm payment (Payment Element iframe; card data never reaches NIXZORA)
   S-->>B: redirect to /orders/NX-…?token=…&confirming=1
   S->>A: webhook payment_intent.succeeded (signed)
-  A->>DB: record event id, order PAID, commit stock, outbox order.paid (one tx)
+  A->>DB: record event id, order PAID, split by seller, commit stock, outbox order.paid (one tx)
   A->>R: empty cart
   A-->>A: outbox worker → receipt email (SES)
   B->>W: order page refreshes until PAID
 ```
+
+Along the way:
+
+- **Fraud signals** ([ADR-0024](../adr/0024-fraud-signals.md)) score the checkout before any stock
+  is held. A high score declines it (`ORDER_DECLINED`); a middle score lets it through but holds
+  the order (`risk_hold`) until staff clear it in the Ops Center, so it cannot be started or
+  shipped. Stripe's own risk level and later disputes feed the same record.
+- **Coupons** are checked and counted in the order's transaction: two checkouts racing for the last
+  use of a single-use code get one success and one "used up".
+- **Marketplace items** ([ADR-0013](../adr/0013-marketplace-orders-and-earnings.md)): at payment
+  the order is split into one `seller_orders` row per store, with the commission fixed then. Each
+  store ships its part; earnings enter the seller's ledger and become payable after the hold
+  period ([ADR-0014](../adr/0014-seller-payouts.md)).
+- **Paying late**: if the stock holds expired while the shopper was on the payment page, paying
+  again renews them in one locked transaction; if stock ran out meanwhile, the shopper is told
+  before paying.
 
 ## Endpoints
 
@@ -46,6 +63,9 @@ sequenceDiagram
 | CRUD   | `/api/v1/me/addresses`                  | customer                  | Address book                            |
 | GET    | `/api/v1/admin/orders`, `/:id`          | `orders.read.all`         | Ops Center order list and detail        |
 | POST   | `/api/v1/admin/orders/:id/fulfillment`  | `orders.fulfill`          | start · ship · deliver · cancel         |
+| POST   | `/api/v1/cart/coupon`                   | guest or user             | Apply a discount code                   |
+| GET    | `/api/v1/admin/risk`, `/:id`            | `risk.review`             | Fraud reviews (Ops Center)              |
+| POST   | `/api/v1/admin/risk/:id/review`         | `risk.review`             | Clear or confirm a held order           |
 
 Cancelling a paid order also needs `orders.refund`.
 

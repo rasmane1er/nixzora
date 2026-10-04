@@ -1,46 +1,65 @@
-# NIXZORA threat model — v8 (Phase 8)
+# NIXZORA threat model — v9 (after Phase 8)
 
-Method: STRIDE per component. This version covers the Phase 0–8 scope (adding the marketplace, the extracted services, Kafka, Kubernetes, the read replica, metrics, fraud signals and passkeys to the earlier (web storefront, mobile app, Ops Center, API, PostgreSQL, Redis, Stripe, AWS, and the AI layer: search index, shopping assistant, model providers)). It is reviewed and updated at the end of every phase.
+Method: STRIDE per component. Covers everything built in Phases 0–8: web storefront, iOS and
+Android app, Ops Center, API, search and AI services, notifications worker, PostgreSQL (with a
+read replica), Redis, optional Kafka and Kubernetes, the marketplace (sellers, earnings, payouts),
+fraud signals, and the third parties (Stripe and Stripe Connect, Anthropic, Voyage, Google, Apple,
+Amazon SES, Expo push). Reviewed at the end of every phase; v9 is the post-Phase 8 review
+(October 2026). The sections after the summary record what each phase added.
 
 ## System and trust boundaries
 
 ```mermaid
 flowchart LR
-  shopper([Shopper browser / mobile app]) -- HTTPS --> web[Next.js storefront]
-  staff([Staff browser]) -- HTTPS + MFA --> admin[Ops Center]
-  web -- HTTPS / JWT --> api[NestJS API]
-  admin -- HTTPS / JWT --> api
+  shopper([Shopper: browser or app]) -- HTTPS --> waf[WAF + load balancer]
+  seller([Seller: browser]) -- HTTPS --> waf
+  staff([Staff: browser]) -- HTTPS + two-step --> waf
+  waf --> web[Storefront]
+  waf --> ops[Ops Center]
+  waf --> api[API]
+  web -- tokens in HttpOnly cookies --> api
+  ops -- tokens in HttpOnly cookies --> api
   shopper -- card data, direct --> stripe[(Stripe)]
+  seller -- identity and bank, direct --> connect[(Stripe Connect)]
   stripe -- signed webhooks --> api
-  api --> pg[(PostgreSQL)]
+  api -- internal key --> search[Search service]
+  api -- internal key --> ai[AI service]
+  ai -- catalog data only --> llm[(Anthropic, Voyage)]
+  api --> pg[(PostgreSQL + replica)]
   api --> redis[(Redis)]
-  api -- prompts with catalog data only --> llm[(LLM provider, Phase 6)]
+  api -- outbox --> worker[Worker] --> ses[(SES, Expo push)]
+  worker -. optional .-> kafka[(Kafka)]
 ```
 
-Trust boundaries: the public internet ↔ web/API; API ↔ data stores (private network only); API ↔ third parties (Stripe, LLM, email).
+Trust boundaries: the internet ↔ load balancer; web apps ↔ API (the API re-checks everything);
+API ↔ internal services (internal key, private network); private network ↔ data stores; NIXZORA
+↔ third parties (signed webhooks in, scoped keys out).
 
 ## Assets
 
-Customer accounts and sessions · personal data (names, addresses, emails) · order and payment records · staff accounts and permissions · audit history · catalog and pricing integrity · signing keys and secrets.
+Customer accounts and sessions · personal data (names, emails, phones, addresses) · order,
+payment and refund records · seller identity (owner date of birth, encrypted) and earnings ·
+staff accounts and permissions · audit history · catalog and pricing integrity · AI budget ·
+signing keys, API keys and secrets.
 
-## STRIDE analysis
+## STRIDE summary
 
-| Threat                     | Example                                                   | Mitigation                                                                                                              | Phase    |
-| -------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
-| **S**poofing               | Credential stuffing against sign-in                       | Rate limiting per IP and account, breached-password check, Argon2id, optional MFA for customers, required MFA for staff | P1 ✔     |
-| Spoofing                   | Forged Stripe webhook marks an order paid                 | Verify Stripe signature; idempotency table; amount and currency re-checked against the order                            | P3       |
-| **T**ampering              | Client changes the price in a checkout request            | Prices always re-read on the server from `product_variants`; client totals are ignored                                  | P3       |
-| Tampering                  | Admin edits or deletes audit history                      | `audit_logs` append-only trigger; separate DB role without DDL rights in production                                     | P0 ✔, P4 |
-| **R**epudiation            | Staff member denies issuing a refund                      | Every privileged action writes actor, IP, user agent and entity to `audit_logs` (auth events done)                      | P1 ✔, P4 |
-| **I**nformation disclosure | Tokens or cookies in logs                                 | Pino redaction of `authorization`, `cookie`, `set-cookie` headers                                                       | P0 ✔     |
-| Information disclosure     | Card data exposure                                        | Card data never reaches NIXZORA (Stripe Elements / SDK)                                                                 | P3       |
-| Information disclosure     | Customer A reads customer B's order (IDOR)                | Ownership checks in every query; non-guessable UUIDv7 ids are not relied on for access control                          | P3       |
-| Information disclosure     | Secrets committed to the public repo                      | `.env` git-ignored, `.env.example` only; secret scanning on GitHub; AWS Secrets Manager in P4                           | P0 ✔, P4 |
-| **D**enial of service      | Request floods                                            | Global throttling (120 req/min per client today), WAF and bot control on CloudFront in P4                               | P0 ✔, P4 |
-| Denial of service          | Expensive AI requests drain budget                        | Per-user and per-request cost caps, cached answers, queueing                                                            | P6       |
-| **E**levation of privilege | Customer calls an admin endpoint                          | Permission-based guards on every admin route; deny by default                                                           | P1 ✔     |
-| Elevation of privilege     | Prompt injection makes the AI agent act outside its tools | Agent can only call whitelisted, permission-checked tools; answers grounded in catalog data                             | P6       |
-| Supply chain               | Malicious or vulnerable dependency                        | Lockfile, `pnpm audit` in CI, Dependabot, install scripts allow-listed in `pnpm-workspace.yaml`                         | P0 ✔     |
+| Threat                     | Example                                        | Mitigation                                                                                                                  | Status |
+| -------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **S**poofing               | Credential stuffing against sign-in            | Per-IP and per-account limits, breached-password check, Argon2id, two-step (required for staff), passkeys                   | ✔      |
+| Spoofing                   | Forged Stripe webhook marks an order paid      | Stripe signature verified; idempotency table; amount and currency re-checked against the order                              | ✔      |
+| **T**ampering              | Client changes the price in a checkout request | Prices always re-read on the server; client totals ignored                                                                  | ✔      |
+| Tampering                  | Admin edits or deletes audit history           | `audit_logs` append-only trigger                                                                                            | ✔      |
+| **R**epudiation            | Staff member denies issuing a refund           | Every privileged action records actor, IP, user agent and entity in `audit_logs`                                            | ✔      |
+| **I**nformation disclosure | Tokens, cookies or keys in logs                | Pino redaction of authorization, cookie, internal-key and Stripe signature headers; no bodies logged                        | ✔      |
+| Information disclosure     | Card or bank data exposure                     | Never reaches NIXZORA (Stripe Elements / PaymentSheet, Stripe Connect onboarding)                                           | ✔      |
+| Information disclosure     | Customer A reads customer B's order (IDOR)     | Ownership filter in every query; signed links for guest orders                                                              | ✔      |
+| Information disclosure     | Secrets committed to the public repo           | `.env` git-ignored; GitHub secret scanning; AWS Secrets Manager                                                             | ✔      |
+| **D**enial of service      | Request floods                                 | Global and per-route rate limits (named profiles), WAF rate rules, autoscaling                                              | ✔      |
+| Denial of service          | Expensive AI requests drain the budget         | Per-request token caps, daily spend cap, cached answers, free local fallback                                                | ✔      |
+| **E**levation of privilege | Customer calls an admin endpoint               | Permission guard on every route, deny by default, two-step required for staff                                               | ✔      |
+| Elevation of privilege     | Prompt injection makes the assistant act       | No write tools exist; read-only catalog lookups; picks verified against the database                                        | ✔      |
+| Supply chain               | Malicious or vulnerable dependency             | Lockfile, `pnpm audit` and CodeQL in CI, Dependabot, install scripts allow-listed, unused dependencies removed (knip in CI) | ✔      |
 
 ## Security controls already in place (Phase 0)
 
@@ -228,6 +247,7 @@ Customer accounts and sessions · personal data (names, addresses, emails) · or
 | Clickjacking, injected scripts calling out                   | Content Security Policy on the storefront and Ops Center (no framing, narrow connect-src), HSTS             | ✔      |
 | Open redirect after sign-in                                  | Same-site paths only; whitespace and backslashes rejected                                                   | ✔      |
 | Losing the database                                          | Point-in-time recovery and AWS Backup, rehearsed by `scripts/dr/restore-drill.sh`                           | ✔      |
+| Sign-up details (phone, consent) exposed or forged           | Phone validated as E.164 and shown only to staff with `users.read`; terms acceptance stored with its time   | ✔      |
 
 Pen-test scope, automated checks and the item-by-item status:
 [pentest-checklist.md](pentest-checklist.md).
