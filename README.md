@@ -156,17 +156,18 @@ Try it in Swagger at http://localhost:4000/docs, or see [Authentication flows](d
 
 ## Roadmap
 
-| Phase                      | Dates                | Outcome                                         |
-| -------------------------- | -------------------- | ----------------------------------------------- |
-| P0 Blueprint and setup     | Oct 5 – 18, 2026     | Monorepo, ERD, ADRs, CI, end-to-end hello world |
-| P1 Platform foundation     | Oct 19 – Nov 15      | Auth, MFA, sessions, RBAC, audit log            |
-| P2 Catalog and admin core  | Nov 16 – Dec 13      | Catalog, inventory, Ops Center basics           |
-| P3 Storefront and checkout | Jan 4 – Feb 14, 2027 | **v0.1** first purchase                         |
-| P4 Operations and launch   | Feb 15 – Mar 14      | **v0.5** public demo on AWS                     |
-| P5 Mobile app              | Mar 15 – Apr 18      | iOS and Android test builds                     |
-| P6 Intelligence layer      | Apr 19 – May 30      | **v1.0** AI shopping assistant                  |
-| P7 Marketplace             | May 31 – Jul 11      | **v1.5** third-party sellers                    |
-| P8 Scale and hardening     | Jul 12 – Aug 22      | **v2.0** event-driven, load-tested              |
+| Phase                      | Dates                | Outcome                                                                     |
+| -------------------------- | -------------------- | --------------------------------------------------------------------------- |
+| P0 Blueprint and setup     | Oct 5 – 18, 2026     | Monorepo, ERD, ADRs, CI, end-to-end hello world                             |
+| P1 Platform foundation     | Oct 19 – Nov 15      | Auth, MFA, sessions, RBAC, audit log                                        |
+| P2 Catalog and admin core  | Nov 16 – Dec 13      | Catalog, inventory, Ops Center basics                                       |
+| P3 Storefront and checkout | Jan 4 – Feb 14, 2027 | **v0.1** first purchase                                                     |
+| P4 Operations and launch   | Feb 15 – Mar 14      | **v0.5** public demo on AWS                                                 |
+| P5 Mobile app              | Mar 15 – Apr 18      | iOS and Android test builds                                                 |
+| P6 Intelligence layer      | Apr 19 – May 30      | **v1.0** AI shopping assistant                                              |
+| P7 Marketplace             | May 31 – Jul 11      | **v1.5** third-party sellers                                                |
+| P8 Scale and hardening     | Jul 12 – Aug 22      | **v2.0** event-driven, load-tested                                          |
+| P9 Launch readiness        | Aug 23 – Oct 3       | **v2.5** production open ([plan](docs/roadmap/phase-9-launch-readiness.md)) |
 
 ## Security
 
