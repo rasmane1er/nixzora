@@ -332,13 +332,18 @@ export type PagedResult<T> = {
   totalPages: number;
 };
 
-/** One page of `total` results; an empty list still has one page. */
+/** Pages needed for `total` results; an empty list still has one page. */
+export function totalPages(total: number, pageSize: number): number {
+  return Math.max(1, Math.ceil(total / pageSize));
+}
+
+/** One page of `total` results. */
 export function pagedResult<T>(
   items: T[],
   total: number,
   { page, pageSize }: { page: number; pageSize: number },
 ): PagedResult<T> {
-  return { items, page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+  return { items, page, pageSize, total, totalPages: totalPages(total, pageSize) };
 }
 
 /** "Kestrel 14 Pro (2027)!" → "kestrel-14-pro-2027" */

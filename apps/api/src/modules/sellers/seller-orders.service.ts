@@ -307,21 +307,16 @@ export class SellerOrdersService implements OnModuleInit {
         take: pageSize,
       }),
     ]);
-    return {
-      items: rows.map((row) => ({
-        id: row.id,
-        type: row.type,
-        amountCents: row.amountCents,
-        description: row.description,
-        orderNumber: row.sellerOrder?.order.number ?? null,
-        availableAt: row.availableAt.toISOString(),
-        createdAt: row.createdAt.toISOString(),
-      })),
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    };
+    const items = rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      amountCents: row.amountCents,
+      description: row.description,
+      orderNumber: row.sellerOrder?.order.number ?? null,
+      availableAt: row.availableAt.toISOString(),
+      createdAt: row.createdAt.toISOString(),
+    }));
+    return pagedResult(items, total, { page, pageSize });
   }
 
   // ───────────── Helpers ─────────────

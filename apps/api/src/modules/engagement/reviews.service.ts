@@ -7,6 +7,7 @@ import {
   type RatingSummary,
   type ReviewCreate,
   type ReviewView,
+  totalPages,
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -106,7 +107,7 @@ export class ReviewsService {
       summary: { average: count ? roundRating(sum / count) : null, count, distribution },
       reviews: rows.map(toView),
       page,
-      totalPages: Math.max(1, Math.ceil(count / pageSize)),
+      totalPages: totalPages(count, pageSize),
     };
   }
 

@@ -242,6 +242,35 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       expect(none.body.total).toBe(0);
     });
 
+    it('pages price and stock filters in the database with exact totals', async () => {
+      const get = (query: Record<string, string | number | boolean>) =>
+        http().get('/api/v1/catalog/products').query(query).expect(200);
+
+      const all = await get({ sort: 'price_desc', pageSize: 60 });
+      const prices = all.body.items.map((c: { priceFromCents: number }) => c.priceFromCents);
+      expect(prices).toEqual([...prices].sort((a, b) => b - a));
+      expect(all.body.items.length).toBe(Math.min(60, all.body.total));
+
+      // Two pages of one item each are the first two items of the full list, in order.
+      const first = await get({ sort: 'price_desc', pageSize: 1, page: 1 });
+      const second = await get({ sort: 'price_desc', pageSize: 1, page: 2 });
+      expect(first.body.total).toBe(all.body.total);
+      expect([first.body.items[0].id, second.body.items[0].id]).toEqual(
+        all.body.items.slice(0, 2).map((c: { id: string }) => c.id),
+      );
+
+      const inStock = await get({ inStock: true, sort: 'price_asc', pageSize: 60 });
+      expect(inStock.body.items.every((c: { inStock: boolean }) => c.inStock)).toBe(true);
+      const outOfStock = await get({ inStock: false, pageSize: 60 });
+      expect(outOfStock.body.items.every((c: { inStock: boolean }) => !c.inStock)).toBe(true);
+      expect(inStock.body.total + outOfStock.body.total).toBe(all.body.total);
+
+      // Past the last page: no items, but the total is still exact.
+      const past = await get({ minPrice: 1, page: 500 });
+      expect(past.body.items).toEqual([]);
+      expect(past.body.total).toBeGreaterThan(0);
+    });
+
     it('serves the category tree with product counts that include subcategories', async () => {
       const tree = await http().get('/api/v1/catalog/categories').expect(200);
       const node = tree.body.find((c: { slug: string }) => c.slug === `test-computers-${run}`);

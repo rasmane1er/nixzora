@@ -14,6 +14,7 @@ import {
   type RiskAssessmentView,
   type RiskReview,
   type RiskSignal,
+  pagedResult,
 } from '@nixzora/validation';
 import { runsBackgroundJobs } from '../../common/background-jobs';
 import { type Env } from '../../config/env';
@@ -525,13 +526,7 @@ export class RiskService implements OnModuleInit, OnModuleDestroy {
       }),
       this.prisma.riskAssessment.count({ where }),
     ]);
-    return {
-      items: rows.map(toView),
-      total,
-      page: query.page,
-      pageSize,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    };
+    return pagedResult(rows.map(toView), total, { page: query.page, pageSize });
   }
 
   async get(id: string): Promise<RiskAssessmentView> {

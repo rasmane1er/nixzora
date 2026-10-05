@@ -6,14 +6,21 @@ dependencies from piling up.
 
 ## Open
 
-| Item                                                                                        | Where                               | Why it matters                                           | Fix                                                                  |
-| ------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
-| Product search, price and stock filters page in memory (up to 2,000 candidates)             | `catalog-query.service.ts` `list()` | Totals cap at 2,000 for a search or filter               | Move price and stock into the search index (ADR-0015) and page there |
-| Four list endpoints build their page object by hand (risk, payouts, seller orders, reviews) | those services                      | Small duplication                                        | Use `pagedResult()` when touching them                               |
-| Expo pins `@types/react` 19.2 while the web apps use 19.3                                   | `apps/mobile/package.json`          | Peer warning on install                                  | Follow the next Expo SDK                                             |
-| `decode-uri-component` advisory (via expo-router → query-string 7), ignored with a reason   | `pnpm-workspace.yaml`               | Slow parse of a crafted link on the shopper's own device | Drop the ignore when expo-router moves to query-string 9             |
+| Item                                                                                      | Where                      | Why it matters                                           | Fix                                                      |
+| ----------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| Expo pins `@types/react` 19.2 while the web apps use 19.3                                 | `apps/mobile/package.json` | Peer warning on install                                  | Follow the next Expo SDK                                 |
+| `decode-uri-component` advisory (via expo-router → query-string 7), ignored with a reason | `pnpm-workspace.yaml`      | Slow parse of a crafted link on the shopper's own device | Drop the ignore when expo-router moves to query-string 9 |
 
 ## Paid down
+
+October 2026: price and stock filters and the price, stock and relevance sorts are paged in
+PostgreSQL (`pageByFacts`), so totals are exact at any catalog size instead of capping at 2,000
+candidates. Search still ranks at most 2,000 hits per query, then filters and pages them the
+same way.
+
+October 2026 (buf-01 follow-up): risk reviews, payouts, the seller ledger and review lists build
+their pages with `pagedResult()` / `totalPages()` like every other list (one rule: an empty list
+has one page), with a unit test.
 
 October 2026 (p9-07): uploaded images are malware-scanned and re-encoded without metadata
 before they are served (ADR-0025).

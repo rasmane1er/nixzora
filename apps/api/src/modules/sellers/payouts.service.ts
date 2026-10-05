@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { formatters, translator } from '@nixzora/i18n';
-import { type PagedResult, type PayoutView } from '@nixzora/validation';
+import { type PagedResult, type PayoutView, pagedResult } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Payout, Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -256,13 +256,7 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
         take: pageSize,
       }),
     ]);
-    return {
-      items: rows.map(toView),
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    };
+    return pagedResult(rows.map(toView), total, { page, pageSize });
   }
 }
 

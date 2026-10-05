@@ -25,7 +25,7 @@ import {
   toVariant,
 } from './catalog-mappers';
 
-/** Upper bound on rows ranked in memory. OpenSearch replaces this path in Phase 6. */
+/** Most search hits ranked for one query (the full-text fallback); filters and paging are in SQL. */
 const MAX_CANDIDATES = 2000;
 
 /**
@@ -204,55 +204,89 @@ export class CatalogQueryService {
       if (!rank.size) return emptyPage(query);
       where.id = { in: [...rank.keys()] };
     }
+    return this.pageByFacts(query, where, activeVariantsOnly, rank);
+  }
+
+  /**
+   * Price and stock filters and sorts, paged in the database. Prisma finds the matching ids
+   * (category, brand, seller, search hits); one SQL query works out each product's card price
+   * and stock (same rules as `toCard`), filters, sorts and pages them, so totals are exact at
+   * any catalog size. Only the page's products are loaded in full.
+   */
+  private async pageByFacts(
+    query: ProductListQuery,
+    where: Prisma.ProductWhereInput,
+    activeVariantsOnly: boolean,
+    rank: Map<string, number> | null,
+  ): Promise<PagedResult<ProductCard>> {
+    const matching = await this.prisma.product.findMany({
+      where: activeVariantsOnly ? { ...where, variants: { some: { isActive: true } } } : where,
+      select: { id: true },
+    });
+    if (!matching.length) return emptyPage(query);
+    const ids = matching.map((row) => row.id);
+    // Search hits in rank order, best first, for the relevance sort.
+    const ranked = rank ? [...rank.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id) : [];
+
+    const order = {
+      price_asc: Prisma.sql`price_from ASC, created_at DESC, id`,
+      price_desc: Prisma.sql`price_from DESC, created_at DESC, id`,
+      newest: Prisma.sql`created_at DESC, id`,
+      relevance: rank
+        ? Prisma.sql`array_position(${ranked}::uuid[], id), id`
+        : Prisma.sql`in_stock DESC, created_at DESC, id`,
+    }[query.sort];
+
+    const facts = Prisma.sql`
+      WITH facts AS (
+        SELECT p.id, p.created_at,
+          COALESCE(
+            MIN(v.price_cents) FILTER (WHERE v.is_active),
+            MIN(v.price_cents),
+            0
+          ) AS price_from,
+          COALESCE(BOOL_OR(v.is_active AND COALESCE(i.on_hand - i.reserved, 0) > 0), false)
+            AS in_stock
+        FROM products p
+        LEFT JOIN product_variants v ON v.product_id = p.id
+        LEFT JOIN inventory_items i ON i.variant_id = v.id
+        WHERE p.id = ANY(${ids}::uuid[])
+        GROUP BY p.id, p.created_at
+      )
+      SELECT id, price_from, in_stock, created_at FROM facts
+      WHERE (${query.minPrice ?? null}::int IS NULL OR price_from >= ${query.minPrice ?? null}::int)
+        AND (${query.maxPrice ?? null}::int IS NULL OR price_from <= ${query.maxPrice ?? null}::int)
+        AND (${query.inStock ?? null}::boolean IS NULL OR in_stock = ${query.inStock ?? null}::boolean)`;
+
+    const [page, counted] = await Promise.all([
+      this.prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM (${facts}) filtered
+        ORDER BY ${order}
+        LIMIT ${query.pageSize} OFFSET ${(query.page - 1) * query.pageSize}`,
+      this.prisma.$queryRaw<{ total: bigint }[]>`SELECT COUNT(*) AS total FROM (${facts}) filtered`,
+    ]);
+    const total = Number(counted[0]?.total ?? 0);
+    if (!page.length) return pagedResult([], total, query);
 
     const rows = await this.prisma.product.findMany({
-      where,
+      where: { id: { in: page.map((row) => row.id) } },
       include: productInclude,
-      take: MAX_CANDIDATES,
-      orderBy: { createdAt: 'desc' },
     });
-
-    const visible = activeVariantsOnly
-      ? rows.filter((row) => row.variants.some((variant) => variant.isActive))
-      : rows;
-
-    let cards = visible.map((row) => {
-      const card = toCard(
-        activeVariantsOnly ? { ...row, variants: row.variants.filter((v) => v.isActive) } : row,
-        this.url,
-      );
-      return { ...card, status: row.status, createdAt: row.createdAt };
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const cards = page.flatMap(({ id }) => {
+      const row = byId.get(id);
+      if (!row) return [];
+      return [
+        {
+          ...toCard(
+            activeVariantsOnly ? { ...row, variants: row.variants.filter((v) => v.isActive) } : row,
+            this.url,
+          ),
+          status: row.status,
+        },
+      ];
     });
-
-    if (query.minPrice !== undefined)
-      cards = cards.filter((c) => c.priceFromCents >= query.minPrice!);
-    if (query.maxPrice !== undefined)
-      cards = cards.filter((c) => c.priceFromCents <= query.maxPrice!);
-    if (query.inStock !== undefined) cards = cards.filter((c) => c.inStock === query.inStock);
-
-    const sorters: Record<
-      string,
-      (a: (typeof cards)[number], b: (typeof cards)[number]) => number
-    > = {
-      price_asc: (a, b) => a.priceFromCents - b.priceFromCents,
-      price_desc: (a, b) => b.priceFromCents - a.priceFromCents,
-      newest: (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-      relevance: rank
-        ? (a, b) => (rank!.get(b.id) ?? 0) - (rank!.get(a.id) ?? 0)
-        : (a, b) =>
-            Number(b.inStock) - Number(a.inStock) || b.createdAt.getTime() - a.createdAt.getTime(),
-    };
-    cards.sort(sorters[query.sort]);
-
-    const total = cards.length;
-    const start = (query.page - 1) * query.pageSize;
-    return pagedResult(
-      await this.withRatings(
-        cards.slice(start, start + query.pageSize).map(({ createdAt: _c, ...card }) => card),
-      ),
-      total,
-      query,
-    );
+    return pagedResult(await this.withRatings(cards), total, query);
   }
 
   private async pageNewest(
@@ -455,5 +489,5 @@ export class CatalogQueryService {
 }
 
 function emptyPage(query: { page: number; pageSize: number }): PagedResult<ProductCard> {
-  return { items: [], page: query.page, pageSize: query.pageSize, total: 0, totalPages: 1 };
+  return pagedResult([], 0, query);
 }
