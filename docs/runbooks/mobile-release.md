@@ -28,6 +28,11 @@ builds iOS and Android in the Expo cloud, sends iOS to TestFlight and tries the 
 (Google needs the very first one by hand; the script tells you how). The sections below explain
 each step in detail.
 
+EAS builds only the app. The shared packages it imports (`@nixzora/validation`, `@nixzora/i18n`)
+ship as compiled `dist/` folders that are not in git, so `apps/mobile/package.json` has an
+`eas-build-post-install` script that builds them on the build server before the JavaScript is
+bundled. Without it both builds fail in "Bundle JavaScript".
+
 ## What you need (one time)
 
 | Account                                                          | Cost            | Used for                            |

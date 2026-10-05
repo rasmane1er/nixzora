@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "export:web": "expo export --platform web --output-dir dist-web",
-    "release:first": "bash scripts/first-release.sh"
+    "release:first": "bash scripts/first-release.sh",
+    "eas-build-post-install": "pnpm --filter \"@nixzora/mobile^...\" run build"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-sans": "0.4.1",
