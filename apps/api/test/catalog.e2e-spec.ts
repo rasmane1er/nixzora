@@ -255,9 +255,8 @@ describe('Catalog, inventory, media and staff tools (e2e)', () => {
       const first = await get({ sort: 'price_desc', pageSize: 1, page: 1 });
       const second = await get({ sort: 'price_desc', pageSize: 1, page: 2 });
       expect(first.body.total).toBe(all.body.total);
-      expect([first.body.items[0].id, second.body.items[0].id]).toEqual(
-        all.body.items.slice(0, 2).map((c: { id: string }) => c.id),
-      );
+      const ids = (body: { items: { id: string }[] }) => body.items.map((c) => c.id);
+      expect([...ids(first.body), ...ids(second.body)]).toEqual(ids(all.body).slice(0, 2));
 
       const inStock = await get({ inStock: true, sort: 'price_asc', pageSize: 60 });
       expect(inStock.body.items.every((c: { inStock: boolean }) => c.inStock)).toBe(true);
