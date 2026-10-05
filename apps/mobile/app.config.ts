@@ -56,6 +56,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   userInterfaceStyle: 'automatic',
   runtimeVersion: { policy: 'appVersion' },
+  // Over-the-air JavaScript updates (EAS Update) for the build's channel.
+  updates: { url: `https://u.expo.dev/${projectId}` },
   ios: {
     bundleIdentifier: BUNDLE_ID[variant],
     usesAppleSignIn: true,
