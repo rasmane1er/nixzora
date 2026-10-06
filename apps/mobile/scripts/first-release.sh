@@ -3,6 +3,7 @@
 # Run from your Mac:  pnpm --filter @nixzora/mobile release:first -- --api-url https://api.example.com
 # Safe to re-run: steps that are already done are skipped. Never commits anything.
 set -euo pipefail
+export APP_VARIANT=preview
 cd "$(dirname "$0")/.."
 
 API_URL=""
@@ -56,12 +57,13 @@ eas build --profile preview --platform "$PLATFORM"
 
 step "5/6 Send the iOS build to TestFlight"
 if [[ "$PLATFORM" != "android" ]]; then
-  eas submit --profile preview --platform ios --latest
+  # APP_VARIANT picks the bundle id in app.config.ts; without it submit targets the dev app.
+  APP_VARIANT=preview eas submit --profile preview --platform ios --latest
 fi
 
 step "6/6 Android: first upload to Play internal testing"
 if [[ "$PLATFORM" != "ios" ]]; then
-  if ! eas submit --profile preview --platform android --latest; then
+  if ! APP_VARIANT=preview eas submit --profile preview --platform android --latest; then
     cat <<'MSG'
   Google only accepts the very first upload of a new app through the Play Console:
     1. Open the build on expo.dev and download the .aab file.

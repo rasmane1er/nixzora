@@ -33,6 +33,17 @@ ship as compiled `dist/` folders that are not in git, so `apps/mobile/package.js
 `eas-build-post-install` script that builds them on the build server before the JavaScript is
 bundled. Without it both builds fail in "Bundle JavaScript".
 
+If `eas submit` sits at "waiting for an available submitter" (Expo's free queue), upload the
+`.ipa` straight to Apple instead, with an app-specific password from account.apple.com:
+
+```bash
+read -s "ASP?App-specific password: "; export ASP; echo
+xcrun altool --upload-app -t ios -f build.ipa -u <apple-id> -p @env:ASP; unset ASP
+```
+
+Every upload needs a build number higher than any earlier one for the same bundle id, including
+old expired TestFlight builds.
+
 ## What you need (one time)
 
 | Account                                                          | Cost            | Used for                            |
