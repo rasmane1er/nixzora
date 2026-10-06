@@ -18,6 +18,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+// First app import: starts crash reporting before anything else can fail.
+import { Sentry } from '@/lib/sentry';
 import { LockScreen } from '@/components/LockScreen';
 import { OfflineToast } from '@/components/OfflineToast';
 import { applySavedTheme } from '@/lib/appearance';
@@ -47,7 +49,7 @@ function navigationTheme(dark: boolean): Theme {
   };
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const dark = useColorScheme() === 'dark';
   const { status } = useSession();
   const t = useT('appShop');
@@ -146,3 +148,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

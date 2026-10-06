@@ -23,8 +23,8 @@
       "ignoreDependencies": ["@prisma/client", "pino-pretty"]
     },
     "apps/mobile": {
-      "entry": ["src/**/*.web.ts"],
-      "ignoreDependencies": ["expo-application", "expo-updates", "@nixzora/tsconfig"]
+      "entry": ["src/**/*.web.ts", "metro.config.js"],
+      "ignoreDependencies": ["expo-application", "@nixzora/tsconfig"]
     },
     "packages/ui": {
       "ignoreDependencies": ["react", "@types/react"]

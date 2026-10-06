@@ -6,8 +6,7 @@ in the same pull request as any change that collects something new.
 
 Ground rules that hold for every row:
 
-- **No tracking.** No advertising SDKs, no analytics or crash-reporting SDKs, no data shared with
-  data brokers, no linking with other companies' data for ads. Apple: "Data Used to Track You" is
+- **No tracking.** No advertising or analytics SDKs, no data shared with data brokers, no linking with other companies' data for ads. Apple: "Data Used to Track You" is
   empty and the app does not show the App Tracking Transparency prompt.
 - **Encrypted in transit** (HTTPS/TLS only; `ITSAppUsesNonExemptEncryption: false`).
 - **Deletion:** Account → Delete account in the app, and `https://nixzora.com/account` on the web.
@@ -28,10 +27,12 @@ Ground rules that hold for every row:
 | User Content → Customer Support   | Messages sent through Help                                      | Yes            | Customer Support                    |
 | User Content → Other User Content | Product reviews; questions typed to the assistant (see note)    | Yes            | App Functionality                   |
 | Identifiers → User ID             | Account id; push notification token for order updates           | Yes            | App Functionality                   |
+| Diagnostics → Crash Data          | Crash reports and error stack traces (Sentry)                   | Yes            | App Functionality                   |
+| Diagnostics → Performance Data    | App start and screen load times, a 10% sample (Sentry)          | Yes            | App Functionality                   |
 
 **Not collected:** browsing history (the app sends no product-view events), precise or coarse location, contacts, health, fitness, sensitive info,
 emails or texts, audio, gameplay, search history (search terms are not stored), product
-interaction for analytics, advertising data, crash or performance data, other diagnostics.
+interaction for analytics, advertising data, other diagnostics.
 
 Notes:
 
@@ -42,6 +43,10 @@ Notes:
 - **IP address and device name** are kept with each sign-in session and with checkout fraud
   checks. They are used for security and fraud prevention, never to work out a location.
   Apple has no separate category for this; it is covered by "App Functionality".
+- **Crash reports** go to Sentry (our error-monitoring provider): the stack trace, device model,
+  OS and app version, and the account id (never the name or email). No screenshots, screen
+  recordings, IP addresses or request bodies are sent. Linked to the user only through the
+  account id, so support can match a crash to a ticket.
 - **Face ID / fingerprint** never leave the device (the OS checks them and unlocks a key in the
   secure store).
 
@@ -51,8 +56,8 @@ Notes:
 - Is all of the user data collected by your app encrypted in transit? **Yes**
 - Do you provide a way for users to request that their data is deleted? **Yes**
   (in the app, and the web page `https://nixzora.com/account`)
-- Shared with third parties: **No.** Stripe (payments), the AI provider (assistant answers) and
-  AWS (hosting, email) act on our behalf as service providers, which Google does not count as
+- Shared with third parties: **No.** Stripe (payments), the AI provider (assistant answers), Sentry
+  (crash reports) and AWS (hosting, email) act on our behalf as service providers, which Google does not count as
   sharing.
 
 | Category → Type                             | Collected | Optional?         | Purposes                                              |
@@ -67,9 +72,11 @@ Notes:
 | Messages → Other in-app messages            | Yes       | Optional          | App functionality, Customer support                   |
 | App activity → Other user-generated content | Yes       | Optional          | App functionality (reviews, assistant)                |
 | Device or other IDs                         | Yes       | Required for push | App functionality (push token)                        |
+| App info and performance → Crash logs       | Yes       | Required          | App functionality (fixing crashes)                    |
+| App info and performance → Diagnostics      | Yes       | Required          | App functionality (app start and screen load times)   |
 
 Not collected: app interactions, location, web browsing, contacts, calendar, audio, files and docs, health and
-fitness, app info and performance (crash logs, diagnostics).
+fitness.
 
 ## Permissions the app asks for
 

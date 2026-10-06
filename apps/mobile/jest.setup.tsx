@@ -22,6 +22,12 @@ jest.mock('expo-local-authentication', () => ({
   AuthenticationType: { FINGERPRINT: 1, FACIAL_RECOGNITION: 2, IRIS: 3 },
 }));
 
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  setUser: jest.fn(),
+  wrap: (component: unknown) => component,
+}));
+
 // Icon fonts load asynchronously; tests only need a placeholder.
 jest.mock('@expo/vector-icons/Ionicons', () => {
   const { Text } = require('react-native');

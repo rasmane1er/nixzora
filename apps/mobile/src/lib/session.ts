@@ -5,6 +5,7 @@ import { confirmIdentity } from './biometrics';
 import { API_URL } from './config';
 import { t } from './i18n';
 import { secureStorage } from './secure-storage';
+import { setSentryUser } from './sentry';
 
 export type SessionStatus = 'loading' | 'locked' | 'signedOut' | 'signedIn';
 export type SessionState = {
@@ -31,6 +32,7 @@ const listeners = new Set<() => void>();
 
 function set(patch: Partial<SessionState>): void {
   state = { ...state, ...patch };
+  if ('user' in patch) setSentryUser(patch.user?.id ?? null);
   for (const listener of listeners) listener();
 }
 

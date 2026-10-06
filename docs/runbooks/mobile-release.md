@@ -148,6 +148,25 @@ eas env:create --environment production --name EXPO_PUBLIC_WEB_URL --value https
    Apply, then check `https://<staging domain>/.well-known/apple-app-site-association` and
    `/.well-known/assetlinks.json` answer with JSON.
 
+## 4b. Crash reports (Sentry)
+
+Crashes and errors go to the Sentry project `opportunity-corridor/nixzora-mobile`. The public DSN
+is in `eas.json` (`EXPO_PUBLIC_SENTRY_DSN`, a send-only key, safe to commit). Development builds
+and tests send nothing. To get readable stack traces, the build uploads source maps and debug
+symbols, which needs an organization auth token stored as an EAS secret (never commit it):
+
+1. Sentry → Settings → Developer Settings → Organization Tokens → **Create New Token**.
+2. Store it on EAS for both build environments:
+
+   ```bash
+   for env in preview production; do
+     eas env:create --environment $env --name SENTRY_AUTH_TOKEN --visibility secret --value <token>
+   done
+   ```
+
+What is sent, and what is not, is listed in `apps/mobile/store/privacy.md`; keep the store
+privacy forms in step with it.
+
 ## 5. Push from the API
 
 The production task definition sets `PUSH_DRIVER=expo`. If you turn on "Enhanced security for

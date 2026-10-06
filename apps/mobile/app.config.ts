@@ -146,6 +146,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     ['expo-notifications', { icon: './assets/notification-icon.png', color: '#E8622C' }],
     ['@stripe/stripe-react-native', { merchantIdentifier: merchantId, enableGooglePay: true }],
+    // Uploads source maps and native debug symbols when SENTRY_AUTH_TOKEN is set on EAS.
+    [
+      '@sentry/react-native/expo',
+      {
+        organization: 'opportunity-corridor',
+        project: 'nixzora-mobile',
+        url: 'https://sentry.io/',
+      },
+    ],
   ],
   extra: {
     variant,
