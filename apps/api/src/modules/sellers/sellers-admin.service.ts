@@ -130,7 +130,7 @@ export class SellersAdminService {
           aggregateType: 'seller',
           aggregateId: id,
           type: `seller.status.${input.status.toLowerCase()}`,
-          payload: { sellerId: id, status: input.status },
+          payload: { sellerId: id, status: input.status, from: seller.status },
         },
       });
       if (input.status === 'ACTIVE') return [];

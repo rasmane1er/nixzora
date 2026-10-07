@@ -100,6 +100,22 @@ export const email = defineMessages({
     seller_payoutsResumed_subject: 'Payouts to {store} have restarted',
     seller_payoutsResumed_text:
       'We finished reviewing recent activity on {store}. Payouts have restarted: your available balance goes out with the next daily payout.\n\nEarnings: {link}\n',
+    seller_applied_subject: 'We received your application for {store}',
+    seller_applied_text:
+      'Thanks for applying to sell on NIXZORA as {store}.\n\nNext, verify your identity and add a bank account with Stripe, so we can pay you. We review your application once that is done and email you the result. Meanwhile you can prepare your listings.\n\nSeller portal: {link}\n',
+    seller_approved_subject: '{store} is open on NIXZORA',
+    seller_approved_text:
+      'Your application was approved: {store} is open. Listings you submit get a quick review before they appear in your store.\n\nYour store: {storeLink}\nSeller portal: {link}\n',
+    seller_reinstated_subject: '{store} is open again',
+    seller_reinstated_text:
+      '{store} is open again. Listings you had live went back to drafts when the store was paused: submit them again to put them back in your store.\n\nSeller portal: {link}\n',
+    seller_rejected_subject: 'Your application for {store}',
+    seller_rejected_text:
+      'We could not approve {store} on NIXZORA.{reason}\n\nQuestions? Reply to this email.\n',
+    seller_suspended_subject: '{store} is paused',
+    seller_suspended_text:
+      'We paused {store} on NIXZORA: its listings are hidden from the store for now.{reason}\n\nQuestions? Reply to this email.\n\nSeller portal: {link}\n',
+    seller_reason: '\n\nReason: {reason}',
     seller_newOrder_heldNote:
       'We are checking this order before it ships. Do not ship it yet: we will email you as soon as it is cleared.',
     seller_newOrder_text:
@@ -215,6 +231,22 @@ export const email = defineMessages({
     seller_payoutsResumed_subject: 'Les versements à {store} ont repris',
     seller_payoutsResumed_text:
       'Nous avons fini de vérifier l’activité récente de {store}. Les versements ont repris : votre solde disponible part avec le prochain versement quotidien.\n\nRevenus : {link}\n',
+    seller_applied_subject: 'Nous avons reçu votre candidature pour {store}',
+    seller_applied_text:
+      'Merci d’avoir demandé à vendre sur NIXZORA en tant que {store}.\n\nProchaine étape : vérifiez votre identité et ajoutez un compte bancaire avec Stripe, pour que nous puissions vous payer. Nous examinons votre candidature une fois cette étape terminée et vous écrivons le résultat. En attendant, vous pouvez préparer vos annonces.\n\nEspace vendeur : {link}\n',
+    seller_approved_subject: '{store} est ouverte sur NIXZORA',
+    seller_approved_text:
+      'Votre candidature est acceptée : {store} est ouverte. Les annonces que vous soumettez passent une vérification rapide avant d’apparaître dans votre boutique.\n\nVotre boutique : {storeLink}\nEspace vendeur : {link}\n',
+    seller_reinstated_subject: '{store} est de nouveau ouverte',
+    seller_reinstated_text:
+      '{store} est de nouveau ouverte. Vos annonces en ligne sont repassées en brouillon pendant la pause : soumettez-les à nouveau pour les remettre dans votre boutique.\n\nEspace vendeur : {link}\n',
+    seller_rejected_subject: 'Votre candidature pour {store}',
+    seller_rejected_text:
+      'Nous n’avons pas pu accepter {store} sur NIXZORA.{reason}\n\nDes questions ? Répondez à cet e-mail.\n',
+    seller_suspended_subject: '{store} est en pause',
+    seller_suspended_text:
+      'Nous avons mis {store} en pause sur NIXZORA : ses annonces sont masquées pour le moment.{reason}\n\nDes questions ? Répondez à cet e-mail.\n\nEspace vendeur : {link}\n',
+    seller_reason: '\n\nMotif : {reason}',
     seller_newOrder_heldNote:
       'Nous vérifions cette commande avant son expédition. Ne l’expédiez pas encore : nous vous écrirons dès qu’elle sera validée.',
     seller_newOrder_text:
@@ -328,6 +360,22 @@ export const email = defineMessages({
     seller_payoutsResumed_subject: 'Los pagos a {store} se han reanudado',
     seller_payoutsResumed_text:
       'Terminamos de revisar la actividad reciente de {store}. Los pagos se han reanudado: tu saldo disponible sale con el próximo pago diario.\n\nGanancias: {link}\n',
+    seller_applied_subject: 'Recibimos tu solicitud para {store}',
+    seller_applied_text:
+      'Gracias por solicitar vender en NIXZORA como {store}.\n\nSiguiente paso: verifica tu identidad y agrega una cuenta bancaria con Stripe, para que podamos pagarte. Revisamos tu solicitud cuando termines y te escribimos con el resultado. Mientras tanto, puedes preparar tus anuncios.\n\nPortal de vendedor: {link}\n',
+    seller_approved_subject: '{store} está abierta en NIXZORA',
+    seller_approved_text:
+      'Tu solicitud fue aprobada: {store} está abierta. Los anuncios que envíes pasan una revisión rápida antes de aparecer en tu tienda.\n\nTu tienda: {storeLink}\nPortal de vendedor: {link}\n',
+    seller_reinstated_subject: '{store} está abierta de nuevo',
+    seller_reinstated_text:
+      '{store} está abierta de nuevo. Los anuncios que tenías publicados volvieron a borrador durante la pausa: envíalos otra vez para que vuelvan a tu tienda.\n\nPortal de vendedor: {link}\n',
+    seller_rejected_subject: 'Tu solicitud para {store}',
+    seller_rejected_text:
+      'No pudimos aprobar {store} en NIXZORA.{reason}\n\n¿Preguntas? Responde a este correo.\n',
+    seller_suspended_subject: '{store} está en pausa',
+    seller_suspended_text:
+      'Pusimos {store} en pausa en NIXZORA: sus anuncios están ocultos por ahora.{reason}\n\n¿Preguntas? Responde a este correo.\n\nPortal de vendedor: {link}\n',
+    seller_reason: '\n\nMotivo: {reason}',
     seller_newOrder_heldNote:
       'Estamos revisando este pedido antes del envío. No lo envíes todavía: te escribiremos en cuanto se apruebe.',
     seller_newOrder_text:
