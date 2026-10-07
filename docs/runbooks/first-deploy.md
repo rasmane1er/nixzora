@@ -52,6 +52,10 @@ aws secretsmanager put-secret-value --secret-id "$SECRET_ARN" --secret-string fi
 shred -u /tmp/app.json
 ```
 
+The Stripe keys can also be set on their own, hidden as you paste them:
+`ENV=staging scripts/ops/set-stripe-keys.sh`. Set them before switching `PAYMENTS_PROVIDER` to
+`stripe`, or the new API tasks refuse to start.
+
 Stripe webhook: in the Stripe dashboard add an endpoint
 `https://api.<staging host>/api/v1/payments/webhooks/stripe` for `payment_intent.*` events and
 `charge.dispute.created` (chargebacks feed the fraud reviews, ADR-0024); its signing secret is

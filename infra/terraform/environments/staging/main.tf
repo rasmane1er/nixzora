@@ -160,9 +160,10 @@ module "platform" {
   app_config = merge({
     TAX_RATES_BPS     = "MD:600"
     SHIPPING_PROVIDER = "none"
-    # Public demo: test payments (no card, no money). Switch to "stripe" with test keys
-    # (sk_test_…) in the app secret for a real Stripe checkout.
-    PAYMENTS_PROVIDER   = "fake"
+    # Stripe sandbox checkout (test cards, Google Pay / Apple Pay test mode; no real money).
+    # The sk_test_/pk_test_/whsec_ keys live in the app secret. Seller payouts stay simulated
+    # (ALLOW_TEST_PAYMENTS) because the demo sellers have no Stripe Connect accounts.
+    PAYMENTS_PROVIDER   = "stripe"
     PAYOUTS_PROVIDER    = "fake"
     ALLOW_TEST_PAYMENTS = "true"
   }, var.sign_in_client_ids)
