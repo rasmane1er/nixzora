@@ -4,6 +4,7 @@ import { formatters, type Locale, translator } from '@nixzora/i18n';
 import { toLocale } from '../../common/locale';
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
+import { type EmailBlock, renderEmail } from '../notifications/email-layout';
 import { MailService } from '../notifications/mail.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { orderAccessToken, orderInclude, type OrderRow, toOrderView } from './order-links';
@@ -173,10 +174,97 @@ export class OrderEmails implements OnModuleInit {
       },
     }[kind];
 
+    // HTML version: the same words, laid out. Receipts get the item table and totals; the
+    // others reuse their text paragraphs, with the order link as a button.
+    const detailsLine = t('order_details', { link }).trim();
+    const paragraphs = content.text
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter((p) => p && p !== detailsLine)
+      // The button below links to the order, so drop the raw URL from sentences that end with it.
+      .map((p) => (p.endsWith(link) ? p.slice(0, -link.length).replace(/[\s:]+$/, '.') : p));
+    const blocks: EmailBlock[] =
+      kind === 'receipt'
+        ? [
+            { kind: 'text', paragraphs: [t('order_html_thanks')] },
+            {
+              kind: 'items',
+              title: t('order_html_items'),
+              items: view.items.map((item) => ({
+                name: item.productTitle,
+                detail: t('order_html_itemDetail', {
+                  quantity: item.quantity,
+                  variant: item.variantTitle,
+                }),
+                amount: money(item.totalCents, view.currency),
+              })),
+            },
+            {
+              kind: 'rows',
+              rows: [
+                {
+                  label: t('order_html_subtotal'),
+                  value: money(view.subtotalCents, view.currency),
+                },
+                {
+                  label: t('order_html_shipping'),
+                  value: view.shippingCents
+                    ? money(view.shippingCents, view.currency)
+                    : t('order_shippingFree'),
+                },
+                { label: t('order_html_tax'), value: money(view.taxCents, view.currency) },
+                {
+                  label: t('order_html_total'),
+                  value: money(view.totalCents, view.currency),
+                  strong: true,
+                },
+              ],
+            },
+            { kind: 'box', title: t('order_html_shipTo'), lines: address.split('\n') },
+          ]
+        : [
+            {
+              kind: 'text',
+              paragraphs:
+                kind === 'shipped'
+                  ? paragraphs.filter((p) => !trackingText.includes(p))
+                  : paragraphs,
+            },
+            ...(kind === 'shipped' && parcels.length
+              ? [
+                  {
+                    kind: 'links' as const,
+                    links: parcels.map((part) => ({
+                      label: [
+                        part.seller
+                          ? t('order_parcelFrom', { seller: part.seller.displayName })
+                          : '',
+                        t('order_trackingNumber', {
+                          carrier: part.tracking!.carrier,
+                          number: part.tracking!.number,
+                        }),
+                      ].join(''),
+                      url: part.tracking!.url ?? null,
+                      linkText: t('order_html_track'),
+                    })),
+                  },
+                ]
+              : []),
+          ];
+    const html = renderEmail({
+      lang: locale,
+      preheader: kind === 'receipt' ? t('order_html_thanks') : (paragraphs[0] ?? content.subject),
+      heading: content.subject,
+      blocks,
+      button: { label: t('order_html_viewOrder'), url: link },
+      footer: [t('order_html_footer'), 'NIXZORA · 100 Warehouse Way, Upper Marlboro, MD 20774'],
+    });
+
     await this.mail.send({
       to: view.email,
       subject: content.subject,
       text: content.text,
+      html,
       template: `orders.${kind}`,
       data: { number: view.number, link },
     });

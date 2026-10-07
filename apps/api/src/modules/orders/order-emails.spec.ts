@@ -85,7 +85,9 @@ function setup(row: OrderRow, userLanguage?: string) {
   } as unknown as ConfigService<Env, true>;
   new OrderEmails(outbox, mail, prisma, config).onModuleInit();
   const paid = () => handlers.get('order.paid')!({ aggregateId: row.id, payload: {} });
-  return { paid, sent };
+  const emit = (type: string, payload: Record<string, unknown> = {}) =>
+    handlers.get(type)!({ aggregateId: row.id, payload });
+  return { paid, emit, sent };
 }
 
 describe('OrderEmails', () => {
@@ -117,5 +119,59 @@ describe('OrderEmails', () => {
     await paid();
     expect(sent[0]!.subject).toBe('Tu pedido de NIXZORA NX-ABC123');
     expect(sent[0]!.text).toContain('¡Gracias por tu pedido!');
+  });
+
+  describe('HTML version', () => {
+    it('sends a branded receipt with the items, totals, address and a button to the order', async () => {
+      const { paid, sent } = setup(order());
+      await paid();
+      const html = sent[0]!.html!;
+      expect(html).toMatch(/^<!doctype html>\n<html lang="en">/);
+      expect(html).toContain('Kestrel 14 Pro');
+      expect(html).toContain('Qty 1 · 32GB / 1TB');
+      expect(html).toContain('$1,333.26');
+      expect(html).toContain('Brandywine, MD 20613');
+      expect(html).toMatch(
+        /href="https:\/\/nixzora\.test\/orders\/NX-ABC123\?token=[\w-]{43}"[^>]*>View your order</,
+      );
+      // The text version is still sent, unchanged.
+      expect(sent[0]!.text).toMatch(/^Thanks for your order!/);
+    });
+
+    it('escapes what customers and sellers typed', async () => {
+      const row = order();
+      row.items[0]!.productTitle = '<script>alert(1)</script> "Pro"';
+      row.shippingAddress = {
+        ...(row.shippingAddress as Record<string, unknown>),
+        fullName: 'Ada <b>Lovelace</b>',
+      } as never;
+      const { paid, sent } = setup(row);
+      await paid();
+      const html = sent[0]!.html!;
+      expect(html).not.toContain('<script>');
+      expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt; &quot;Pro&quot;');
+      expect(html).toContain('Ada &lt;b&gt;Lovelace&lt;/b&gt;');
+    });
+
+    it('is written in the customer language', async () => {
+      const { paid, sent } = setup(order({ language: 'fr' }));
+      await paid();
+      expect(sent[0]!.html).toContain('<html lang="fr">');
+      expect(sent[0]!.html).toContain('Voir votre commande');
+    });
+
+    it('keeps the return link in the delivered email and shows tracking when shipped', async () => {
+      const shippedRow = order({ trackingCarrier: 'UPS', trackingNumber: '1Z999' } as never);
+      const shipped = setup(shippedRow);
+      await shipped.emit('order.shipped');
+      expect(shipped.sent[0]!.html).toContain('UPS tracking number 1Z999');
+      expect(shipped.sent[0]!.html).not.toContain('Order details:');
+
+      const delivered = setup(order());
+      await delivered.emit('order.delivered');
+      const html = delivered.sent[0]!.html!;
+      expect(html).toContain('start a return within 30 days');
+      expect(html).toContain('View your order');
+    });
   });
 });

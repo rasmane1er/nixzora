@@ -31,6 +31,19 @@ export const email = defineMessages({
     order_trackingNumber: '{carrier} tracking number {number}',
     order_details: 'Order details: {link}',
     order_refundDefaultReason: 'refund',
+    // HTML version of order emails (the text version above is always sent too)
+    order_html_thanks: "Thanks for your order! Here's your receipt.",
+    order_html_items: 'Items',
+    order_html_itemDetail: 'Qty {quantity} · {variant}',
+    order_html_subtotal: 'Subtotal',
+    order_html_shipping: 'Shipping',
+    order_html_tax: 'Tax',
+    order_html_total: 'Total',
+    order_html_shipTo: 'Shipping to',
+    order_html_viewOrder: 'View your order',
+    order_html_track: 'Track package',
+    order_html_footer:
+      'You received this email because you placed an order on NIXZORA. Questions? Just reply to this email.',
 
     order_receipt_subject: 'Your NIXZORA order {number}',
     order_receipt_text:
@@ -135,6 +148,18 @@ export const email = defineMessages({
     order_trackingNumber: 'Numéro de suivi {carrier} : {number}',
     order_details: 'Détails de la commande : {link}',
     order_refundDefaultReason: 'remboursement',
+    order_html_thanks: 'Merci pour votre commande ! Voici votre reçu.',
+    order_html_items: 'Articles',
+    order_html_itemDetail: 'Qté {quantity} · {variant}',
+    order_html_subtotal: 'Sous-total',
+    order_html_shipping: 'Livraison',
+    order_html_tax: 'Taxes',
+    order_html_total: 'Total',
+    order_html_shipTo: 'Livraison à',
+    order_html_viewOrder: 'Voir votre commande',
+    order_html_track: 'Suivre le colis',
+    order_html_footer:
+      'Vous recevez cet e-mail car vous avez passé une commande sur NIXZORA. Une question ? Répondez simplement à cet e-mail.',
 
     order_receipt_subject: 'Votre commande NIXZORA {number}',
     order_receipt_text:
@@ -237,6 +262,18 @@ export const email = defineMessages({
     order_trackingNumber: 'Número de rastreo de {carrier}: {number}',
     order_details: 'Detalles del pedido: {link}',
     order_refundDefaultReason: 'reembolso',
+    order_html_thanks: '¡Gracias por tu pedido! Aquí tienes tu recibo.',
+    order_html_items: 'Artículos',
+    order_html_itemDetail: 'Cant. {quantity} · {variant}',
+    order_html_subtotal: 'Subtotal',
+    order_html_shipping: 'Envío',
+    order_html_tax: 'Impuestos',
+    order_html_total: 'Total',
+    order_html_shipTo: 'Envío a',
+    order_html_viewOrder: 'Ver tu pedido',
+    order_html_track: 'Rastrear paquete',
+    order_html_footer:
+      'Recibes este correo porque hiciste un pedido en NIXZORA. ¿Preguntas? Responde a este correo.',
 
     order_receipt_subject: 'Tu pedido de NIXZORA {number}',
     order_receipt_text:
