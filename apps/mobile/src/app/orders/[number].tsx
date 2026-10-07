@@ -11,7 +11,6 @@ import { RateSeller } from '@/components/RateSeller';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
 import { useFormatters } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { enablePush, type PushStatus } from '@/lib/push';
@@ -289,9 +288,10 @@ export default function OrderScreen() {
             title={t('returnItemUntil', { date: shortDate(o.returnableUntil) })}
             tone="ghost"
             onPress={() =>
-              void WebBrowser.openBrowserAsync(
-                `${WEB_URL}/orders/${o.number}${token ? `?token=${encodeURIComponent(token)}` : ''}`,
-              )
+              router.push({
+                pathname: '/return/[number]',
+                params: token ? { number: o.number, token } : { number: o.number },
+              })
             }
           />
         ) : null}
