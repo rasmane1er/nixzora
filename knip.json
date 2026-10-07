@@ -24,7 +24,12 @@
     },
     "apps/mobile": {
       "entry": ["src/**/*.web.ts", "metro.config.js"],
-      "ignoreDependencies": ["expo-application", "@nixzora/tsconfig", "react-native-worklets"]
+      "ignoreDependencies": [
+        "expo-application",
+        "@nixzora/tsconfig",
+        "react-native-worklets",
+        "@sentry/cli"
+      ]
     },
     "packages/ui": {
       "ignoreDependencies": ["react", "@types/react"]

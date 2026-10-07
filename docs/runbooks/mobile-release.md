@@ -173,6 +173,9 @@ symbols, which needs an organization auth token stored as an EAS secret (never c
    done
    ```
 
+`@sentry/cli` is a direct dev dependency of the app on purpose: the Android build finds it with
+`require.resolve` from `apps/mobile`, which fails under pnpm if it is only a transitive package.
+
 What is sent, and what is not, is listed in `apps/mobile/store/privacy.md`; keep the store
 privacy forms in step with it.
 
