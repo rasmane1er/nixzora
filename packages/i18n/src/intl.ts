@@ -5,7 +5,10 @@
  */
 const numberFormats = new Map<string, Intl.NumberFormat>();
 const dateFormats = new Map<string, Intl.DateTimeFormat>();
-const pluralRules = new Map<string, Intl.PluralRules>();
+const pluralRules = new Map<string, PluralRules>();
+
+/** The part of Intl.PluralRules the translator uses. */
+export type PluralRules = Pick<Intl.PluralRules, 'select'>;
 
 export function numberFormat(
   tag: string,
@@ -24,8 +27,30 @@ export function dateFormat(tag: string, options: Intl.DateTimeFormatOptions): In
   return format;
 }
 
-export function plurals(tag: string): Intl.PluralRules {
+/**
+ * CLDR cardinal rules for the languages we ship, for engines without Intl.PluralRules. Hermes
+ * (the React Native engine on Android) has NumberFormat and DateTimeFormat but no PluralRules;
+ * calling `new Intl.PluralRules` there crashed the app on its first translated plural.
+ */
+function fallbackPluralRules(tag: string): PluralRules {
+  const language = tag.toLowerCase().split('-')[0];
+  return {
+    select(n: number): Intl.LDMLPluralRule {
+      const i = Math.floor(Math.abs(n));
+      if (language === 'fr') return i === 0 || i === 1 ? 'one' : 'other';
+      return n === 1 ? 'one' : 'other';
+    },
+  };
+}
+
+export function plurals(tag: string): PluralRules {
   let rules = pluralRules.get(tag);
-  if (!rules) pluralRules.set(tag, (rules = new Intl.PluralRules(tag)));
+  if (!rules) {
+    rules =
+      typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function'
+        ? new Intl.PluralRules(tag)
+        : fallbackPluralRules(tag);
+    pluralRules.set(tag, rules);
+  }
   return rules;
 }
