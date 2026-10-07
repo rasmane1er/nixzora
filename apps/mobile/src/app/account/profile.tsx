@@ -10,6 +10,7 @@ import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { session } from '@/lib/session';
 import { space } from '@/lib/theme';
+import { fileSize, UploadError, uploadFile } from '@/lib/upload';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -57,18 +58,15 @@ export default function ProfileScreen() {
       const asset = picked.canceled ? null : picked.assets[0];
       if (!asset) return null;
       const type = asset.mimeType && TYPES.includes(asset.mimeType) ? asset.mimeType : 'image/jpeg';
-      const blob = await (await fetch(asset.uri)).blob();
-      if (blob.size > 5 * 1024 * 1024) throw new Error(t('profilePhotoTooBig'));
+      const size = await fileSize(asset.uri, asset.fileSize);
+      if (!size) throw new UploadError(t('profileUploadFailed'));
+      if (size > 5 * 1024 * 1024) throw new UploadError(t('profilePhotoTooBig'));
       const ticket = await api.me.avatarUpload({
         contentType: type as 'image/jpeg',
-        sizeBytes: blob.size,
+        sizeBytes: size,
       });
-      const put = await fetch(ticket.uploadUrl, {
-        method: 'PUT',
-        headers: ticket.headers,
-        body: blob,
-      });
-      if (!put.ok) throw new Error(t('profileUploadFailed'));
+      const status = await uploadFile(asset.uri, ticket).catch(() => 0);
+      if (status < 200 || status >= 300) throw new UploadError(t('profileUploadFailed'));
       return api.me.setAvatar(ticket.storageKey);
     },
     onSuccess: (next) => next && saved(next),
@@ -101,7 +99,11 @@ export default function ProfileScreen() {
             />
           ) : null}
         </Row>
-        {photo.error ? <Banner tone="error">{errorMessage(photo.error)}</Banner> : null}
+        {photo.error ? (
+          <Banner tone="error">
+            {photo.error instanceof UploadError ? photo.error.message : errorMessage(photo.error)}
+          </Banner>
+        ) : null}
       </Card>
 
       <Card>
