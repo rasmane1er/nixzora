@@ -148,6 +148,15 @@ eas env:create --environment production --name EXPO_PUBLIC_WEB_URL --value https
    Apply, then check `https://<staging domain>/.well-known/apple-app-site-association` and
    `/.well-known/assetlinks.json` answer with JSON.
 
+## 4a. Native module versions
+
+Every native module must match the version Expo SDK expects
+(`node_modules/expo/bundledNativeModules.json`), including ones the app does not import itself.
+`react-native-reanimated` and `react-native-worklets` are peers of `expo-router`; left
+unpinned, pnpm installed newer ones and the Android build crashed at launch. They are pinned in
+`apps/mobile/package.json`. After an Expo upgrade, run `npx expo install --check` in
+`apps/mobile` and fix every mismatch before building.
+
 ## 4b. Crash reports (Sentry)
 
 Crashes and errors go to the Sentry project `opportunity-corridor/nixzora-mobile`. The public DSN
