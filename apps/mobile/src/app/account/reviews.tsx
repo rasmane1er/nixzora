@@ -61,7 +61,12 @@ export default function ReviewsScreen() {
               </Row>
               <Button
                 title={t('reviewsWrite')}
-                onPress={() => router.push(`/p/${line.productSlug}`)}
+                onPress={() =>
+                  router.push({
+                    pathname: '/review/[slug]',
+                    params: { slug: line.productSlug!, title: line.productTitle },
+                  })
+                }
               />
             </Card>
           ))}

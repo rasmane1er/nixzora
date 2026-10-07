@@ -91,7 +91,12 @@ function OrderCard({ order }: { order: AccountOrder }) {
                 <Button
                   title={t('writeReview')}
                   tone="ghost"
-                  onPress={() => router.push(`/p/${line.productSlug}`)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/review/[slug]',
+                      params: { slug: line.productSlug!, title: line.productTitle },
+                    })
+                  }
                   style={{ alignSelf: 'flex-start', minHeight: 36, paddingVertical: 6 }}
                 />
               ) : null}

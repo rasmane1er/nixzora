@@ -47,6 +47,8 @@ import type {
   PushDeviceRegister,
   ReturnCreate,
   ReturnView,
+  ReviewCreate,
+  ReviewView,
   SavedAddress,
   UsState,
 } from '@nixzora/validation';
@@ -231,6 +233,15 @@ export function createApiClient(options: ClientOptions) {
           `/catalog/products/${enc(slug)}/reviews/insights`,
           { auth: 'none' },
         ).then((res) => res.insights),
+      /** Your own review of a product (any status), or null. */
+      myReview: (slug: string) =>
+        request<{ review: (ReviewView & { status: AccountReview['status'] }) | null }>(
+          'GET',
+          `/catalog/products/${enc(slug)}/reviews/mine`,
+        ).then((res) => res.review),
+      /** Create or update your review; it is published after moderation. */
+      submitReview: (slug: string, body: ReviewCreate) =>
+        request<{ status: string }>('POST', `/catalog/products/${enc(slug)}/reviews`, { body }),
       /** Similar, bought-together and also-viewed products for a product page. */
       related: (slug: string) =>
         request<RelatedProducts>('GET', `/catalog/products/${enc(slug)}/related`, { auth: 'none' }),
