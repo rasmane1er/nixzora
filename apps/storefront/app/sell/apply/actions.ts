@@ -54,7 +54,22 @@ export async function saveStep(form: FormData): Promise<void> {
   const data = { ...((draft?.data ?? {}) as DraftData) };
   const values = readStep(step, form);
   data[step] = values;
-  const check = checkStep(step, values, await getT('sellApply'));
+  const t = await getT('sellApply');
+  let check = checkStep(step, values, t);
+  // Catch a taken store address here, not after the last step.
+  const handle =
+    step === 'business' ? String((values as Record<string, unknown>).handle ?? '') : '';
+  if (intent === 'continue' && check.ok && handle) {
+    const free = await api<{ available: boolean; suggestion: string }>(
+      `/seller/handle-available?handle=${encodeURIComponent(handle)}`,
+    ).catch(() => null);
+    if (free && !free.available) {
+      check = {
+        ok: false,
+        errors: { handle: t('handleTakenTry', { suggestion: free.suggestion }) },
+      };
+    }
+  }
   const errors = { ...(data.errors ?? {}) };
   delete errors[step];
   let completed = (draft?.completed ?? []).filter((k) => k !== step) as StepKey[];

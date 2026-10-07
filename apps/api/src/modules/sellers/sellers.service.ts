@@ -249,6 +249,12 @@ export class SellersService {
     );
   }
 
+  /** Checked while the application is filled in, so a taken address is caught on step 1. */
+  async handleAvailability(handle: string): Promise<{ available: boolean; suggestion: string }> {
+    const taken = await this.prisma.seller.findUnique({ where: { handle }, select: { id: true } });
+    return { available: !taken, suggestion: taken ? await this.availableHandle(handle) : handle };
+  }
+
   /** "Brightline Audio Co." → "brightline-audio-co", or the next free variant of it. */
   async availableHandle(name: string): Promise<string> {
     let base = slugify(name).slice(0, 34).replace(/-+$/, '');

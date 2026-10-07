@@ -39,6 +39,7 @@ export const sellApply = defineMessages({
     storeNameDba: 'Store name (DBA)',
     storeAddress: 'Store address',
     handleHint: 'Optional: nixzora.com/s/your-address. Made from the store name if empty.',
+    handleTakenTry: 'That store address is taken. Try {suggestion}, or choose another.',
     businessCategory: 'Business category',
     businessWebsite: 'Business website',
     whatYouSell: 'What do you sell?',
@@ -245,6 +246,8 @@ export const sellApply = defineMessages({
     storeAddress: 'Adresse de la boutique',
     handleHint:
       'Facultatif : nixzora.com/s/votre-adresse. Créée à partir du nom de la boutique si vide.',
+    handleTakenTry:
+      'Cette adresse de boutique est déjà prise. Essayez {suggestion} ou choisissez-en une autre.',
     businessCategory: 'Catégorie d’activité',
     businessWebsite: 'Site web de l’entreprise',
     whatYouSell: 'Que vendez-vous ?',
@@ -453,6 +456,7 @@ export const sellApply = defineMessages({
     storeAddress: 'Dirección de la tienda',
     handleHint:
       'Opcional: nixzora.com/s/tu-direccion. Si lo dejas vacío, se crea a partir del nombre de la tienda.',
+    handleTakenTry: 'Esa dirección de tienda ya está en uso. Prueba {suggestion} o elige otra.',
     businessCategory: 'Categoría del negocio',
     businessWebsite: 'Sitio web del negocio',
     whatYouSell: '¿Qué vendes?',

@@ -26,6 +26,7 @@ import {
   type ProductImageOrder,
   ProductImageOrderSchema,
   type SellerApplication,
+  SellerHandleSchema,
   type SellerApplicationDraft,
   SellerApplicationDraftSchema,
   SellerApplicationSchema,
@@ -191,6 +192,12 @@ export class SellerController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async discardApplication(@Actor() actor: ActorContext): Promise<void> {
     await this.applications.discardDraft(actor.user.id);
+  }
+
+  /** Whether a store address is still free, with a free variant to suggest when it is not. */
+  @Get('handle-available')
+  handleAvailable(@Query('handle', new ZodValidationPipe(SellerHandleSchema)) handle: string) {
+    return this.sellers.handleAvailability(handle);
   }
 
   /** Logo or banner, for the application or the store settings. */
