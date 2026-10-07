@@ -93,8 +93,14 @@ export async function saveStep(form: FormData): Promise<void> {
   redirect(`/sell/apply?step=${next}`);
 }
 
-/** The last step: agreements, then the store is created and the draft removed. */
-export async function submitApplication(form: FormData): Promise<void> {
+export type SubmitState = { done?: boolean };
+
+/**
+ * The last step: agreements, then the store is created and the draft removed. On success the
+ * form loads the seller portal as a full page (ApplicationForm): the header and the session
+ * change from customer to store owner, and a client-side redirect here left a blank page.
+ */
+export async function submitApplication(_: SubmitState, form: FormData): Promise<SubmitState> {
   const draft = await loadDraft();
   const data = { ...((draft?.data ?? {}) as DraftData) };
   data.review = readStep('review', form);
@@ -123,7 +129,7 @@ export async function submitApplication(form: FormData): Promise<void> {
     redirect(`/sell/apply?step=review&message=${encodeURIComponent(message)}`);
   }
   revalidatePath('/sell');
-  redirect('/sell?applied=1');
+  return { done: true };
 }
 
 export async function discardApplication(): Promise<void> {

@@ -77,6 +77,8 @@ test('a customer applies to sell in six steps and can finish later', async ({ pa
   await page.getByLabel(/information I provided is accurate/).check();
   await submit.click();
 
+  // The portal opens in the same tab as a full page, with the "received" note.
+  await page.waitForURL(/\/sell\?applied=1$/);
   await expect(page.getByRole('heading', { name: 'Seller application' })).toBeVisible();
   await expect(page.getByText('Waiting for verification')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Seller dashboard' })).toBeVisible();

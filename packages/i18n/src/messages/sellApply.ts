@@ -174,6 +174,7 @@ export const sellApply = defineMessages({
     confirmAccurate: 'I confirm that the information I provided is accurate.',
     submit: 'Submit application →',
     submitting: 'Submitting…',
+    openingPortal: 'Application sent. Opening your seller page…',
     submitHint:
       "By submitting, you agree to NIXZORA's Seller Terms and Policies. Our team reviews applications, usually within one business day.",
 
@@ -384,6 +385,7 @@ export const sellApply = defineMessages({
     confirmAccurate: 'Je confirme que les informations fournies sont exactes.',
     submit: 'Envoyer la candidature →',
     submitting: 'Envoi…',
+    openingPortal: 'Candidature envoyée. Ouverture de votre espace vendeur…',
     submitHint:
       'En envoyant votre candidature, vous acceptez les Conditions et règles vendeurs de NIXZORA. Notre équipe examine les candidatures, généralement sous un jour ouvré.',
 
@@ -592,6 +594,7 @@ export const sellApply = defineMessages({
     confirmAccurate: 'Confirmo que la información que proporcioné es correcta.',
     submit: 'Enviar solicitud →',
     submitting: 'Enviando…',
+    openingPortal: 'Solicitud enviada. Abriendo tu portal de vendedor…',
     submitHint:
       'Al enviar, aceptas los Términos y políticas para vendedores de NIXZORA. Nuestro equipo revisa las solicitudes, normalmente en un día hábil.',
 

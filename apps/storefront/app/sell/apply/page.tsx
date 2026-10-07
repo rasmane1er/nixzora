@@ -29,6 +29,7 @@ import {
   stepIndex,
   type StepKey,
 } from '@/lib/seller-onboarding';
+import { ApplicationForm } from './ApplicationForm';
 import { discardApplication, saveStep, submitApplication } from './actions';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -827,7 +828,7 @@ export default async function ApplyPage({ searchParams }: { searchParams: Search
       ) : null}
 
       {step === 'review' ? (
-        <form id="form" action={submitApplication} className="card form stack">
+        <ApplicationForm action={submitApplication} opening={t('openingPortal')}>
           <h2>{t('reviewTitle')}</h2>
           <Summary data={data} />
           <h2>{t('agreementTitle')}</h2>
@@ -835,7 +836,7 @@ export default async function ApplyPage({ searchParams }: { searchParams: Search
           <p className="hint" style={{ margin: 0 }}>
             {t('submitHint')}
           </p>
-        </form>
+        </ApplicationForm>
       ) : (
         <form id="form" action={saveStep} className="card form stack" noValidate={false}>
           <input type="hidden" name="step" value={step} />
