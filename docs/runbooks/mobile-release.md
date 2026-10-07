@@ -79,7 +79,6 @@ or the CLI):
 for env in preview production; do
   eas env:create --environment $env --name EAS_PROJECT_ID --value <id> --visibility plaintext
   eas env:create --environment $env --name EXPO_OWNER --value <account> --visibility plaintext
-  eas env:create --environment $env --name APP_LINK_DOMAIN --value <storefront domain> --visibility plaintext
 done
 eas env:create --environment preview --name EXPO_PUBLIC_API_URL --value https://api.staging.<domain> --visibility plaintext
 eas env:create --environment preview --name EXPO_PUBLIC_WEB_URL --value https://staging.<domain> --visibility plaintext
@@ -130,6 +129,9 @@ eas env:create --environment production --name EXPO_PUBLIC_WEB_URL --value https
    submissions**.
 
 ## 4. Links that open in the app
+
+The app half is in `apps/mobile/eas.json` (`APP_LINK_DOMAIN`: staging for preview builds, the
+main domain for production). Changing it needs a new build, not an over-the-air update.
 
 1. Find the signing fingerprints: `eas credentials` → Android → preview → shows the keystore
    SHA-256. If Play App Signing is on, also copy the **app signing key** SHA-256 from Play

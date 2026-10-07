@@ -93,9 +93,14 @@ variable "mobile_app_links" {
     android_cert_fingerprints = list(string)
   })
   default = {
-    ios_app_ids               = ["7HD2Z858BV.com.nixzora.shop.preview"]
-    android_package           = "com.nixzora.shop.preview"
-    android_cert_fingerprints = []
+    ios_app_ids     = ["7HD2Z858BV.com.nixzora.shop.preview"]
+    android_package = "com.nixzora.shop.preview"
+    # Play Console > App integrity: Google's app signing key (what Play installs are signed with)
+    # and the EAS upload key (builds installed straight from Expo).
+    android_cert_fingerprints = [
+      "70:C5:BB:A9:43:EF:C9:2A:70:0A:79:89:AF:57:79:FA:C1:C8:26:64:2A:F6:34:82:B4:D2:71:10:67:E3:92:71",
+      "1F:17:25:CB:0D:B3:5C:DB:8C:B1:AF:D6:8B:E6:73:20:60:99:89:1B:D2:28:91:AA:52:0D:42:29:00:94:E5:B6",
+    ]
   }
 }
 

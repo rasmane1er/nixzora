@@ -27,7 +27,8 @@
       "environment": "preview",
       "env": {
         "APP_VARIANT": "preview",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://f9e3d8192ab488f33eaa2740a1d17485@o4511719557496832.ingest.us.sentry.io/4512211605127168"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://f9e3d8192ab488f33eaa2740a1d17485@o4511719557496832.ingest.us.sentry.io/4512211605127168",
+        "APP_LINK_DOMAIN": "staging.nixzora.com"
       },
       "android": {
         "buildType": "app-bundle"
@@ -41,7 +42,8 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://f9e3d8192ab488f33eaa2740a1d17485@o4511719557496832.ingest.us.sentry.io/4512211605127168"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://f9e3d8192ab488f33eaa2740a1d17485@o4511719557496832.ingest.us.sentry.io/4512211605127168",
+        "APP_LINK_DOMAIN": "nixzora.com"
       }
     }
   },
