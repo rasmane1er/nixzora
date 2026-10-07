@@ -81,6 +81,7 @@ export const ops = defineMessages({
     reasonSignedOut: 'You are signed out.',
     workEmail: 'Work email',
     password: 'Password',
+    forgotPassword: 'Forgot your password?',
     verifyTitle: 'Two-step verification',
     enterCode: 'Enter your code',
     verifyIntro:
@@ -227,6 +228,7 @@ export const ops = defineMessages({
     reasonSignedOut: 'Vous êtes déconnecté.',
     workEmail: 'E-mail professionnel',
     password: 'Mot de passe',
+    forgotPassword: 'Mot de passe oublié ?',
     verifyTitle: 'Validation en deux étapes',
     enterCode: 'Saisissez votre code',
     verifyIntro:
@@ -376,6 +378,7 @@ export const ops = defineMessages({
     reasonSignedOut: 'Cerraste sesión.',
     workEmail: 'Correo de trabajo',
     password: 'Contraseña',
+    forgotPassword: '¿Olvidaste tu contraseña?',
     verifyTitle: 'Verificación en dos pasos',
     enterCode: 'Ingresa tu código',
     verifyIntro:

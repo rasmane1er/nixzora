@@ -7,6 +7,9 @@ import { param, type SearchParams } from '@/lib/format';
 import { getT } from '@/lib/i18n';
 import { signIn } from './actions';
 
+/** Staff reset their password on the storefront: same account, same reset email. */
+const FORGOT_PASSWORD_URL = `${(process.env.STOREFRONT_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/account/forgot-password`;
+
 export async function generateMetadata(): Promise<Metadata> {
   const common = await getT('common');
   return { title: common('signIn') };
@@ -45,6 +48,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           </label>
           <SubmitButton>{common('signIn')}</SubmitButton>
         </form>
+        <p>
+          <a href={FORGOT_PASSWORD_URL}>{t('forgotPassword')}</a>
+        </p>
         <LanguagePicker id="login-language" />
       </div>
     </main>
