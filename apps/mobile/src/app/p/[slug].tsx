@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
+import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Stars } from '@/components/Stars';
@@ -515,6 +516,7 @@ export default function ProductScreen() {
             ) : null}
 
             {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
+            <ProductReviews slug={slug} />
 
             <ProductRail
               title={tp('oftenBoughtTogether')}

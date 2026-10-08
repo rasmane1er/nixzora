@@ -6,6 +6,9 @@ import {
   type PagedResult,
   type RatingSummary,
   type ReviewCreate,
+  type ReviewListQuery,
+  type ReviewPage,
+  type ReviewSort,
   type ReviewView,
   totalPages,
 } from '@nixzora/validation';
@@ -46,6 +49,16 @@ function toView(row: ReviewRow): ReviewView {
  * Only customers who received the product can write one (its order, or for a marketplace item
  * the seller's parcel, was delivered), so every new review is from a verified buyer.
  */
+const REVIEW_PAGE_SIZE = 10;
+
+/** Ties always fall back to the newest review first, so pages never shuffle. */
+const REVIEW_ORDER: Record<ReviewSort, Prisma.ReviewOrderByWithRelationInput[]> = {
+  relevant: [{ verifiedPurchase: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+  newest: [{ createdAt: 'desc' }, { id: 'desc' }],
+  highest: [{ rating: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+  lowest: [{ rating: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+};
+
 /** Order states that mean the customer has the items (a later partial refund keeps them). */
 const DELIVERED_ORDER: string[] = ['DELIVERED', 'PARTIALLY_REFUNDED'];
 
@@ -86,32 +99,31 @@ export class ReviewsService {
     );
   }
 
-  async forProduct(
-    slug: string,
-    page: number,
-  ): Promise<{ summary: RatingSummary; reviews: ReviewView[]; page: number; totalPages: number }> {
+  async forProduct(slug: string, query: ReviewListQuery): Promise<ReviewPage> {
     const productId = await this.productId(slug);
     const where = { productId, status: 'APPROVED' as const };
-    const pageSize = 10;
+    const shown = query.rating ? { ...where, rating: query.rating } : where;
     const [byStar, rows] = await Promise.all([
       this.prisma.review.groupBy({ by: ['rating'], where, _count: { _all: true } }),
       this.prisma.review.findMany({
-        where,
+        where: shown,
         include: reviewInclude,
-        orderBy: [{ verifiedPurchase: 'desc' }, { createdAt: 'desc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        orderBy: REVIEW_ORDER[query.sort],
+        skip: (query.page - 1) * REVIEW_PAGE_SIZE,
+        take: REVIEW_PAGE_SIZE,
       }),
     ]);
     const distribution: RatingSummary['distribution'] = [0, 0, 0, 0, 0];
     for (const row of byStar) distribution[row.rating - 1] = row._count._all;
     const count = distribution.reduce((a, b) => a + b, 0);
     const sum = distribution.reduce((acc, n, i) => acc + n * (i + 1), 0);
+    const total = query.rating ? (distribution[query.rating - 1] ?? 0) : count;
     return {
       summary: { average: count ? roundRating(sum / count) : null, count, distribution },
       reviews: rows.map(toView),
-      page,
-      totalPages: totalPages(count, pageSize),
+      page: query.page,
+      totalPages: totalPages(total, REVIEW_PAGE_SIZE),
+      total,
     };
   }
 

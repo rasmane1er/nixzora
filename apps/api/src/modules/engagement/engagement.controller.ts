@@ -21,11 +21,12 @@ import {
   type ProductCard,
   type ReviewCreate,
   ReviewCreateSchema,
+  type ReviewListQuery,
+  ReviewListQuerySchema,
   type ReviewModeration,
   ReviewModerationSchema,
   SlugSchema,
 } from '@nixzora/validation';
-import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
 import { perHour } from '../../common/throttle-profiles';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
@@ -36,7 +37,6 @@ import { ReviewsService } from './reviews.service';
 import { WishlistService } from './wishlist.service';
 
 const slugPipe = new ZodValidationPipe(SlugSchema);
-const PageQuery = z.object({ page: z.coerce.number().int().min(1).max(500).default(1) });
 
 @ApiTags('reviews')
 @Controller({ version: '1' })
@@ -47,9 +47,9 @@ export class ReviewsController {
   @Public()
   list(
     @Param('slug', slugPipe) slug: string,
-    @Query(new ZodValidationPipe(PageQuery)) query: z.infer<typeof PageQuery>,
+    @Query(new ZodValidationPipe(ReviewListQuerySchema)) query: ReviewListQuery,
   ) {
-    return this.reviews.forProduct(slug, query.page);
+    return this.reviews.forProduct(slug, query);
   }
 
   @Get('catalog/products/:slug/reviews/mine')

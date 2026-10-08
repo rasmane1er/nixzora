@@ -41,6 +41,28 @@ export type RatingSummary = {
   distribution: [number, number, number, number, number];
 };
 
+/** How a product's reviews are ordered: verified buyers first, then newest ("relevant"). */
+export const REVIEW_SORTS = ['relevant', 'newest', 'highest', 'lowest'] as const;
+export type ReviewSort = (typeof REVIEW_SORTS)[number];
+
+export const ReviewListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  sort: z.enum(REVIEW_SORTS).default('relevant'),
+  /** Only reviews with this many stars. */
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+});
+export type ReviewListQuery = z.infer<typeof ReviewListQuerySchema>;
+
+/** One page of a product's approved reviews; the summary always covers all of them. */
+export type ReviewPage = {
+  summary: RatingSummary;
+  reviews: ReviewView[];
+  page: number;
+  totalPages: number;
+  /** Reviews matching the star filter (all reviews when there is none). */
+  total: number;
+};
+
 /** "What customers say" (p6-04). Every number comes from the reviews, not from a model. */
 export const ReviewInsightsSchema = z.object({
   summary: z.string(),

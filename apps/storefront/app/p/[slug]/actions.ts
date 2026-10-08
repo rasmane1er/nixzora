@@ -1,5 +1,6 @@
 'use server';
 
+import { type ReviewPage, type ReviewSort } from '@nixzora/validation';
 import { revalidatePath } from 'next/cache';
 import { api, errorMessage } from '@/lib/api';
 import { getT } from '@/lib/i18n';
@@ -35,5 +36,23 @@ export async function recordView(productId: string): Promise<void> {
     await api('/events/views', { method: 'POST', body: { productId, visitorId: visitor } });
   } catch {
     // Recommendations are best-effort.
+  }
+}
+
+/** One page of a product's reviews, for "Show more", sorting and the star filter. */
+export async function loadReviews(
+  slug: string,
+  options: { page: number; sort: ReviewSort; rating: number | null },
+): Promise<ReviewPage | null> {
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return null;
+  const query = new URLSearchParams({ page: String(options.page), sort: options.sort });
+  if (options.rating) query.set('rating', String(options.rating));
+  try {
+    return await api<ReviewPage>(`/catalog/products/${slug}/reviews?${query}`, {
+      auth: false,
+      revalidate: 30,
+    });
+  } catch {
+    return null;
   }
 }

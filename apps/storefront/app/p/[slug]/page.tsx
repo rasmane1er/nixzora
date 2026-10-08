@@ -1,9 +1,8 @@
 import {
   type ProductDetail,
-  type RatingSummary,
   type RelatedProducts,
   type ReviewInsights as Insights,
-  type ReviewView,
+  type ReviewPage,
 } from '@nixzora/validation';
 import { INTL_LOCALE, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
@@ -22,15 +21,9 @@ import { SITE_URL } from '@/lib/params';
 import { AddToCart } from './AddToCart';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
+import { ReviewList } from './ReviewList';
 import { ViewTracker } from './ViewTracker';
 import { WishButton } from './WishButton';
-
-type ReviewPage = {
-  summary: RatingSummary;
-  reviews: ReviewView[];
-  page: number;
-  totalPages: number;
-};
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -317,21 +310,9 @@ export default async function ProductPage({ params }: Props) {
             )}
           </div>
           <div>
-            {reviews?.reviews.map((review) => (
-              <article key={review.id} className="review">
-                <div className="rating-line">
-                  <Stars value={review.rating} />
-                  <strong>{review.title}</strong>
-                </div>
-                <span className="muted" style={{ fontSize: 13 }}>
-                  {review.author} · {f.date(review.createdAt)}
-                </span>
-                {review.verifiedPurchase ? (
-                  <span className="badge">{t('verifiedPurchase')}</span>
-                ) : null}
-                <p className="description">{review.body}</p>
-              </article>
-            ))}
+            {reviews?.summary.count ? (
+              <ReviewList key={product.slug} slug={product.slug} initial={reviews} />
+            ) : null}
           </div>
         </div>
       </section>

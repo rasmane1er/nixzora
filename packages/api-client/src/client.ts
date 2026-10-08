@@ -48,6 +48,8 @@ import type {
   ReturnCreate,
   ReturnView,
   ReviewCreate,
+  ReviewListQuery,
+  ReviewPage,
   ReviewView,
   SavedAddress,
   UsState,
@@ -226,6 +228,12 @@ export function createApiClient(options: ClientOptions) {
         }),
       product: (slug: string) =>
         request<ProductDetail>('GET', `/catalog/products/${enc(slug)}`, { auth: 'none' }),
+      /** A page of a product's approved reviews (10 at a time), with the rating summary. */
+      reviews: (slug: string, query: Partial<ReviewListQuery> = {}) =>
+        request<ReviewPage>('GET', `/catalog/products/${enc(slug)}/reviews`, {
+          query: { page: query.page ?? 1, sort: query.sort ?? 'relevant', rating: query.rating },
+          auth: 'none',
+        }),
       /** "What customers say" for a product; null until it has 3 approved reviews. */
       reviewInsights: (slug: string) =>
         request<{ insights: ReviewInsights | null }>(

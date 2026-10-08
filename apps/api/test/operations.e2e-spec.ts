@@ -335,6 +335,12 @@ describe('Promotions, reviews, wishlist, refunds, returns and labels (e2e)', () 
         distribution: [0, 0, 0, 1, 0],
       });
       expect(after.body.reviews[0].author).toBe('Ada');
+      // A star filter narrows the list but never the summary; unknown sorts are rejected.
+      const fours = await http().get(`${reviewUrl}?rating=4&sort=lowest`).expect(200);
+      expect(fours.body).toMatchObject({ total: 1, totalPages: 1 });
+      const fives = await http().get(`${reviewUrl}?rating=5`).expect(200);
+      expect(fives.body).toMatchObject({ total: 0, reviews: [], summary: { count: 1 } });
+      await http().get(`${reviewUrl}?sort=random`).expect(400);
       expect(JSON.stringify(after.body)).not.toContain(customerEmail);
       const detail = await http().get(`/api/v1/catalog/products/${productSlug}`).expect(200);
       expect(detail.body.rating).toEqual({ average: 4, count: 1 });
