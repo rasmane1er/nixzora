@@ -54,8 +54,8 @@ export class ReviewsController {
 
   @Get('catalog/products/:slug/reviews/mine')
   @ApiBearerAuth()
-  async mine(@Param('slug', slugPipe) slug: string, @CurrentUser() user: AuthUser) {
-    return { review: await this.reviews.mine(slug, user) };
+  mine(@Param('slug', slugPipe) slug: string, @CurrentUser() user: AuthUser) {
+    return this.reviews.mine(slug, user);
   }
 
   /** Create or update your review; it is published after moderation. */

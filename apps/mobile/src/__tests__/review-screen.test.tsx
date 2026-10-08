@@ -29,7 +29,7 @@ function renderScreen() {
 beforeEach(() => jest.clearAllMocks());
 
 it('checks the rating and length before sending', async () => {
-  myReview.mockResolvedValue(null);
+  myReview.mockResolvedValue({ review: null, canReview: true });
   renderScreen();
   fireEvent.press(await screen.findByText('Submit review'));
   expect(screen.getByText('Tell other shoppers a little more (20+ characters).')).toBeTruthy();
@@ -37,7 +37,7 @@ it('checks the rating and length before sending', async () => {
 });
 
 it('sends a new review for the product', async () => {
-  myReview.mockResolvedValue(null);
+  myReview.mockResolvedValue({ review: null, canReview: true });
   submitReview.mockResolvedValue({ status: 'PENDING' });
   renderScreen();
   fireEvent.press(await screen.findByLabelText('4 out of 5 stars'));
@@ -57,13 +57,25 @@ it('sends a new review for the product', async () => {
 
 it('starts from the earlier review when editing', async () => {
   myReview.mockResolvedValue({
-    id: 'r1',
-    rating: 5,
-    title: 'Great laptop',
-    body: 'Twenty characters at least, easily.',
-    status: 'PENDING',
+    review: {
+      id: 'r1',
+      rating: 5,
+      title: 'Great laptop',
+      body: 'Twenty characters at least, easily.',
+      status: 'PENDING',
+    },
+    canReview: true,
   });
   renderScreen();
   expect(await screen.findByDisplayValue('Great laptop')).toBeTruthy();
   expect(screen.getByText('Your review is waiting for moderation.')).toBeTruthy();
+});
+
+it('explains that a review needs the product delivered first', async () => {
+  myReview.mockResolvedValue({ review: null, canReview: false });
+  renderScreen();
+  expect(
+    await screen.findByText('You can review this product once it has been delivered to you.'),
+  ).toBeTruthy();
+  expect(screen.queryByText('Submit review')).toBeNull();
 });

@@ -268,6 +268,34 @@ describe('Promotions, reviews, wishlist, refunds, returns and labels (e2e)', () 
         .post(`/api/v1/catalog/products/${productSlug}/reviews`)
         .send({ rating: 5, title: 'Great', body: 'Works with everything I plugged in.' })
         .expect(401);
+
+      // Only after the product reached the customer: paid and shipped is not enough.
+      const bought = await buy(customerToken, 1);
+      const early = { rating: 5, title: 'Great', body: 'Works with everything I plugged in.' };
+      const reviewUrl = `/api/v1/catalog/products/${productSlug}/reviews`;
+      await http().post(reviewUrl).set(bearer(customerToken)).send(early).expect(403);
+      const notYet = await http().get(`${reviewUrl}/mine`).set(bearer(customerToken)).expect(200);
+      expect(notYet.body).toEqual({ review: null, canReview: false });
+      for (const action of ['start', 'ship'] as const) {
+        await http()
+          .post(`/api/v1/admin/orders/${bought.orderId}/fulfillment`)
+          .set(bearer(staffToken))
+          .send(
+            action === 'ship'
+              ? { action, carrier: 'UPS', trackingNumber: '1z999aa10123456784' }
+              : { action },
+          )
+          .expect(200);
+      }
+      await http().post(reviewUrl).set(bearer(customerToken)).send(early).expect(403);
+      await http()
+        .post(`/api/v1/admin/orders/${bought.orderId}/fulfillment`)
+        .set(bearer(staffToken))
+        .send({ action: 'deliver' })
+        .expect(200);
+      const ready = await http().get(`${reviewUrl}/mine`).set(bearer(customerToken)).expect(200);
+      expect(ready.body.canReview).toBe(true);
+
       const posted = await http()
         .post(`/api/v1/catalog/products/${productSlug}/reviews`)
         .set(bearer(customerToken))

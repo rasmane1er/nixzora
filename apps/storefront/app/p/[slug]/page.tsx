@@ -95,7 +95,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
-  const [reviews, wishIds, mine, related, insights] = await Promise.all([
+  const [reviews, wishIds, myReview, related, insights] = await Promise.all([
     api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
       () => null,
     ),
@@ -103,11 +103,10 @@ export default async function ProductPage({ params }: Props) {
       ? api<string[]>('/me/wishlist/ids').catch((): string[] => [])
       : Promise.resolve<string[]>([]),
     signedIn
-      ? api<{ review: { rating: number; title: string; body: string; status: string } | null }>(
-          `/catalog/products/${slug}/reviews/mine`,
-        )
-          .then((res) => res.review)
-          .catch(() => null)
+      ? api<{
+          review: { rating: number; title: string; body: string; status: string } | null;
+          canReview: boolean;
+        }>(`/catalog/products/${slug}/reviews/mine`).catch(() => null)
       : Promise.resolve(null),
     api<RelatedProducts>(`/catalog/products/${slug}/related`, {
       auth: false,
@@ -295,9 +294,16 @@ export default async function ProductPage({ params }: Props) {
               <p className="muted">{t('noReviews')}</p>
             )}
             {signedIn ? (
-              <div id="write-review" style={{ scrollMarginTop: 'calc(var(--header-h) + 60px)' }}>
-                <ReviewForm slug={product.slug} existing={mine} />
-              </div>
+              // Only customers who received the product can write a review.
+              myReview?.canReview ? (
+                <div id="write-review" style={{ scrollMarginTop: 'calc(var(--header-h) + 60px)' }}>
+                  <ReviewForm slug={product.slug} existing={myReview.review} />
+                </div>
+              ) : (
+                <p className="muted" id="write-review">
+                  {t('reviewAfterDelivery')}
+                </p>
+              )
             ) : (
               <p className="muted">
                 {rich(t('signInToReview'), {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   type AdminReviewQuery,
   type AdminReviewView,
@@ -43,8 +43,12 @@ function toView(row: ReviewRow): ReviewView {
 
 /**
  * Customer reviews. One per customer per product; editing sends it back to moderation.
- * "Verified purchase" means a paid order of that product by the author.
+ * Only customers who received the product can write one (its order, or for a marketplace item
+ * the seller's parcel, was delivered), so every new review is from a verified buyer.
  */
+/** Order states that mean the customer has the items (a later partial refund keeps them). */
+const DELIVERED_ORDER: string[] = ['DELIVERED', 'PARTIALLY_REFUNDED'];
+
 @Injectable()
 export class ReviewsService {
   constructor(
@@ -111,37 +115,71 @@ export class ReviewsService {
     };
   }
 
-  /** The signed-in customer's own review of a product (any status), to prefill the form. */
-  async mine(slug: string, user: AuthUser): Promise<(ReviewView & { status: string }) | null> {
+  /**
+   * The signed-in customer's own review of a product (any status), to prefill the form, and
+   * whether they may write one: only after the product was delivered to them.
+   */
+  async mine(
+    slug: string,
+    user: AuthUser,
+  ): Promise<{ review: (ReviewView & { status: string }) | null; canReview: boolean }> {
     const productId = await this.productId(slug);
     const row = await this.prisma.review.findUnique({
       where: { productId_userId: { productId, userId: user.id } },
       include: reviewInclude,
     });
-    return row ? { ...toView(row), status: row.status } : null;
+    return {
+      review: row ? { ...toView(row), status: row.status } : null,
+      canReview: row !== null || (await this.received(productId, user.id)),
+    };
+  }
+
+  /**
+   * Whether this customer has received the product: an order of it that was delivered, or, for
+   * an item a marketplace store sold, that store's parcel was delivered.
+   */
+  async received(productId: string, userId: string): Promise<boolean> {
+    const items = await this.prisma.orderItem.findMany({
+      where: { variant: { productId }, order: { userId } },
+      select: {
+        sellerId: true,
+        order: {
+          select: {
+            status: true,
+            deliveredAt: true,
+            sellerOrders: { select: { sellerId: true, deliveredAt: true } },
+          },
+        },
+      },
+    });
+    return items.some(
+      ({ sellerId, order }) =>
+        order.deliveredAt !== null ||
+        DELIVERED_ORDER.includes(order.status) ||
+        (sellerId !== null &&
+          order.sellerOrders.some((part) => part.sellerId === sellerId && part.deliveredAt)),
+    );
   }
 
   async submit(slug: string, input: ReviewCreate, user: AuthUser): Promise<{ status: string }> {
     const productId = await this.productId(slug);
-    const bought = await this.prisma.orderItem.count({
-      where: {
-        variant: { productId },
-        order: {
-          userId: user.id,
-          status: { in: ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'] },
-        },
-      },
+    const previous = await this.prisma.review.findUnique({
+      where: { productId_userId: { productId, userId: user.id } },
+      select: { status: true, verifiedPurchase: true },
     });
+    // Editing a review you already wrote stays possible; a new one needs the product delivered.
+    const received = await this.received(productId, user.id);
+    if (!previous && !received) {
+      throw new ForbiddenException(
+        'You can review this product once it has been delivered to you.',
+      );
+    }
     const data = {
       rating: input.rating,
       title: input.title,
       body: input.body,
-      verifiedPurchase: bought > 0,
+      verifiedPurchase: received || (previous?.verifiedPurchase ?? false),
     };
-    const previous = await this.prisma.review.findUnique({
-      where: { productId_userId: { productId, userId: user.id } },
-      select: { status: true },
-    });
     const review = await this.prisma.review.upsert({
       where: { productId_userId: { productId, userId: user.id } },
       create: { productId, userId: user.id, ...data },

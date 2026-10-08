@@ -233,12 +233,15 @@ export function createApiClient(options: ClientOptions) {
           `/catalog/products/${enc(slug)}/reviews/insights`,
           { auth: 'none' },
         ).then((res) => res.insights),
-      /** Your own review of a product (any status), or null. */
+      /**
+       * Your own review of a product (any status) or null, and whether you may write one:
+       * only once the product was delivered to you.
+       */
       myReview: (slug: string) =>
-        request<{ review: (ReviewView & { status: AccountReview['status'] }) | null }>(
-          'GET',
-          `/catalog/products/${enc(slug)}/reviews/mine`,
-        ).then((res) => res.review),
+        request<{
+          review: (ReviewView & { status: AccountReview['status'] }) | null;
+          canReview: boolean;
+        }>('GET', `/catalog/products/${enc(slug)}/reviews/mine`),
       /** Create or update your review; it is published after moderation. */
       submitReview: (slug: string, body: ReviewCreate) =>
         request<{ status: string }>('POST', `/catalog/products/${enc(slug)}/reviews`, { body }),

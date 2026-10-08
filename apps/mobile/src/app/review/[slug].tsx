@@ -13,7 +13,7 @@ import { brand, space, usePalette } from '@/lib/theme';
 
 /**
  * Write or edit a review, in the app. "Write a review" used to open the product page, which has
- * no review form in the app, so nothing happened.
+ * no review form in the app, so nothing happened. Only for products delivered to the customer.
  */
 export default function ReviewScreen() {
   const { slug, title: productTitle } = useLocalSearchParams<{ slug: string; title?: string }>();
@@ -32,7 +32,7 @@ export default function ReviewScreen() {
 
   // Editing: start from what the customer wrote last time.
   useEffect(() => {
-    const review = mine.data;
+    const review = mine.data?.review;
     if (!review) return;
     setRating(review.rating);
     setHeadline(review.title);
@@ -66,12 +66,23 @@ export default function ReviewScreen() {
     submit.mutate(parsed.data);
   };
 
-  const heading = mine.data ? t('editReview') : t('writeReview');
+  const existing = mine.data?.review ?? null;
+  const heading = existing ? t('editReview') : t('writeReview');
   if (mine.isPending) {
     return (
       <Screen>
         <Stack.Screen options={{ title: heading }} />
         <ActivityIndicator style={{ marginTop: space.xl }} />
+      </Screen>
+    );
+  }
+  if (mine.data && !mine.data.canReview) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: heading }} />
+        {productTitle ? <Text variant="heading">{productTitle}</Text> : null}
+        <Banner>{t('reviewAfterDelivery')}</Banner>
+        <Button title={tc('back')} onPress={() => router.back()} />
       </Screen>
     );
   }
@@ -89,8 +100,8 @@ export default function ReviewScreen() {
     <Screen>
       <Stack.Screen options={{ title: heading }} />
       {productTitle ? <Text variant="heading">{productTitle}</Text> : null}
-      {mine.data?.status === 'PENDING' ? <Banner>{t('reviewPending')}</Banner> : null}
-      {mine.data?.status === 'REJECTED' ? <Banner tone="warn">{t('reviewRejected')}</Banner> : null}
+      {existing?.status === 'PENDING' ? <Banner>{t('reviewPending')}</Banner> : null}
+      {existing?.status === 'REJECTED' ? <Banner tone="warn">{t('reviewRejected')}</Banner> : null}
 
       <Card>
         <Text>{t('rating')}</Text>
