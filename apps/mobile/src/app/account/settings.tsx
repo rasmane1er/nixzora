@@ -11,6 +11,7 @@ import { availableBiometric, type BiometricKind } from '@/lib/biometrics';
 import { api } from '@/lib/api';
 import { deviceSignIn, useDeviceSignInAccount } from '@/lib/device-sign-in';
 import { APP_VARIANT, APP_VERSION } from '@/lib/config';
+import { sendTestReport } from '@/lib/sentry';
 import { language, useLocale, useT } from '@/lib/i18n';
 import { enablePush, pushStatus, type PushStatus } from '@/lib/push';
 import { session, useSession } from '@/lib/session';
@@ -282,10 +283,32 @@ export default function SettingsScreen() {
         </SettingRow>
       </Card>
 
+      {APP_VARIANT === 'production' ? null : <TestReport />}
       <Text variant="small" muted style={{ textAlign: 'center' }}>
         NIXZORA {APP_VERSION}
         {APP_VARIANT === 'production' ? '' : ` · ${APP_VARIANT}`}
       </Text>
     </Screen>
+  );
+}
+
+/** Preview builds: send a test crash report (checks the Sentry set-up end to end). */
+function TestReport() {
+  const [result, setResult] = useState<string | null>(null);
+  const send = async () => {
+    setResult('Sending…');
+    try {
+      const id = await sendTestReport();
+      setResult(id ? `Sent. Report id ${id.slice(0, 8)}` : 'Crash reports are off in this build.');
+    } catch (error) {
+      setResult(`Failed: ${String(error)}`);
+    }
+  };
+  return (
+    <Pressable accessibilityRole="button" onPress={send} hitSlop={8}>
+      <Text variant="small" muted style={{ textAlign: 'center', textDecorationLine: 'underline' }}>
+        {result ?? 'Send a test crash report'}
+      </Text>
+    </Pressable>
   );
 }

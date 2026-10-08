@@ -38,4 +38,18 @@ export function setSentryUser(id: string | null): void {
   Sentry.setUser(id ? { id } : null);
 }
 
+/**
+ * Preview builds only: sends one test error from Settings to check that reports reach Sentry.
+ * Each report has its own message, so the SDK's duplicate filter never drops it. Returns the
+ * event id, or null when reporting is off in this build (no DSN, or a development build).
+ */
+export async function sendTestReport(): Promise<string | null> {
+  if (!sentryEnabled) return null;
+  const id = Sentry.captureException(
+    new Error(`Test report from Settings, ${APP_VARIANT}, ${new Date().toISOString()}`),
+  );
+  await Sentry.flush();
+  return id;
+}
+
 export { Sentry };
