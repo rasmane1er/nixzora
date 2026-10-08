@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TermsPage() {
   const t = await getT('legal');
   return (
-    <LegalPage title={t('termsTitle')} updated="2026-10-02" translationNote>
+    <LegalPage title={t('termsTitle')} updated="2026-10-07" translationNote>
       <p>
         {rich(t('termsIntro'), {
           privacy: (c) => (
@@ -37,6 +37,9 @@ export default async function TermsPage() {
 
       <h2>{t('termsProductTitle')}</h2>
       <p>{t('termsProductBody')}</p>
+
+      <h2>{t('termsMarketplaceTitle')}</h2>
+      <p>{t('termsMarketplaceBody')}</p>
 
       <h2>{t('termsReviewsTitle')}</h2>
       <p>{t('termsReviewsBody')}</p>

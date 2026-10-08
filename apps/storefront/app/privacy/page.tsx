@@ -21,13 +21,18 @@ const TAGS = {
       {c}
     </Link>
   ),
+  preferences: (c: string) => (
+    <Link key="preferences" href="/account/preferences">
+      {c}
+    </Link>
+  ),
 };
 
 export default async function PrivacyPage() {
   const t = await getT('legal');
   const email = { email: CONTACT_EMAIL };
   return (
-    <LegalPage title={t('privacyTitle')} updated="2026-10-02" translationNote>
+    <LegalPage title={t('privacyTitle')} updated="2026-10-07" translationNote>
       <p>{t('privacyIntro')}</p>
 
       <h2>{t('privacyCollectTitle')}</h2>
@@ -44,6 +49,7 @@ export default async function PrivacyPage() {
         <li>{t('privacyUseOrders')}</li>
         <li>{t('privacyUseAccount')}</li>
         <li>{t('privacyUseRecommend')}</li>
+        <li>{rich(t('privacyUseMarketing'), TAGS)}</li>
         <li>{t('privacyUseLegal')}</li>
       </ul>
 
@@ -55,6 +61,8 @@ export default async function PrivacyPage() {
         <li>{t('privacyShareSignIn')}</li>
         <li>{t('privacySharePush')}</li>
         <li>{t('privacyShareAi')}</li>
+        <li>{t('privacyShareSellers')}</li>
+        <li>{t('privacyShareSentry')}</li>
         <li>{t('privacyShareCarriers')}</li>
       </ul>
       <p>{t('privacyShareLaw')}</p>

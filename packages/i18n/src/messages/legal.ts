@@ -78,6 +78,8 @@ export const legal = defineMessages({
     privacyUseRecommend:
       'To answer shopping questions and recommend products from our catalog ("similar products", "recommended for you"). "Customers also viewed" only shows products several different shoppers looked at, never one person\'s browsing.',
     privacyUseLegal: 'To meet tax, accounting and legal obligations.',
+    privacyUseMarketing:
+      'To email you offers, only if you opted in. Turn them off at any time in <preferences>your preferences</preferences>.',
     privacyShareTitle: 'Who we share it with',
     privacyShareIntro:
       'Only service providers that help us run the store, under contract and for these purposes:',
@@ -88,6 +90,10 @@ export const legal = defineMessages({
     privacyShareAi:
       'AI providers (Anthropic, Voyage AI) when the shopping assistant uses them: only the text of your assistant conversation is sent, never your account, address or order details',
     privacyShareCarriers: 'Shipping carriers (your name and delivery address)',
+    privacyShareSellers:
+      'Marketplace stores you buy from (your name, delivery address and the items they ship; never your email, phone or card)',
+    privacyShareSentry:
+      'Sentry (crash reports from the app: device model, app version and your account number; never your IP address, email or messages)',
     privacyShareLaw: 'We may also disclose information when the law requires it.',
     privacyCookiesTitle: 'Cookies',
     privacyCookiesBody:
@@ -135,6 +141,9 @@ export const legal = defineMessages({
     termsReviewsTitle: 'Reviews and content',
     termsReviewsBody:
       'Reviews must be honest and about the product. We may remove content that is unlawful, abusive, misleading or off-topic.',
+    termsMarketplaceTitle: 'Items sold by other stores',
+    termsMarketplaceBody:
+      'Some items are sold and shipped by independent stores on NIXZORA; the product page shows who sells each one. Every order uses the same checkout, returns and support, and NIXZORA takes the payment.',
     termsUseTitle: 'Acceptable use',
     termsUseBody:
       "Do not misuse the store: no scraping at scale, interfering with the service, reselling accounts or buying on someone else's payment method without permission.",
@@ -220,6 +229,8 @@ export const legal = defineMessages({
     privacyUseRecommend:
       'Pour répondre aux questions d’achat et recommander des produits de notre catalogue (« produits similaires », « recommandés pour vous »). « Les clients ont aussi consulté » ne montre que des produits consultés par plusieurs clients différents, jamais la navigation d’une seule personne.',
     privacyUseLegal: 'Pour respecter nos obligations fiscales, comptables et légales.',
+    privacyUseMarketing:
+      'Pour vous envoyer des offres par e-mail, uniquement si vous l’avez accepté. Désactivez-les à tout moment dans <preferences>vos préférences</preferences>.',
     privacyShareTitle: 'Avec qui nous les partageons',
     privacyShareIntro:
       'Uniquement avec des prestataires qui nous aident à faire fonctionner la boutique, sous contrat et pour ces finalités :',
@@ -232,6 +243,10 @@ export const legal = defineMessages({
     privacyShareAi:
       'Des fournisseurs d’IA (Anthropic, Voyage AI) lorsque l’assistant d’achat y fait appel : seul le texte de votre conversation avec l’assistant est transmis, jamais les informations de votre compte, votre adresse ou vos commandes',
     privacyShareCarriers: 'Les transporteurs (votre nom et votre adresse de livraison)',
+    privacyShareSellers:
+      'Les boutiques du marketplace chez qui vous achetez (votre nom, votre adresse de livraison et les articles qu’elles expédient ; jamais votre e-mail, votre téléphone ni votre carte)',
+    privacyShareSentry:
+      'Sentry (rapports de plantage de l’app : modèle d’appareil, version de l’app et numéro de compte ; jamais votre adresse IP, votre e-mail ni vos messages)',
     privacyShareLaw: 'Nous pouvons également divulguer des informations lorsque la loi l’exige.',
     privacyCookiesTitle: 'Cookies',
     privacyCookiesBody:
@@ -280,6 +295,9 @@ export const legal = defineMessages({
     termsReviewsTitle: 'Avis et contenus',
     termsReviewsBody:
       'Les avis doivent être sincères et porter sur le produit. Nous pouvons supprimer tout contenu illicite, injurieux, trompeur ou hors sujet.',
+    termsMarketplaceTitle: 'Articles vendus par d’autres boutiques',
+    termsMarketplaceBody:
+      'Certains articles sont vendus et expédiés par des boutiques indépendantes sur NIXZORA ; la fiche produit indique qui vend chacun d’eux. Chaque commande bénéficie du même paiement, des mêmes retours et du même service client, et c’est NIXZORA qui encaisse le paiement.',
     termsUseTitle: 'Utilisation acceptable',
     termsUseBody:
       'N’utilisez pas la boutique de manière abusive : pas d’extraction de données à grande échelle, pas d’entrave au service, pas de revente de comptes ni d’achat avec le moyen de paiement d’autrui sans son autorisation.',
@@ -363,6 +381,8 @@ export const legal = defineMessages({
     privacyUseRecommend:
       'Para responder preguntas de compra y recomendar productos de nuestro catálogo (“productos similares”, “recomendados para ti”). “Otros clientes también vieron” solo muestra productos que vieron varios compradores distintos, nunca la navegación de una sola persona.',
     privacyUseLegal: 'Para cumplir obligaciones fiscales, contables y legales.',
+    privacyUseMarketing:
+      'Para enviarte ofertas por correo, solo si lo aceptaste. Desactívalas cuando quieras en <preferences>tus preferencias</preferences>.',
     privacyShareTitle: 'Con quién lo compartimos',
     privacyShareIntro:
       'Solo con proveedores de servicios que nos ayudan a operar la tienda, bajo contrato y para estos fines:',
@@ -374,6 +394,10 @@ export const legal = defineMessages({
     privacyShareAi:
       'Proveedores de IA (Anthropic, Voyage AI) cuando el asistente de compras los usa: solo se envía el texto de tu conversación con el asistente, nunca los datos de tu cuenta, tu dirección ni tus pedidos',
     privacyShareCarriers: 'Empresas de paquetería (tu nombre y dirección de entrega)',
+    privacyShareSellers:
+      'Las tiendas del marketplace a las que compras (tu nombre, dirección de entrega y los artículos que envían; nunca tu correo, teléfono ni tarjeta)',
+    privacyShareSentry:
+      'Sentry (informes de fallos de la app: modelo del dispositivo, versión de la app y tu número de cuenta; nunca tu dirección IP, correo ni mensajes)',
     privacyShareLaw: 'También podemos divulgar información cuando la ley lo exija.',
     privacyCookiesTitle: 'Cookies',
     privacyCookiesBody:
@@ -420,6 +444,9 @@ export const legal = defineMessages({
     termsReviewsTitle: 'Reseñas y contenido',
     termsReviewsBody:
       'Las reseñas deben ser honestas y tratar sobre el producto. Podemos eliminar contenido ilegal, ofensivo, engañoso o fuera de tema.',
+    termsMarketplaceTitle: 'Artículos vendidos por otras tiendas',
+    termsMarketplaceBody:
+      'Algunos artículos los venden y envían tiendas independientes en NIXZORA; la página del producto indica quién vende cada uno. Todos los pedidos usan el mismo pago, las mismas devoluciones y el mismo soporte, y NIXZORA cobra el pago.',
     termsUseTitle: 'Uso aceptable',
     termsUseBody:
       'No hagas un uso indebido de la tienda: no se permite la extracción masiva de datos, interferir con el servicio, revender cuentas ni comprar con el método de pago de otra persona sin su permiso.',
