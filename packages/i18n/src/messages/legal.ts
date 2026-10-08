@@ -8,9 +8,9 @@ export const legal = defineMessages({
 
     // About
     aboutTitle: 'About NIXZORA',
-    aboutDescription: 'Computers and electronics, explained: who we are and how NIXZORA works.',
+    aboutDescription: 'Shopping, explained: who we are and how NIXZORA works.',
     aboutIntro:
-      'NIXZORA sells computers and electronics with clear specs and honest advice. Tell our shopping assistant what you need in your own words, and it finds products that fit, explains why, and builds the cart.',
+      'NIXZORA sells electronics, clothing and shoes, home and kitchen goods, beauty products and sports gear with clear details and honest advice. Tell our shopping assistant what you need in your own words, and it finds products that fit, explains why, and builds the cart.',
     aboutTrustTitle: 'A marketplace you can trust',
     aboutTrustBody:
       'Next to our own products, independent stores sell on NIXZORA. Every store is verified before it opens, every listing is reviewed before it goes live, and every order, whoever ships it, has the same checkout, the same <returns>30-day returns</returns> and the same support.',
@@ -58,7 +58,7 @@ export const legal = defineMessages({
     privacyTitle: 'Privacy policy',
     privacyDescription: 'What NIXZORA collects, why, who it is shared with and how to delete it.',
     privacyIntro:
-      'NIXZORA sells computers and electronics online and in our mobile app. This page explains what we collect, why, who we share it with and the choices you have. We do not sell your personal information and we do not show ads.',
+      'NIXZORA sells electronics, clothing, home, beauty and sports products online and in our mobile app. This page explains what we collect, why, who we share it with and the choices you have. We do not sell your personal information and we do not show ads.',
     privacyCollectTitle: 'What we collect',
     privacyCollectAccount:
       '<b>Account details</b>: your email, name and, if you set one, a password (stored only as a salted hash). If you sign in with Google or Apple we receive your email address, your name (Apple shares it only the first time) and an account identifier from that provider. We never receive your Google or Apple password.',
@@ -160,10 +160,9 @@ export const legal = defineMessages({
       'Cette traduction est fournie à titre indicatif ; la version anglaise fait foi.',
 
     aboutTitle: 'À propos de NIXZORA',
-    aboutDescription:
-      'L’informatique et l’électronique, expliquées : qui nous sommes et comment fonctionne NIXZORA.',
+    aboutDescription: 'Le shopping, expliqué : qui nous sommes et comment fonctionne NIXZORA.',
     aboutIntro:
-      'NIXZORA vend des ordinateurs et de l’électronique avec des caractéristiques claires et des conseils honnêtes. Décrivez à notre assistant d’achat ce qu’il vous faut, avec vos propres mots : il trouve les produits adaptés, explique pourquoi et prépare le panier.',
+      'NIXZORA vend de l’électronique, des vêtements et chaussures, des articles pour la maison et la cuisine, des produits de beauté et du matériel de sport, avec des informations claires et des conseils honnêtes. Décrivez à notre assistant d’achat ce qu’il vous faut, avec vos propres mots : il trouve les produits adaptés, explique pourquoi et prépare le panier.',
     aboutTrustTitle: 'Une marketplace digne de confiance',
     aboutTrustBody:
       'À côté de nos propres produits, des boutiques indépendantes vendent sur NIXZORA. Chaque boutique est vérifiée avant son ouverture, chaque annonce est examinée avant sa mise en ligne, et chaque commande, quel que soit l’expéditeur, bénéficie du même paiement, des mêmes <returns>retours sous 30 jours</returns> et de la même assistance.',
@@ -209,7 +208,7 @@ export const legal = defineMessages({
     privacyDescription:
       'Ce que NIXZORA collecte, pourquoi, avec qui ces données sont partagées et comment les supprimer.',
     privacyIntro:
-      'NIXZORA vend des ordinateurs et de l’électronique en ligne et dans notre application mobile. Cette page explique ce que nous collectons, pourquoi, avec qui nous le partageons et les choix dont vous disposez. Nous ne vendons pas vos informations personnelles et nous n’affichons pas de publicité.',
+      'NIXZORA vend de l’électronique, des vêtements et des produits pour la maison, la beauté et le sport en ligne et dans notre application mobile. Cette page explique ce que nous collectons, pourquoi, avec qui nous le partageons et les choix dont vous disposez. Nous ne vendons pas vos informations personnelles et nous n’affichons pas de publicité.',
     privacyCollectTitle: 'Ce que nous collectons',
     privacyCollectAccount:
       '<b>Informations de compte</b> : votre e-mail, votre nom et, si vous en définissez un, un mot de passe (stocké uniquement sous forme de hachage salé). Si vous vous connectez avec Google ou Apple, nous recevons votre adresse e-mail, votre nom (Apple ne le transmet que la première fois) et un identifiant de compte de ce fournisseur. Nous ne recevons jamais votre mot de passe Google ou Apple.',
@@ -313,10 +312,9 @@ export const legal = defineMessages({
     translationNote: 'Esta traducción se ofrece por conveniencia; prevalece la versión en inglés.',
 
     aboutTitle: 'Acerca de NIXZORA',
-    aboutDescription:
-      'Computación y electrónica, explicadas: quiénes somos y cómo funciona NIXZORA.',
+    aboutDescription: 'Tus compras, explicadas: quiénes somos y cómo funciona NIXZORA.',
     aboutIntro:
-      'NIXZORA vende computadoras y electrónica con especificaciones claras y consejos honestos. Dile a nuestro asistente de compras lo que necesitas con tus propias palabras: encuentra los productos adecuados, explica por qué y arma el carrito.',
+      'NIXZORA vende electrónica, ropa y calzado, artículos de hogar y cocina, productos de belleza y equipo deportivo con información clara y consejos honestos. Dile a nuestro asistente de compras lo que necesitas con tus propias palabras: encuentra los productos adecuados, explica por qué y arma el carrito.',
     aboutTrustTitle: 'Un marketplace confiable',
     aboutTrustBody:
       'Junto a nuestros propios productos, tiendas independientes venden en NIXZORA. Cada tienda se verifica antes de abrir, cada publicación se revisa antes de estar disponible, y cada pedido, sin importar quién lo envíe, tiene el mismo proceso de pago, las mismas <returns>devoluciones en 30 días</returns> y el mismo soporte.',
@@ -361,7 +359,7 @@ export const legal = defineMessages({
     privacyTitle: 'Política de privacidad',
     privacyDescription: 'Qué recopila NIXZORA, por qué, con quién se comparte y cómo eliminarlo.',
     privacyIntro:
-      'NIXZORA vende computadoras y electrónica en línea y en nuestra app móvil. Esta página explica qué recopilamos, por qué, con quién lo compartimos y qué opciones tienes. No vendemos tu información personal y no mostramos anuncios.',
+      'NIXZORA vende electrónica, ropa y productos de hogar, belleza y deportes en línea y en nuestra app móvil. Esta página explica qué recopilamos, por qué, con quién lo compartimos y qué opciones tienes. No vendemos tu información personal y no mostramos anuncios.',
     privacyCollectTitle: 'Qué recopilamos',
     privacyCollectAccount:
       '<b>Datos de la cuenta</b>: tu correo electrónico, tu nombre y, si defines una, una contraseña (almacenada solo como hash con sal). Si inicias sesión con Google o Apple, recibimos tu dirección de correo electrónico, tu nombre (Apple solo lo comparte la primera vez) y un identificador de cuenta de ese proveedor. Nunca recibimos tu contraseña de Google o Apple.',

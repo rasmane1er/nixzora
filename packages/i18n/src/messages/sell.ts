@@ -5,13 +5,13 @@ export const sell = defineMessages({
   en: {
     // Landing page
     metaTitle: 'Sell on NIXZORA',
-    metaDescription: 'List your electronics on NIXZORA: reach shoppers who know what they want.',
+    metaDescription: 'List your products on NIXZORA: reach shoppers who know what they want.',
     savedNotice: 'Saved. Continue your application any time.',
     appliedNotice: 'Application submitted. Next, connect Stripe so we can verify your business.',
     eyebrow: 'Sell on NIXZORA',
     heroTitle: 'Open your store on NIXZORA.',
     heroLead:
-      'Reach shoppers who compare before they buy. List computers, audio and accessories alongside the NIXZORA catalog; our team reviews every store and listing.',
+      'Reach shoppers who compare before they buy. List electronics, clothing, home, beauty and sports products alongside the NIXZORA catalog; our team reviews every store and listing.',
     continueApplication: 'Continue your application ({percent}% complete)',
     startApplication: 'Start your application',
     createAccountToStart: 'Create an account to start',
@@ -115,7 +115,7 @@ export const sell = defineMessages({
       'Earnings from a sale become available 14 days after you ship it (the hold covers delivery and most returns). Available earnings are paid to your bank through Stripe, at most once a day, from $10.',
     faqProductsQ: 'What products can I sell?',
     faqProductsA:
-      'New computers and electronics: computers, monitors, audio, phones, smart home, gaming, accessories and wearables. Every listing is reviewed by our team before it goes live.',
+      'New products in electronics, clothing and shoes, home and kitchen, beauty and personal care, and sports and outdoors. Every listing is reviewed by our team before it goes live.',
     faqReturnsQ: 'How do returns work?',
     faqReturnsA:
       'Customers can return items within 30 days of delivery, through NIXZORA. The refund goes to their card and the commission on the refunded amount comes back to you.',
@@ -219,14 +219,14 @@ export const sell = defineMessages({
   fr: {
     metaTitle: 'Vendre sur NIXZORA',
     metaDescription:
-      'Proposez votre électronique sur NIXZORA : touchez des acheteurs qui savent ce qu’ils veulent.',
+      'Proposez vos produits sur NIXZORA : touchez des acheteurs qui savent ce qu’ils veulent.',
     savedNotice: 'Enregistré. Reprenez votre candidature quand vous le souhaitez.',
     appliedNotice:
       'Candidature envoyée. Prochaine étape : connectez Stripe pour que nous puissions vérifier votre entreprise.',
     eyebrow: 'Vendre sur NIXZORA',
     heroTitle: 'Ouvrez votre boutique sur NIXZORA.',
     heroLead:
-      'Touchez des acheteurs qui comparent avant d’acheter. Proposez ordinateurs, audio et accessoires aux côtés du catalogue NIXZORA ; notre équipe examine chaque boutique et chaque annonce.',
+      'Touchez des acheteurs qui comparent avant d’acheter. Proposez électronique, vêtements, maison, beauté et sport aux côtés du catalogue NIXZORA ; notre équipe examine chaque boutique et chaque annonce.',
     continueApplication: 'Reprendre votre candidature ({percent} % effectué)',
     startApplication: 'Commencer votre candidature',
     createAccountToStart: 'Créer un compte pour commencer',
@@ -334,7 +334,7 @@ export const sell = defineMessages({
       'Les revenus d’une vente deviennent disponibles 14 jours après l’expédition (ce délai couvre la livraison et la plupart des retours). Les revenus disponibles sont versés sur votre compte bancaire via Stripe, au plus une fois par jour, à partir de 10 $.',
     faqProductsQ: 'Quels produits puis-je vendre ?',
     faqProductsA:
-      'De l’informatique et de l’électronique neuves : ordinateurs, écrans, audio, téléphones, maison connectée, jeux vidéo, accessoires et objets connectés. Chaque annonce est examinée par notre équipe avant sa mise en ligne.',
+      'Des produits neufs en électronique, vêtements et chaussures, maison et cuisine, beauté et soins, sports et plein air. Chaque annonce est examinée par notre équipe avant sa mise en ligne.',
     faqReturnsQ: 'Comment fonctionnent les retours ?',
     faqReturnsA:
       'Les clients peuvent retourner un article dans les 30 jours suivant la livraison, via NIXZORA. Le remboursement est fait sur leur carte et la commission sur le montant remboursé vous est restituée.',
@@ -441,13 +441,13 @@ export const sell = defineMessages({
   es: {
     metaTitle: 'Vende en NIXZORA',
     metaDescription:
-      'Publica tus productos electrónicos en NIXZORA: llega a compradores que saben lo que quieren.',
+      'Publica tus productos en NIXZORA: llega a compradores que saben lo que quieren.',
     savedNotice: 'Guardado. Continúa tu solicitud cuando quieras.',
     appliedNotice: 'Solicitud enviada. Ahora conecta Stripe para que podamos verificar tu negocio.',
     eyebrow: 'Vende en NIXZORA',
     heroTitle: 'Abre tu tienda en NIXZORA.',
     heroLead:
-      'Llega a compradores que comparan antes de comprar. Publica computadoras, audio y accesorios junto al catálogo de NIXZORA; nuestro equipo revisa cada tienda y cada publicación.',
+      'Llega a compradores que comparan antes de comprar. Publica electrónica, ropa, hogar, belleza y deportes junto al catálogo de NIXZORA; nuestro equipo revisa cada tienda y cada publicación.',
     continueApplication: 'Continuar tu solicitud ({percent}% completado)',
     startApplication: 'Comenzar tu solicitud',
     createAccountToStart: 'Crea una cuenta para comenzar',
@@ -553,7 +553,7 @@ export const sell = defineMessages({
       'Las ganancias de una venta están disponibles 14 días después de que la envías (la retención cubre la entrega y la mayoría de las devoluciones). Las ganancias disponibles se depositan en tu banco a través de Stripe, como máximo una vez al día, a partir de $10.',
     faqProductsQ: '¿Qué productos puedo vender?',
     faqProductsA:
-      'Computadoras y electrónica nuevas: computadoras, monitores, audio, teléfonos, hogar inteligente, videojuegos, accesorios y dispositivos portátiles. Nuestro equipo revisa cada publicación antes de que salga en línea.',
+      'Productos nuevos de electrónica, ropa y calzado, hogar y cocina, belleza y cuidado personal, y deportes y aire libre. Nuestro equipo revisa cada publicación antes de que salga en línea.',
     faqReturnsQ: '¿Cómo funcionan las devoluciones?',
     faqReturnsA:
       'Los clientes pueden devolver artículos dentro de los 30 días posteriores a la entrega, a través de NIXZORA. El reembolso se hace a su tarjeta y la comisión sobre el monto reembolsado se te devuelve.',

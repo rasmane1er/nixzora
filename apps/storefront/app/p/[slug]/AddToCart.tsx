@@ -1,9 +1,10 @@
 'use client';
 
-import { type Variant } from '@nixzora/validation';
+import { optionLabel } from '@nixzora/i18n';
+import { optionAxes, optionState, pickVariant, type Variant } from '@nixzora/validation';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
-import { useFormat, useT } from '@/components/I18nProvider';
+import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../../cart/actions';
 
 /** Variant picker + quantity + add to cart. Prices shown here are display only; the server re-prices. */
@@ -13,6 +14,8 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
   const t = useT('productPage');
   const p = useT('product');
   const f = useFormat();
+  const locale = useLocale();
+  const axes = useMemo(() => optionAxes(buyable), [buyable]);
   const [selectedId, setSelectedId] = useState(firstInStock?.id);
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -21,6 +24,12 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
 
   if (!selected) return <p className="banner banner--info">{t('unavailable')}</p>;
   const max = Math.min(10, selected.available);
+
+  function choose(id: string) {
+    setSelectedId(id);
+    setQuantity(1);
+    setStatus(null);
+  }
 
   function add() {
     if (!selected) return;
@@ -35,7 +44,42 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
 
   return (
     <div className="stack">
-      {buyable.length > 1 ? (
+      {axes ? (
+        axes.map((axis) => (
+          <div
+            key={axis.name}
+            className="options"
+            role="group"
+            aria-label={optionLabel(axis.name, locale)}
+          >
+            <span style={{ fontWeight: 600 }}>
+              {t('optionChosen', {
+                name: optionLabel(axis.name, locale),
+                value: selected.options[axis.name] ?? '',
+              })}
+            </span>
+            <div className="option-list option-list--chips">
+              {axis.values.map((value) => {
+                const state = optionState(buyable, selected, axis.name, value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`option option--chip${state === 'available' ? '' : ' option--out'}`}
+                    aria-pressed={selected.options[axis.name] === value}
+                    aria-label={state === 'missing' ? t('optionUnavailable', { value }) : value}
+                    onClick={() => {
+                      choose(pickVariant(buyable, selected, axis.name, value).id);
+                    }}
+                  >
+                    {value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      ) : buyable.length > 1 ? (
         <div className="options" role="group" aria-label={t('chooseOption')}>
           <span style={{ fontWeight: 600 }}>{t('choose')}</span>
           <div className="option-list">
@@ -46,11 +90,7 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
                 className="option"
                 aria-pressed={variant.id === selectedId}
                 disabled={variant.available === 0}
-                onClick={() => {
-                  setSelectedId(variant.id);
-                  setQuantity(1);
-                  setStatus(null);
-                }}
+                onClick={() => choose(variant.id)}
               >
                 <span>{variant.title}</span>
                 <small>

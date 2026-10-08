@@ -14,7 +14,7 @@ describe('search documents', () => {
 
   it('turns specs into words shoppers use', () => {
     expect(specPhrases(product.attributes)).toEqual(
-      expect.arrayContaining(['0.98 kg weight', '16 hours battery life', 'os Linux']),
+      expect.arrayContaining(['0.98 kg weight', '16 hours battery life', 'operating system Linux']),
     );
     expect(derivedTraits(product.attributes)).toEqual(
       expect.arrayContaining(['lightweight portable for travel', 'long battery life all-day']),

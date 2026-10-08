@@ -4,7 +4,7 @@ import {
   type ReviewInsights as Insights,
   type ReviewPage,
 } from '@nixzora/validation';
-import { INTL_LOCALE, rich } from '@nixzora/i18n';
+import { INTL_LOCALE, rich, specLabel as sharedSpecLabel } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -35,37 +35,6 @@ async function load(slug: string): Promise<ProductDetail> {
     if (error instanceof ApiError && (error.status === 404 || error.status === 400)) notFound();
     throw error;
   }
-}
-
-const UNITS: Record<string, string> = {
-  gb: 'GB',
-  tb: 'TB',
-  in: 'inches',
-  kg: 'kg',
-  g: 'g',
-  hz: 'Hz',
-  hours: 'hours',
-  mah: 'mAh',
-  w: 'W',
-};
-const WORDS: Record<string, string> = {
-  cpu: 'CPU',
-  gpu: 'GPU',
-  ram: 'RAM',
-  ssd: 'SSD',
-  usb: 'USB',
-  wifi: 'Wi-Fi',
-  anc: 'ANC',
-};
-
-/** "battery_hours" → "Battery (hours)", "ram_gb" → "RAM (GB)", "cpu_cores" → "CPU cores" */
-function label(key: string, units: Record<string, string> = UNITS): string {
-  const parts = key.split('_');
-  const unit = parts.length > 1 ? units[parts[parts.length - 1]!] : undefined;
-  const words = (unit ? parts.slice(0, -1) : parts).map((w) => WORDS[w] ?? w);
-  const text = words.join(' ');
-  const cased = text.charAt(0).toUpperCase() + text.slice(1);
-  return unit ? `${cased} (${unit})` : cased;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -119,12 +88,8 @@ export default async function ProductPage({ params }: Props) {
   const c = await getT('common');
   const f = await getFormat();
   const locale = await getLocale();
-  const units = { ...UNITS, in: t('unitInches'), hours: t('unitHours') };
-  /** A known attribute's name in the visitor's language, else built from its key. */
-  const specLabel = (key: string) => {
-    const known = t(`spec_${key}` as Parameters<typeof t>[0]);
-    return known === `spec_${key}` ? label(key, units) : known;
-  };
+  /** A spec's name in the visitor's language (shared with the app). */
+  const specLabel = (key: string) => sharedSpecLabel(key, locale);
   const crumbNames = await Promise.all(product.breadcrumb.map((crumb) => departmentName(crumb)));
   const categoryName = await departmentName(product.category);
 

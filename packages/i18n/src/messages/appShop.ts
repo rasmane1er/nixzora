@@ -64,7 +64,7 @@ export const appShop = defineMessages({
     offline: 'Offline — showing saved products',
 
     // Home
-    homeSearchHint: 'Laptops, monitors, audio…',
+    homeSearchHint: 'Laptops, shoes, skincare…',
     homeAskLabel: 'Ask the shopping assistant',
     homeAskExample: '“Headphones for flights under {amount}”',
     homePerks: 'Free shipping over {amount} · 30-day returns',
@@ -264,7 +264,7 @@ export const appShop = defineMessages({
     priceWas: '{price}, au lieu de {was}',
     offline: 'Hors ligne — produits enregistrés affichés',
 
-    homeSearchHint: 'Ordinateurs, écrans, audio…',
+    homeSearchHint: 'Ordinateurs, chaussures, soins…',
     homeAskLabel: 'Demander à l’assistant d’achat',
     homeAskExample: '« Un casque pour l’avion à moins de {amount} »',
     homePerks: 'Livraison gratuite dès {amount} · Retours sous 30 jours',
@@ -459,7 +459,7 @@ export const appShop = defineMessages({
     priceWas: '{price}, antes {was}',
     offline: 'Sin conexión: mostrando productos guardados',
 
-    homeSearchHint: 'Laptops, monitores, audio…',
+    homeSearchHint: 'Laptops, calzado, cuidado de la piel…',
     homeAskLabel: 'Preguntar al asistente de compras',
     homeAskExample: '“Audífonos para vuelos por menos de {amount}”',
     homePerks: 'Envío gratis en compras de más de {amount} · Devoluciones en 30 días',

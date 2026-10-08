@@ -5,7 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'NIXZORA',
     short_name: 'NIXZORA',
-    description: 'Computers and electronics, found by describing what you need.',
+    description:
+      'Electronics, clothing, home, beauty and sports gear, found by describing what you need.',
     start_url: '/',
     display: 'standalone',
     background_color: '#F6F5F1',

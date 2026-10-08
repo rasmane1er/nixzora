@@ -61,7 +61,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </div>
       </div>
       {found.node.children.length ? (
-        <nav className="hero__chips" style={{ marginBottom: 20 }} aria-label={t('subcategories')}>
+        <nav className="subcats" aria-label={t('subcategories')}>
           {found.node.children.map((child, i) => (
             <Link key={child.id} className="btn btn--secondary btn--sm" href={`/c/${child.slug}`}>
               {childNames[i]}

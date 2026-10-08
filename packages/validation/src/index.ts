@@ -18,3 +18,5 @@ export * from './pagination';
 export * from './recommendations';
 export * from './account';
 export * from './seller-onboarding';
+export * from './taxonomy';
+export * from './variant-options';

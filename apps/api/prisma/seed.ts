@@ -1,5 +1,6 @@
 /**
- * Demo catalog for the launch vertical: computers and electronics.
+ * Demo catalog: electronics, clothing & shoes, home & kitchen, beauty & personal care, and
+ * sports & outdoors. Departments and their nesting come from DEPARTMENTS (@nixzora/validation).
  * Every brand and product here is fictional sample data for development and demos.
  * Safe to run repeatedly: rows are matched by slug and SKU and updated in place.
  *
@@ -9,6 +10,8 @@ import 'dotenv/config';
 import { withConnectionUrls } from '../src/config/connection-urls';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { messagesFor } from '@nixzora/i18n';
+import { CATEGORY_DEPARTMENTS } from '@nixzora/validation';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -16,13 +19,6 @@ const prisma = new PrismaClient({
   }),
 });
 
-type CategorySeed = {
-  slug: string;
-  name: string;
-  parent?: string;
-  position: number;
-  description?: string;
-};
 /**
  * A stable, fake EAN-13 for each demo SKU, in the GS1 "restricted circulation" range (200–299),
  * which is never assigned to real products. Lets you try the app's barcode scanner on the demo.
@@ -55,27 +51,16 @@ type ProductSeed = {
   seller?: string;
 };
 
-const categories: CategorySeed[] = [
-  {
-    slug: 'computers',
-    name: 'Computers',
-    position: 1,
-    description: 'Laptops, desktops and everything to build a workstation.',
-  },
-  { slug: 'laptops', name: 'Laptops', parent: 'computers', position: 1 },
-  { slug: 'desktops', name: 'Desktops', parent: 'computers', position: 2 },
-  { slug: 'monitors', name: 'Monitors', position: 2 },
-  { slug: 'audio', name: 'Audio', position: 3 },
-  { slug: 'headphones', name: 'Headphones', parent: 'audio', position: 1 },
-  { slug: 'speakers', name: 'Speakers', parent: 'audio', position: 2 },
-  { slug: 'phones', name: 'Phones', position: 4 },
-  { slug: 'smart-home', name: 'Smart home', position: 5 },
-  { slug: 'gaming', name: 'Gaming', position: 6 },
-  { slug: 'accessories', name: 'Accessories', position: 7 },
-  { slug: 'keyboards', name: 'Keyboards', parent: 'accessories', position: 1 },
-  { slug: 'mice', name: 'Mice', parent: 'accessories', position: 2 },
-  { slug: 'wearables', name: 'Wearables', position: 8 },
-];
+/** Short descriptions for the top-level departments (category pages show them). */
+const DEPARTMENT_DESCRIPTIONS: Record<string, string> = {
+  electronics: 'Computers, phones, audio, gaming and the accessories that go with them.',
+  computers: 'Laptops, desktops and everything to build a workstation.',
+  'clothing-shoes': 'Everyday clothing, outerwear and shoes.',
+  'home-kitchen': 'Kitchen essentials and comfortable things for home.',
+  beauty: 'Skincare, hair care and grooming.',
+  'sports-outdoors': 'Gear for workouts, hikes and days outside.',
+};
+const DEPARTMENT_NAMES = messagesFor('en').departments as Record<string, string>;
 
 const brands = [
   'Kestrel',
@@ -89,6 +74,19 @@ const brands = [
   'Nimbus',
   'Lumen',
   'Brightline',
+  'Linden',
+  'Alder',
+  'Stride',
+  'Hearth',
+  'Ferro',
+  'Brewline',
+  'Haven',
+  'Dewdrop',
+  'Aero',
+  'Edgeline',
+  'Core',
+  'Trailhead',
+  'Summit',
 ];
 
 const laptop = (
@@ -546,6 +544,350 @@ const products: ProductSeed[] = [
   },
 ];
 
+/** Clothing in every color × size, e.g. "Natural / M"; a few sizes run low on stock. */
+const apparel = (
+  sku: string,
+  colors: [code: string, name: string][],
+  sizes: string[],
+  price: number,
+  was?: number,
+): VariantSeed[] =>
+  colors.flatMap(([code, color], c) =>
+    sizes.map((size, s) => ({
+      sku: `${sku}-${code}-${size.replace(/\s+/g, '')}`,
+      title: `${color} / ${size}`,
+      options: { color, size },
+      price,
+      ...(was ? { was } : {}),
+      stock: (c * 7 + s * 5) % 23 === 0 ? 2 : 6 + ((c * 11 + s * 13) % 30),
+    })),
+  );
+
+/** Clothing & shoes, Home & kitchen, Beauty & personal care, Sports & outdoors. */
+const moreProducts: ProductSeed[] = [
+  {
+    slug: 'linden-organic-tee',
+    title: 'Linden organic cotton tee',
+    brand: 'Linden',
+    category: 'tops',
+    description:
+      'A midweight crew-neck tee in soft organic cotton that keeps its shape wash after wash.',
+    attributes: {
+      material: '100% organic cotton',
+      fit: 'Regular',
+      care: 'Machine wash cold',
+      breathable: true,
+    },
+    variants: apparel(
+      'LIN-TEE',
+      [
+        ['NAT', 'Natural'],
+        ['BLK', 'Black'],
+        ['SGE', 'Sage'],
+      ],
+      ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+      2400,
+    ),
+  },
+  {
+    slug: 'linden-fleece-hoodie',
+    title: 'Linden brushed fleece hoodie',
+    brand: 'Linden',
+    category: 'tops',
+    description: 'A warm, brushed-fleece hoodie with a lined hood and a roomy front pocket.',
+    attributes: {
+      material: '80% cotton, 20% recycled polyester',
+      fit: 'Relaxed',
+      care: 'Machine wash cold, tumble dry low',
+    },
+    variants: apparel(
+      'LIN-HOOD',
+      [
+        ['GRY', 'Heather grey'],
+        ['NVY', 'Navy'],
+      ],
+      ['S', 'M', 'L', 'XL', 'XXL'],
+      5900,
+      6900,
+    ),
+  },
+  {
+    slug: 'alder-rain-jacket',
+    title: 'Alder packable rain jacket',
+    brand: 'Alder',
+    category: 'outerwear',
+    description:
+      'A light waterproof shell that packs into its own pocket, with taped seams and an adjustable hood.',
+    attributes: {
+      waterproof: true,
+      breathable: true,
+      material: 'Recycled nylon, 2.5-layer',
+      weight_g: 380,
+      fit: 'Regular, room for a layer',
+    },
+    variants: apparel(
+      'ALD-RAIN',
+      [
+        ['OLV', 'Olive'],
+        ['BLK', 'Black'],
+      ],
+      ['S', 'M', 'L', 'XL'],
+      12900,
+    ),
+  },
+  {
+    slug: 'stride-runner',
+    title: 'Stride everyday running shoe',
+    brand: 'Stride',
+    category: 'shoes',
+    description:
+      'A cushioned, breathable running shoe for daily miles, with a grippy rubber outsole.',
+    attributes: {
+      cushioning: 'Responsive foam midsole',
+      material: 'Engineered knit upper',
+      breathable: true,
+      weight_g: 260,
+    },
+    variants: apparel(
+      'STR-RUN',
+      [
+        ['NVO', 'Navy / Orange'],
+        ['BLK', 'Black'],
+      ],
+      ['US 6', 'US 7', 'US 8', 'US 9', 'US 10', 'US 11', 'US 12'],
+      8900,
+      10900,
+    ),
+  },
+  {
+    slug: 'hearth-electric-kettle',
+    title: 'Hearth 1.7 L electric kettle',
+    brand: 'Hearth',
+    category: 'kitchen',
+    description:
+      'Boils a full kettle in about four minutes, with a water window and automatic shut-off.',
+    attributes: { capacity_l: 1.7, power_w: 1500, auto_shutoff: true, material: 'Stainless steel' },
+    variants: [
+      {
+        sku: 'HRT-KET-BLK',
+        title: 'Matte black',
+        options: { color: 'Matte black' },
+        price: 4900,
+        stock: 24,
+      },
+      { sku: 'HRT-KET-CRM', title: 'Cream', options: { color: 'Cream' }, price: 4900, stock: 9 },
+    ],
+  },
+  {
+    slug: 'ferro-cast-iron-skillet',
+    title: 'Ferro pre-seasoned cast-iron skillet',
+    brand: 'Ferro',
+    category: 'kitchen',
+    description:
+      'Holds heat for a proper sear and goes from stovetop to oven. Gets better with every use.',
+    attributes: {
+      material: 'Pre-seasoned cast iron',
+      oven_safe: true,
+      dishwasher_safe: false,
+      weight_kg: 2.4,
+    },
+    variants: [
+      { sku: 'FER-SKL-26', title: '26 cm', options: { size: '26 cm' }, price: 3900, stock: 18 },
+      { sku: 'FER-SKL-30', title: '30 cm', options: { size: '30 cm' }, price: 4900, stock: 11 },
+    ],
+  },
+  {
+    slug: 'brewline-coffee-maker',
+    title: 'Brewline 10-cup programmable coffee maker',
+    brand: 'Brewline',
+    category: 'kitchen',
+    description:
+      'Set it the night before and wake up to fresh coffee. The glass carafe keeps warm for two hours.',
+    attributes: { cups: 10, capacity_l: 1.25, power_w: 900, auto_shutoff: true },
+    variants: [
+      {
+        sku: 'BRW-CM10',
+        title: 'Black',
+        options: { color: 'Black' },
+        price: 7900,
+        was: 9900,
+        stock: 14,
+      },
+    ],
+  },
+  {
+    slug: 'haven-throw-blanket',
+    title: 'Haven knit throw blanket',
+    brand: 'Haven',
+    category: 'home-living',
+    description: 'A chunky, soft knit throw with fringed ends, big enough for two on the sofa.',
+    attributes: { material: 'Recycled cotton knit', length_cm: 170, machine_washable: true },
+    variants: [
+      { sku: 'HVN-THR-OAT', title: 'Oat', options: { color: 'Oat' }, price: 4500, stock: 20 },
+      {
+        sku: 'HVN-THR-TER',
+        title: 'Terracotta',
+        options: { color: 'Terracotta' },
+        price: 4500,
+        stock: 7,
+      },
+    ],
+  },
+  {
+    slug: 'dewdrop-hydrating-serum',
+    title: 'Dewdrop hydrating serum',
+    brand: 'Dewdrop',
+    category: 'skincare',
+    description:
+      'A light, fragrance-free serum with hyaluronic acid and niacinamide for plump, calm skin.',
+    attributes: {
+      skin_type: 'All skin types',
+      key_ingredients: 'Hyaluronic acid, niacinamide',
+      fragrance_free: true,
+    },
+    variants: [
+      { sku: 'DEW-SER-30', title: '30 ml', options: { size: '30 ml' }, price: 2800, stock: 40 },
+      { sku: 'DEW-SER-50', title: '50 ml', options: { size: '50 ml' }, price: 3900, stock: 22 },
+    ],
+  },
+  {
+    slug: 'dewdrop-daily-sunscreen',
+    title: 'Dewdrop daily sunscreen SPF 50',
+    brand: 'Dewdrop',
+    category: 'skincare',
+    description: 'A sheer, everyday broad-spectrum sunscreen that leaves no white cast.',
+    attributes: {
+      spf: 50,
+      volume_ml: 50,
+      skin_type: 'All skin types',
+      water_resistance: '40 minutes',
+      fragrance_free: true,
+    },
+    variants: [
+      { sku: 'DEW-SPF50', title: '50 ml', options: { size: '50 ml' }, price: 2200, stock: 35 },
+    ],
+  },
+  {
+    slug: 'aero-ionic-hair-dryer',
+    title: 'Aero ionic hair dryer',
+    brand: 'Aero',
+    category: 'hair-care',
+    description:
+      'Dries fast with less frizz: three heat settings, a cool shot and a concentrator nozzle.',
+    attributes: { power_w: 1800, heat_settings: 3, weight_g: 520 },
+    variants: [
+      {
+        sku: 'AER-HD-IVR',
+        title: 'Ivory',
+        options: { color: 'Ivory' },
+        price: 6900,
+        was: 8900,
+        stock: 16,
+      },
+      {
+        sku: 'AER-HD-BLK',
+        title: 'Black',
+        options: { color: 'Black' },
+        price: 6900,
+        was: 8900,
+        stock: 12,
+      },
+    ],
+  },
+  {
+    slug: 'edgeline-beard-trimmer',
+    title: 'Edgeline cordless beard trimmer',
+    brand: 'Edgeline',
+    category: 'grooming',
+    description: 'Twenty length settings, a 90-minute battery and a washable head.',
+    attributes: { runtime_min: 90, lengths: 20, waterproof: true },
+    variants: [
+      {
+        sku: 'EDG-TRIM',
+        title: 'Graphite',
+        options: { color: 'Graphite' },
+        price: 4900,
+        stock: 19,
+      },
+    ],
+  },
+  {
+    slug: 'core-yoga-mat',
+    title: 'Core non-slip yoga mat, 6 mm',
+    brand: 'Core',
+    category: 'fitness',
+    description: 'A cushioned natural-rubber mat that grips on both sides, with a carry strap.',
+    attributes: { thickness_mm: 6, length_cm: 183, material: 'Natural rubber', weight_kg: 2.3 },
+    variants: [
+      { sku: 'COR-MAT-SGE', title: 'Sage', options: { color: 'Sage' }, price: 3500, stock: 26 },
+      { sku: 'COR-MAT-PLM', title: 'Plum', options: { color: 'Plum' }, price: 3500, stock: 13 },
+    ],
+  },
+  {
+    slug: 'core-adjustable-dumbbells',
+    title: 'Core adjustable dumbbells, pair',
+    brand: 'Core',
+    category: 'fitness',
+    description:
+      'Turn the dial to change the weight from 2 to 24 kg per hand: a full rack in a corner.',
+    attributes: { max_weight_kg: 24, material: 'Steel plates, rubber grip' },
+    variants: [
+      {
+        sku: 'COR-DB-24',
+        title: 'Pair, up to 24 kg',
+        options: { pack: 'Pair' },
+        price: 19900,
+        was: 24900,
+        stock: 6,
+      },
+    ],
+  },
+  {
+    slug: 'trailhead-28-backpack',
+    title: 'Trailhead 28 L day pack',
+    brand: 'Trailhead',
+    category: 'outdoor',
+    description:
+      'A comfortable 28-litre pack for day hikes and commutes, with a padded laptop sleeve and side bottle pockets.',
+    attributes: {
+      capacity_l: 28,
+      water_resistance: 'Rain-resistant fabric',
+      material: 'Recycled ripstop nylon',
+      weight_kg: 1.1,
+    },
+    variants: [
+      {
+        sku: 'TRL-28-BLU',
+        title: 'Lake blue',
+        options: { color: 'Lake blue' },
+        price: 8900,
+        stock: 15,
+      },
+      {
+        sku: 'TRL-28-CHR',
+        title: 'Charcoal',
+        options: { color: 'Charcoal' },
+        price: 8900,
+        stock: 10,
+      },
+    ],
+  },
+  {
+    slug: 'summit-insulated-bottle',
+    title: 'Summit insulated bottle, 750 ml',
+    brand: 'Summit',
+    category: 'outdoor',
+    description:
+      'Double-wall steel keeps drinks cold for 24 hours. Leak-proof lid with a carry loop.',
+    attributes: { volume_ml: 750, insulated: true, cold_hours: 24, dishwasher_safe: false },
+    variants: [
+      { sku: 'SUM-750-CLY', title: 'Clay', options: { color: 'Clay' }, price: 2900, stock: 30 },
+      { sku: 'SUM-750-BLK', title: 'Black', options: { color: 'Black' }, price: 2900, stock: 21 },
+      { sku: 'SUM-750-SGE', title: 'Sage', options: { color: 'Sage' }, price: 2900, stock: 3 },
+    ],
+  },
+];
+
 // Demo reviews so the product pages and "what customers say" have something to show. The
 // authors are demo accounts that cannot sign in, and their names say "(demo)".
 const DEMO_REVIEWS: Record<string, [number, string, string][]> = {
@@ -652,22 +994,61 @@ const DEMO_REVIEWS: Record<string, [number, string, string][]> = {
   ],
 };
 const DEMO_REVIEWERS = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Riley'];
+Object.assign(DEMO_REVIEWS, {
+  'linden-organic-tee': [
+    [
+      5,
+      'My new favorite tee',
+      'Soft, not see-through, and it kept its shape after a dozen washes.',
+    ],
+    [4, 'Runs a little long', 'Great fabric. I sized down and it fits perfectly.'],
+  ],
+  'linden-fleece-hoodie': [
+    [5, 'So cozy', 'Warm without being heavy. The hood actually stays up.'],
+    [3, 'Pills a bit', 'Comfortable, but some pilling under the arms after a month.'],
+  ],
+  'stride-runner': [
+    [5, 'Comfortable from day one', 'No break-in needed. Light and bouncy on long runs.'],
+    [4, 'True to size', 'Good grip in the rain. Laces are a little short.'],
+  ],
+  'hearth-electric-kettle': [
+    [5, 'Fast and quiet', 'Boils quickly and switches off on its own. Looks great on the counter.'],
+    [4, 'Good kettle', 'Does the job well. The lid could open a little wider for cleaning.'],
+  ],
+  'dewdrop-hydrating-serum': [
+    [
+      5,
+      'Gentle on sensitive skin',
+      'No fragrance, no stinging, and my skin feels hydrated all day.',
+    ],
+    [4, 'Nice texture', 'Absorbs fast. The dropper makes it easy not to waste any.'],
+  ],
+  'core-yoga-mat': [
+    [5, 'Does not slip', 'Even in hot yoga it stays put. The strap is handy.'],
+    [4, 'Thick and comfy', 'Easy on the knees. It had a rubber smell for the first few days.'],
+  ],
+} satisfies Record<string, [number, string, string][]>);
 
 async function main(): Promise<void> {
+  // Departments come from the shared taxonomy, parents first. Re-seeding also moves an existing
+  // category under its parent (e.g. "Audio" under "Electronics").
   const categoryIds = new Map<string, string>();
-  for (const category of categories) {
+  for (const department of CATEGORY_DEPARTMENTS) {
+    const description = DEPARTMENT_DESCRIPTIONS[department.slug];
+    const fields = {
+      name: DEPARTMENT_NAMES[department.slug] ?? department.slug,
+      position: department.position,
+      parentId: department.parent ? (categoryIds.get(department.parent) ?? null) : null,
+      // A description edited in the Ops Center is kept; ours only fills a blank one.
+      ...(description ? { description } : {}),
+    };
+    const existing = await prisma.category.findUnique({ where: { slug: department.slug } });
     const row = await prisma.category.upsert({
-      where: { slug: category.slug },
-      create: {
-        slug: category.slug,
-        name: category.name,
-        position: category.position,
-        description: category.description ?? null,
-        parentId: category.parent ? categoryIds.get(category.parent) : null,
-      },
-      update: { name: category.name, position: category.position },
+      where: { slug: department.slug },
+      create: { slug: department.slug, ...fields },
+      update: existing?.description ? { ...fields, description: existing.description } : fields,
     });
-    categoryIds.set(category.slug, row.id);
+    categoryIds.set(department.slug, row.id);
   }
 
   const brandIds = new Map<string, string>();
@@ -715,7 +1096,7 @@ async function main(): Promise<void> {
     sellerIds.set(seller.handle, seller.id);
   }
 
-  for (const product of products) {
+  for (const product of [...products, ...moreProducts]) {
     const data = {
       title: product.title,
       description: product.description,
@@ -732,7 +1113,7 @@ async function main(): Promise<void> {
     });
 
     // Demo illustrations bundled with the storefront (public/demo-products): the main view and
-    // three more (close-up, angled, on a desk) for the gallery. Added only while the product has
+    // three more (close-up, angled, on a table) for the gallery. Added only while the product has
     // demo photos alone, so images uploaded in the Ops Center are never replaced or mixed in.
     const photos = await prisma.productImage.findMany({ where: { productId: row.id } });
     if (photos.every((photo) => photo.storageKey.startsWith('demo/'))) {
@@ -740,7 +1121,7 @@ async function main(): Promise<void> {
         ['', product.title],
         ['-2', `${product.title}, close-up`],
         ['-3', `${product.title}, angled view`],
-        ['-4', `${product.title} on a desk`],
+        ['-4', `${product.title}, on a table`],
       ] as const;
       for (const [position, [suffix, alt]] of views.entries()) {
         const storageKey = `demo/${product.slug}${suffix}.webp`;
@@ -828,9 +1209,12 @@ async function main(): Promise<void> {
     update: { isPublic: true },
   });
 
-  const variantCount = products.reduce((sum, product) => sum + product.variants.length, 0);
+  const variantCount = [...products, ...moreProducts].reduce(
+    (sum, product) => sum + product.variants.length,
+    0,
+  );
   console.warn(
-    `Seeded ${categories.length} categories, ${brands.length} brands, ${products.length} products, ${variantCount} variants, ${reviewCount} reviews and coupon WELCOME10 (demo data).`,
+    `Seeded ${CATEGORY_DEPARTMENTS.length} categories, ${brands.length} brands, ${products.length + moreProducts.length} products, ${variantCount} variants, ${reviewCount} reviews and coupon WELCOME10 (demo data).`,
   );
 }
 

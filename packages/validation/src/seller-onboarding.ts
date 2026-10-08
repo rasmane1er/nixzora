@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SELLER_CATEGORIES } from './taxonomy';
 import { EmailSchema } from './auth';
 import { US_STATES } from './commerce';
 import { SellerHandleSchema } from './marketplace';
@@ -33,30 +34,7 @@ export const BUSINESS_TYPE_LABEL: Record<BusinessType, string> = {
   NONPROFIT: 'Nonprofit',
 };
 
-/** What the store mainly sells: NIXZORA's departments. */
-export const SELLER_CATEGORIES = [
-  'computers',
-  'monitors',
-  'audio',
-  'phones',
-  'smart-home',
-  'gaming',
-  'accessories',
-  'wearables',
-  'other-electronics',
-] as const;
-export type SellerCategory = (typeof SELLER_CATEGORIES)[number];
-export const SELLER_CATEGORY_LABEL: Record<SellerCategory, string> = {
-  computers: 'Computers',
-  monitors: 'Monitors',
-  audio: 'Audio',
-  phones: 'Phones',
-  'smart-home': 'Smart home',
-  gaming: 'Gaming',
-  accessories: 'Accessories',
-  wearables: 'Wearables',
-  'other-electronics': 'Other electronics',
-};
+// SELLER_CATEGORIES and SellerCategory come from the catalog taxonomy (./taxonomy).
 
 export const SELLER_CARRIERS = ['USPS', 'UPS', 'FEDEX', 'DHL', 'OTHER'] as const;
 export type SellerCarrier = (typeof SELLER_CARRIERS)[number];

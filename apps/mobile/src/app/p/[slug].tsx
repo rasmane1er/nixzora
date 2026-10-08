@@ -1,6 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
-import type { ProductDetail, Variant } from '@nixzora/validation';
+import {
+  optionAxes,
+  optionState,
+  pickVariant,
+  type ProductDetail,
+  type Variant,
+} from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -225,7 +231,7 @@ export default function ProductScreen() {
   const t = useT('appShop');
   const tp = useT('productPage');
   const tc = useT('common');
-  const { attributeLabel, rating } = useFormatters();
+  const { attributeLabel, optionName, rating } = useFormatters();
   const layout = useLayout();
   // Side by side, the photos take a bit over half of the page (up to 760pt).
   const galleryWidth = layout.wide
@@ -288,6 +294,7 @@ export default function ProductScreen() {
 
   const item = product.data;
   const sellable = item.variants.filter((v) => v.isActive);
+  const axes = optionAxes(sellable);
   const variant =
     sellable.find((v) => v.id === chosen) ?? sellable.find((v) => v.available > 0) ?? sellable[0];
   const wished = !!wishIds.data?.includes(item.id);
@@ -401,7 +408,59 @@ export default function ProductScreen() {
               />
             ) : null}
 
-            {sellable.length > 1 ? (
+            {axes && variant ? (
+              axes.map((axis) => (
+                <View key={axis.name} style={{ gap: space.sm }}>
+                  <Text variant="label" muted>
+                    {tp('optionChosen', {
+                      name: optionName(axis.name),
+                      value: variant.options[axis.name] ?? '',
+                    })}
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                    {axis.values.map((value) => {
+                      const active = variant.options[axis.name] === value;
+                      const state = optionState(sellable, variant, axis.name, value);
+                      return (
+                        <Pressable
+                          key={value}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: active }}
+                          accessibilityLabel={
+                            state === 'available' ? value : tp('optionUnavailable', { value })
+                          }
+                          onPress={() => {
+                            setChosen(pickVariant(sellable, variant, axis.name, value).id);
+                            setQuantity(1);
+                            setAdded(false);
+                          }}
+                          style={[
+                            styles.option,
+                            {
+                              minWidth: 52,
+                              alignItems: 'center',
+                              borderColor: active ? p.fg : p.line,
+                              backgroundColor: active ? p.card : 'transparent',
+                              opacity: state === 'available' ? 1 : 0.5,
+                            },
+                          ]}
+                        >
+                          <Text
+                            variant="small"
+                            style={{
+                              fontFamily: active ? fonts.bodyBold : fonts.body,
+                              textDecorationLine: state === 'available' ? 'none' : 'line-through',
+                            }}
+                          >
+                            {value}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))
+            ) : sellable.length > 1 ? (
               <View style={{ gap: space.sm }}>
                 <Text variant="label" muted>
                   {tp('choose')}

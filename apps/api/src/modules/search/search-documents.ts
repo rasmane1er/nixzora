@@ -5,6 +5,8 @@
  * so each spec becomes a phrase, and a few well-known thresholds add the words shoppers use
  * ("lightweight", "long battery life"). Both the keyword index and the embedding see them.
  */
+import { specSearchWords } from '@nixzora/validation';
+
 export type IndexableProduct = {
   id: string;
   title: string;
@@ -24,33 +26,9 @@ export type SearchDocument = {
   embeddingText: string;
 };
 
-const LABELS: Record<string, string> = {
-  anc: 'active noise cancelling',
-  ram_gb: 'GB RAM memory',
-  storage_gb: 'GB storage SSD',
-  battery_hours: 'hours battery life',
-  battery_days: 'days battery life',
-  battery_mah: 'mAh battery',
-  case_battery_hours: 'hours with the charging case',
-  cpu_cores: 'core processor',
-  screen_in: 'inch screen',
-  size_in: 'inch screen',
-  weight_kg: 'kg weight',
-  weight_g: 'g weight',
-  refresh_hz: 'Hz refresh rate',
-  usb_c_power_w: 'W USB-C power delivery',
-  power_w: 'W power',
-  five_g: '5G',
-  gps: 'GPS',
-  hot_swap: 'hot-swappable switches',
-  hall_effect: 'hall effect sticks, no drift',
-  local_control: 'local control without the cloud',
-  energy_monitoring: 'energy monitoring',
-  updates_years: 'years of software updates',
-};
-
+/** Shopper words for a spec key, from the shared catalog taxonomy. */
 export function humanKey(key: string): string {
-  return LABELS[key] ?? key.replace(/_/g, ' ');
+  return specSearchWords(key);
 }
 
 /** "battery_hours: 18" → "18 hours battery life"; "anc: true" → "active noise cancelling". */
@@ -81,6 +59,11 @@ export function derivedTraits(attributes: unknown): string[] {
   if (size !== undefined && size >= 27) traits.push('large screen');
   if (a.anc === true) traits.push('noise cancelling quiet for flights and commuting');
   if (a.wireless === true) traits.push('wireless');
+  if (a.waterproof === true) traits.push('waterproof for rain');
+  if (a.fragrance_free === true) traits.push('gentle for sensitive skin');
+  if (num('spf') !== undefined) traits.push('sun protection sunscreen');
+  if (a.insulated === true) traits.push('keeps drinks cold or hot');
+  if (a.machine_washable === true || a.dishwasher_safe === true) traits.push('easy to clean');
   return traits;
 }
 

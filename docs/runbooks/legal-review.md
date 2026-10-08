@@ -28,7 +28,11 @@ what they cannot decide on their own. Nothing here is legal advice.
 4. **Children.** The policy says the store is not directed to children under 13 (COPPA).
 5. **Warranties and liability.** The liability clause limits damages to the order amount
    "to the extent the law allows"; confirm wording for consumers.
-6. **Accessibility.** A first automated pass (Oct 2026, home, search, product and sign-in pages)
+6. **New departments (Oct 2026).** Clothing, home and kitchen, beauty and sports were added.
+   Confirm whether opened beauty and personal-care items can be returned under the 30-day policy
+   (many stores exclude them for hygiene), and whether sunscreen and skincare listings need extra
+   seller checks (labels, ingredients, FDA rules for SPF claims).
+7. **Accessibility.** A first automated pass (Oct 2026, home, search, product and sign-in pages)
    found no missing labels, image text, button names or heading problems; white text on orange
    buttons and the rating stars were below WCAG AA contrast and were fixed. A full audit by a
    specialist, with screen readers, is still to do; the lawyer may also want an accessibility
@@ -43,6 +47,9 @@ what they cannot decide on their own. Nothing here is legal advice.
   third-party sellers' sales once it passes their economic-nexus threshold (often $100,000 of
   sales or 200 transactions a year). Track sales by state from the orders data and decide when
   to register elsewhere, or switch to a tax service (e.g. Stripe Tax) before that point.
+- **Clothing:** some states (for example Pennsylvania, New Jersey, Minnesota) exempt most clothing,
+  or tax it differently. The flat per-state rate does not know product types yet; decide before
+  selling clothing into those states, or use a tax service.
 - Adding a state is a config change: `TAX_RATES_BPS = "MD:600,VA:530"` (basis points), then a
   Terraform apply. A rate service would replace this list.
 

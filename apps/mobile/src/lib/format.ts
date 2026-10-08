@@ -1,4 +1,4 @@
-import { INTL_LOCALE, type Locale, messagesFor } from '@nixzora/i18n';
+import { INTL_LOCALE, type Locale, messagesFor, optionLabel, specLabel } from '@nixzora/i18n';
 import { useMemo } from 'react';
 import { language, useLocale } from './i18n';
 
@@ -92,34 +92,14 @@ export function departmentName(
   return names[slug] ?? name;
 }
 
-const UNITS: Record<string, string> = {
-  in: 'in',
-  hz: 'Hz',
-  gb: 'GB',
-  tb: 'TB',
-  kg: 'kg',
-  g: 'g',
-  w: 'W',
-  mah: 'mAh',
-  hours: 'hours',
-  mm: 'mm',
-};
-
-/**
- * "refresh_hz" → "Refresh (Hz)", "battery_hours" → "Battery (hours)", "cpu_cores" → "Cpu cores".
- * In French and Spanish, known attributes use the product page's translated spec names.
- */
+/** "battery_hours" → "Battery (hours)": the same spec names as the website (@nixzora/i18n). */
 export function attributeLabel(key: string, locale: Locale = language.get()): string {
-  if (locale !== 'en') {
-    const specs = messagesFor(locale).productPage as Record<string, string>;
-    const known = specs[`spec_${key}`];
-    if (known) return known;
-  }
-  const parts = key.split('_');
-  const unit = parts.length > 1 ? UNITS[parts.at(-1)!] : undefined;
-  const words = (unit ? parts.slice(0, -1) : parts).join(' ');
-  const label = words.charAt(0).toUpperCase() + words.slice(1);
-  return unit ? `${label} (${unit})` : label;
+  return specLabel(key, locale);
+}
+
+/** "size" → "Size": a variant option's name, shared with the website. */
+export function optionName(name: string, locale: Locale = language.get()): string {
+  return optionLabel(name, locale);
 }
 
 /** The helpers above in the current language; re-renders when the language changes. */
@@ -138,6 +118,7 @@ export function useFormatters() {
       optionsText,
       departmentName: (slug: string, name: string) => departmentName(slug, name, locale),
       attributeLabel: (key: string) => attributeLabel(key, locale),
+      optionName: (name: string) => optionName(name, locale),
     }),
     [locale],
   );

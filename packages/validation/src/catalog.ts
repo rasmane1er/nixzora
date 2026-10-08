@@ -357,27 +357,3 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
 }
-
-/** Demo-catalog artwork for each department tile on the home pages (web and app). */
-const DEPARTMENT_ART: Record<string, string> = {
-  computers: 'vela-15-studio',
-  laptops: 'vela-13-air',
-  desktops: 'kestrel-tower-x',
-  monitors: 'arden-27-4k-usb-c',
-  audio: 'halo-anc-headphones',
-  headphones: 'halo-anc-headphones',
-  speakers: 'lumen-desk-speakers',
-  phones: 'orbit-phone-256',
-  'smart-home': 'nimbus-smart-hub',
-  gaming: 'pulse-controller',
-  accessories: 'tactile-75',
-  keyboards: 'tactile-75',
-  mice: 'tactile-precision-mouse',
-  wearables: 'pulse-s-watch',
-};
-
-/** "/demo-products/vela-15-studio.webp" for a department slug (served by the storefront). */
-export function departmentArtPath(slug: string): string | null {
-  const name = DEPARTMENT_ART[slug];
-  return name ? `/demo-products/${name}.webp` : null;
-}

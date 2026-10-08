@@ -405,6 +405,13 @@ input[type='checkbox'] {
 .hero__chips a:hover {
   border-color: #f6a27c;
 }
+/* Subcategory links on a department page (light background). */
+.subcats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
 .hero__dot {
   position: absolute;
   right: -60px;
@@ -820,6 +827,18 @@ input[type='checkbox'] {
 }
 .option small {
   color: var(--muted);
+}
+/* Choosing one option at a time (Color, Size): compact chips; sold out or not made is struck through. */
+.option--chip {
+  min-width: 52px;
+  padding: 8px 14px;
+  text-align: center;
+  font-weight: 500;
+}
+.option--out {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
 }
 .qty {
   display: flex;

@@ -6,8 +6,9 @@ import { createHash } from 'node:crypto';
  * Real embedding models learn that "quiet" and "silent" or "flights" and "travel" are related.
  * The local driver cannot, so it maps common shopper words to shared concepts. Both a product's
  * text and a shopper's query pass through the same map, so they meet on the concept even when
- * they share no word. The table is intentionally small and focused on the launch vertical
- * (computers and electronics); the paid drivers do not use it.
+ * they share no word. The table is intentionally small and covers the store's departments
+ * (electronics, clothing and shoes, home and kitchen, beauty, sports and outdoors); the paid
+ * drivers do not use it.
  */
 export const CONCEPTS: Record<string, readonly string[]> = {
   quiet: [
@@ -110,7 +111,7 @@ export const CONCEPTS: Record<string, readonly string[]> = {
   keyboard: ['keyboard', 'keyboards', 'keeb', 'mechanical'],
   mouse: ['mouse', 'mice', 'trackpad'],
   phone: ['phone', 'smartphone', 'mobile', 'cellphone', 'android'],
-  watch: ['watch', 'smartwatch', 'wearable', 'fitness', 'tracker'],
+  watch: ['watch', 'smartwatch', 'wearable', 'tracker'],
   smart_home: [
     'smart',
     'lamp',
@@ -140,6 +141,86 @@ export const CONCEPTS: Record<string, readonly string[]> = {
     'sleep',
     'fitness',
   ],
+  shirt: [
+    'tee',
+    'tees',
+    't-shirt',
+    't-shirts',
+    'tshirt',
+    'shirt',
+    'shirts',
+    'hoodie',
+    'hoodies',
+    'sweatshirt',
+    'sweater',
+    'crewneck',
+  ],
+  jacket: [
+    'jacket',
+    'jackets',
+    'coat',
+    'coats',
+    'raincoat',
+    'parka',
+    'windbreaker',
+    'outerwear',
+    'shell',
+  ],
+  shoes: ['shoe', 'shoes', 'sneaker', 'sneakers', 'trainers', 'footwear', 'boots'],
+  waterproof: ['waterproof', 'rain', 'rainy', 'water-resistant', 'weatherproof', 'wet', 'downpour'],
+  kitchen: [
+    'kitchen',
+    'kettle',
+    'skillet',
+    'pan',
+    'frying',
+    'cookware',
+    'cast-iron',
+    'coffee',
+    'espresso',
+    'brew',
+    'cooking',
+    'cook',
+  ],
+  cozy: ['blanket', 'throw', 'cozy', 'cosy', 'couch', 'sofa', 'snuggle'],
+  skincare: [
+    'skincare',
+    'skin',
+    'serum',
+    'moisturizer',
+    'moisturiser',
+    'sunscreen',
+    'sunblock',
+    'spf',
+    'face',
+    'facial',
+  ],
+  sensitive: ['fragrance-free', 'unscented', 'sensitive', 'gentle', 'hypoallergenic'],
+  hair: ['hair', 'dryer', 'hairdryer', 'blow-dryer', 'blowdryer', 'frizz', 'styling'],
+  grooming: ['grooming', 'trimmer', 'beard', 'shaver', 'razor', 'clippers', 'stubble'],
+  strength: [
+    'dumbbell',
+    'dumbbells',
+    'weights',
+    'barbell',
+    'strength',
+    'kettlebell',
+    'lifting',
+    'exercise',
+  ],
+  yoga: ['yoga', 'pilates', 'stretching', 'mat'],
+  hiking: [
+    'hiking',
+    'hike',
+    'trail',
+    'camping',
+    'backpack',
+    'daypack',
+    'rucksack',
+    'outdoor',
+    'outdoors',
+  ],
+  bottle: ['bottle', 'flask', 'tumbler', 'hydration', 'insulated', 'thermos'],
   large_screen: ['big', 'bigger', 'larger', 'large', 'huge', 'wide', '27', '32', '34'],
   high_refresh: ['smooth', '120hz', '144hz', '165hz', 'high-refresh', 'refresh'],
 };

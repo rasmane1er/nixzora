@@ -154,6 +154,12 @@ const PRODUCT_TYPES = new Set([
   'mouse',
   'phone',
   'watch',
+  'shirt',
+  'jacket',
+  'shoes',
+  'skincare',
+  'hair',
+  'grooming',
 ]);
 
 /**

@@ -1,10 +1,4 @@
-import {
-  type PagedResult,
-  type ProductCard as Card,
-  type PublicSeller,
-  SELLER_CATEGORY_LABEL,
-  type SellerCategory,
-} from '@nixzora/validation';
+import { type PagedResult, type ProductCard as Card, type PublicSeller } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
@@ -49,10 +43,7 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
   const f = await getFormat();
   const since = f.monthYear(store.memberSince);
   const categoryName = store.category
-    ? await departmentName({
-        slug: store.category,
-        name: SELLER_CATEGORY_LABEL[store.category as SellerCategory] ?? '',
-      })
+    ? await departmentName({ slug: store.category, name: store.category })
     : '';
 
   return (

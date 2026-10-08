@@ -1,11 +1,27 @@
 import { defineMessages } from '../define';
 
 /**
- * Department names by category slug. Category records are written in English by staff; known
+ * Department names by category slug (the slugs and their nesting are DEPARTMENTS in
+ * @nixzora/validation). Category records are written in English by staff; known
  * departments are shown in the visitor's language, others as stored.
  */
 export const departments = defineMessages({
   en: {
+    electronics: 'Electronics',
+    'clothing-shoes': 'Clothing & shoes',
+    tops: 'T-shirts & hoodies',
+    outerwear: 'Outerwear',
+    shoes: 'Shoes',
+    'home-kitchen': 'Home & kitchen',
+    kitchen: 'Kitchen',
+    'home-living': 'Home & living',
+    beauty: 'Beauty & personal care',
+    skincare: 'Skincare',
+    'hair-care': 'Hair styling',
+    grooming: 'Grooming',
+    'sports-outdoors': 'Sports & outdoors',
+    fitness: 'Exercise equipment',
+    outdoor: 'Outdoor',
     computers: 'Computers',
     laptops: 'Laptops',
     desktops: 'Desktops',
@@ -23,6 +39,21 @@ export const departments = defineMessages({
     'other-electronics': 'Other electronics',
   },
   fr: {
+    electronics: 'Électronique',
+    'clothing-shoes': 'Vêtements et chaussures',
+    tops: 'T-shirts et sweats',
+    outerwear: 'Manteaux et vestes',
+    shoes: 'Chaussures',
+    'home-kitchen': 'Maison et cuisine',
+    kitchen: 'Cuisine',
+    'home-living': 'Maison et déco',
+    beauty: 'Beauté et soins',
+    skincare: 'Soins de la peau',
+    'hair-care': 'Coiffure',
+    grooming: 'Rasage et toilettage',
+    'sports-outdoors': 'Sports et plein air',
+    fitness: 'Matériel d’exercice',
+    outdoor: 'Plein air',
     computers: 'Ordinateurs',
     laptops: 'Ordinateurs portables',
     desktops: 'Ordinateurs de bureau',
@@ -40,6 +71,21 @@ export const departments = defineMessages({
     'other-electronics': 'Autre électronique',
   },
   es: {
+    electronics: 'Electrónica',
+    'clothing-shoes': 'Ropa y calzado',
+    tops: 'Playeras y sudaderas',
+    outerwear: 'Chamarras y abrigos',
+    shoes: 'Calzado',
+    'home-kitchen': 'Hogar y cocina',
+    kitchen: 'Cocina',
+    'home-living': 'Hogar y decoración',
+    beauty: 'Belleza y cuidado personal',
+    skincare: 'Cuidado de la piel',
+    'hair-care': 'Peinado',
+    grooming: 'Afeitado y arreglo personal',
+    'sports-outdoors': 'Deportes y aire libre',
+    fitness: 'Equipo de ejercicio',
+    outdoor: 'Aire libre',
     computers: 'Computadoras',
     laptops: 'Laptops',
     desktops: 'Computadoras de escritorio',

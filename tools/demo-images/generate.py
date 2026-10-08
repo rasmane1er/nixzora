@@ -350,6 +350,284 @@ def watch():
     )
 
 
+# ───────────── Clothing & shoes ─────────────
+
+
+def tee(color, trim, label="#fff"):
+    return page(
+        f"""
+{shadow(W / 2, 805, 300, 26)}
+<path d="M430 160 L320 205 L215 330 L315 400 L382 335 L382 770 Q600 792 818 770 L818 335 L885 400 L985 330 L880 205 L770 160 Q700 222 600 222 Q500 222 430 160 Z" fill="{color}"/>
+<path d="M430 160 Q500 222 600 222 Q700 222 770 160 Q700 250 600 250 Q500 250 430 160 Z" fill="{trim}"/>
+<path d="M248 300 L338 368 M952 300 L862 368" stroke="{trim}" stroke-width="10" stroke-linecap="round"/>
+<path d="M382 742 Q600 764 818 742" stroke="{trim}" stroke-width="8" fill="none" opacity="0.7"/>
+<rect x="575" y="262" width="50" height="26" rx="4" fill="{label}" opacity="0.85"/>
+<path d="M382 335 L382 770 Q600 792 818 770 L818 335" fill="url(#gloss)" opacity="0.5"/>
+"""
+    )
+
+
+def hoodie(color, trim):
+    return page(
+        f"""
+{shadow(W / 2, 815, 330, 26)}
+<path d="M470 150 Q600 60 730 150 L760 230 Q600 300 440 230 Z" fill="{trim}"/>
+<path d="M440 175 L330 220 L250 560 L235 760 L330 768 L350 580 L392 380 L392 780 Q600 800 808 780 L808 380 L850 580 L870 768 L965 760 L950 560 L870 220 L760 175 Q700 260 600 262 Q500 260 440 175 Z" fill="{color}"/>
+<rect x="232" y="728" width="102" height="44" rx="14" fill="{trim}"/>
+<rect x="866" y="728" width="102" height="44" rx="14" fill="{trim}"/>
+<rect x="392" y="736" width="416" height="48" rx="10" fill="{trim}"/>
+<path d="M470 560 L730 560 L770 700 L430 700 Z" fill="{trim}" opacity="0.55"/>
+<path d="M570 262 L560 420 M630 262 L640 420" stroke="#f4f1ea" stroke-width="9" stroke-linecap="round"/>
+<circle cx="560" cy="424" r="9" fill="#f4f1ea"/><circle cx="640" cy="424" r="9" fill="#f4f1ea"/>
+<path d="M392 380 L392 780 Q600 800 808 780 L808 380" fill="url(#gloss)" opacity="0.45"/>
+"""
+    )
+
+
+def rain_jacket(color, trim):
+    return page(
+        f"""
+{shadow(W / 2, 830, 330, 26)}
+<path d="M480 120 Q600 40 720 120 L742 210 Q600 250 458 210 Z" fill="{trim}"/>
+<path d="M455 170 L338 215 L262 560 L248 770 L342 778 L360 590 L398 395 L398 800 L802 800 L802 395 L840 590 L858 778 L952 770 L938 560 L862 215 L745 170 L600 250 Z" fill="{color}"/>
+<path d="M600 250 L600 800" stroke="{trim}" stroke-width="12"/>
+<path d="M600 250 L600 800" stroke="#d9d2c2" stroke-width="3" stroke-dasharray="6 8"/>
+<path d="M455 170 L600 250 L745 170 L720 230 L600 290 L480 230 Z" fill="{trim}"/>
+<rect x="430" y="560" width="130" height="18" rx="6" fill="{trim}"/><rect x="640" y="560" width="130" height="18" rx="6" fill="{trim}"/>
+<path d="M440 578 L440 690 M760 578 L760 690" stroke="{trim}" stroke-width="5" opacity="0.6"/>
+<rect x="246" y="740" width="98" height="40" rx="12" fill="{trim}"/><rect x="856" y="740" width="98" height="40" rx="12" fill="{trim}"/>
+<path d="M398 395 L398 800 L600 800 L600 250" fill="url(#gloss)" opacity="0.55"/>
+"""
+    )
+
+
+def sneaker(upper, accent, sole="#f7f5f0"):
+    laces = "".join(
+        f'<path d="M{x - 14} {y - 22} L{x + 14} {y + 22}" stroke="#f7f5f0" stroke-width="10" stroke-linecap="round"/>'
+        for x, y in [(610, 430), (660, 452), (710, 474), (760, 496)]
+    )
+    return page(
+        f"""
+{shadow(W / 2, 700, 440, 32)}
+<g transform="translate(-60 -120) scale(1.1)">
+<path d="M210 645 L220 470 Q230 425 290 420 Q380 418 440 470 L520 395 Q560 378 592 404 L820 505 Q960 545 1005 615 Q1015 645 990 650 Z" fill="{upper}"/>
+<path d="M440 470 L520 395 Q560 378 592 404 L560 450 Q500 430 460 480 Z" fill="#2b2f37" opacity="0.25"/>
+<path d="M300 610 Q480 520 720 560 Q520 600 320 650 Z" fill="{accent}"/>
+<path d="M220 470 Q230 425 290 420 L300 474 Q258 486 224 530 Z" fill="{accent}"/>
+{laces}
+<path d="M200 640 Q200 702 262 704 L990 698 Q1042 692 1030 640 L1005 640 Q992 662 960 662 L240 666 Q210 664 205 640 Z" fill="{sole}"/>
+<path d="M214 684 L1018 676" stroke="#cfc8ba" stroke-width="6"/>
+<path d="M240 470 Q300 430 420 460" fill="none" stroke="#fff" stroke-width="6" opacity="0.45"/>
+</g>
+"""
+    )
+
+
+# ───────────── Home & kitchen ─────────────
+
+
+def kettle(body, trim):
+    return page(
+        f"""
+{shadow(W / 2, 800, 260, 26)}
+<rect x="400" y="740" width="400" height="48" rx="22" fill="#24272d"/>
+<path d="M450 300 L750 300 Q800 520 790 720 Q600 760 410 720 Q400 520 450 300 Z" fill="{body}"/>
+<path d="M450 300 Q600 270 750 300 L740 330 Q600 305 460 330 Z" fill="{trim}"/>
+<rect x="560" y="246" width="80" height="44" rx="18" fill="{trim}"/>
+<path d="M760 340 Q900 360 900 520 Q900 650 785 690" fill="none" stroke="{trim}" stroke-width="46" stroke-linecap="round"/>
+<path d="M455 380 L330 300 L310 312 L420 470 Z" fill="{body}"/>
+<rect x="470" y="420" width="34" height="230" rx="16" fill="#9fd3ff" opacity="0.55"/>
+<path d="M470 560 L504 560" stroke="#3a7bd5" stroke-width="5"/>
+<path d="M470 360 Q520 330 560 340 L540 700 Q470 690 440 660 Q430 500 470 360 Z" fill="url(#gloss)"/>
+<circle cx="760" cy="732" r="9" fill="#e8622c"/>
+"""
+    )
+
+
+def skillet():
+    return page(
+        f"""
+{shadow(560, 700, 330, 40)}
+<rect x="800" y="430" width="330" height="62" rx="30" fill="#25272b"/>
+<circle cx="1090" cy="461" r="14" fill="#e6e1d6"/>
+<ellipse cx="540" cy="460" rx="330" ry="250" fill="#2a2c31"/>
+<ellipse cx="540" cy="470" rx="290" ry="214" fill="#17181b"/>
+<ellipse cx="540" cy="480" rx="250" ry="180" fill="#1e2024"/>
+<path d="M340 400 Q420 300 560 290" fill="none" stroke="#fff" stroke-width="10" opacity="0.18" stroke-linecap="round"/>
+<path d="M210 450 L190 470" stroke="#2a2c31" stroke-width="40" stroke-linecap="round"/>
+"""
+    )
+
+
+def coffee_maker():
+    return page(
+        f"""
+{shadow(W / 2, 805, 260, 26)}
+<rect x="400" y="130" width="400" height="120" rx="30" fill="#2b2f37"/>
+<rect x="690" y="130" width="110" height="660" rx="30" fill="#2b2f37"/>
+<rect x="400" y="740" width="400" height="56" rx="20" fill="#1f2228"/>
+<rect x="430" y="250" width="160" height="30" rx="10" fill="#14161a"/>
+<path d="M440 420 L640 420 L660 700 Q600 740 520 740 Q440 740 420 700 Z" fill="#cfe6f2" opacity="0.6"/>
+<path d="M432 560 L652 560 L660 700 Q600 740 520 740 Q440 740 420 700 Z" fill="#5a3825"/>
+<path d="M640 470 Q690 480 690 560 Q690 640 650 650" fill="none" stroke="#1f2228" stroke-width="26"/>
+<rect x="430" y="400" width="220" height="26" rx="10" fill="#1f2228"/>
+<circle cx="745" cy="320" r="16" fill="#e8622c"/><circle cx="745" cy="380" r="16" fill="#6fd1c7"/>
+<rect x="715" y="430" width="60" height="30" rx="8" fill="#0b0c0f"/><text x="745" y="452" text-anchor="middle" font-family="Helvetica, Arial" font-size="18" fill="#6fd1c7">7:30</text>
+<path d="M440 430 L470 430 L480 720 L452 712 Z" fill="#fff" opacity="0.35"/>
+"""
+    )
+
+
+def blanket(color, stripe):
+    layers = ""
+    for i, y in enumerate((620, 520, 420)):
+        layers += f'<rect x="300" y="{y}" width="600" height="110" rx="40" fill="{color}"/>'
+        layers += f'<path d="M320 {y + 30} Q600 {y + 10} 880 {y + 30}" stroke="{stripe}" stroke-width="10" fill="none" opacity="0.8"/>'
+        layers += f'<path d="M300 {y + 80} Q600 {y + 100} 900 {y + 80}" stroke="#000" stroke-width="3" fill="none" opacity="0.12"/>'
+    fringe = "".join(f'<path d="M{x} 730 L{x - 6} 770" stroke="{color}" stroke-width="8" stroke-linecap="round"/>' for x in range(320, 890, 26))
+    return page(
+        f"""
+{shadow(W / 2, 790, 340, 28)}
+{layers}{fringe}
+<rect x="300" y="420" width="600" height="110" rx="40" fill="url(#gloss)" opacity="0.6"/>
+"""
+    )
+
+
+# ───────────── Beauty & personal care ─────────────
+
+
+def serum():
+    return page(
+        f"""
+{shadow(W / 2, 790, 170, 22)}
+<rect x="555" y="110" width="90" height="130" rx="44" fill="#1d1f24"/>
+<rect x="535" y="230" width="130" height="80" rx="12" fill="#2b2f37"/>
+<path d="M470 360 Q470 300 530 300 L670 300 Q730 300 730 360 L730 740 Q730 780 690 780 L510 780 Q470 780 470 740 Z" fill="#c9782f" opacity="0.92"/>
+<rect x="500" y="430" width="200" height="230" rx="12" fill="#f6efe4"/>
+<text x="600" y="520" text-anchor="middle" font-family="Helvetica, Arial" font-size="30" font-weight="700" fill="#2b2f37" letter-spacing="3">DEWDROP</text>
+<text x="600" y="565" text-anchor="middle" font-family="Helvetica, Arial" font-size="22" fill="#5f6673">hydrating serum</text>
+<text x="600" y="625" text-anchor="middle" font-family="Helvetica, Arial" font-size="20" fill="#5f6673">30 ml</text>
+<path d="M490 330 L540 330 L530 760 L492 740 Z" fill="#fff" opacity="0.3"/>
+"""
+    )
+
+
+def sunscreen():
+    return page(
+        f"""
+{shadow(W / 2, 760, 330, 26)}
+<g transform="rotate(-12 600 500)">
+<path d="M300 380 L820 400 Q860 402 860 440 L860 560 Q860 598 820 600 L300 620 Z" fill="#fdf7ec"/>
+<path d="M300 380 L260 420 L260 580 L300 620 Z" fill="#e8dcc6"/>
+<rect x="858" y="410" width="120" height="180" rx="26" fill="#f2a541"/>
+<rect x="968" y="440" width="22" height="120" rx="8" fill="#d98a2b"/>
+<rect x="420" y="430" width="300" height="140" rx="16" fill="#f2a541" opacity="0.18"/>
+<text x="570" y="495" text-anchor="middle" font-family="Helvetica, Arial" font-size="58" font-weight="800" fill="#e8622c">SPF 50</text>
+<text x="570" y="545" text-anchor="middle" font-family="Helvetica, Arial" font-size="24" fill="#5f6673" letter-spacing="2">DEWDROP · DAILY</text>
+<path d="M300 400 L820 418 L820 450 L300 440 Z" fill="#fff" opacity="0.7"/>
+</g>
+"""
+    )
+
+
+def hair_dryer(body, trim):
+    return page(
+        f"""
+{shadow(W / 2, 800, 300, 26)}
+<path d="M560 460 L640 460 L700 780 Q660 800 620 790 Z" fill="{body}"/>
+<rect x="606" y="560" width="22" height="70" rx="10" fill="{trim}" transform="rotate(-11 617 595)"/>
+<circle cx="420" cy="330" r="170" fill="{body}"/>
+<circle cx="420" cy="330" r="120" fill="{trim}" opacity="0.35"/>
+<g stroke="{body}" stroke-width="10" opacity="0.8"><path d="M330 330 L510 330"/><path d="M420 240 L420 420"/><path d="M356 266 L484 394"/><path d="M356 394 L484 266"/></g>
+<path d="M420 160 L860 230 Q900 240 900 280 L900 380 Q900 420 860 430 L420 500 Z" fill="{body}"/>
+<rect x="890" y="236" width="120" height="188" rx="24" fill="#2b2f37"/>
+<path d="M440 180 L860 244 L860 280 L440 230 Z" fill="#fff" opacity="0.3"/>
+<circle cx="740" cy="330" r="16" fill="{trim}"/>
+"""
+    )
+
+
+def trimmer():
+    teeth = "".join(f'<rect x="{x}" y="150" width="10" height="46" rx="3" fill="#c9ccd2"/>' for x in range(522, 680, 18))
+    return page(
+        f"""
+{shadow(W / 2, 810, 170, 22)}
+{teeth}
+<rect x="510" y="190" width="180" height="40" rx="10" fill="#9aa1ad"/>
+<path d="M500 230 L700 230 Q730 240 728 290 L700 760 Q690 800 650 800 L550 800 Q510 800 500 760 L472 290 Q470 240 500 230 Z" fill="#23262d"/>
+<rect x="560" y="340" width="80" height="120" rx="40" fill="#e8622c"/>
+<g fill="#6fd1c7"><circle cx="575" cy="540" r="7"/><circle cx="600" cy="540" r="7"/><circle cx="625" cy="540" r="7"/></g>
+<path d="M500 250 L540 250 L560 780 L530 770 Z" fill="#fff" opacity="0.18"/>
+<rect x="540" y="620" width="120" height="120" rx="20" fill="#2f333b"/>
+"""
+    )
+
+
+# ───────────── Sports & outdoors ─────────────
+
+
+def yoga_mat(color, edge):
+    return page(
+        f"""
+{shadow(W / 2, 700, 420, 34)}
+<rect x="250" y="390" width="700" height="300" rx="20" fill="{color}"/>
+<rect x="250" y="390" width="700" height="300" rx="20" fill="url(#gloss)" opacity="0.4"/>
+<ellipse cx="950" cy="540" rx="80" ry="150" fill="{edge}"/>
+<path d="M950 430 A 60 110 0 1 1 949 430 M950 470 A 40 70 0 1 1 949 470 M950 505 A 20 35 0 1 1 949 505" fill="none" stroke="{color}" stroke-width="10"/>
+<ellipse cx="250" cy="540" rx="80" ry="150" fill="{color}"/>
+<rect x="420" y="380" width="40" height="320" rx="8" fill="#2b2f37"/><rect x="720" y="380" width="40" height="320" rx="8" fill="#2b2f37"/>
+"""
+    )
+
+
+def dumbbells():
+    def bell(cx, cy):
+        plates = "".join(
+            f'<rect x="{cx + dx - 18}" y="{cy - h / 2}" width="36" height="{h}" rx="10" fill="{c}"/>'
+            for dx, h, c in [(-150, 240, "#2b2f37"), (-112, 210, "#3a3f4b"), (-76, 180, "#e8622c"), (76, 180, "#e8622c"), (112, 210, "#3a3f4b"), (150, 240, "#2b2f37")]
+        )
+        return f'<rect x="{cx - 60}" y="{cy - 16}" width="120" height="32" rx="12" fill="#9aa1ad"/>{plates}<rect x="{cx - 190}" y="{cy - 10}" width="380" height="20" rx="8" fill="#6b717c" opacity="0.6"/>'
+    return page(
+        f"""
+{shadow(W / 2, 790, 380, 30)}
+{bell(600, 600)}
+{bell(600, 330)}
+"""
+    )
+
+
+def backpack(color, trim):
+    return page(
+        f"""
+{shadow(W / 2, 820, 290, 26)}
+<path d="M520 150 Q600 90 680 150" fill="none" stroke="{trim}" stroke-width="26" stroke-linecap="round"/>
+<path d="M380 290 Q380 170 600 165 Q820 170 820 290 L840 760 Q840 800 800 800 L400 800 Q360 800 360 760 Z" fill="{color}"/>
+<path d="M410 280 Q600 230 790 280" fill="none" stroke="{trim}" stroke-width="10"/>
+<path d="M440 520 Q440 480 480 480 L720 480 Q760 480 760 520 L760 720 Q760 750 730 750 L470 750 Q440 750 440 720 Z" fill="{trim}" opacity="0.85"/>
+<path d="M460 500 L740 500" stroke="#d9d2c2" stroke-width="4" stroke-dasharray="8 6"/>
+<rect x="700" y="490" width="16" height="44" rx="6" fill="#e8622c"/>
+<rect x="320" y="520" width="60" height="220" rx="24" fill="{trim}"/>
+<rect x="820" y="520" width="60" height="220" rx="24" fill="{trim}"/>
+<path d="M392 290 Q400 200 520 180 L520 780 L400 780 Z" fill="url(#gloss)" opacity="0.6"/>
+"""
+    )
+
+
+def bottle(color, cap):
+    return page(
+        f"""
+{shadow(W / 2, 810, 160, 20)}
+<rect x="540" y="120" width="120" height="90" rx="26" fill="{cap}"/>
+<path d="M650 140 Q720 140 720 190 Q720 235 650 235" fill="none" stroke="{cap}" stroke-width="20"/>
+<path d="M520 260 Q520 210 560 210 L640 210 Q680 210 680 260 L700 300 L700 760 Q700 800 660 800 L540 800 Q500 800 500 760 L500 300 Z" fill="{color}"/>
+<rect x="500" y="300" width="200" height="20" fill="#000" opacity="0.08"/>
+<path d="M520 320 L560 320 L560 780 L522 770 Z" fill="#fff" opacity="0.28"/>
+<text x="610" y="560" text-anchor="middle" font-family="Helvetica, Arial" font-size="26" font-weight="700" fill="#fff" opacity="0.85" transform="rotate(-90 610 560)" letter-spacing="4">SUMMIT</text>
+"""
+    )
+
+
 PRODUCTS = {
     "kestrel-14-pro": laptop("#5b616c", "#40454e", "#2a2e35", ("#1f2a44", "#3b5ba5", "#9fc4ff")),
     "arden-16": laptop("#24262b", "#18191d", "#111215", ("#2b0f1a", "#b0324a", "#f3a35c"), accent="#e8622c"),
@@ -374,14 +652,34 @@ PRODUCTS = {
     # Demo marketplace seller "Brightline Audio" (Phase 7)
     "brightline-bookshelf-speakers": speakers("#6b4a32", "#e9e4da", 1.12, ("#eef1f4", "#d9dee5")),
     "brightline-studio-headphones": headphones("#8c2f2f", "#2b2d33", "#17181c", "#f2c14e"),
+    # Clothing & shoes
+    "linden-organic-tee": tee("#f4f1ea", "#d8d1c2", "#e8622c"),
+    "linden-fleece-hoodie": hoodie("#8d939c", "#6d727a"),
+    "alder-rain-jacket": rain_jacket("#5e6b3d", "#48532d"),
+    "stride-runner": sneaker("#2f3b52", "#e8622c"),
+    # Home & kitchen
+    "hearth-electric-kettle": kettle("#2b2f37", "#1d2026"),
+    "ferro-cast-iron-skillet": skillet(),
+    "brewline-coffee-maker": coffee_maker(),
+    "haven-throw-blanket": blanket("#d9c7a8", "#c2653f"),
+    # Beauty & personal care
+    "dewdrop-hydrating-serum": serum(),
+    "dewdrop-daily-sunscreen": sunscreen(),
+    "aero-ionic-hair-dryer": hair_dryer("#f0e9de", "#c9a46a"),
+    "edgeline-beard-trimmer": trimmer(),
+    # Sports & outdoors
+    "core-yoga-mat": yoga_mat("#7f9c84", "#647e69"),
+    "core-adjustable-dumbbells": dumbbells(),
+    "trailhead-28-backpack": backpack("#2f5d6b", "#244a55"),
+    "summit-insulated-bottle": bottle("#c2653f", "#2b2f37"),
 }
 
 # Extra views of every product, so the storefront gallery has several photos to swipe through:
-# a close-up, an angled view and the product on a dark desk.
+# a close-up, an angled view and the product on a dark wooden table.
 VIEWS = {
     "2": "Close-up",
     "3": "Angled",
-    "4": "On a desk",
+    "4": "On a table",
 }
 
 

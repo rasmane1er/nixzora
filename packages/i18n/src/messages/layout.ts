@@ -3,13 +3,13 @@ import { defineMessages } from '../define';
 /** Site title, header and footer of the storefront. */
 export const layout = defineMessages({
   en: {
-    siteTitle: 'NIXZORA — computers and electronics, explained',
+    siteTitle: 'NIXZORA — shopping, explained',
     siteDescription:
-      'Laptops, monitors, phones and accessories with clear specs and honest advice. Tell us what you need; NIXZORA finds it and builds the cart.',
+      'Electronics, clothing and shoes, home and kitchen, beauty and sports gear with clear details and honest advice. Tell us what you need; NIXZORA finds it and builds the cart.',
     home: 'NIXZORA home',
     accountAndCart: 'Account and cart',
     departments: 'Departments',
-    tagline: 'Computers and electronics, explained. Free shipping over $99 · 30-day returns.',
+    tagline: 'Shopping, explained. Free shipping over $99 · 30-day returns.',
     footerNav: 'Footer',
     allProducts: 'All products',
     yourOrders: 'Your orders',
@@ -24,14 +24,13 @@ export const layout = defineMessages({
     chooseLanguage: 'Choose a language',
   },
   fr: {
-    siteTitle: 'NIXZORA — l’informatique et l’électronique, expliquées',
+    siteTitle: 'NIXZORA — le shopping, expliqué',
     siteDescription:
-      'Ordinateurs, écrans, téléphones et accessoires avec des caractéristiques claires et des conseils honnêtes. Dites-nous ce qu’il vous faut : NIXZORA le trouve et prépare le panier.',
+      'Électronique, vêtements et chaussures, maison et cuisine, beauté et sport, avec des informations claires et des conseils honnêtes. Dites-nous ce qu’il vous faut : NIXZORA le trouve et prépare le panier.',
     home: 'Accueil NIXZORA',
     accountAndCart: 'Compte et panier',
     departments: 'Rayons',
-    tagline:
-      'L’informatique et l’électronique, expliquées. Livraison offerte dès 99 $ · retours sous 30 jours.',
+    tagline: 'Le shopping, expliqué. Livraison offerte dès 99 $ · retours sous 30 jours.',
     footerNav: 'Pied de page',
     allProducts: 'Tous les produits',
     yourOrders: 'Vos commandes',
@@ -46,14 +45,13 @@ export const layout = defineMessages({
     chooseLanguage: 'Choisir une langue',
   },
   es: {
-    siteTitle: 'NIXZORA — computación y electrónica, explicadas',
+    siteTitle: 'NIXZORA — tus compras, explicadas',
     siteDescription:
-      'Laptops, monitores, teléfonos y accesorios con especificaciones claras y consejos honestos. Dinos qué necesitas: NIXZORA lo encuentra y arma el carrito.',
+      'Electrónica, ropa y calzado, hogar y cocina, belleza y deportes con información clara y consejos honestos. Dinos qué necesitas: NIXZORA lo encuentra y arma el carrito.',
     home: 'Inicio de NIXZORA',
     accountAndCart: 'Cuenta y carrito',
     departments: 'Departamentos',
-    tagline:
-      'Computación y electrónica, explicadas. Envío gratis desde $99 · devoluciones en 30 días.',
+    tagline: 'Tus compras, explicadas. Envío gratis desde $99 · devoluciones en 30 días.',
     footerNav: 'Pie de página',
     allProducts: 'Todos los productos',
     yourOrders: 'Tus pedidos',
