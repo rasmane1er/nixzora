@@ -168,10 +168,15 @@ module "platform" {
     ALLOW_TEST_PAYMENTS = "true"
   }, var.sign_in_client_ids)
   mobile_app_links = var.mobile_app_links
-  event_streaming  = { enabled = var.event_streaming_enabled }
-  kubernetes       = { enabled = var.kubernetes_enabled }
-  db_read_replica  = { enabled = var.db_read_replica_enabled }
-  observability    = { managed_prometheus = var.managed_prometheus_enabled }
+  # Postmaster Tools (rasmane1er@gmail.com) → nixzora.com → Verify domain. Public values.
+  google_postmaster_verification = {
+    label  = "wim6cd52ylel"
+    target = "gv-ozuriy7rkgjfq7.dv.googlehosted.com"
+  }
+  event_streaming = { enabled = var.event_streaming_enabled }
+  kubernetes      = { enabled = var.kubernetes_enabled }
+  db_read_replica = { enabled = var.db_read_replica_enabled }
+  observability   = { managed_prometheus = var.managed_prometheus_enabled }
 
   # Until production exists, the main domain sends visitors to the staging demo. Production
   # takes these names over: apply staging with -var redirect_main_domain=false first

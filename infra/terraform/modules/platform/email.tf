@@ -36,6 +36,17 @@ resource "aws_route53_record" "dmarc" {
 
 # ── Deliverability and feedback (p9-02) ──────────────────────────────────────────────────────
 
+# Google Postmaster Tools ownership check (Gmail spam rate and domain reputation). A CNAME on its
+# own label, so it never touches other TXT records at the domain apex.
+resource "aws_route53_record" "google_postmaster" {
+  count   = var.email_domain_owner && var.google_postmaster_verification != null ? 1 : 0
+  zone_id = var.hosted_zone_id
+  name    = "${var.google_postmaster_verification.label}.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 3600
+  records = [var.google_postmaster_verification.target]
+}
+
 # Bounces are handled by a subdomain we own, so SPF passes for our domain and DMARC aligns.
 resource "aws_ses_domain_mail_from" "domain" {
   count                  = var.email_domain_owner ? 1 : 0

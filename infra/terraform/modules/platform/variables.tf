@@ -260,3 +260,9 @@ variable "email_domain_owner" {
   type        = bool
   default     = true
 }
+
+variable "google_postmaster_verification" {
+  description = "Google Postmaster Tools domain check for domain_name, as the CNAME Google shows (label without the domain, and target). Lets Postmaster report Gmail's spam rate and reputation for our email. Created by the email domain owner only."
+  type        = object({ label = string, target = string })
+  default     = null
+}
