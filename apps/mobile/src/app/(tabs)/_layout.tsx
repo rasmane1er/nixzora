@@ -64,7 +64,7 @@ export default function TabsLayout() {
           title: t('tabCart'),
           tabBarIcon: icon('bag-outline', 'bag'),
           tabBarBadge: count > 0 ? count : undefined,
-          tabBarBadgeStyle: { backgroundColor: brand.signal, fontFamily: fonts.bodyBold },
+          tabBarBadgeStyle: { backgroundColor: brand.signalStrong, fontFamily: fonts.bodyBold },
           tabBarAccessibilityLabel: t('tabCartLabel', { count }),
         }}
       />

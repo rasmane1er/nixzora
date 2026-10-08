@@ -529,11 +529,11 @@ input[type='checkbox'] {
   cursor: progress;
 }
 .btn--primary {
-  background: var(--color-signal);
+  background: var(--color-signal-strong);
   color: #fff;
 }
 .btn--primary:hover {
-  background: #d4541f;
+  background: var(--color-signal-strong-hover);
 }
 .btn--secondary {
   background: transparent;

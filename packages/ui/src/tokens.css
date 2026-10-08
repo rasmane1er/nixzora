@@ -8,12 +8,17 @@
   --color-signal: #e8622c;
   --color-signal-hover: #d4541f;
   --color-signal-text: #b8461a;
+  /* Fills behind white text (buttons, badges): 4.8:1 with white, WCAG AA. */
+  --color-signal-strong: #c24d1b;
+  --color-signal-strong-hover: #a9431a;
   --color-ai: #17706b;
 
   --bg: var(--color-paper);
   --fg: var(--color-ink);
   --card: #fdfcfa;
   --line: #e2dfd6;
+  /* Empty rating stars: 3:1 against cards (WCAG 1.4.11), unlike hairline --line. */
+  --star-off: #8f8a7e;
   --muted: #5f6673;
   --input: #ffffff;
   --ok-bg: #e4f1e9;
@@ -39,6 +44,7 @@
     --fg: #e7ebf1;
     --card: #131b28;
     --line: #263244;
+    --star-off: #6b7383;
     --muted: #9ba6b6;
     --input: #0f1622;
     --ok-bg: #12301f;
@@ -59,6 +65,7 @@
   --fg: #e7ebf1;
   --card: #131b28;
   --line: #263244;
+  --star-off: #6b7383;
   --muted: #9ba6b6;
   --input: #0f1622;
   --ok-bg: #12301f;

@@ -41,7 +41,7 @@ export default function CouponsScreen() {
                 paddingHorizontal: space.sm,
                 paddingVertical: 6,
                 borderRadius: radius,
-                backgroundColor: brand.signal,
+                backgroundColor: brand.signalStrong,
               }}
             >
               <Text style={{ color: '#fff', fontFamily: fonts.bodyMedium }}>{amount(c)}</Text>

@@ -5,7 +5,9 @@ export const brand = {
   ink: '#0E1726',
   paper: '#F6F5F1',
   signal: '#E8622C',
-  signalPressed: '#D4541F',
+  /** Fills behind white text (primary buttons): 4.8:1 with white, WCAG AA. */
+  signalStrong: '#C24D1B',
+  signalPressed: '#A9431A',
   ai: '#17706B',
 } as const;
 

@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   askGo: {
-    backgroundColor: brand.signal,
+    backgroundColor: brand.signalStrong,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,

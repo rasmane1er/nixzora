@@ -28,8 +28,11 @@ what they cannot decide on their own. Nothing here is legal advice.
 4. **Children.** The policy says the store is not directed to children under 13 (COPPA).
 5. **Warranties and liability.** The liability clause limits damages to the order amount
    "to the extent the law allows"; confirm wording for consumers.
-6. **Accessibility.** No accessibility audit has been done yet; the lawyer may want one and
-   an accessibility statement page before launch.
+6. **Accessibility.** A first automated pass (Oct 2026, home, search, product and sign-in pages)
+   found no missing labels, image text, button names or heading problems; white text on orange
+   buttons and the rating stars were below WCAG AA contrast and were fixed. A full audit by a
+   specialist, with screen readers, is still to do; the lawyer may also want an accessibility
+   statement page.
 
 ## Sales tax (tax adviser)
 

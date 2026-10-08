@@ -38,7 +38,7 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: brand.signal,
+        backgroundColor: brand.signalStrong,
         alignItems: 'center',
         justifyContent: 'center',
       }}

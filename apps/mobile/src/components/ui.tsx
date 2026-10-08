@@ -79,7 +79,7 @@ export function Button({
   const p = usePalette();
   const off = disabled || loading;
   const background =
-    tone === 'primary' ? brand.signal : tone === 'secondary' ? p.tile : 'transparent';
+    tone === 'primary' ? brand.signalStrong : tone === 'secondary' ? p.tile : 'transparent';
   const color =
     tone === 'primary'
       ? '#FFFFFF'

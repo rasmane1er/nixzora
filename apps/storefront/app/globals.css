@@ -163,7 +163,7 @@ code,
   height: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--color-signal);
+  background: var(--color-signal-strong);
   color: #fff;
   font:
     600 12px/22px var(--font-mono),
@@ -244,11 +244,11 @@ code,
   cursor: progress;
 }
 .btn--primary {
-  background: var(--color-signal);
+  background: var(--color-signal-strong);
   color: #fff;
 }
 .btn--primary:hover {
-  background: var(--color-signal-hover);
+  background: var(--color-signal-strong-hover);
 }
 .btn--secondary {
   background: transparent;
@@ -1101,7 +1101,7 @@ table.plain th {
   white-space: nowrap;
 }
 .stars--muted {
-  color: var(--line);
+  color: var(--star-off);
 }
 .rating-line {
   display: flex;
@@ -2345,7 +2345,7 @@ td.neg {
 .avatar--initials {
   display: grid;
   place-items: center;
-  background: var(--color-signal);
+  background: var(--color-signal-strong);
   color: #fff;
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
@@ -2581,8 +2581,8 @@ td.neg {
   font-size: 14px;
 }
 .onboarding-progress li[data-state='done'] .onboarding-progress__n {
-  background: var(--color-signal);
-  border-color: var(--color-signal);
+  background: var(--color-signal-strong);
+  border-color: var(--color-signal-strong);
   color: #fff;
 }
 .onboarding-progress li[data-state='current'] .onboarding-progress__n {
@@ -3183,7 +3183,7 @@ td.neg {
   font-size: 12px;
   font-weight: 600;
   color: #fff;
-  background: var(--color-signal);
+  background: var(--color-signal-strong);
 }
 .card-badge--top {
   background: #2457c5;
@@ -3219,16 +3219,16 @@ td.neg {
   font-size: 14px;
 }
 .card-stars .on {
-  color: #f0a020;
+  color: #b87700;
 }
 .card-stars .half {
-  background: linear-gradient(90deg, #f0a020 50%, var(--line) 50%);
+  background: linear-gradient(90deg, #b87700 50%, var(--star-off) 50%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .card-stars .off {
-  color: var(--line);
+  color: var(--star-off);
 }
 .grid--featured {
   grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
