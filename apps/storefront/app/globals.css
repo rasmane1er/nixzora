@@ -349,10 +349,10 @@ input[type='checkbox'] {
   background: var(--hero-bg);
   color: #f3f1ea;
   border-radius: 24px;
-  padding: clamp(28px, 6vw, 64px);
-  margin-top: 24px;
+  padding: clamp(24px, 4vw, 44px) clamp(24px, 5vw, 56px);
+  margin-top: 20px;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   position: relative;
   overflow: hidden;
 }
@@ -360,8 +360,8 @@ input[type='checkbox'] {
   color: #f6a27c;
 }
 .hero h1 {
-  font-size: clamp(32px, 5.5vw, 58px);
-  max-width: 15ch;
+  font-size: clamp(30px, 4.2vw, 48px);
+  max-width: 22ch;
 }
 .hero p {
   max-width: 54ch;
@@ -3002,7 +3002,7 @@ td.neg {
   gap: 6px;
 }
 .hero {
-  min-height: clamp(360px, 36vw, 470px);
+  min-height: clamp(300px, 28vw, 380px);
   align-content: center;
   background: #0b1220;
 }
@@ -3082,10 +3082,10 @@ td.neg {
     order: 2;
     height: auto;
     aspect-ratio: 16 / 9;
-    width: calc(100% + 2 * clamp(28px, 6vw, 64px));
+    width: calc(100% + 2 * clamp(24px, 5vw, 56px));
     max-width: none;
-    margin: 0 calc(-1 * clamp(28px, 6vw, 64px));
-    object-position: 75% center;
+    margin: 0 calc(-1 * clamp(24px, 5vw, 56px));
+    object-position: 92% center;
   }
   .hero__content {
     order: 1;

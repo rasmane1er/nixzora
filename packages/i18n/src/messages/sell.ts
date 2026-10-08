@@ -18,7 +18,8 @@ export const sell = defineMessages({
     heroTime: 'About 10 minutes. Save and finish later.',
     heroBadgeTitle: 'Payouts through Stripe',
     heroBadgeBody: 'No listing or monthly fees',
-    heroImageAlt: 'A desk with a laptop, monitor, headphones, phone and game controller',
+    heroImageAlt:
+      'A cozy room with a hoodie on a hook, skincare and a water bottle on a shelf, and a laptop, phone, headphones, kettle, backpack, running shoe and yoga mat on a table',
     stepApply: 'Apply',
     stepApplyBody: 'Six short steps: your business, you, your store, shipping, fees and review.',
     stepVerify: 'Verify',
@@ -234,7 +235,7 @@ export const sell = defineMessages({
     heroBadgeTitle: 'Versements via Stripe',
     heroBadgeBody: 'Sans frais de mise en ligne ni abonnement',
     heroImageAlt:
-      'Un bureau avec un ordinateur portable, un écran, un casque, un téléphone et une manette',
+      'Une pièce chaleureuse avec un sweat accroché au mur, des soins et une gourde sur une étagère, et un ordinateur portable, un téléphone, un casque, une bouilloire, un sac à dos, une basket et un tapis de yoga sur une table',
     stepApply: 'Candidater',
     stepApplyBody:
       'Six courtes étapes : votre entreprise, vous, votre boutique, l’expédition, les frais et la vérification.',
@@ -455,7 +456,7 @@ export const sell = defineMessages({
     heroBadgeTitle: 'Pagos a través de Stripe',
     heroBadgeBody: 'Sin cuotas de publicación ni mensuales',
     heroImageAlt:
-      'Un escritorio con una laptop, un monitor, audífonos, un teléfono y un control de juegos',
+      'Una habitación acogedora con una sudadera colgada, productos de cuidado de la piel y una botella en un estante, y una laptop, un teléfono, audífonos, un hervidor, una mochila, un tenis y un tapete de yoga sobre una mesa',
     stepApply: 'Solicita',
     stepApplyBody: 'Seis pasos cortos: tu negocio, tú, tu tienda, envío, comisiones y revisión.',
     stepVerify: 'Verifica',

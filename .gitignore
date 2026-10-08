@@ -65,3 +65,4 @@ tests/load/results/*
 
 # Demo video renders (tools/demo-video/record.mjs)
 tools/demo-video/out/
+tools/demo-images/cutouts/

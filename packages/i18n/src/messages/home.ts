@@ -31,7 +31,8 @@ export const home = defineMessages({
     viewAllFeatured: 'View all products',
     deliveryTitle: 'Fast, tracked delivery',
     deliveryBody: 'Free over $99 · 30-day returns',
-    heroImageAlt: 'A desk with a laptop, monitor, headphones, phone and game controller',
+    heroImageAlt:
+      'A cozy room with a hoodie on a hook, skincare and a water bottle on a shelf, and a laptop, phone, headphones, kettle, backpack, running shoe and yoga mat on a table',
   },
   fr: {
     eyebrow: 'Le commerce porté par l’IA',
@@ -65,7 +66,7 @@ export const home = defineMessages({
     deliveryTitle: 'Livraison rapide et suivie',
     deliveryBody: 'Offerte dès 99 $ · retours sous 30 jours',
     heroImageAlt:
-      'Un bureau avec un ordinateur portable, un écran, un casque, un téléphone et une manette',
+      'Une pièce chaleureuse avec un sweat accroché au mur, des soins et une gourde sur une étagère, et un ordinateur portable, un téléphone, un casque, une bouilloire, un sac à dos, une basket et un tapis de yoga sur une table',
   },
   es: {
     eyebrow: 'Comercio impulsado por IA',
@@ -99,6 +100,6 @@ export const home = defineMessages({
     deliveryTitle: 'Envío rápido y con rastreo',
     deliveryBody: 'Gratis desde $99 · devoluciones en 30 días',
     heroImageAlt:
-      'Un escritorio con una laptop, un monitor, audífonos, un teléfono y un control de videojuegos',
+      'Una habitación acogedora con una sudadera colgada, productos de cuidado de la piel y una botella en un estante, y una laptop, un teléfono, audífonos, un hervidor, una mochila, un tenis y un tapete de yoga sobre una mesa',
   },
 });
