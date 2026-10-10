@@ -42,6 +42,9 @@ class SeeingModel implements LanguageModel {
   writeProductCopy(facts: Parameters<LanguageModel['writeProductCopy']>[0]) {
     return this.local.writeProductCopy(facts);
   }
+  classifyHelp(input: Parameters<LanguageModel['classifyHelp']>[0]) {
+    return this.local.classifyHelp(input);
+  }
   describeImage() {
     this.calls += 1;
     return Promise.resolve({

@@ -43,6 +43,22 @@ const DescribeImageSchema = z.object({
     categories: z.array(z.object({ slug: z.string(), name: z.string() }).loose()).max(500),
   }),
 });
+const ClassifyHelpSchema = z.object({
+  model,
+  input: z.object({
+    turns: z.array(z.string().max(1000)).min(1).max(6),
+    orders: z
+      .array(
+        z.object({
+          number: z.string().max(20),
+          status: z.string().max(30),
+          items: z.array(z.string().max(300)).max(3),
+        }),
+      )
+      .max(10),
+    locale: z.enum(LOCALES).optional(),
+  }),
+});
 const EmbedSchema = z.object({
   model,
   texts: z.array(z.string().max(20_000)).min(1).max(1000),
@@ -109,6 +125,15 @@ export class AiServiceController {
   ) {
     this.expect(body.model, this.llm.model);
     return this.guarded(() => this.llm.describeImage(body.input));
+  }
+
+  @Post(AI_ROUTES.classifyHelp)
+  @HttpCode(200)
+  classifyHelp(
+    @Body(new ZodValidationPipe(ClassifyHelpSchema)) body: z.infer<typeof ClassifyHelpSchema>,
+  ) {
+    this.expect(body.model, this.llm.model);
+    return this.guarded(() => this.llm.classifyHelp(body.input));
   }
 
   @Post(AI_ROUTES.embed)

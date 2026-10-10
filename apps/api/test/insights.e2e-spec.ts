@@ -45,6 +45,9 @@ class FakeModel implements LanguageModel {
   describeImage(input: Parameters<LanguageModel['describeImage']>[0]) {
     return this.local.describeImage(input);
   }
+  classifyHelp(input: Parameters<LanguageModel['classifyHelp']>[0]) {
+    return this.local.classifyHelp(input);
+  }
 }
 
 describe('Review insights (e2e)', () => {

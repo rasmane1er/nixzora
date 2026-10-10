@@ -119,13 +119,23 @@ export default function HelpScreen() {
   const { status } = useSession();
   const t = useT('appAccount');
   const th = useT('help');
+  const tha = useT('helpAgent');
   return (
     <Screen>
       <View style={{ gap: space.xs }}>
         <Text variant="title">{th('heading')}</Text>
         <Text muted>{th('intro')}</Text>
       </View>
-      <Button title={th('contactSupport')} onPress={() => router.push('/help/contact')} />
+      <Button
+        title={tha('entry')}
+        icon={<Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />}
+        onPress={() => router.push('/help/chat')}
+      />
+      <Button
+        tone="secondary"
+        title={th('contactSupport')}
+        onPress={() => router.push('/help/contact')}
+      />
       <MenuList
         items={[
           { icon: 'cube-outline', label: th('trackPackage'), href: '/orders?filter=open' },

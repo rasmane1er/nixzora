@@ -361,6 +361,7 @@ export class AccountHubService {
         subscriptions: { include: { product: { select: { title: true } } } },
         plusMembership: true,
         couponClips: { include: { coupon: { include: { product: { select: { title: true } } } } } },
+        helpConversations: { include: { messages: { orderBy: { createdAt: 'asc' } } } },
         conversations: {
           include: {
             seller: { select: { displayName: true } },
@@ -488,6 +489,14 @@ export class AccountHubService {
         product: c.coupon.product.title,
         clippedAt: c.createdAt,
         usedAt: c.usedAt,
+      })),
+      helpChats: user.helpConversations.map((c) => ({
+        startedAt: c.createdAt,
+        messages: c.messages.map((m) => ({
+          from: m.role === 'USER' ? 'you' : 'help assistant',
+          text: m.text,
+          at: m.createdAt,
+        })),
       })),
       messages: user.conversations.map((c) => ({
         store: c.seller.displayName,

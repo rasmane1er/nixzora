@@ -30,4 +30,5 @@ export * from './plus';
 export * from './bundles';
 export * from './clip-coupons';
 export * from './history';
+export * from './help-agent';
 export * from './messaging';

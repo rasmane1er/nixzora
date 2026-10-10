@@ -1,5 +1,7 @@
 import type {
   BrowsingHistory,
+  HelpAction,
+  HelpConversation,
   PriceHistory,
   BundleView,
   CouponsPage,
@@ -530,6 +532,16 @@ export function createApiClient(options: ClientOptions) {
       /** Contact us / Report a problem (signed in, or with an email). */
       create: (body: SupportRequestCreate) =>
         request<SupportRequestView>('POST', '/support/requests', { body }),
+    },
+
+    /** The help agent (p10-20): a support chat about your orders. Signed in only. */
+    help: {
+      current: () => request<HelpConversation>('GET', '/me/help'),
+      send: (text: string) =>
+        request<HelpConversation>('POST', '/me/help/messages', { body: { text } }),
+      /** Cancel an order, choose one, or send the chat to the support team. */
+      act: (body: HelpAction) => request<HelpConversation>('POST', '/me/help/actions', { body }),
+      startOver: () => request<void>('DELETE', '/me/help'),
     },
 
     account: {

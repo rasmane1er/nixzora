@@ -72,6 +72,7 @@ const TAGS = Object.fromEntries(
 
 export default async function HelpPage() {
   const t = await getT('help');
+  const h = await getT('helpAgent');
   return (
     <div className="wrap section stack" style={{ gap: 24, maxWidth: 900 }}>
       <div className="stack" style={{ gap: 6 }}>
@@ -80,7 +81,10 @@ export default async function HelpPage() {
         <p className="muted">{t('intro')}</p>
       </div>
       <div className="help-actions">
-        <Link className="btn btn--primary" href="/help/contact">
+        <Link className="btn btn--primary" href="/help/chat">
+          {h('entry')}
+        </Link>
+        <Link className="btn btn--secondary" href="/help/contact">
           {t('contactSupport')}
         </Link>
         <Link className="btn btn--secondary" href="/account/orders?filter=open">

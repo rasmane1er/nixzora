@@ -21,6 +21,7 @@ import { PlusModule } from './modules/plus/plus.module';
 import { BundlesModule } from './modules/bundles/bundles.module';
 import { ClipCouponsModule } from './modules/clip-coupons/clip-coupons.module';
 import { PriceHistoryModule } from './modules/price-history/price-history.module';
+import { HelpModule } from './modules/help/help.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -103,6 +104,7 @@ import { RedisModule } from './redis/redis.module';
     BundlesModule,
     ClipCouponsModule,
     PriceHistoryModule,
+    HelpModule,
     InsightsModule,
     SellersModule,
     NotificationsModule,

@@ -96,6 +96,7 @@ export default function OrderScreen() {
   const g = useT('gifts');
   const tpl = useT('plus');
   const ti = useT('inbox');
+  const tha = useT('helpAgent');
   const client = useQueryClient();
   // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
   const cancel = useMutation({
@@ -387,6 +388,13 @@ export default function OrderScreen() {
                 params: token ? { number: o.number, token } : { number: o.number },
               })
             }
+          />
+        ) : null}
+        {!token && o.kind !== 'PLUS' && o.kind !== 'GIFT_CARD' ? (
+          <Button
+            title={tha('orderHelp')}
+            tone="ghost"
+            onPress={() => router.push({ pathname: '/help/chat', params: { order: o.number } })}
           />
         ) : null}
       </Screen>

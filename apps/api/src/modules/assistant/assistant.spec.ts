@@ -136,6 +136,33 @@ describe('Claude driver', () => {
     };
   }
 
+  it('routes a help message with a forced tool call and only the shopper’s own orders', async () => {
+    const routed = (input: unknown) =>
+      claude({
+        content: [{ type: 'tool_use', name: 'record_help_request', input }],
+        usage: { input_tokens: 400, output_tokens: 20 },
+      });
+    const orders = [{ number: 'NX-AAAAAA', status: 'SHIPPED', items: ['Desk lamp'] }];
+    const ok = routed({ intent: 'TRACK', order_number: 'nx-aaaaaa' });
+    const result = await ok.model.classifyHelp({ turns: ['where is my lamp'], orders });
+    expect(result).toMatchObject({ intent: 'TRACK', orderNumber: 'NX-AAAAAA' });
+    const body = JSON.parse(
+      (ok.fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(body.tool_choice).toEqual({ type: 'tool', name: 'record_help_request' });
+    expect(body.messages[0].content).toContain('<messages>');
+
+    // A number the model made up is dropped; a broken answer falls back to the keyword rules.
+    const madeUp = routed({ intent: 'CANCEL', order_number: 'NX-ZZZZZZ' });
+    expect(
+      (await madeUp.model.classifyHelp({ turns: ['cancel it'], orders })).orderNumber,
+    ).toBeNull();
+    const broken = routed({ intent: 'SELL_ME_A_CAR' });
+    expect((await broken.model.classifyHelp({ turns: ['cancel my order'], orders })).intent).toBe(
+      'CANCEL',
+    );
+  });
+
   it('reads a photo with a forced tool call and keeps only a known category', async () => {
     const seen = (input: unknown) =>
       claude({

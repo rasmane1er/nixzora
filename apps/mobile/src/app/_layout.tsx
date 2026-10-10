@@ -64,6 +64,7 @@ function RootLayout() {
   const tpl = useT('plus');
   const tcl = useT('clips');
   const thi = useT('history');
+  const tha = useT('helpAgent');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -150,6 +151,7 @@ function RootLayout() {
                 <Stack.Screen name="account/support" options={{ title: t('titleSupport') }} />
                 <Stack.Screen name="help/index" options={{ title: t('titleHelp') }} />
                 <Stack.Screen name="help/contact" options={{ title: t('titleContact') }} />
+                <Stack.Screen name="help/chat" options={{ title: tha('title') }} />
                 <Stack.Screen
                   name="sign-in"
                   options={{ title: t('titleSignIn'), presentation: 'modal' }}

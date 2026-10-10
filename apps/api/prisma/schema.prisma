@@ -85,6 +85,7 @@ model User {
   couponClips        CouponClip[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
+  helpConversations  HelpConversation[]
   sellerApplication  SellerApplicationDraft?
   passkeys           Passkey[]
   deviceSignIns      DeviceSignIn[]
@@ -1056,11 +1057,60 @@ model SupportRequest {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   answeredAt  DateTime?     @map("answered_at")
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  helpConversations HelpConversation[]
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@map("support_requests")
+}
+
+enum HelpConversationStatus {
+  OPEN
+  HANDED_OFF
+  CLOSED
+}
+
+enum HelpRole {
+  USER
+  AGENT
+}
+
+/// The help agent (p10-20, ADR-0042): one support chat per shopper at a time.
+model HelpConversation {
+  id               String                 @id @default(uuid(7)) @db.Uuid
+  userId           String                 @map("user_id") @db.Uuid
+  status           HelpConversationStatus @default(OPEN)
+  /// The order the conversation is about, so "cancel it" knows which one.
+  orderNumber      String?                @map("order_number")
+  /// Set when the shopper sent it to the support team.
+  supportRequestId String?                @map("support_request_id") @db.Uuid
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supportRequest SupportRequest? @relation(fields: [supportRequestId], references: [id], onDelete: SetNull)
+  messages       HelpMessage[]
+
+  @@index([userId, status, updatedAt])
+  @@map("help_conversations")
+}
+
+model HelpMessage {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  role           HelpRole
+  text           String
+  /// What the agent understood (agent replies only), for quality checks.
+  intent         String?
+  /// Order cards and buttons shown with an agent reply, as they were then.
+  data           Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation HelpConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("help_messages")
 }
 
 /// Private notes staff keep about a customer (support history).

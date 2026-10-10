@@ -57,6 +57,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const t = await getT('order');
   const w = await getT('wallet');
   const pl = await getT('plus');
+  const ha = await getT('helpAgent');
   const f = await getFormat();
   const placed = param(search, 'placed') === '1';
   const notice = param(search, 'notice');
@@ -193,6 +194,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
             })}
           </p>
         </div>
+      ) : null}
+
+      {!token && order.kind !== 'PLUS' && order.kind !== 'GIFT_CARD' ? (
+        <p style={{ margin: 0 }}>
+          <Link href={`/help/chat?order=${order.number}`}>{ha('orderHelp')}</Link>
+        </p>
       ) : null}
 
       <div className="two">

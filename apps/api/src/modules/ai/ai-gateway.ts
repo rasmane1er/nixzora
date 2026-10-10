@@ -2,6 +2,7 @@ import { timeDependency } from '../../metrics/metrics';
 import { type ProductFacts } from '../insights/product-copy';
 import {
   type ExplainInput,
+  type HelpInput,
   type ImageInput,
   type ImageQuery,
   type LanguageModel,
@@ -10,6 +11,7 @@ import {
 } from '../assistant/language-model';
 import { type CategoryRef, type ParsedNeed } from '../assistant/need';
 import { type Locale } from '../assistant/replies';
+import { type HelpUnderstanding } from '../help/help-intent';
 import { type EmbeddingPurpose, type EmbeddingsProvider } from './embeddings';
 
 /** The AI service's private routes (ADR-0016), shared by client and server. */
@@ -20,6 +22,7 @@ export const AI_ROUTES = {
   writeProductCopy: '/internal/ai/product-copy',
   embed: '/internal/ai/embed',
   describeImage: '/internal/ai/describe-image',
+  classifyHelp: '/internal/ai/classify-help',
 } as const;
 
 /**
@@ -96,6 +99,13 @@ export class RemoteLanguageModel implements LanguageModel {
       AI_ROUTES.describeImage,
       { model: this.model, input },
     );
+  }
+
+  classifyHelp(input: HelpInput) {
+    return this.client.post<HelpUnderstanding & { usage: Usage }>(AI_ROUTES.classifyHelp, {
+      model: this.model,
+      input,
+    });
   }
 }
 
