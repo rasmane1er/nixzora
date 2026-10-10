@@ -1,4 +1,6 @@
 import type {
+  BrowsingHistory,
+  PriceHistory,
   BundleView,
   CouponsPage,
   CompareView,
@@ -309,6 +311,11 @@ export function createApiClient(options: ClientOptions) {
       /** A link to upload one review photo; send its storageKey in `photoKeys`. */
       reviewPhotoUpload: (body: UploadRequest) =>
         request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Price history (p10-19): 30, 90 or 365 days. */
+      priceHistory: (slug: string, days = 90) =>
+        request<PriceHistory>('GET', `/catalog/products/${enc(slug)}/price-history`, {
+          query: { days },
+        }),
       /** Clip coupons (p10-18): every live coupon; `clipped` when signed in. */
       coupons: () => request<CouponsPage>('GET', '/catalog/coupons'),
       /** Bundle & save (p10-16): the bundles a product is in. */
@@ -559,6 +566,9 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** Browsing history (p10-19). */
+      history: () => request<BrowsingHistory>('GET', '/me/history'),
+      forgetViewed: (productId: string) => request<void>('DELETE', `/me/history/${enc(productId)}`),
       /** Clip coupons (p10-18): ids you've clipped and not used. */
       clippedCoupons: () => request<string[]>('GET', '/me/coupons/clipped'),
       clipCoupon: (id: string) => request<{ clipped: true }>('POST', `/me/coupons/${enc(id)}/clip`),

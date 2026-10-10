@@ -71,6 +71,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const sb = await getT('subscribe');
   const pl = await getT('plus');
   const ib = await getT('inbox');
+  const hi = await getT('history');
   const since = f.monthYear(profile.memberSince);
 
   const groups: Group[] = [
@@ -111,6 +112,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
           label: g('balanceTitle'),
         },
         { href: '/account/buy-again', icon: 'buyAgain', label: t('buyAgain') },
+        { href: '/account/history', icon: 'history', label: hi('navHistory') },
         {
           href: '/account/reviews',
           icon: 'reviews',

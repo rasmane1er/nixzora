@@ -58,6 +58,7 @@ export default function AccountScreen() {
   const ts = useT('subscribe');
   const tpl = useT('plus');
   const tcl = useT('clips');
+  const thi = useT('history');
   const ti = useT('inbox');
 
   if (status !== 'signedIn' || !user) {
@@ -137,6 +138,7 @@ export default function AccountScreen() {
           { icon: 'pricetags-outline', label: tcl('pageTitle'), href: '/coupons' },
           { icon: 'gift-outline', label: tg('balanceTitle'), href: '/account/gift-cards' },
           { icon: 'refresh-outline', label: t('menuBuyAgain'), href: '/account/buy-again' },
+          { icon: 'time-outline', label: thi('navHistory'), href: '/account/history' },
           {
             icon: 'return-down-back-outline',
             label: t('menuReturns'),

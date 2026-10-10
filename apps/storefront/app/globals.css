@@ -4905,3 +4905,189 @@ td.neg {
   object-fit: cover;
   border-radius: 10px;
 }
+
+/* ───── Price history (p10-19) ───── */
+:root {
+  --chart-line: #c2410c;
+  --chart-grid: rgb(0 0 0 / 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chart-line: #e8622c;
+    --chart-grid: rgb(255 255 255 / 0.1);
+  }
+}
+:root[data-theme='dark'] {
+  --chart-line: #e8622c;
+  --chart-grid: rgb(255 255 255 / 0.1);
+}
+.price-history {
+  display: grid;
+  gap: 14px;
+}
+.price-history__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: center;
+  justify-content: space-between;
+}
+.price-history__head h2 {
+  margin: 0;
+}
+.price-history__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.price-history__stats dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+.price-history__stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 18px;
+}
+.price-chart {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.price-chart__plot {
+  position: relative;
+}
+.price-chart svg {
+  width: 100%;
+  height: 180px;
+  display: block;
+  touch-action: pan-y;
+}
+.price-chart svg:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.price-chart__grid line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+.price-chart__grid text,
+.price-chart__axis {
+  font-size: 12px;
+  fill: var(--muted);
+}
+.price-chart__line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.price-chart__dot {
+  fill: var(--chart-line);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+.price-chart__cross line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.price-chart__cross circle {
+  fill: var(--chart-line);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+.price-chart__tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+  font-size: 13px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.price-chart__table summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+}
+.lowest-badge {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  background: #dcfce7;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .lowest-badge {
+    color: #bbf7d0;
+    background: #14532d;
+  }
+}
+:root[data-theme='dark'] .lowest-badge {
+  color: #bbf7d0;
+  background: #14532d;
+}
+
+/* Browsing history (p10-19) */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.history-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.history-item__img {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tile, #f3f3f3);
+}
+.history-item__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.history-item__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.history-item__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.history-item__drop {
+  color: var(--ok-fg, #15803d);
+  font-weight: 600;
+}
+.history-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+@media (max-width: 480px) {
+  .history-item__img {
+    width: 72px;
+    height: 72px;
+  }
+}

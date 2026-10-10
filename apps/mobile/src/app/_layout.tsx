@@ -63,6 +63,7 @@ function RootLayout() {
   const tph = useT('photo');
   const tpl = useT('plus');
   const tcl = useT('clips');
+  const thi = useT('history');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -141,6 +142,7 @@ function RootLayout() {
                 />
                 <Stack.Screen name="account/profile" options={{ title: t('titleProfile') }} />
                 <Stack.Screen name="account/buy-again" options={{ title: t('titleBuyAgain') }} />
+                <Stack.Screen name="account/history" options={{ title: thi('title') }} />
                 <Stack.Screen name="account/payments" options={{ title: t('titlePayments') }} />
                 <Stack.Screen name="account/coupons" options={{ title: t('titleCoupons') }} />
                 <Stack.Screen name="account/settings" options={{ title: t('titleSettings') }} />

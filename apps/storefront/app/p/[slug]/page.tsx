@@ -1,6 +1,7 @@
 import {
   type BundleView,
   type MyPlus,
+  PRICE_HISTORY_RANGES,
   type ProductAlertRef,
   type QuestionPage,
   type ProductDetail,
@@ -34,6 +35,7 @@ import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { BoughtTogether } from './BoughtTogether';
 import { BundleOffer } from './BundleOffer';
+import { LowestPriceBadge, PriceHistorySection } from './PriceHistorySection';
 import { ClipButton } from '@/components/ClipButton';
 import { clippedCouponIds, couponLabel } from '@/lib/coupons';
 import { Questions } from './Questions';
@@ -42,7 +44,10 @@ import { StockAlert } from './StockAlert';
 import { ViewTracker } from './ViewTracker';
 import { WishButton } from './WishButton';
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ ph?: string | string[] }>;
+};
 
 async function load(slug: string): Promise<ProductDetail> {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) notFound();
@@ -73,8 +78,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /** The server's clock for this render (the deal countdown starts from it). */
 const renderedAt = () => Date.now();
 
-export default async function ProductPage({ params }: Props) {
+export default async function ProductPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  // Price history range (p10-19): ?ph=30|90|365, 90 days unless asked.
+  const phRaw = Number((await searchParams).ph);
+  const ph = (PRICE_HISTORY_RANGES as readonly number[]).includes(phRaw) ? phRaw : 90;
   const product = await load(slug);
   const signedIn = await isSignedIn();
   // NIXZORA Plus (p10-15): members see their 2-day promise; everyone else, the offer.
@@ -235,6 +243,7 @@ export default async function ProductPage({ params }: Props) {
               locale={INTL_LOCALE[locale]}
               wasLabel={p('was')}
             />
+            <LowestPriceBadge slug={product.slug} />
           </div>
           {product.deal ? (
             <div className="pdp-deal">
@@ -447,6 +456,8 @@ export default async function ProductPage({ params }: Props) {
           ))}
         </div>
       ) : null}
+
+      <PriceHistorySection slug={product.slug} days={ph} />
 
       <Questions slug={product.slug} initial={questions} signedIn={signedIn} />
 

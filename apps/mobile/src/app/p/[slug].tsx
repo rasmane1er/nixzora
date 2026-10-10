@@ -37,6 +37,7 @@ import { BoughtLine } from '@/components/CardExtras';
 import { ClipCouponButton } from '@/components/ClipCoupon';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
+import { LowestPriceBadge, PriceHistoryCard } from '@/components/PriceHistoryCard';
 import { ProductQuestions } from '@/components/ProductQuestions';
 import { AddToListButton } from '@/components/AddToListButton';
 import { Chips } from '@/components/Chips';
@@ -535,6 +536,7 @@ export default function ProductScreen() {
                 size="lg"
               />
             ) : null}
+            <LowestPriceBadge slug={slug} />
 
             {axes && variant ? (
               axes.map((axis) => (
@@ -849,6 +851,7 @@ export default function ProductScreen() {
 
             {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
             <ProductReviews slug={slug} />
+            <PriceHistoryCard slug={slug} />
             <ProductQuestions slug={slug} />
 
             {(bundles.data ?? []).map((bundle) => (

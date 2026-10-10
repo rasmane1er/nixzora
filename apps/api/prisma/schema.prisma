@@ -357,6 +357,7 @@ model Product {
   deals         Deal[]
   bundleItems   BundleItem[]
   clipCoupons   ClipCoupon[]
+  pricePoints   PricePoint[]
   listItems     ShoppingListItem[]
   subscriptions Subscription[]
   reviewInsight ReviewInsight?
@@ -1989,4 +1990,19 @@ model CouponClip {
   @@index([userId])
   @@index([orderId])
   @@map("coupon_clips")
+}
+
+// ───────────── Price history (p10-19) ─────────────
+
+/// A product's lowest live price from `recordedAt` until the next point: one row per change.
+model PricePoint {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  priceCents Int      @map("price_cents")
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, recordedAt])
+  @@map("price_points")
 }
