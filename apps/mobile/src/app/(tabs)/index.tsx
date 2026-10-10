@@ -37,6 +37,7 @@ export default function HomeScreen() {
   const t = useT('appShop');
   const tc = useT('common');
   const th = useT('home');
+  const tph = useT('photo');
   const tp = useT('product');
   const ta = useT('ads');
   const { width, columns } = useLayout();
@@ -125,10 +126,24 @@ export default function HomeScreen() {
               </PressableLink>
             ))}
           </View>
-          <PressableLink href="/scan" accessibilityRole="button" style={styles.heroAction}>
-            <Ionicons name="barcode-outline" size={18} color={brand.ink} />
-            <Text style={{ color: brand.ink, fontFamily: fonts.bodyBold }}>{t('scanBarcode')}</Text>
-          </PressableLink>
+          <View style={styles.heroActions}>
+            <PressableLink href="/scan" accessibilityRole="button" style={styles.heroAction}>
+              <Ionicons name="barcode-outline" size={18} color={brand.ink} />
+              <Text style={{ color: brand.ink, fontFamily: fonts.bodyBold }}>
+                {t('scanBarcode')}
+              </Text>
+            </PressableLink>
+            <PressableLink
+              href="/photo-search"
+              accessibilityRole="button"
+              style={styles.heroAction}
+            >
+              <Ionicons name="camera-outline" size={18} color={brand.ink} />
+              <Text style={{ color: brand.ink, fontFamily: fonts.bodyBold }}>
+                {tph('searchByPhoto')}
+              </Text>
+            </PressableLink>
+          </View>
         </View>
         <View>
           <Image
@@ -319,6 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   heroAction: {
     alignSelf: 'flex-start',
     flexDirection: 'row',

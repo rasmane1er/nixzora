@@ -42,6 +42,9 @@ class FakeModel implements LanguageModel {
   writeProductCopy() {
     return Promise.resolve({ text: this.reply, usage: { inputTokens: 500, outputTokens: 80 } });
   }
+  describeImage(input: Parameters<LanguageModel['describeImage']>[0]) {
+    return this.local.describeImage(input);
+  }
 }
 
 describe('Review insights (e2e)', () => {

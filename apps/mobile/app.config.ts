@@ -126,8 +126,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-image-picker',
       {
-        photosPermission: 'Choose a profile photo for your NIXZORA account.',
-        cameraPermission: 'Take a profile photo for your NIXZORA account.',
+        photosPermission:
+          'Choose a photo for your profile or a review, or to search NIXZORA by photo.',
+        cameraPermission:
+          'Take a photo for your profile or a review, or to search NIXZORA by photo.',
       },
     ],
     'expo-apple-authentication',
@@ -139,7 +141,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-camera',
       {
-        cameraPermission: 'Scan a product barcode to find it in NIXZORA.',
+        cameraPermission: 'Scan a barcode or take a photo to find products on NIXZORA.',
         microphonePermission: false,
         recordAudioAndroid: false,
       },

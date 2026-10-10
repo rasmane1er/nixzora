@@ -136,6 +136,35 @@ describe('Claude driver', () => {
     };
   }
 
+  it('reads a photo with a forced tool call and keeps only a known category', async () => {
+    const seen = (input: unknown) =>
+      claude({
+        content: [{ type: 'tool_use', name: 'record_pictured_product', input }],
+        usage: { input_tokens: 1300, output_tokens: 25 },
+      });
+    const shoes = seen({
+      product_pictured: true,
+      search_query: 'red trail running shoes',
+      category: 'tablets',
+    });
+    const result = await shoes.model.describeImage({ jpegBase64: 'AAAA', categories });
+    const body = JSON.parse(
+      (shoes.fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(body.tool_choice).toEqual({ type: 'tool', name: 'record_pictured_product' });
+    expect(body.messages[0].content[0]).toEqual({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/jpeg', data: 'AAAA' },
+    });
+    expect(result.looksFor).toEqual({ query: 'red trail running shoes', category: null });
+    expect(result.usage).toEqual({ inputTokens: 1300, outputTokens: 25 });
+
+    const nothing = seen({ product_pictured: false, search_query: 'a cat' });
+    expect((await nothing.model.describeImage({ jpegBase64: 'AAAA', categories })).looksFor).toBe(
+      null,
+    );
+  });
+
   it('forces a structured tool call and keeps only known categories and qualities', async () => {
     const { model, fetchImpl } = claude({
       content: [

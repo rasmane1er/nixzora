@@ -43,6 +43,7 @@ export async function SiteHeader() {
   const t = await getT('common');
   const l = await getT('layout');
   const s = await getT('search');
+  const ph = await getT('photo');
   const dealsLabel = (await getT('deals'))('navDeals');
   const locale = await getLocale();
   const names = await Promise.all(categories.map((category) => departmentName(category)));
@@ -70,6 +71,7 @@ export async function SiteHeader() {
             departments: s('departments'),
             brands: s('brands'),
             products: s('products'),
+            photo: ph('searchByPhoto'),
           }}
           formatPrice={{ locale: INTL_LOCALE[locale], currency: 'USD' }}
         />

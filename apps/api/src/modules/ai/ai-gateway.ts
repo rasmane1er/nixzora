@@ -2,6 +2,8 @@ import { timeDependency } from '../../metrics/metrics';
 import { type ProductFacts } from '../insights/product-copy';
 import {
   type ExplainInput,
+  type ImageInput,
+  type ImageQuery,
   type LanguageModel,
   type ReviewSummaryInput,
   type Usage,
@@ -17,6 +19,7 @@ export const AI_ROUTES = {
   summarizeReviews: '/internal/ai/summarize-reviews',
   writeProductCopy: '/internal/ai/product-copy',
   embed: '/internal/ai/embed',
+  describeImage: '/internal/ai/describe-image',
 } as const;
 
 /**
@@ -86,6 +89,13 @@ export class RemoteLanguageModel implements LanguageModel {
       model: this.model,
       input: facts,
     });
+  }
+
+  describeImage(input: ImageInput) {
+    return this.client.post<{ looksFor: ImageQuery | null; usage: Usage }>(
+      AI_ROUTES.describeImage,
+      { model: this.model, input },
+    );
   }
 }
 

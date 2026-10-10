@@ -21,6 +21,7 @@ import { visitorId } from '@/lib/visitor';
 export default function SearchScreen() {
   const p = usePalette();
   const t = useT('appShop');
+  const tph = useT('photo');
   const tc = useT('common');
   const ta = useT('ads');
   const ts = useT('search');
@@ -117,6 +118,13 @@ export default function SearchScreen() {
           onSubmitEditing={() => setQ(text.trim())}
           style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
         />
+        <Pressable
+          accessibilityLabel={tph('searchByPhoto')}
+          onPress={() => router.push('/photo-search')}
+          hitSlop={8}
+        >
+          <Ionicons name="camera-outline" size={22} color={p.fg} />
+        </Pressable>
         <Pressable
           accessibilityLabel={t('scanBarcode')}
           onPress={() => router.push('/scan')}

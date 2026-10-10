@@ -4486,3 +4486,71 @@ td.neg {
 .compare-similar {
   margin: 0;
 }
+
+/* ───── Search by photo (p10-14) ───── */
+.site-search__photo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  flex: none;
+  color: var(--muted);
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-right: 0;
+}
+.site-search__photo:hover,
+.site-search__photo:focus-visible {
+  color: var(--fg);
+}
+.photo-drop {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  border: 2px dashed var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  text-align: center;
+}
+.photo-drop--compact {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  align-items: center;
+  padding: 14px 16px;
+  text-align: left;
+}
+.photo-drop--compact .hint,
+.photo-drop--compact .banner {
+  grid-column: 1 / -1;
+}
+.photo-drop--over {
+  border-color: var(--color-signal);
+  background: color-mix(in srgb, var(--color-signal) 6%, var(--card));
+}
+.photo-drop__icon {
+  color: var(--muted);
+}
+.photo-drop__preview {
+  max-width: min(240px, 60vw);
+  max-height: 200px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+.photo-drop--compact .photo-drop__preview,
+.photo-drop--compact .photo-drop__icon {
+  max-width: 88px;
+  max-height: 88px;
+}
+.photo-drop__text,
+.photo-drop__status {
+  margin: 0;
+}
+.photo-drop .banner {
+  margin: 0;
+  width: 100%;
+}
+.photo-drop .hint {
+  margin: 0;
+}

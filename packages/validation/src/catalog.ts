@@ -428,8 +428,20 @@ export const COMPARE_MAX = 4;
 export const CompareQuerySchema = z.object({
   products: z
     .string()
-    .transform((value) => [...new Set(value.split(',').map((s) => s.trim()).filter(Boolean))])
-    .pipe(z.array(z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)).min(1).max(COMPARE_MAX)),
+    .transform((value) => [
+      ...new Set(
+        value
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    ])
+    .pipe(
+      z
+        .array(z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/))
+        .min(1)
+        .max(COMPARE_MAX),
+    ),
 });
 export type CompareQuery = z.infer<typeof CompareQuerySchema>;
 
@@ -439,4 +451,29 @@ export type CompareView = {
   specs: string[];
   /** Spec keys whose values differ between the products (to highlight). */
   differing: string[];
+};
+
+// ───────────── Search by photo (p10-14) ─────────────
+
+/**
+ * The shopper's photo, base64 (no data: prefix). The website shrinks it to about 1024 px first;
+ * the app posts the file's bytes to /catalog/visual-search/upload instead.
+ */
+export const VISUAL_SEARCH_MAX_BASE64 = 2_000_000;
+export const VisualSearchRequestSchema = z.object({
+  image: z
+    .string()
+    .min(100)
+    .max(VISUAL_SEARCH_MAX_BASE64)
+    .regex(/^[A-Za-z0-9+/]+=*$/, 'Not a base64 image'),
+});
+export type VisualSearchRequest = z.infer<typeof VisualSearchRequestSchema>;
+
+export type VisualSearchResult = {
+  /** Look the result up again at GET /catalog/visual-search/:id for 30 minutes. */
+  id: string;
+  products: ProductCard[];
+  /** What the AI saw in the photo, as a search (null with the free local model). */
+  query: string | null;
+  category: { slug: string; name: string } | null;
 };

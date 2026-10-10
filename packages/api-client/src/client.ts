@@ -1,5 +1,6 @@
 import type {
   CompareView,
+  VisualSearchResult,
   ConversationStart,
   ConversationSummary,
   ConversationView,
@@ -304,6 +305,17 @@ export function createApiClient(options: ClientOptions) {
       /** Compare up to 4 products side by side (p10-13). */
       compare: (slugs: string[]) =>
         request<CompareView>('GET', '/catalog/compare', { query: { products: slugs.join(',') } }),
+      /**
+       * Search by photo (p10-14) with a base64 photo. Phones post the file's bytes to
+       * `visualSearchUploadPath` instead (see the app's photo search screen).
+       */
+      visualSearch: (image: string) =>
+        request<VisualSearchResult>('POST', '/catalog/visual-search', { body: { image } }),
+      /** A recent photo search again (30 minutes). */
+      visualSearchResult: (id: string) =>
+        request<VisualSearchResult>('GET', `/catalog/visual-search/${enc(id)}`),
+      /** Where to POST a photo's raw bytes (Content-Type image/jpeg, png or webp). */
+      visualSearchUploadUrl: `${base}/catalog/visual-search/upload`,
       /** Today's deals: live ones ending soonest first, and what starts next (p10-07). */
       deals: (query: DealListQuery = {}) =>
         request<DealsPage>('GET', '/catalog/deals', { query: query as Query }),

@@ -31,6 +31,18 @@ const UnderstandSchema = z.object({
   locale: z.enum(LOCALES).default('en'),
 });
 const InputSchema = z.object({ model, input: z.record(z.string(), z.unknown()) });
+const DescribeImageSchema = z.object({
+  model,
+  input: z.object({
+    // At most 512 px JPEG from the API, so well under the AI service's 4 MB body limit.
+    jpegBase64: z
+      .string()
+      .min(16)
+      .max(1_500_000)
+      .regex(/^[A-Za-z0-9+/]+=*$/),
+    categories: z.array(z.object({ slug: z.string(), name: z.string() }).loose()).max(500),
+  }),
+});
 const EmbedSchema = z.object({
   model,
   texts: z.array(z.string().max(20_000)).min(1).max(1000),
@@ -88,6 +100,15 @@ export class AiServiceController {
   writeProductCopy(@Body(new ZodValidationPipe(InputSchema)) body: z.infer<typeof InputSchema>) {
     this.expect(body.model, this.llm.model);
     return this.guarded(() => this.llm.writeProductCopy(body.input as never));
+  }
+
+  @Post(AI_ROUTES.describeImage)
+  @HttpCode(200)
+  describeImage(
+    @Body(new ZodValidationPipe(DescribeImageSchema)) body: z.infer<typeof DescribeImageSchema>,
+  ) {
+    this.expect(body.model, this.llm.model);
+    return this.guarded(() => this.llm.describeImage(body.input));
   }
 
   @Post(AI_ROUTES.embed)

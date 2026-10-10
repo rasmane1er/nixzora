@@ -60,6 +60,7 @@ function RootLayout() {
   const ts = useT('subscribe');
   const ti = useT('inbox');
   const tcmp = useT('compare');
+  const tph = useT('photo');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -124,6 +125,7 @@ function RootLayout() {
                 <Stack.Screen name="messages/[id]" options={{ title: '' }} />
                 <Stack.Screen name="messages/new" options={{ title: '' }} />
                 <Stack.Screen name="compare" options={{ title: tcmp('title') }} />
+                <Stack.Screen name="photo-search" options={{ title: tph('title') }} />
                 <Stack.Screen name="lists/[id]" options={{ title: '' }} />
                 <Stack.Screen name="account/security" options={{ title: t('titleSecurity') }} />
                 <Stack.Screen name="account/addresses" options={{ title: t('titleAddresses') }} />

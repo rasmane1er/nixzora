@@ -1,6 +1,7 @@
 'use client';
 
 import { type SearchSuggestions } from '@nixzora/validation';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 
@@ -17,6 +18,8 @@ export type SearchBoxLabels = {
   departments: string;
   brands: string;
   products: string;
+  /** Search by photo (p10-14). */
+  photo: string;
 };
 
 /**
@@ -181,6 +184,23 @@ export function SearchBox({
           }
         }}
       />
+      <Link
+        href="/search/photo"
+        className="site-search__photo"
+        aria-label={labels.photo}
+        title={labels.photo}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.6l1.4-2h7l1.4 2h1.6A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-9Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
+          <circle cx="12" cy="12.5" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.7" />
+        </svg>
+      </Link>
       <button className="btn btn--primary" type="submit">
         {labels.submit}
       </button>

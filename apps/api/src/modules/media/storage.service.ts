@@ -34,6 +34,12 @@ export type LocalUploadClaims = {
 
 /** Storage keys of the demo catalog's bundled illustrations, e.g. "demo/pulse-s-watch.webp". */
 export const DEMO_PREFIX = 'demo/';
+/** Where a monorepo checkout keeps the demo illustrations (API run from apps/api or the root). */
+const DEMO_DIRS = [
+  resolve(process.cwd(), '../storefront/public/demo-products'),
+  resolve(process.cwd(), 'apps/storefront/public/demo-products'),
+];
+const MAX_SERVED_BYTES = 15 * 1024 * 1024;
 
 /**
  * Where product images live.
@@ -228,6 +234,36 @@ export class StorageService {
 
   get localRoot(): string {
     return this.localDir;
+  }
+
+  /**
+   * The bytes of a served image (search by photo indexes them). Demo illustrations are read from
+   * the storefront's public folder when this is a checkout of the monorepo, else over HTTPS.
+   */
+  async readServed(key: string): Promise<Buffer | null> {
+    try {
+      if (key.startsWith(DEMO_PREFIX)) {
+        const name = key.slice(DEMO_PREFIX.length);
+        if (!/^[a-z0-9-]+\.(webp|png|jpe?g)$/.test(name)) return null;
+        for (const dir of DEMO_DIRS) {
+          const file = await readFile(resolve(dir, name)).catch(() => null);
+          if (file) return file;
+        }
+        const res = await fetch(this.publicUrl(key), { signal: AbortSignal.timeout(10_000) });
+        if (!res.ok) return null;
+        const body = Buffer.from(await res.arrayBuffer());
+        return body.length <= MAX_SERVED_BYTES ? body : null;
+      }
+      if (!STORAGE_KEY_PATTERN.test(key)) return null;
+      if (this.driver === 's3' && this.s3) {
+        const object = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+        return Buffer.from(await object.Body!.transformToByteArray());
+      }
+      return await readFile(this.localPath(key));
+    } catch (error) {
+      this.logger.debug(`Image ${key} not readable: ${(error as Error).message}`);
+      return null;
+    }
   }
 
   async exists(key: string): Promise<boolean> {
