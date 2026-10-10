@@ -53,3 +53,4 @@ export { follows } from './follows';
 export { storeStats } from './storeStats';
 export { sizeGuide } from './sizeGuide';
 export { multiBuy } from './multiBuy';
+export { videos } from './videos';

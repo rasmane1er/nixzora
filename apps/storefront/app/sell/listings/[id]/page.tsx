@@ -18,6 +18,8 @@ import {
 import { DescriptionAssistant } from './DescriptionAssistant';
 import { PhotoOrder } from './PhotoOrder';
 import { PhotoUpload } from './PhotoUpload';
+import { addVideo, removeVideo } from './video-actions';
+import { VideoEditor } from '@/components/VideoEditor';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('sellerTools');
@@ -187,6 +189,14 @@ export default async function ListingPage({
           />
         </section>
       </div>
+
+      <VideoEditor
+        productId={product.id}
+        videos={product.videos ?? []}
+        live={product.status === 'ACTIVE'}
+        add={addVideo}
+        remove={removeVideo}
+      />
 
       <section className="card stack">
         <h2>{t('optionsTitle')}</h2>

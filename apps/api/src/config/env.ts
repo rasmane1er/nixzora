@@ -127,6 +127,11 @@ export const EnvSchema = z
      * Malware Protection for S3 to tag the upload; "off" relies on re-encoding alone.
      */
     MEDIA_MALWARE_SCAN: z.enum(['off', 'guardduty']).default('off'),
+    /**
+     * Product videos (p10-28): "oembed" asks YouTube or Vimeo for the title and still, and refuses
+     * private or non-embeddable videos; "off" takes the link as given (tests, offline).
+     */
+    VIDEO_LOOKUP: z.enum(['oembed', 'off']).default('oembed'),
     /** How long an attach waits for the scan result before asking the user to try again. */
     MEDIA_SCAN_WAIT_SECONDS: z.coerce.number().int().min(0).max(60).default(20),
 

@@ -12,13 +12,18 @@ import {
   type ProductCreate,
   type ProductDetail,
   MAX_PRODUCT_IMAGES,
+  MAX_PRODUCT_VIDEOS,
+  parseVideoUrl,
   type ProductImageAttach,
+  type ProductVideoAdd,
   type ProductImageOrder,
   type ProductUpdate,
   slugify,
   type VariantCreate,
   type VariantUpdate,
 } from '@nixzora/validation';
+import { ConfigService } from '@nestjs/config';
+import { type Env } from '../../config/env';
 import { type Prisma } from '../../generated/prisma/client';
 import { isForeignKeyViolation, isNotFound, isUniqueViolation } from '../../common/prisma-errors';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -26,6 +31,7 @@ import { AuditService } from '../audit/audit.service';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { MediaIntakeService } from '../media/media-intake.service';
 import { CatalogQueryService } from './catalog-query.service';
+import { lookUpVideo } from './video-info';
 import { ancestorsOf } from './category-tree';
 
 /**
@@ -40,6 +46,7 @@ export class CatalogAdminService {
     private readonly audit: AuditService,
     private readonly intake: MediaIntakeService,
     private readonly query: CatalogQueryService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   // ───────────── Categories ─────────────
@@ -410,6 +417,69 @@ export class CatalogAdminService {
     });
     if (!count) throw new NotFoundException('Image not found.');
     await this.audit.recordFor(actor, 'catalog.image.removed', 'product', productId, { imageId });
+    return this.query.productById(productId);
+  }
+
+  // ───────────── Videos (p10-28) ─────────────
+
+  /** Adds a YouTube or Vimeo video; the provider is asked for its title and still. */
+  async addVideo(
+    productId: string,
+    input: ProductVideoAdd,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    await this.requireProduct(productId);
+    const parsed = parseVideoUrl(input.url);
+    if (!parsed) throw new BadRequestException('Paste a YouTube or Vimeo link to the video.');
+    const info =
+      this.config.get('VIDEO_LOOKUP', { infer: true }) === 'oembed'
+        ? await lookUpVideo(parsed)
+        : ({ ok: true, title: null, thumbnailUrl: null } as const);
+    if (!info.ok) {
+      throw new BadRequestException(
+        'That video is private, removed, or can’t be played on other sites. Make it public (or unlisted) and allow embedding, then try again.',
+      );
+    }
+    const video = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId}::uuid FOR UPDATE`;
+      const existing = await tx.productVideo.findMany({
+        where: { productId },
+        select: { provider: true, videoId: true, position: true },
+      });
+      if (existing.some((v) => v.provider === parsed.provider && v.videoId === parsed.videoId)) {
+        throw new ConflictException('This video is already on the listing.');
+      }
+      if (existing.length >= MAX_PRODUCT_VIDEOS) {
+        throw new ConflictException(`A product can have up to ${MAX_PRODUCT_VIDEOS} videos.`);
+      }
+      return tx.productVideo.create({
+        data: {
+          productId,
+          provider: parsed.provider,
+          videoId: parsed.videoId,
+          title: input.title ?? info.title ?? 'Video',
+          thumbnailUrl: info.thumbnailUrl,
+          position: Math.max(-1, ...existing.map((v) => v.position)) + 1,
+        },
+      });
+    });
+    await this.audit.recordFor(actor, 'catalog.video.added', 'product', productId, {
+      videoId: video.id,
+      provider: video.provider,
+    });
+    return this.query.productById(productId);
+  }
+
+  async removeVideo(
+    productId: string,
+    videoId: string,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    const { count } = await this.prisma.productVideo.deleteMany({
+      where: { id: videoId, productId },
+    });
+    if (!count) throw new NotFoundException('Video not found.');
+    await this.audit.recordFor(actor, 'catalog.video.removed', 'product', productId, { videoId });
     return this.query.productById(productId);
   }
 

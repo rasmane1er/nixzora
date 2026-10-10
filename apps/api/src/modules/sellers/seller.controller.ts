@@ -23,6 +23,8 @@ import {
   PayoutOnboardingLinkSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductVideoAdd,
+  ProductVideoAddSchema,
   type ProductImageOrder,
   ProductImageOrderSchema,
   type SellerApplication,
@@ -354,6 +356,25 @@ export class SellerController {
     @Actor() actor: ActorContext,
   ) {
     return this.listings.reorderImages(id, body, actor);
+  }
+
+  @Post('products/:id/videos')
+  @ApiZodBody(ProductVideoAddSchema)
+  addVideo(
+    @Param('id', uuid) id: string,
+    @Body(new ZodValidationPipe(ProductVideoAddSchema)) body: ProductVideoAdd,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.listings.addVideo(id, body, actor);
+  }
+
+  @Delete('products/:id/videos/:videoId')
+  removeVideo(
+    @Param('id', uuid) id: string,
+    @Param('videoId', uuid) videoId: string,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.listings.removeVideo(id, videoId, actor);
   }
 
   @Delete('products/:id/images/:imageId')

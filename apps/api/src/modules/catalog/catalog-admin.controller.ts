@@ -31,6 +31,8 @@ import {
   ProductDetailSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductVideoAdd,
+  ProductVideoAddSchema,
   type ProductImageOrder,
   ProductImageOrderSchema,
   type ProductUpdate,
@@ -189,6 +191,25 @@ export class CatalogAdminController {
     @Actor() actor: ActorContext,
   ): Promise<ProductDetail> {
     return this.admin.reorderImages(id, body, actor);
+  }
+
+  @Post('products/:id/videos')
+  @ApiZodBody(ProductVideoAddSchema)
+  addVideo(
+    @Param('id', uuid) id: string,
+    @Body(new ZodValidationPipe(ProductVideoAddSchema)) body: ProductVideoAdd,
+    @Actor() actor: ActorContext,
+  ): Promise<ProductDetail> {
+    return this.admin.addVideo(id, body, actor);
+  }
+
+  @Delete('products/:id/videos/:videoId')
+  removeVideo(
+    @Param('id', uuid) id: string,
+    @Param('videoId', uuid) videoId: string,
+    @Actor() actor: ActorContext,
+  ): Promise<ProductDetail> {
+    return this.admin.removeVideo(id, videoId, actor);
   }
 
   @Delete('products/:id/images/:imageId')

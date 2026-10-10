@@ -26,6 +26,11 @@ test('pages send the security headers', async ({ request }) => {
   expect(csp).toContain("base-uri 'self'");
   expect(csp).toContain('https://js.stripe.com');
   expect(csp).not.toContain("'unsafe-eval'");
+  // Product videos (ADR-0050): only the privacy-enhanced players may be framed.
+  const frames = /frame-src ([^;]*)/.exec(csp)?.[1] ?? '';
+  expect(frames).toContain('https://www.youtube-nocookie.com');
+  expect(frames).toContain('https://player.vimeo.com');
+  expect(frames).not.toContain('https://www.youtube.com');
   // Scripts need this page view's nonce: no blanket permission for inline scripts.
   const scripts = /script-src ([^;]*)/.exec(csp)?.[1] ?? '';
   expect(scripts).toMatch(/'nonce-[A-Za-z0-9+/=]{16,}'/);

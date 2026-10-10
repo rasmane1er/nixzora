@@ -38,6 +38,7 @@ import { AddToCart } from './AddToCart';
 import { AddToList } from './AddToList';
 import { CompareButton } from '@/components/CompareButton';
 import { Gallery } from './Gallery';
+import { ProductVideos } from './ProductVideos';
 import { ReviewForm } from './ReviewForm';
 import { SizeGuide } from './SizeGuide';
 import { BoughtTogether } from './BoughtTogether';
@@ -379,6 +380,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
           </ul>
         </div>
       </div>
+
+      {product.videos?.length ? <ProductVideos videos={product.videos} /> : null}
 
       <div className="two section">
         <section className="stack" aria-labelledby="about">

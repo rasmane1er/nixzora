@@ -30,6 +30,7 @@ import { ancestorsOf, descendantIds } from './category-tree';
 import { SIZED_DEPARTMENTS, sizeGuideFor } from './size-guide';
 import {
   productInclude,
+  toVideo,
   type ProductWithRelations,
   toCard,
   toImage,
@@ -761,6 +762,11 @@ export class CatalogQueryService {
       _count: { _all: true },
     });
     const breadcrumb = await this.breadcrumb(product.category);
+    // Product videos (p10-28).
+    const videos = await this.prisma.productVideo.findMany({
+      where: { productId: product.id },
+      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+    });
     // Size & fit guide (p10-26): clothing and shoes.
     const sized = SIZED_DEPARTMENTS.has(breadcrumb[0]?.slug ?? '');
     const categoryIds = sized ? await this.categoryChain(product.category) : [];
@@ -786,6 +792,7 @@ export class CatalogQueryService {
       // Review feedback is between staff and the seller; the storefront never shows it.
       reviewNote: activeVariantsOnly ? null : product.reviewNote,
       images: product.images.map((image) => toImage(image, this.url)),
+      videos: videos.map(toVideo),
       variants: view.variants.map(toVariant),
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),

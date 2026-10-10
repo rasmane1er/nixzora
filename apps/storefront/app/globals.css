@@ -5603,3 +5603,110 @@ td.neg {
   gap: 4px 8px;
   margin: 0 0 12px;
 }
+
+/* Product videos (p10-28) */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video-tile {
+  display: grid;
+  gap: 6px;
+}
+.video-tile__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius, 12px);
+  overflow: hidden;
+  background: #0e1726;
+}
+.video-tile__frame iframe,
+.video-tile__play {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.video-tile__play {
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+}
+.video-tile__play img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.video-tile__icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--color-signal-strong, #c24d1b);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.35);
+  transition: transform 0.15s ease;
+}
+.video-tile__play:hover .video-tile__icon,
+.video-tile__play:focus-visible .video-tile__icon {
+  transform: scale(1.08);
+}
+.video-tile__play:focus-visible {
+  outline: 3px solid var(--color-signal-strong, #c24d1b);
+  outline-offset: 3px;
+}
+.video-tile__title {
+  margin: 0;
+  font-weight: 600;
+}
+.video-tile .hint {
+  margin: 0;
+}
+.video-editor {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video-editor li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.video-editor img,
+.video-editor__blank {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #0e1726;
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.video-editor__add {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+@media (max-width: 720px) {
+  .video-editor__add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .video-editor__add .btn {
+    justify-self: start;
+  }
+}

@@ -65,6 +65,19 @@ export default async function ListingReviewPage({ searchParams }: { searchParams
                   ))}
                 </div>
               ) : null}
+              {product.videos?.length ? (
+                // Product videos (p10-28): check them before approving.
+                <ul className="video-links">
+                  {product.videos.map((video) => (
+                    <li key={video.id}>
+                      ▶{' '}
+                      <a href={video.watchUrl} target="_blank" rel="noopener noreferrer">
+                        {video.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <p style={{ whiteSpace: 'pre-line' }}>{product.description}</p>
               {specs.length ? (
                 <p className="muted mono">

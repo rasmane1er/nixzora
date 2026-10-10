@@ -366,6 +366,7 @@ model Product {
   deals         Deal[]
   bundleItems   BundleItem[]
   multiBuyItems MultiBuyProduct[]
+  videos        ProductVideo[]
   clipCoupons   ClipCoupon[]
   pricePoints   PricePoint[]
   listItems     ShoppingListItem[]
@@ -379,6 +380,30 @@ model Product {
   @@index([categoryId, status])
   @@index([sellerId, status])
   @@map("products")
+}
+
+enum VideoProvider {
+  YOUTUBE
+  VIMEO
+}
+
+/// Product videos (p10-28): a YouTube or Vimeo link; NIXZORA stores no video itself.
+model ProductVideo {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  productId    String        @map("product_id") @db.Uuid
+  provider     VideoProvider
+  /// The provider's id ("dQw4w9WgXcQ"; Vimeo unlisted: "76979871:a1b2c3").
+  videoId      String        @map("video_id")
+  title        String
+  thumbnailUrl String?       @map("thumbnail_url")
+  position     Int           @default(0)
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, provider, videoId])
+  @@index([productId])
+  @@map("product_videos")
 }
 
 model ProductImage {

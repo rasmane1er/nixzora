@@ -1,10 +1,14 @@
 import { rich } from '@nixzora/i18n';
-import { InventoryAdjustReasonSchema, type ProductDetail } from '@nixzora/validation';
+import {
+  InventoryAdjustReasonSchema,
+  MAX_PRODUCT_VIDEOS,
+  type ProductDetail,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/SubmitButton';
-import { Banner, PageHeader, StatusPill } from '@/components/ui';
+import { ActionButton, Banner, PageHeader, StatusPill } from '@/components/ui';
 import { ApiError, load } from '@/lib/api';
 import { can, currentStaff } from '@/lib/auth';
 import { catalogOptions } from '@/lib/catalog';
@@ -15,6 +19,7 @@ import { addVariant, adjustStock, updateProduct, updateVariant } from '../action
 import { CopySuggestion } from './CopySuggestion';
 import { ImageOrder } from './ImageOrder';
 import { ImageUpload } from './ImageUpload';
+import { addVideo, removeVideo } from './video-actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('opsCatalog');
@@ -40,12 +45,13 @@ export default async function ProductPage({
 }) {
   const { id } = await params;
   const search = await searchParams;
-  const [me, product, { categories, brands }, t, tc, f] = await Promise.all([
+  const [me, product, { categories, brands }, t, tc, tv, f] = await Promise.all([
     currentStaff(),
     loadProduct(id),
     catalogOptions(),
     getT('opsCatalog'),
     getT('common'),
+    getT('videos'),
     getFormat(),
   ]);
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
@@ -155,6 +161,61 @@ export default async function ProductPage({
               defaultAlt={product.title}
               existing={product.images.length}
             />
+          </section>
+
+          <section className="card">
+            <h2>{tv('editorTitle')}</h2>
+            <p className="muted small">{tv('editorHint', { max: MAX_PRODUCT_VIDEOS })}</p>
+            {(product.videos ?? []).map((video) => (
+              <div key={video.id} className="video-row">
+                {video.thumbnailUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- the provider's still
+                  <img src={video.thumbnailUrl} alt="" width={96} height={54} />
+                ) : (
+                  <span className="video-row__blank" aria-hidden="true">
+                    ▶
+                  </span>
+                )}
+                <div>
+                  <strong>{video.title}</strong>
+                  <div>
+                    <a href={video.watchUrl} target="_blank" rel="noopener noreferrer">
+                      {tv(`watchOn_${video.provider}`)}
+                    </a>
+                  </div>
+                </div>
+                <ActionButton
+                  action={removeVideo}
+                  label={tv('remove')}
+                  tone="danger"
+                  fields={{ productId: product.id, videoId: video.id }}
+                />
+              </div>
+            ))}
+            {(product.videos ?? []).length < MAX_PRODUCT_VIDEOS ? (
+              <form action={addVideo} className="form">
+                <input type="hidden" name="productId" value={product.id} />
+                <label>
+                  {tv('url')}
+                  <input
+                    name="url"
+                    type="url"
+                    required
+                    maxLength={500}
+                    placeholder={tv('urlPlaceholder')}
+                  />
+                </label>
+                <label>
+                  {tv('titleLabel')}
+                  <input name="title" maxLength={100} placeholder={tv('titlePlaceholder')} />
+                </label>
+                <div>
+                  <SubmitButton tone="secondary">{tv('add')}</SubmitButton>
+                </div>
+              </form>
+            ) : (
+              <p className="muted small">{tv('full', { max: MAX_PRODUCT_VIDEOS })}</p>
+            )}
           </section>
 
           <section className="card">

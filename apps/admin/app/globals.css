@@ -840,3 +840,32 @@ pre.meta {
   cursor: pointer;
   margin-bottom: 8px;
 }
+
+/* Product videos (p10-28) */
+.video-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.video-row img,
+.video-row__blank {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--color-ink);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.video-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}

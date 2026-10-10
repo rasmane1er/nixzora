@@ -8,7 +8,7 @@
  * for browsers without 'strict-dynamic'. Every page renders on demand, which nonces need.
  * Everything else is narrow: no plugins, no framing of our pages, forms post only to us (and
  * Apple's sign-in), and the page talks only to us, the API, S3 uploads and the payment and
- * sign-in providers.
+ * sign-in providers. Product videos play in YouTube's and Vimeo's own players.
  */
 export function contentSecurityPolicy({
   apiOrigin,
@@ -53,6 +53,9 @@ export function contentSecurityPolicy({
       'https://hooks.stripe.com',
       'https://accounts.google.com/gsi/',
       'https://appleid.apple.com',
+      // Product videos (p10-28), loaded only when a shopper presses play.
+      'https://www.youtube-nocookie.com',
+      'https://player.vimeo.com',
     ],
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],

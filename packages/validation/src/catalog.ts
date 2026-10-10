@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CardMultiBuySchema } from './multi-buys';
+import { ProductVideoSchema } from './videos';
 
 /** URL-safe identifier: lowercase letters, digits and single hyphens. */
 export const SlugSchema = z
@@ -350,6 +351,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   /** When an order placed now should arrive (p10-04), Eastern calendar days; on shopper views. */
   delivery: z.object({ earliest: z.string(), latest: z.string() }).nullable().optional(),
   images: z.array(ImageSchema),
+  /** Product videos (p10-28): YouTube or Vimeo, in the order the store added them. */
+  videos: z.array(ProductVideoSchema).optional(),
   variants: z.array(VariantSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

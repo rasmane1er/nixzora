@@ -3,7 +3,9 @@ import {
   type Image,
   OWN_HANDLING_DAYS,
   type ProductCard,
+  type ProductVideo,
   type Variant,
+  videoUrls,
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 
@@ -80,5 +82,27 @@ export function toCard(
     // When it arrives if ordered now (p10-17): the store's handling time, or NIXZORA's.
     delivery: deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
     shipsFromNixzora: !product.sellerId,
+  };
+}
+
+/** A product video (p10-28) with where it plays and, for YouTube, its still. */
+export function toVideo(video: {
+  id: string;
+  provider: 'YOUTUBE' | 'VIMEO';
+  videoId: string;
+  title: string;
+  thumbnailUrl: string | null;
+}): ProductVideo {
+  return {
+    id: video.id,
+    provider: video.provider,
+    videoId: video.videoId,
+    title: video.title,
+    thumbnailUrl:
+      video.thumbnailUrl ??
+      (video.provider === 'YOUTUBE'
+        ? `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`
+        : null),
+    ...videoUrls(video),
   };
 }

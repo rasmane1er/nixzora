@@ -14,6 +14,7 @@ import {
   type ProductCopySuggestion,
   type ProductDetail,
   type ProductImageAttach,
+  type ProductVideoAdd,
   type ProductImageOrder,
   type SellerProductCreate,
   type SellerProductListQuery,
@@ -203,6 +204,29 @@ export class SellerListingsService {
       await this.setStatus(productId, 'PENDING_REVIEW', actor, 'catalog.listing.resubmitted');
     }
     return this.query.productById(productId);
+  }
+
+  /** Product videos (p10-28): a new video is new content, so a live listing goes back to review. */
+  async addVideo(
+    productId: string,
+    input: ProductVideoAdd,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    const product = await this.owned(productId, actor, { write: true });
+    await this.catalog.addVideo(productId, input, this.as(actor));
+    if (product.status === 'ACTIVE') {
+      await this.setStatus(productId, 'PENDING_REVIEW', actor, 'catalog.listing.resubmitted');
+    }
+    return this.query.productById(productId);
+  }
+
+  async removeVideo(
+    productId: string,
+    videoId: string,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    await this.owned(productId, actor, { write: true });
+    return this.catalog.removeVideo(productId, videoId, this.as(actor));
   }
 
   async reorderImages(

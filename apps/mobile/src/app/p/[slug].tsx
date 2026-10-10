@@ -48,6 +48,7 @@ import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { OfferRow } from '@/components/MultiBuy';
+import { ProductVideos } from '@/components/ProductVideos';
 import { SizeGuide } from '@/components/SizeGuide';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
@@ -814,6 +815,7 @@ export default function ProductScreen() {
             ) : null}
 
             <Divider />
+            {item.videos?.length ? <ProductVideos videos={item.videos} /> : null}
             <View style={{ gap: space.sm }}>
               <Text variant="heading">{t('aboutItem')}</Text>
               <Text>{item.description}</Text>
