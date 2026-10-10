@@ -16,6 +16,7 @@ import type {
   HelpConversation,
   PriceHistory,
   BundleView,
+  MultiBuyView,
   CouponsPage,
   CompareView,
   MyPlus,
@@ -335,6 +336,10 @@ export function createApiClient(options: ClientOptions) {
         }),
       /** Clip coupons (p10-18): every live coupon; `clipped` when signed in. */
       coupons: () => request<CouponsPage>('GET', '/catalog/coupons'),
+      /** Buy X, get Y (p10-27): an offer's terms and live products. */
+      multiBuy: (id: string) => request<MultiBuyView>('GET', `/catalog/multi-buys/${enc(id)}`),
+      /** Live offers, newest first (the Deals page). */
+      multiBuys: () => request<MultiBuyView[]>('GET', '/catalog/multi-buys'),
       /** Bundle & save (p10-16): the bundles a product is in. */
       bundles: (slug: string) =>
         request<BundleView[]>('GET', `/catalog/products/${enc(slug)}/bundles`),

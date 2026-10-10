@@ -1,4 +1,4 @@
-import type { Totals as TotalsView } from '@nixzora/validation';
+import { codeDiscountCents, type Totals as TotalsView } from '@nixzora/validation';
 import { View } from 'react-native';
 import { useFormatters } from '@/lib/format';
 import { useT } from '@/lib/i18n';
@@ -40,6 +40,7 @@ export function Totals({ totals, taxKnown = true }: { totals: TotalsView; taxKno
   const pl = useT('plus');
   const bd = useT('bundles');
   const cl = useT('clips');
+  const mb = useT('multiBuy');
   const gf = useT('gift');
   // NIXZORA Plus (p10-15): the API marks a member's totals with the shipping it waived.
   const member = totals.shippingWaivedCents !== undefined;
@@ -50,22 +51,18 @@ export function Totals({ totals, taxKnown = true }: { totals: TotalsView; taxKno
       {totals.bundleDiscountCents ? (
         <Line label={bd('savings')} value={`−${money(totals.bundleDiscountCents, c)}`} tone="ok" />
       ) : null}
+      {totals.multiBuyDiscountCents ? (
+        <Line
+          label={mb('savings')}
+          value={`−${money(totals.multiBuyDiscountCents, c)}`}
+          tone="ok"
+        />
+      ) : null}
       {totals.clipDiscountCents ? (
         <Line label={cl('savings')} value={`−${money(totals.clipDiscountCents, c)}`} tone="ok" />
       ) : null}
-      {totals.discountCents -
-      (totals.bundleDiscountCents ?? 0) -
-      (totals.clipDiscountCents ?? 0) ? (
-        <Line
-          label={to('discount')}
-          value={`−${money(
-            totals.discountCents -
-              (totals.bundleDiscountCents ?? 0) -
-              (totals.clipDiscountCents ?? 0),
-            c,
-          )}`}
-          tone="ok"
-        />
+      {codeDiscountCents(totals) ? (
+        <Line label={to('discount')} value={`−${money(codeDiscountCents(totals), c)}`} tone="ok" />
       ) : null}
       <Line
         label={to('shipping')}

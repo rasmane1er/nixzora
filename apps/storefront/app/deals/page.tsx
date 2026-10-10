@@ -1,4 +1,5 @@
-import { type DealKind, type DealsPage } from '@nixzora/validation';
+import { multiBuyTerms } from '@nixzora/i18n';
+import { type DealKind, type DealsPage, type MultiBuyView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
@@ -24,13 +25,20 @@ const KINDS: {
 export default async function DealsPageView({ searchParams }: { searchParams: SearchParams }) {
   const raw = param(await searchParams, 'kind');
   const kind = raw === 'LIGHTNING' || raw === 'DAY' ? raw : undefined;
-  const [t, pl, f, page] = await Promise.all([
+  const [t, pl, mb, f, page, offers] = await Promise.all([
     getT('deals'),
     getT('plus'),
+    getT('multiBuy'),
     getFormat(),
     api<DealsPage>(`/catalog/deals${kind ? `?kind=${kind}` : ''}`, { revalidate: 30 }).catch(
       () => null,
     ),
+    // Buy X, get Y (p10-27): live offers to mix and match.
+    kind
+      ? []
+      : api<MultiBuyView[]>('/catalog/multi-buys', { auth: false, revalidate: 60 }).catch(
+          (): MultiBuyView[] => [],
+        ),
   ]);
   const live = page?.live ?? [];
   const upcoming = page?.upcoming ?? [];
@@ -62,6 +70,38 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
       ) : (
         <p className="banner banner--info">{t('none')}</p>
       )}
+
+      {offers.length ? (
+        <section className="section" aria-labelledby="deals-offers">
+          <h2 id="deals-offers">{mb('navTitle')}</h2>
+          <ul className="deal-upcoming">
+            {offers.map((o) => (
+              <li key={o.id}>
+                <Link href={`/offers/${o.id}`}>
+                  {o.products[0]?.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- small thumbnail
+                    <img
+                      src={o.products[0].image.url}
+                      alt=""
+                      width={64}
+                      height={48}
+                      loading="lazy"
+                    />
+                  ) : null}
+                  <span>
+                    <strong>{multiBuyTerms(mb, o)}</strong>
+                    <span className="muted">
+                      {o.seller ? mb('from', { store: o.seller.displayName }) : mb('fromNixzora')} ·{' '}
+                      {mb('productCount', { count: o.products.length })}
+                      {o.endsAt ? ` · ${mb('endsOn', { date: f.date(o.endsAt) })}` : ''}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {upcoming.length ? (
         <section className="section" aria-labelledby="deals-upcoming">

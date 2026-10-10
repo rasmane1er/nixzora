@@ -5551,3 +5551,55 @@ td.neg {
   gap: 8px;
   margin-top: 8px;
 }
+
+/* Buy X, get Y (p10-27) */
+.card-offer {
+  align-self: flex-start;
+  justify-self: start;
+  width: fit-content;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-signal-text);
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+.pdp-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+.pdp-offer .card-offer {
+  font-size: 13px;
+}
+.offer-head {
+  display: grid;
+  gap: 6px;
+}
+.offer-head h1 {
+  margin: 0;
+}
+.cart-offers {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cart-offers li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+.cart-offer-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0 0 12px;
+}

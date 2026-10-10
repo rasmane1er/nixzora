@@ -152,6 +152,7 @@ export default function OrderScreen() {
     freeShippingRemainingCents: 0,
     ...(o.bundleDiscountCents ? { bundleDiscountCents: o.bundleDiscountCents } : {}),
     ...(o.clipDiscountCents ? { clipDiscountCents: o.clipDiscountCents } : {}),
+    ...(o.multiBuyDiscountCents ? { multiBuyDiscountCents: o.multiBuyDiscountCents } : {}),
     ...(o.gift?.wrapCents ? { giftWrapCents: o.gift.wrapCents } : {}),
   };
 

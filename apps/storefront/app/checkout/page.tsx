@@ -1,6 +1,7 @@
 import {
   type Cart,
   CartIdSchema,
+  codeDiscountCents,
   type GiftBalanceView,
   type MeResponse,
   type PaymentCardView,
@@ -52,6 +53,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const tc = await getT('checkout');
   const to = await getT('order');
   const bd = await getT('bundles');
+  const mb = await getT('multiBuy');
   const cl = await getT('clips');
   const f = await getFormat();
   return (
@@ -92,21 +94,22 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
                 <dd className="discount">−{f.money(t.bundleDiscountCents)}</dd>
               </>
             ) : null}
+            {t.multiBuyDiscountCents ? (
+              <>
+                <dt>{mb('savings')}</dt>
+                <dd className="discount">−{f.money(t.multiBuyDiscountCents)}</dd>
+              </>
+            ) : null}
             {t.clipDiscountCents ? (
               <>
                 <dt>{cl('savings')}</dt>
                 <dd className="discount">−{f.money(t.clipDiscountCents)}</dd>
               </>
             ) : null}
-            {t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0) ? (
+            {codeDiscountCents(t) ? (
               <>
                 <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
-                <dd className="discount">
-                  −
-                  {f.money(
-                    t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0),
-                  )}
-                </dd>
+                <dd className="discount">−{f.money(codeDiscountCents(t))}</dd>
               </>
             ) : null}
             <dt>{to('shipping')}</dt>

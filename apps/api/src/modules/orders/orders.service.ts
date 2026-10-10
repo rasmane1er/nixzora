@@ -291,6 +291,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       lines,
       coupon: null,
       bundles: [],
+      multiBuys: [],
       clippedCoupons: [],
       totals: this.pricing.totals(subtotal, region, 0, 'USD', plus),
     };
@@ -491,10 +492,19 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   ): Promise<OrderRow> {
     // Bundle & save (p10-16): who funds each bundle's discount (a store, or NIXZORA).
     const funded: Record<string, number> = {};
-    if (totals.bundleDiscountCents) {
-      for (const saving of await this.carts.bundles(lines)) {
+    // Buy X, get Y (p10-27): the same, and what each offer saved.
+    const multiFunded: Record<string, number> = {};
+    const multiUses: Record<string, number> = {};
+    if (totals.bundleDiscountCents || totals.multiBuyDiscountCents) {
+      const savings = await this.carts.savings(lines);
+      for (const saving of savings.bundles) {
         const key = saving.sellerId ?? 'nixzora';
         funded[key] = (funded[key] ?? 0) + saving.discountCents;
+      }
+      for (const saving of savings.multiBuys.filter((m) => m.discountCents)) {
+        const key = saving.sellerId ?? 'nixzora';
+        multiFunded[key] = (multiFunded[key] ?? 0) + saving.discountCents;
+        multiUses[saving.id] = saving.discountCents;
       }
     }
     // Clipped coupons (p10-18): which clips this order uses, and who funds them.
@@ -555,6 +565,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                 : {}),
               ...(totals.bundleDiscountCents
                 ? { bundleDiscounts: funded as Prisma.InputJsonObject }
+                : {}),
+              ...(totals.multiBuyDiscountCents
+                ? {
+                    multiBuyDiscountCents: totals.multiBuyDiscountCents,
+                    multiBuyDiscounts: multiFunded as Prisma.InputJsonObject,
+                    multiBuyUses: multiUses as Prisma.InputJsonObject,
+                  }
                 : {}),
               // NIXZORA Plus (p10-15): what membership changed on this order.
               shippingSpeed: totals.shippingSpeed ?? 'STANDARD',

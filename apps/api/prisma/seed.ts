@@ -1340,6 +1340,29 @@ async function main(): Promise<void> {
     });
   }
 
+  // Buy X, get Y (p10-27): one of NIXZORA's, mix and match across Linden tops, made once.
+  const offerSlugs = ['linden-organic-tee', 'linden-fleece-hoodie'];
+  const offerProducts = await prisma.product.findMany({
+    where: { slug: { in: offerSlugs }, status: 'ACTIVE', sellerId: null },
+    select: { id: true },
+  });
+  if (
+    offerProducts.length === offerSlugs.length &&
+    !(await prisma.multiBuyProduct.count({
+      where: { productId: { in: offerProducts.map((p) => p.id) }, multiBuy: { status: 'ACTIVE' } },
+    }))
+  ) {
+    await prisma.multiBuy.create({
+      data: {
+        buyQty: 2,
+        getQty: 1,
+        percentOff: 100,
+        createdById: SEED_ACTOR,
+        products: { create: offerProducts.map((p) => ({ productId: p.id })) },
+      },
+    });
+  }
+
   // Clip coupons (p10-18): two on NIXZORA's own products, renewed when a seed runs after they end.
   const DEMO_COUPONS = [
     {

@@ -12,6 +12,7 @@ import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 import { BoughtLine, DeliveryLine } from './CardExtras';
+import { OfferTag } from '@/components/MultiBuy';
 import { CouponTag } from './ClipCoupon';
 import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
 import { PLUS_ACCENT, PlusPriceText } from './PlusNote';
@@ -127,6 +128,7 @@ export function ProductCard({
             />
           ) : null}
           {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
+          {product.multiBuy ? <OfferTag offer={product.multiBuy} /> : null}
           {product.deal ? <DealTimer deal={product.deal} /> : null}
           <DeliveryLine product={product} />
           {!product.inStock ? (

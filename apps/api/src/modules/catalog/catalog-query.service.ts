@@ -631,7 +631,7 @@ export class CatalogQueryService {
     const ids = cards.map((card) => card.id);
     const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
     const now = new Date();
-    const [rows, deals, bought, coupons] = await Promise.all([
+    const [rows, deals, bought, coupons, offers] = await Promise.all([
       this.prisma.review.groupBy({
         by: ['productId'],
         where: { productId: { in: ids }, status: 'APPROVED' },
@@ -678,7 +678,21 @@ export class CatalogQueryService {
           redeemed: true,
         },
       }),
+      // Buy X, get Y (p10-27): the live offer each product is in.
+      this.prisma.multiBuyProduct.findMany({
+        where: {
+          productId: { in: ids },
+          multiBuy: { status: 'ACTIVE', OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        },
+        select: {
+          productId: true,
+          multiBuy: {
+            select: { id: true, buyQty: true, getQty: true, percentOff: true, endsAt: true },
+          },
+        },
+      }),
     ]);
+    const offerById = new Map(offers.map((o) => [o.productId, o.multiBuy]));
     const couponById = new Map(
       coupons
         .filter((c) => c.maxRedemptions === null || c.redeemed < c.maxRedemptions)
@@ -694,6 +708,14 @@ export class CatalogQueryService {
       return {
         ...card,
         boughtPastMonth: boughtStep(boughtById.get(card.id) ?? 0),
+        ...(offerById.has(card.id)
+          ? {
+              multiBuy: {
+                ...offerById.get(card.id)!,
+                endsAt: offerById.get(card.id)!.endsAt?.toISOString() ?? null,
+              },
+            }
+          : {}),
         ...(couponById.has(card.id)
           ? {
               coupon: {

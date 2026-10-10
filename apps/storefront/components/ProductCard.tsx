@@ -1,5 +1,5 @@
 import { type ProductCard as Card, twoDayWindow } from '@nixzora/validation';
-import { deliveryDay, INTL_LOCALE, rich } from '@nixzora/i18n';
+import { deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { adHref } from '@/lib/ads';
@@ -45,12 +45,13 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, cl, locale, f, wishlist, member] = await Promise.all([
+  const [t, a, d, pl, cl, mb, locale, f, wishlist, member] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
     getT('plus'),
     getT('clips'),
+    getT('multiBuy'),
     getLocale(),
     getFormat(),
     wishedIds(),
@@ -164,6 +165,9 @@ export async function ProductCard({
         ) : null}
         {product.coupon ? (
           <span className="card-coupon">{couponLabel(product.coupon, cl, f)}</span>
+        ) : null}
+        {product.multiBuy ? (
+          <span className="card-offer">{multiBuyTerms(mb, product.multiBuy)}</span>
         ) : null}
         {deal ? (
           <DealTimer

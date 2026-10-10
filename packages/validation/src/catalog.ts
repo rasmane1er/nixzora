@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CardMultiBuySchema } from './multi-buys';
 
 /** URL-safe identifier: lowercase letters, digits and single hyphens. */
 export const SlugSchema = z
@@ -284,6 +285,8 @@ export const ProductCardSchema = z.object({
   freeDelivery: z.boolean().optional(),
   /** NIXZORA ships it: Plus members get it in 2 days (p10-15). */
   shipsFromNixzora: z.boolean().optional(),
+  /** Buy X, get Y (p10-27): the live offer this product is in. */
+  multiBuy: CardMultiBuySchema.optional(),
   /** A live coupon to clip (p10-18): "Save 15% with coupon". */
   coupon: z
     .object({

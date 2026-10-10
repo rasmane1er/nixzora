@@ -1,5 +1,5 @@
 import { deliveryRange, INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
-import { type OrderView, type TrackingStep } from '@nixzora/validation';
+import { codeDiscountCents, type OrderView, type TrackingStep } from '@nixzora/validation';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 
 /** An order status in the visitor's language (as sent when NIXZORA doesn't know it). */
@@ -32,6 +32,7 @@ export async function OrderTotals({
     | 'shippingSpeed'
     | 'kind'
     | 'bundleDiscountCents'
+    | 'multiBuyDiscountCents'
     | 'clipDiscountCents'
     | 'gift'
   >;
@@ -40,6 +41,7 @@ export async function OrderTotals({
   const t = await getT('order');
   const pl = await getT('plus');
   const bd = await getT('bundles');
+  const mb = await getT('multiBuy');
   const cl = await getT('clips');
   const g = await getT('gifts');
   const f = await getFormat();
@@ -54,25 +56,24 @@ export async function OrderTotals({
           <dd className="discount">−{m(order.bundleDiscountCents)}</dd>
         </>
       ) : null}
+      {order.multiBuyDiscountCents ? (
+        <>
+          <dt>{mb('savings')}</dt>
+          <dd className="discount">−{m(order.multiBuyDiscountCents)}</dd>
+        </>
+      ) : null}
       {order.clipDiscountCents ? (
         <>
           <dt>{cl('savings')}</dt>
           <dd className="discount">−{m(order.clipDiscountCents)}</dd>
         </>
       ) : null}
-      {order.discountCents - (order.bundleDiscountCents ?? 0) - (order.clipDiscountCents ?? 0) ? (
+      {codeDiscountCents(order) ? (
         <>
           <dt>
             {order.couponCode ? t('discountWithCode', { code: order.couponCode }) : t('discount')}
           </dt>
-          <dd className="discount">
-            −
-            {m(
-              order.discountCents -
-                (order.bundleDiscountCents ?? 0) -
-                (order.clipDiscountCents ?? 0),
-            )}
-          </dd>
+          <dd className="discount">−{m(codeDiscountCents(order))}</dd>
         </>
       ) : null}
       {order.kind === 'PLUS' ? null : (

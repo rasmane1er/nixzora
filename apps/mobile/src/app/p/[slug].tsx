@@ -47,6 +47,7 @@ import { ProductRail } from '@/components/ProductRail';
 import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
+import { OfferRow } from '@/components/MultiBuy';
 import { SizeGuide } from '@/components/SizeGuide';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
@@ -638,6 +639,7 @@ export default function ProductScreen() {
               {stock.text}
             </Text>
             {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
+            {item.multiBuy ? <OfferRow offer={item.multiBuy} /> : null}
             <DeliveryPromise
               window={member && !item.seller ? twoDayWindow(new Date()) : item.delivery}
               twoDay={member && !item.seller}

@@ -365,6 +365,7 @@ model Product {
   alerts        ProductAlert[]
   deals         Deal[]
   bundleItems   BundleItem[]
+  multiBuyItems MultiBuyProduct[]
   clipCoupons   ClipCoupon[]
   pricePoints   PricePoint[]
   listItems     ShoppingListItem[]
@@ -468,66 +469,71 @@ enum OrderStatus {
 }
 
 model Order {
-  id                  String        @id @default(uuid(7)) @db.Uuid
+  id                    String        @id @default(uuid(7)) @db.Uuid
   /// Customer-facing number, e.g. NX-10482
-  number              String        @unique
-  userId              String?       @map("user_id") @db.Uuid
-  email               String
-  status              OrderStatus   @default(PENDING_PAYMENT)
-  currency            String        @default("USD") @db.Char(3)
-  subtotalCents       Int           @map("subtotal_cents")
-  shippingCents       Int           @default(0) @map("shipping_cents")
-  taxCents            Int           @default(0) @map("tax_cents")
-  discountCents       Int           @default(0) @map("discount_cents")
-  couponCode          String?       @map("coupon_code")
+  number                String        @unique
+  userId                String?       @map("user_id") @db.Uuid
+  email                 String
+  status                OrderStatus   @default(PENDING_PAYMENT)
+  currency              String        @default("USD") @db.Char(3)
+  subtotalCents         Int           @map("subtotal_cents")
+  shippingCents         Int           @default(0) @map("shipping_cents")
+  taxCents              Int           @default(0) @map("tax_cents")
+  discountCents         Int           @default(0) @map("discount_cents")
+  couponCode            String?       @map("coupon_code")
   /// Bundle & save (p10-16): part of discountCents from bundles in the order.
-  bundleDiscountCents Int           @default(0) @map("bundle_discount_cents")
+  bundleDiscountCents   Int           @default(0) @map("bundle_discount_cents")
   /// Who funds each bundle discount: {sellerId or "nixzora": cents}.
-  bundleDiscounts     Json?         @map("bundle_discounts")
+  bundleDiscounts       Json?         @map("bundle_discounts")
   /// Clipped coupons (p10-18): part of discountCents, and who funds it per store.
-  clipDiscountCents   Int           @default(0) @map("clip_discount_cents")
-  clipDiscounts       Json?         @map("clip_discounts")
+  clipDiscountCents     Int           @default(0) @map("clip_discount_cents")
+  clipDiscounts         Json?         @map("clip_discounts")
+  /// Buy X, get Y (p10-27): part of discountCents, who funds it per store, and per offer.
+  multiBuyDiscountCents Int           @default(0) @map("multi_buy_discount_cents")
+  multiBuyDiscounts     Json?         @map("multi_buy_discounts")
+  /// {offerId: cents} for each offer this order used.
+  multiBuyUses          Json?         @map("multi_buy_uses")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
-  language            String        @default("en")
+  language              String        @default("en")
   /// Total refunded so far (partial refunds and returns).
-  refundedCents       Int           @default(0) @map("refunded_cents")
+  refundedCents         Int           @default(0) @map("refunded_cents")
   /// Postage paid for the label, and where to print it.
-  labelUrl            String?       @map("label_url")
-  postageCents        Int?          @map("postage_cents")
-  totalCents          Int           @map("total_cents")
+  labelUrl              String?       @map("label_url")
+  postageCents          Int?          @map("postage_cents")
+  totalCents            Int           @map("total_cents")
   /// Address snapshots: orders never change when an address book entry does.
-  shippingAddress     Json          @map("shipping_address")
-  billingAddress      Json?         @map("billing_address")
-  trackingCarrier     String?       @map("tracking_carrier")
-  trackingNumber      String?       @map("tracking_number")
-  cancelReason        String?       @map("cancel_reason")
-  placedAt            DateTime?     @map("placed_at")
-  fulfillingAt        DateTime?     @map("fulfilling_at")
-  shippedAt           DateTime?     @map("shipped_at")
-  deliveredAt         DateTime?     @map("delivered_at")
-  cancelledAt         DateTime?     @map("cancelled_at")
+  shippingAddress       Json          @map("shipping_address")
+  billingAddress        Json?         @map("billing_address")
+  trackingCarrier       String?       @map("tracking_carrier")
+  trackingNumber        String?       @map("tracking_number")
+  cancelReason          String?       @map("cancel_reason")
+  placedAt              DateTime?     @map("placed_at")
+  fulfillingAt          DateTime?     @map("fulfilling_at")
+  shippedAt             DateTime?     @map("shipped_at")
+  deliveredAt           DateTime?     @map("delivered_at")
+  cancelledAt           DateTime?     @map("cancelled_at")
   /// Fraud review (ADR-0024): paid but not to be shipped until staff clear it.
-  riskHold            Boolean       @default(false) @map("risk_hold")
+  riskHold              Boolean       @default(false) @map("risk_hold")
   /// What was bought: goods to ship, or e-gift cards sent by email (p10-10).
-  kind                OrderKind     @default(GOODS)
+  kind                  OrderKind     @default(GOODS)
   /// Part of the total paid from the customer's gift card balance (p10-10).
-  giftBalanceCents    Int           @default(0) @map("gift_balance_cents")
+  giftBalanceCents      Int           @default(0) @map("gift_balance_cents")
   /// NIXZORA Plus (p10-15): the parcel speed NIXZORA ships its own items at.
-  shippingSpeed       ShippingSpeed @default(STANDARD) @map("shipping_speed")
+  shippingSpeed         ShippingSpeed @default(STANDARD) @map("shipping_speed")
   /// Shipping a Plus member did not pay; NIXZORA funds sellers' share of it.
-  shippingWaivedCents Int           @default(0) @map("shipping_waived_cents")
+  shippingWaivedCents   Int           @default(0) @map("shipping_waived_cents")
   /// What Plus saved on this order (free shipping and member deal prices), for "you saved".
-  plusSavingsCents    Int           @default(0) @map("plus_savings_cents")
+  plusSavingsCents      Int           @default(0) @map("plus_savings_cents")
   /// Gift options (p10-22, ADR-0044): a gift ships with no prices in the box.
-  isGift              Boolean       @default(false) @map("is_gift")
-  giftMessage         String?       @map("gift_message")
-  giftFrom            String?       @map("gift_from")
+  isGift                Boolean       @default(false) @map("is_gift")
+  giftMessage           String?       @map("gift_message")
+  giftFrom              String?       @map("gift_from")
   /// Gift wrap for NIXZORA's own items, included in totalCents (0 = not wrapped).
-  giftWrapCents       Int           @default(0) @map("gift_wrap_cents")
+  giftWrapCents         Int           @default(0) @map("gift_wrap_cents")
   /// For PLUS orders: the membership this fee pays for.
-  plusMembershipId    String?       @map("plus_membership_id") @db.Uuid
-  createdAt           DateTime      @default(now()) @map("created_at")
-  updatedAt           DateTime      @updatedAt @map("updated_at")
+  plusMembershipId      String?       @map("plus_membership_id") @db.Uuid
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
 
   user            User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           OrderItem[]
@@ -2214,4 +2220,45 @@ model SizeChart {
   @@index([sellerId])
   @@index([categoryId, isDefault])
   @@map("size_charts")
+}
+
+// ───────────── Buy X, get Y (p10-27) ─────────────
+
+enum MultiBuyStatus {
+  ACTIVE
+  ENDED
+}
+
+/// "Buy 2, get 1 free" across a set of products: mix and match, cheapest of each group discounted.
+model MultiBuy {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  buyQty      Int            @map("buy_qty")
+  getQty      Int            @map("get_qty")
+  /// 100 is free.
+  percentOff  Int            @map("percent_off")
+  status      MultiBuyStatus @default(ACTIVE)
+  /// The store that funds it, or null for NIXZORA's own products.
+  sellerId    String?        @map("seller_id") @db.Uuid
+  endsAt      DateTime?      @map("ends_at")
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  products MultiBuyProduct[]
+
+  @@index([status])
+  @@index([sellerId])
+  @@map("multi_buys")
+}
+
+model MultiBuyProduct {
+  multiBuyId String @map("multi_buy_id") @db.Uuid
+  productId  String @map("product_id") @db.Uuid
+
+  multiBuy MultiBuy @relation(fields: [multiBuyId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([multiBuyId, productId])
+  @@index([productId])
+  @@map("multi_buy_products")
 }

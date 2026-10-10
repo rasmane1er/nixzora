@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { type GiftCardLine } from './gift-cards';
 import { type CartBundle } from './bundles';
+import type { CartMultiBuy } from './multi-buys';
 import { type CartCoupon } from './clip-coupons';
 import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
@@ -158,6 +159,8 @@ export type Totals = {
   shippingSpeed?: 'STANDARD' | 'TWO_DAY';
   /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
   bundleDiscountCents?: number;
+  /** Buy X, get Y (p10-27): the part of discountCents that offers saved. */
+  multiBuyDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
   /** Gift wrap (p10-22), included in totalCents. */
@@ -174,6 +177,8 @@ export type Cart = {
   coupon: { code: string; description: string | null; problem: string | null } | null;
   /** Bundles the cart completes (p10-16), each with its saving. */
   bundles?: CartBundle[];
+  /** Buy X, get Y offers in the cart (p10-27), including ones a few more items would unlock. */
+  multiBuys?: CartMultiBuy[];
   /** Clipped coupons that apply (p10-18). */
   clippedCoupons?: CartCoupon[];
   /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
@@ -363,6 +368,8 @@ export type OrderView = {
   plusSavingsCents?: number;
   /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
   bundleDiscountCents?: number;
+  /** Buy X, get Y (p10-27): the part of discountCents that offers saved. */
+  multiBuyDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
   /** Gift options (p10-22); null when it isn't a gift. */
@@ -422,3 +429,19 @@ export type CheckoutRequest = z.infer<typeof CheckoutRequestSchema>;
 export type GuestOrderQuery = z.infer<typeof GuestOrderQuerySchema>;
 export type AdminOrderListQuery = z.infer<typeof AdminOrderListQuerySchema>;
 export type OrderFulfillment = z.infer<typeof OrderFulfillmentSchema>;
+
+/** The part of a discount a coupon code gave: what bundles, offers and clipped coupons didn't. */
+export function codeDiscountCents(totals: {
+  discountCents: number;
+  bundleDiscountCents?: number;
+  multiBuyDiscountCents?: number;
+  clipDiscountCents?: number;
+}): number {
+  return Math.max(
+    0,
+    totals.discountCents -
+      (totals.bundleDiscountCents ?? 0) -
+      (totals.multiBuyDiscountCents ?? 0) -
+      (totals.clipDiscountCents ?? 0),
+  );
+}

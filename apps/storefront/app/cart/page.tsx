@@ -1,4 +1,4 @@
-import { INTL_LOCALE, rich } from '@nixzora/i18n';
+import { INTL_LOCALE, multiBuyAddMore, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/Plus
 import { isSignedIn } from '@/lib/session';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { type ReferralView, type SavedItem } from '@nixzora/validation';
+import { codeDiscountCents, type ReferralView, type SavedItem } from '@nixzora/validation';
 import { applyCoupon, removeCoupon, saveForLater, updateLine } from './actions';
 import { SavedForLater } from './SavedForLater';
 
@@ -36,6 +36,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const tc = await getT('cart');
   const to = await getT('order');
   const bd = await getT('bundles');
+  const mb = await getT('multiBuy');
   const cl = await getT('clips');
   const tCommon = await getT('common');
   const tp = await getT('product');
@@ -99,6 +100,15 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
 
       <div className="cart">
         <section aria-label={tc('items')}>
+          {/* Buy X, get Y (p10-27): a few more items would get the reward. */}
+          {cart.multiBuys
+            ?.filter((m) => m.addMore)
+            .map((m) => (
+              <p key={m.id} className="banner banner--info cart-offer-nudge">
+                <span className="card-offer">{multiBuyTerms(mb, m)}</span> {multiBuyAddMore(mb, m)}{' '}
+                <Link href={`/offers/${m.id}`}>{mb('shopOffer')} →</Link>
+              </p>
+            ))}
           {cart.lines.map((line) => (
             <article key={line.variantId} className="cart-line">
               <div className="cart-line__img">
@@ -204,21 +214,22 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                 <dd className="discount">−{f.money(t.bundleDiscountCents)}</dd>
               </>
             ) : null}
+            {t.multiBuyDiscountCents ? (
+              <>
+                <dt>{mb('savings')}</dt>
+                <dd className="discount">−{f.money(t.multiBuyDiscountCents)}</dd>
+              </>
+            ) : null}
             {t.clipDiscountCents ? (
               <>
                 <dt>{cl('savings')}</dt>
                 <dd className="discount">−{f.money(t.clipDiscountCents)}</dd>
               </>
             ) : null}
-            {t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0) ? (
+            {codeDiscountCents(t) ? (
               <>
                 <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
-                <dd className="discount">
-                  −
-                  {f.money(
-                    t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0),
-                  )}
-                </dd>
+                <dd className="discount">−{f.money(codeDiscountCents(t))}</dd>
               </>
             ) : null}
             <dt>{to('shipping')}</dt>
@@ -239,6 +250,18 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                   {cl('cartLine', { product: c.productTitle })} · −{f.money(c.discountCents)}
                 </li>
               ))}
+            </ul>
+          ) : null}
+          {cart.multiBuys?.some((m) => m.discountCents) ? (
+            // Buy X, get Y (p10-27): what applied, and what a few more items would get.
+            <ul className="bundle-lines">
+              {cart.multiBuys
+                .filter((m) => m.discountCents)
+                .map((m) => (
+                  <li key={m.id}>
+                    {multiBuyTerms(mb, m)} · −{f.money(m.discountCents)}
+                  </li>
+                ))}
             </ul>
           ) : null}
           {cart.bundles?.length ? (

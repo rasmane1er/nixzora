@@ -28,6 +28,7 @@ export * from './gift-cards';
 export * from './subscriptions';
 export * from './plus';
 export * from './bundles';
+export * from './multi-buys';
 export * from './clip-coupons';
 export * from './history';
 export * from './help-agent';

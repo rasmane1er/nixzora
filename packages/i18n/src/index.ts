@@ -33,3 +33,21 @@ export function translator(locale: Locale, messages: Messages = messagesFor(loca
       format(locale, (messages[namespace] as Record<string, string>)[key] ?? String(key), vars);
 }
 export { dateFormat, numberFormat, plurals } from './intl';
+
+/** Buy X, get Y terms (p10-27) in the reader's language: "Buy 2, get 1 free". */
+export function multiBuyTerms(
+  t: Translate<'multiBuy'>,
+  terms: { buyQty: number; getQty: number; percentOff: number },
+): string {
+  const vars = { buy: terms.buyQty, get: terms.getQty, percent: terms.percentOff };
+  return terms.percentOff >= 100 ? t('terms_free', vars) : t('terms_percent', vars);
+}
+
+/** "Add 1 more item from this offer and it's free" (p10-27). */
+export function multiBuyAddMore(
+  t: Translate<'multiBuy'>,
+  offer: { addMore: number; percentOff: number },
+): string {
+  const vars = { count: offer.addMore, percent: offer.percentOff };
+  return offer.percentOff >= 100 ? t('addMore_free', vars) : t('addMore_percent', vars);
+}

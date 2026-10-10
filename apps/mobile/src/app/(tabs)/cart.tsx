@@ -8,6 +8,7 @@ import { useIsOnline } from '@/components/OfflineToast';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PlusShippingNote } from '@/components/PlusNote';
 import { SavedForLater, useSaved } from '@/components/SavedForLater';
+import { CartOffers } from '@/components/MultiBuy';
 import { Totals } from '@/components/Totals';
 import {
   Banner,
@@ -154,6 +155,12 @@ export default function CartScreen() {
         )}
       </Card>
 
+      {data.multiBuys?.length ? (
+        // Buy X, get Y (p10-27): what applied, and what a few more items would get.
+        <Card>
+          <CartOffers offers={data.multiBuys} />
+        </Card>
+      ) : null}
       <Card>
         <Totals totals={data.totals} taxKnown={false} />
       </Card>

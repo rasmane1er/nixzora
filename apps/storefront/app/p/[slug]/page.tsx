@@ -10,7 +10,13 @@ import {
   type ReviewPage,
   twoDayWindow,
 } from '@nixzora/validation';
-import { cardBrand, INTL_LOCALE, rich, specLabel as sharedSpecLabel } from '@nixzora/i18n';
+import {
+  cardBrand,
+  INTL_LOCALE,
+  multiBuyTerms,
+  rich,
+  specLabel as sharedSpecLabel,
+} from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -143,6 +149,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const d = await getT('deals');
   const pl = await getT('plus');
   const cl = await getT('clips');
+  const mb = await getT('multiBuy');
   const w = await getT('wallet');
   const ib = await getT('inbox');
   const cmp = await getT('compare');
@@ -285,6 +292,18 @@ export default async function ProductPage({ params, searchParams }: Props) {
               label={couponLabel(product.coupon, cl, f)}
               initial={(await clippedCouponIds()).has(product.coupon.id)}
             />
+          ) : null}
+          {product.multiBuy ? (
+            // Buy X, get Y (p10-27): mix and match on the offer's page.
+            <p className="pdp-offer">
+              <span className="card-offer">{multiBuyTerms(mb, product.multiBuy)}</span>
+              {product.multiBuy.endsAt ? (
+                <span className="muted">
+                  {mb('endsOn', { date: f.date(product.multiBuy.endsAt) })}
+                </span>
+              ) : null}
+              <Link href={`/offers/${product.multiBuy.id}`}>{mb('shopOffer')} →</Link>
+            </p>
           ) : null}
           <DeliveryPromise
             window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}

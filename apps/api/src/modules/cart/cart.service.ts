@@ -12,12 +12,14 @@ import {
   deliveryWindow,
   GIFT_WRAP_CENTS,
   OWN_HANDLING_DAYS,
+  type MultiBuySaving,
+  multiBuySavings,
   twoDayWindow,
 } from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { PlusBenefits } from '../plus/plus-benefits.service';
-import { type BundleSaving, bundleSavings } from './bundle-savings';
+import { type BundleSaving, bundleSavings, unitsOf } from './bundle-savings';
 
 export type ClippedSaving = {
   id: string;
@@ -162,14 +164,38 @@ export class CartService {
 
   /** Active bundles every product of which is in these lines, with what they save. */
   async bundles(lines: CartLine[]): Promise<BundleSaving[]> {
-    if (lines.length < 2) return [];
+    return (await this.savings(lines)).bundles;
+  }
+
+  /**
+   * Bundles first (p10-16), then Buy X, get Y offers (p10-27) on the units bundles didn't use,
+   * so one unit is never discounted twice.
+   */
+  async savings(
+    lines: CartLine[],
+    now = new Date(),
+  ): Promise<{ bundles: BundleSaving[]; multiBuys: MultiBuySaving[] }> {
+    if (!lines.length) return { bundles: [], multiBuys: [] };
     const productIds = [...new Set(lines.map((line) => line.productId))];
-    const rows = await this.prisma.bundle.findMany({
-      where: { status: 'ACTIVE', items: { some: { productId: { in: productIds } } } },
-      include: { items: { select: { productId: true } } },
-    });
+    const [rows, offers] = await Promise.all([
+      lines.length < 2 && lines[0]!.quantity < 2
+        ? []
+        : this.prisma.bundle.findMany({
+            where: { status: 'ACTIVE', items: { some: { productId: { in: productIds } } } },
+            include: { items: { select: { productId: true } } },
+          }),
+      this.prisma.multiBuy.findMany({
+        where: {
+          status: 'ACTIVE',
+          OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+          products: { some: { productId: { in: productIds } } },
+        },
+        include: { products: { select: { productId: true } } },
+      }),
+    ]);
     const present = new Set(productIds);
-    return bundleSavings(
+    const units = unitsOf(lines);
+    const bundles = bundleSavings(
       lines,
       rows
         .filter((row) => row.items.every((item) => present.has(item.productId)))
@@ -180,7 +206,20 @@ export class CartService {
           sellerId: row.sellerId,
           productIds: row.items.map((item) => item.productId),
         })),
+      units,
     );
+    const multiBuys = multiBuySavings(
+      units,
+      offers.map((offer) => ({
+        id: offer.id,
+        buyQty: offer.buyQty,
+        getQty: offer.getQty,
+        percentOff: offer.percentOff,
+        sellerId: offer.sellerId,
+        productIds: offer.products.map((p) => p.productId),
+      })),
+    );
+    return { bundles, multiBuys };
   }
 
   /**
@@ -361,7 +400,8 @@ export class CartService {
       .filter((line) => line.problem !== 'UNAVAILABLE')
       .reduce((sum, line) => sum + line.lineTotalCents, 0);
     // Bundle & save (p10-16): complete sets of a bundle take its percentage off.
-    const bundles = await this.bundles(lines.filter((line) => !line.problem));
+    // Buy X, get Y (p10-27): on the units bundles didn't use.
+    const { bundles, multiBuys } = await this.savings(lines.filter((line) => !line.problem));
     // Clipped coupons (p10-18): the shopper's, on products in the cart.
     const clipped = memberId
       ? await this.clipped(
@@ -401,6 +441,7 @@ export class CartService {
         { member, twoDay: own },
         bundles.reduce((sum, b) => sum + b.discountCents, 0),
         clipped.reduce((sum, c) => sum + c.discountCents, 0),
+        multiBuys.reduce((sum, m) => sum + m.discountCents, 0),
       ),
       ...(clipped.length
         ? {
@@ -415,6 +456,13 @@ export class CartService {
       ...(bundles.length
         ? {
             bundles: bundles.map(({ sellerId: _seller, ...bundle }) => bundle),
+          }
+        : {}),
+      ...(multiBuys.some((m) => m.times || m.addMore)
+        ? {
+            multiBuys: multiBuys
+              .filter((m) => m.times || m.addMore)
+              .map(({ sellerId: _seller, ...offer }) => offer),
           }
         : {}),
       coupon:

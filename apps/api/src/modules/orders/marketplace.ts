@@ -26,6 +26,8 @@ type SplitOrder = {
   bundleDiscounts?: unknown;
   /** Clipped coupons (p10-18): each store's coupon discount, which it funds. */
   clipDiscounts?: unknown;
+  /** Buy X, get Y (p10-27): each store's offer discount, which it funds. */
+  multiBuyDiscounts?: unknown;
   items: { sellerId: string | null; totalCents: number }[];
 };
 
@@ -51,10 +53,10 @@ export async function splitBySeller(tx: Tx, order: SplitOrder): Promise<number> 
     // A store's own bundles come off its items; commission is on what it actually sold for.
     const funded = (map: unknown) =>
       Math.max(0, Number((map as Record<string, number> | null)?.[seller.id] ?? 0));
-    // A store's bundles and clipped coupons come off its items (p10-16, p10-18).
+    // A store's bundles, offers and clipped coupons come off its items (p10-16, p10-27, p10-18).
     const bundled = Math.min(
       itemsCents,
-      funded(order.bundleDiscounts) + funded(order.clipDiscounts),
+      funded(order.bundleDiscounts) + funded(order.multiBuyDiscounts) + funded(order.clipDiscounts),
     );
     const soldCents = itemsCents - bundled;
     const commissionCents = commissionOf(soldCents, seller.commissionBps);
