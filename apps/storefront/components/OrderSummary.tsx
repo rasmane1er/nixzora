@@ -1,5 +1,5 @@
-import { INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
-import { type OrderView } from '@nixzora/validation';
+import { deliveryRange, INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
+import { type OrderView, type TrackingStep } from '@nixzora/validation';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 
 /** An order status in the visitor's language (as sent when NIXZORA doesn't know it). */
@@ -81,7 +81,9 @@ const STEPS = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED'] as const;
 
 export async function OrderTimeline({ order }: { order: OrderView }) {
   const t = await getT('order');
-  const tag = INTL_LOCALE[await getLocale()];
+  const d = await getT('delivery');
+  const locale = await getLocale();
+  const tag = INTL_LOCALE[locale];
   const at = new Map(order.timeline.map((entry) => [entry.status, entry.at]));
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat(tag, {
@@ -97,10 +99,44 @@ export async function OrderTimeline({ order }: { order: OrderView }) {
         return (
           <li key={step} data-done={Boolean(when)}>
             <strong>{t(`status_${step}`)}</strong>
-            <span className="muted">{when ? fmt(when) : '—'}</span>
+            <span className="muted">
+              {when
+                ? fmt(when)
+                : step === 'DELIVERED' && order.estimatedDelivery
+                  ? d('expected', { range: deliveryRange(order.estimatedDelivery, locale) })
+                  : '—'}
+            </span>
           </li>
         );
       })}
+    </ol>
+  );
+}
+
+/** Carrier scans for one parcel, newest first (p10-04). */
+export async function TrackingScans({ events }: { events: TrackingStep[] | undefined }) {
+  const d = await getT('delivery');
+  const tag = INTL_LOCALE[await getLocale()];
+  if (!events?.length) return <p className="muted tracking-empty">{d('noScans')}</p>;
+  const fmt = new Intl.DateTimeFormat(tag, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return (
+    <ol className="scans" aria-label={d('trackingTitle')}>
+      {events.map((event) => (
+        <li key={`${event.at}-${event.status}`} data-status={event.status.toLowerCase()}>
+          <strong>{d(`step_${event.status}`)}</strong>
+          <span>{event.description}</span>
+          <span className="muted">
+            {fmt.format(new Date(event.at))}
+            {event.location ? ` · ${event.location}` : ''}
+          </span>
+        </li>
+      ))}
     </ol>
   );
 }

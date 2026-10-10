@@ -1,4 +1,6 @@
 import {
+  type ProductAlertRef,
+  type QuestionPage,
   type ProductDetail,
   type RelatedProducts,
   type ReviewInsights as Insights,
@@ -9,6 +11,7 @@ import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { ProductRail } from '@/components/ProductRail';
 import { sponsored } from '@/lib/ads';
 import { SellerRating } from '@/components/SellerRating';
@@ -22,7 +25,10 @@ import { SITE_URL } from '@/lib/params';
 import { AddToCart } from './AddToCart';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
+import { BoughtTogether } from './BoughtTogether';
+import { Questions } from './Questions';
 import { ReviewList } from './ReviewList';
+import { StockAlert } from './StockAlert';
 import { ViewTracker } from './ViewTracker';
 import { WishButton } from './WishButton';
 
@@ -58,32 +64,47 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
-  const [reviews, wishIds, myReview, related, insights, ads] = await Promise.all([
-    api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
-      () => null,
-    ),
-    signedIn
-      ? api<string[]>('/me/wishlist/ids').catch((): string[] => [])
-      : Promise.resolve<string[]>([]),
-    signedIn
-      ? api<{
-          review: { rating: number; title: string; body: string; status: string } | null;
-          canReview: boolean;
-        }>(`/catalog/products/${slug}/reviews/mine`).catch(() => null)
-      : Promise.resolve(null),
-    api<RelatedProducts>(`/catalog/products/${slug}/related`, {
-      auth: false,
-      revalidate: 300,
-    }).catch((): RelatedProducts => ({ similar: [], boughtTogether: [], alsoViewed: [] })),
-    // Cached reads carry no Accept-Language: the language is in the URL, one cache entry each.
-    api<{ insights: Insights | null }>(
-      `/catalog/products/${slug}/reviews/insights?lang=${await getLocale()}`,
-      { auth: false, revalidate: 300 },
-    )
-      .then((res) => res.insights)
-      .catch(() => null),
-    sponsored({ placement: 'product', product: slug }),
-  ]);
+  const inStock = product.variants.some((v) => v.isActive && v.available > 0);
+  const [reviews, wishIds, myReview, related, insights, ads, questions, alerts] = await Promise.all(
+    [
+      api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
+        () => null,
+      ),
+      signedIn
+        ? api<string[]>('/me/wishlist/ids').catch((): string[] => [])
+        : Promise.resolve<string[]>([]),
+      signedIn
+        ? api<{
+            review: { rating: number; title: string; body: string; status: string } | null;
+            canReview: boolean;
+            helpfulVotes?: string[];
+          }>(`/catalog/products/${slug}/reviews/mine`).catch(() => null)
+        : Promise.resolve(null),
+      api<RelatedProducts>(`/catalog/products/${slug}/related`, {
+        auth: false,
+        revalidate: 300,
+      }).catch((): RelatedProducts => ({ similar: [], boughtTogether: [], alsoViewed: [] })),
+      // Cached reads carry no Accept-Language: the language is in the URL, one cache entry each.
+      api<{ insights: Insights | null }>(
+        `/catalog/products/${slug}/reviews/insights?lang=${await getLocale()}`,
+        { auth: false, revalidate: 300 },
+      )
+        .then((res) => res.insights)
+        .catch(() => null),
+      sponsored({ placement: 'product', product: slug }),
+      // Signed in: so the page knows whether this shopper may answer.
+      api<QuestionPage>(`/catalog/products/${slug}/questions`).catch((): QuestionPage => ({
+        questions: [],
+        page: 1,
+        totalPages: 1,
+        total: 0,
+        canAnswer: false,
+      })),
+      signedIn && !inStock
+        ? api<ProductAlertRef[]>('/me/alerts').catch((): ProductAlertRef[] => [])
+        : Promise.resolve<ProductAlertRef[]>([]),
+    ],
+  );
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
   const a = await getT('ads');
@@ -174,7 +195,16 @@ export default async function ProductPage({ params }: Props) {
               wasLabel={p('was')}
             />
           </div>
+          <DeliveryPromise window={product.delivery} />
           <AddToCart variants={product.variants} />
+          {!inStock ? (
+            <StockAlert
+              productId={product.id}
+              slug={product.slug}
+              signedIn={signedIn}
+              initial={alerts.some((x) => x.productId === product.id && x.kind === 'BACK_IN_STOCK')}
+            />
+          ) : null}
           <div>
             <WishButton
               productId={product.id}
@@ -279,17 +309,44 @@ export default async function ProductPage({ params }: Props) {
           </div>
           <div>
             {reviews?.summary.count ? (
-              <ReviewList key={product.slug} slug={product.slug} initial={reviews} />
+              <ReviewList
+                key={product.slug}
+                slug={product.slug}
+                initial={reviews}
+                signedIn={signedIn}
+                initialVotes={myReview?.helpfulVotes ?? []}
+              />
             ) : null}
           </div>
         </div>
       </section>
 
-      <ProductRail
-        id="together"
-        title={t('oftenBoughtTogether')}
-        products={related.boughtTogether}
-      />
+      <Questions slug={product.slug} initial={questions} signedIn={signedIn} />
+
+      {related.boughtTogether.some((p) => p.inStock && p.defaultVariantId) ? (
+        <BoughtTogether
+          title={t('oftenBoughtTogether')}
+          current={(() => {
+            const sellable = product.variants.filter((v) => v.isActive && v.available > 0);
+            return sellable.length === 1
+              ? {
+                  variantId: sellable[0]!.id,
+                  title: product.title,
+                  slug: product.slug,
+                  priceCents: sellable[0]!.priceCents,
+                  image: product.images[0]?.url ?? null,
+                }
+              : null;
+          })()}
+          others={related.boughtTogether}
+        />
+      ) : (
+        <ProductRail
+          id="together"
+          title={t('oftenBoughtTogether')}
+          products={related.boughtTogether}
+        />
+      )}
       <ProductRail id="sponsored" title={a('sponsoredRelated')} sponsored={ads} />
       <ProductRail id="similar" title={t('similarProducts')} products={related.similar} />
       <ProductRail id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />

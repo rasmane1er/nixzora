@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { api, currentCart } from '@/lib/api';
+import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { getFormat, getT } from '@/lib/i18n';
 import { accessToken } from '@/lib/session';
 import { CheckoutForm } from './CheckoutForm';
@@ -62,6 +63,7 @@ export default async function CheckoutPage() {
             <dt>{to('tax')}</dt>
             <dd className="muted">{tc('nextStep')}</dd>
           </dl>
+          <DeliveryPromise window={cart.delivery} />
           <Link href="/cart" className="muted" style={{ fontSize: 14 }}>
             {tc('editCart')}
           </Link>

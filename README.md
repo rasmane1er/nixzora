@@ -6,12 +6,12 @@ This repository is a monorepo for the web storefront, the iOS and Android app, t
 
 ![NIXZORA shopping assistant](docs/media/demo-assistant.jpg)
 
-|                 |                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| **Status**      | Phase 8 · Scale and hardening: load-tested, fraud signals, security review, DR drill        |
-| **Departments** | Electronics, clothing & shoes, home & kitchen, beauty & personal care, sports & outdoors    |
-| **Shopping**    | Smart picks from views, searches, cart, saves and orders; sponsored products paid per click |
-| **Case study**  | [How NIXZORA was built, in numbers](docs/case-study.md) (with demo stills and video script) |
+|                 |                                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**      | Phase 8 · Scale and hardening: load-tested, fraud signals, security review, DR drill                                                                |
+| **Departments** | Electronics, clothing & shoes, home & kitchen, beauty & personal care, sports & outdoors                                                            |
+| **Shopping**    | Search suggestions and spec filters, delivery dates and tracking, reviews with photos, Q&A, price and stock alerts, smart picks, sponsored products |
+| **Case study**  | [How NIXZORA was built, in numbers](docs/case-study.md) (with demo stills and video script)                                                         |
 
 ## Stack
 

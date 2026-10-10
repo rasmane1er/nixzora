@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { type Cart, type CartLine } from '@nixzora/validation';
+import { type Cart, type CartLine, deliveryWindow, OWN_HANDLING_DAYS } from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { availableOf } from '../catalog/catalog-mappers';
@@ -130,7 +130,12 @@ export class CartService {
           where: { id: { in: [...quantities.keys()] } },
           include: {
             inventory: true,
-            product: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } },
+            product: {
+              include: {
+                images: { orderBy: { position: 'asc' }, take: 1 },
+                seller: { select: { handlingDays: true } },
+              },
+            },
           },
         })
       : [];
@@ -178,7 +183,16 @@ export class CartService {
     // A coupon that stops applying (expired, cart too small) stays visible with the reason.
     const code = await this.couponCode(owner);
     const check = code ? await this.coupons.check(code, subtotal) : null;
+    // The slowest store in the cart decides when everything has arrived (p10-04).
+    const buyable = variants.filter(
+      (v) => byId.has(v.id) && v.isActive && availableOf(v.inventory) > 0,
+    );
+    const handling = Math.max(
+      0,
+      ...buyable.map((v) => v.product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
+    );
     return {
+      delivery: buyable.length ? deliveryWindow(new Date(), handling) : null,
       cartId: 'guestId' in owner ? owner.guestId : null,
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),

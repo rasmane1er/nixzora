@@ -4,8 +4,8 @@ import {
   type CategoryNode,
   type HealthResponse,
   HealthResponseSchema,
-  type PagedResult,
-  type ProductCard,
+  type Facet,
+  type ProductPage,
   type ProductDetail,
 } from '@nixzora/validation';
 import { clientHeaders } from './client-headers';
@@ -98,7 +98,12 @@ export const catalog = {
       revalidate: 300,
     }),
   products: (query: string) =>
-    api<PagedResult<ProductCard>>(`/catalog/products${query}`, { auth: false, revalidate: 30 }),
+    api<ProductPage>(`/catalog/products${query}`, { auth: false, revalidate: 30 }),
+  /** Spec and option filters for a listing (same query as `products`). */
+  facets: (query: string) =>
+    api<{ facets: Facet[] }>(`/catalog/facets${query}`, { auth: false, revalidate: 30 })
+      .then((res) => res.facets)
+      .catch((): Facet[] => []),
   product: (slug: string) =>
     api<ProductDetail>(`/catalog/products/${encodeURIComponent(slug)}`, {
       auth: false,

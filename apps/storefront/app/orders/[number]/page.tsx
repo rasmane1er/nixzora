@@ -1,4 +1,4 @@
-import { INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
+import { deliveryRange, INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
 import { type OrderView, type ReturnView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -7,6 +7,7 @@ import {
   AddressBlock,
   OrderItems,
   OrderTimeline,
+  TrackingScans,
   OrderTotals,
   StatusPill,
 } from '@/components/OrderSummary';
@@ -102,9 +103,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 </>
               ) : null}
             </p>
-          ) : (
+          ) : null}
+          {!order.shipments.length && order.tracking ? (
+            <TrackingScans events={order.trackingEvents} />
+          ) : !order.shipments.length ? (
             <p className="muted">{t('trackingByEmail')}</p>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -162,6 +166,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
 /** Marketplace orders arrive in parcels: NIXZORA's own items and one per seller. */
 async function Shipments({ order, token }: { order: OrderView; token?: string }) {
   const t = await getT('order');
+  const d = await getT('delivery');
+  const locale = await getLocale();
   return (
     <ul className="shipments">
       {order.shipments.map((shipment) => {
@@ -197,6 +203,12 @@ async function Shipments({ order, token }: { order: OrderView; token?: string })
                     </a>
                   </>
                 ) : null}
+              </div>
+            ) : null}
+            {shipment.tracking ? <TrackingScans events={shipment.events} /> : null}
+            {shipment.status !== 'DELIVERED' && shipment.estimatedDelivery ? (
+              <div style={{ fontSize: 14 }}>
+                {d('expected', { range: deliveryRange(shipment.estimatedDelivery, locale) })}
               </div>
             ) : null}
             {shipment.seller && shipment.ratableUntil ? (

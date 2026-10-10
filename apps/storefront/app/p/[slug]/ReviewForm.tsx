@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { useT } from '@/components/I18nProvider';
 import { type ReviewState, submitReview } from './actions';
+import { ReviewPhotoPicker } from './ReviewPhotos';
 
 export function ReviewForm({
   slug,
@@ -60,6 +61,7 @@ export function ReviewForm({
           defaultValue={existing?.body}
         />
       </label>
+      <ReviewPhotoPicker />
       {state.error ? (
         <p className="banner banner--error" role="alert">
           {state.error}

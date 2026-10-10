@@ -5,6 +5,7 @@ import { Link, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { useIsOnline } from '@/components/OfflineToast';
+import { DeliveryPromise } from '@/components/Delivery';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, EmptyState, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -360,6 +361,7 @@ export default function CheckoutScreen() {
           <Totals totals={totals} taxKnown={!!region} />
         </Card>
       ) : null}
+      <DeliveryPromise window={cart.data?.delivery} />
       {problem ? <Banner tone="error">{problem}</Banner> : null}
       {!online ? <Banner tone="warn">{t('offlinePlaceOrder')}</Banner> : null}
       <Button

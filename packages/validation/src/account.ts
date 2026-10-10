@@ -25,6 +25,8 @@ export const AccountPreferencesSchema = z.object({
    * default; turning it off also stops recording those signals. Optional on save (older apps).
    */
   personalizedPicks: z.boolean().optional(),
+  /** Back-in-stock and price-drop alerts by push and email (p10-06). Optional on save. */
+  stockAlerts: z.boolean().optional(),
 });
 
 export const ORDER_FILTERS = ['all', 'open', 'delivered', 'cancelled', 'returns'] as const;

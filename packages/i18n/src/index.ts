@@ -6,8 +6,9 @@ export * from './locale';
 export { formatters, type Formatters } from './formatters';
 export { format, rich, type Vars } from './translate';
 export { defineMessages, type Catalog } from './define';
-export { optionLabel, specLabel } from './catalog-labels';
+export { filterValueLabel, optionLabel, specLabel } from './catalog-labels';
 export { smartRowTitle } from './smart-rows';
+export { deliveryRange } from './delivery-format';
 
 export type Namespace = keyof typeof catalogs;
 /** Every namespace's messages for one language. */

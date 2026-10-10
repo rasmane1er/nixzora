@@ -12,6 +12,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { AdvertisingModule } from './modules/advertising/advertising.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -85,6 +86,7 @@ import { RedisModule } from './redis/redis.module';
     AssistantModule,
     RecommendationsModule,
     AdvertisingModule,
+    AlertsModule,
     InsightsModule,
     SellersModule,
     NotificationsModule,

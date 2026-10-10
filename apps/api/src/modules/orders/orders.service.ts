@@ -28,6 +28,7 @@ import { type Prisma } from '../../generated/prisma/client';
 import { type RequestMeta } from '../../common/request-meta';
 import { isUniqueViolation } from '../../common/prisma-errors';
 import { type Env } from '../../config/env';
+import { withTracking } from '../shipping/tracking';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
@@ -616,8 +617,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     return orders.map(summary);
   }
 
-  view(order: OrderRow): OrderView {
-    return toOrderView(order);
+  /** A customer's view of their order, with delivery estimates and carrier scans (p10-04). */
+  view(order: OrderRow): Promise<OrderView> {
+    return withTracking(this.prisma, order, toOrderView(order));
   }
 
   // ───────────── Ops Center ─────────────

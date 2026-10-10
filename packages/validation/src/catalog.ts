@@ -190,6 +190,22 @@ export const ProductImageAttachSchema = z.object({
 
 export const ProductSortSchema = z.enum(['relevance', 'price_asc', 'price_desc', 'newest']);
 
+/** "ram_gb:32", "color:Midnight blue" */
+export const FILTER_PATTERN = /^[a-z][a-z0-9_]{0,40}:[^:]{1,80}$/;
+
+/** Groups "key:value" filters by key: { ram_gb: ["32", "64"] }. */
+export function groupFilters(filters: readonly string[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const filter of filters) {
+    const at = filter.indexOf(':');
+    const key = filter.slice(0, at);
+    const value = filter.slice(at + 1);
+    const list = (out[key] ??= []);
+    if (!list.includes(value)) list.push(value);
+  }
+  return out;
+}
+
 export const ProductListQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
   category: SlugSchema.optional(),
@@ -205,6 +221,15 @@ export const ProductListQuerySchema = z.object({
   sort: ProductSortSchema.default('relevance'),
   page: z.coerce.number().int().min(1).max(500).default(1),
   pageSize: z.coerce.number().int().min(1).max(60).default(24),
+  /**
+   * Spec and option filters, "key:value", repeatable: `f=ram_gb:32&f=ram_gb:64&f=color:Black`.
+   * Values of one key are alternatives (32 or 64 GB); different keys must all match.
+   */
+  f: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((value) => (value === undefined ? [] : Array.isArray(value) ? value : [value]))
+    .pipe(z.array(z.string().regex(FILTER_PATTERN, 'Use key:value')).max(30)),
 });
 
 export const AdminProductListQuerySchema = ProductListQuerySchema.extend({
@@ -271,6 +296,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
     .default(null),
   /** Staff feedback on a seller's listing (only on staff and seller views). */
   reviewNote: z.string().nullable().default(null),
+  /** When an order placed now should arrive (p10-04), Eastern calendar days; on shopper views. */
+  delivery: z.object({ earliest: z.string(), latest: z.string() }).nullable().optional(),
   images: z.array(ImageSchema),
   variants: z.array(VariantSchema),
   createdAt: z.iso.datetime(),
@@ -357,3 +384,28 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
 }
+
+// ───────────── Search help (p10-03) ─────────────
+
+/** A filter shown next to results, with how many of them have each value. */
+export type Facet = {
+  key: string;
+  /** "option": a variant choice (color, size); "spec": a product attribute (ram_gb). */
+  kind: 'option' | 'spec';
+  values: { value: string; count: number; selected: boolean }[];
+};
+export type ProductFacets = { facets: Facet[] };
+
+/** A result page; `correctedQuery` is set when nothing matched and a corrected spelling did. */
+export type ProductPage = PagedResult<ProductCard> & { correctedQuery?: string };
+
+/** What the search box offers while the shopper types. */
+export type SearchSuggestions = {
+  /** Popular searches and product names that start like the text. */
+  completions: string[];
+  categories: { slug: string; name: string }[];
+  brands: { slug: string; name: string }[];
+  products: ProductCard[];
+  /** "Did you mean": the text with misspelled words fixed, when there were any. */
+  correction: string | null;
+};

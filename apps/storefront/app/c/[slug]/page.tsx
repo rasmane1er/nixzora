@@ -34,12 +34,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   if (!found) notFound();
   const filters = filtersFrom(await searchParams);
   const firstPage = !filters.page || filters.page === '1';
-  const [result, brands, ads] = await Promise.all([
+  const [result, brands, ads, facets] = await Promise.all([
     catalog
       .products(toApiQuery({ ...filters, q: undefined }, { category: slug }))
       .catch(() => null),
     catalog.brands().catch(() => []),
     firstPage ? sponsored({ placement: 'category', category: slug }) : [],
+    catalog.facets(toApiQuery({ ...filters, q: undefined }, { category: slug })),
   ]);
   const t = await getT('catalog');
   const trailNames = await Promise.all(found.trail.map((node) => departmentName(node)));
@@ -78,6 +79,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         result={result ?? { items: [], page: 1, pageSize: 24, total: 0, totalPages: 1 }}
         brands={brands}
         sponsored={ads}
+        facets={facets}
       />
     </div>
   );

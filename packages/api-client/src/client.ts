@@ -1,4 +1,11 @@
 import type {
+  ProductAlertKind,
+  ProductAlertRef,
+  QuestionPage,
+  QuestionView,
+  Facet,
+  ProductPage,
+  SearchSuggestions,
   AdClickResult,
   AdPlacement,
   SponsoredProducts,
@@ -85,7 +92,7 @@ export type ClientOptions = {
   fetch?: typeof fetch;
 };
 
-type Query = Record<string, string | number | boolean | undefined | null>;
+type Query = Record<string, string | number | boolean | undefined | null | readonly string[]>;
 
 type RequestOptions = {
   body?: unknown;
@@ -101,7 +108,9 @@ type RequestOptions = {
 export function queryString(query: Query = {}): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+    // Arrays repeat the key: f=color:Black&f=size:M.
+    if (Array.isArray(value)) value.forEach((item) => params.append(key, item));
+    else if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
   }
   const text = params.toString();
   return text ? `?${text}` : '';
@@ -224,11 +233,21 @@ export function createApiClient(options: ClientOptions) {
 
     catalog: {
       categories: () => request<CategoryNode[]>('GET', '/catalog/categories', { auth: 'none' }),
+      /** A page of products; `correctedQuery` says when a misspelled search was fixed. */
       products: (query: Partial<ProductListQuery> = {}) =>
-        request<PagedResult<ProductCard>>('GET', '/catalog/products', {
+        request<ProductPage>('GET', '/catalog/products', {
           query: query as Query,
           auth: 'none',
         }),
+      /** Spec and option filters for a search, category, brand or store, with counts. */
+      facets: (query: Partial<ProductListQuery> = {}) =>
+        request<{ facets: Facet[] }>('GET', '/catalog/facets', {
+          query: query as Query,
+          auth: 'none',
+        }).then((res) => res.facets),
+      /** Searches, departments, brands and products for what the shopper is typing. */
+      suggest: (q: string) =>
+        request<SearchSuggestions>('GET', '/catalog/suggest', { query: { q }, auth: 'none' }),
       product: (slug: string) =>
         request<ProductDetail>('GET', `/catalog/products/${enc(slug)}`, { auth: 'none' }),
       /** A page of a product's approved reviews (10 at a time), with the rating summary. */
@@ -252,7 +271,32 @@ export function createApiClient(options: ClientOptions) {
         request<{
           review: (ReviewView & { status: AccountReview['status'] }) | null;
           canReview: boolean;
+          /** Reviews of this product you marked helpful. */
+          helpfulVotes?: string[];
         }>('GET', `/catalog/products/${enc(slug)}/reviews/mine`),
+      /** "Was this helpful?" — false takes the vote back. */
+      voteHelpful: (reviewId: string, helpful: boolean) =>
+        request<{ helpfulCount: number; voted: boolean }>(
+          'POST',
+          `/catalog/reviews/${enc(reviewId)}/helpful`,
+          { body: { helpful } },
+        ),
+      /** A link to upload one review photo; send its storageKey in `photoKeys`. */
+      reviewPhotoUpload: (body: UploadRequest) =>
+        request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Questions and answers on a product page; `canAnswer` is for the signed-in shopper. */
+      questions: (slug: string, query: { page?: number; q?: string } = {}) =>
+        request<QuestionPage>('GET', `/catalog/products/${enc(slug)}/questions`, {
+          query: query as Query,
+        }),
+      ask: (slug: string, body: string) =>
+        request<QuestionView>('POST', `/catalog/products/${enc(slug)}/questions`, {
+          body: { body },
+        }),
+      answer: (questionId: string, body: string) =>
+        request<QuestionView>('POST', `/catalog/questions/${enc(questionId)}/answers`, {
+          body: { body },
+        }),
       /** Create or update your review; it is published after moderation. */
       submitReview: (slug: string, body: ReviewCreate) =>
         request<{ status: string }>('POST', `/catalog/products/${enc(slug)}/reviews`, { body }),
@@ -421,6 +465,10 @@ export function createApiClient(options: ClientOptions) {
       addresses: () => request<SavedAddress[]>('GET', '/me/addresses'),
       wishlist: () => request<ProductCard[]>('GET', '/me/wishlist'),
       wishlistIds: () => request<string[]>('GET', '/me/wishlist/ids'),
+      /** Back-in-stock and price-drop alerts you have (p10-06). */
+      alerts: () => request<ProductAlertRef[]>('GET', '/me/alerts'),
+      setAlert: (productId: string, kind: ProductAlertKind, on: boolean) =>
+        request<void>(on ? 'PUT' : 'DELETE', `/me/alerts/${enc(productId)}`, { query: { kind } }),
       wish: (productId: string) => request<void>('PUT', `/me/wishlist/${enc(productId)}`),
       unwish: (productId: string) => request<void>('DELETE', `/me/wishlist/${enc(productId)}`),
     },

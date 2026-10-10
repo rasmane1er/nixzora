@@ -43,9 +43,19 @@ export class WishlistService {
       create: { userId, productId, priceCentsAtSave: card?.priceFromCents ?? null },
       update: {},
     });
+    // Saved products get price-drop alerts, and a back-in-stock alert while sold out (p10-06).
+    const alerts = [
+      { kind: 'PRICE_DROP' as const, priceCents: card?.priceFromCents ?? null },
+      ...(card && !card.inStock ? [{ kind: 'BACK_IN_STOCK' as const, priceCents: null }] : []),
+    ];
+    await this.prisma.productAlert.createMany({
+      data: alerts.map((alert) => ({ userId, productId, ...alert })),
+      skipDuplicates: true,
+    });
   }
 
   async remove(userId: string, productId: string): Promise<void> {
     await this.prisma.wishlistItem.deleteMany({ where: { userId, productId } });
+    await this.prisma.productAlert.deleteMany({ where: { userId, productId, kind: 'PRICE_DROP' } });
   }
 }

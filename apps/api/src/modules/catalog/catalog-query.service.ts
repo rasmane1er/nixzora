@@ -3,18 +3,26 @@ import { ConfigService } from '@nestjs/config';
 import {
   type AdminProductListQuery,
   type CategoryNode,
+  deliveryWindow,
+  type Facet,
+  groupFilters,
+  OPTION_NAMES,
   pagedResult,
   type PagedResult,
   type ProductCard,
   type ProductDetail,
   type ProductListQuery,
   type ProductLookup,
+  OWN_HANDLING_DAYS,
+  type ProductPage,
+  SPECS,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Category, Prisma } from '../../generated/prisma/client';
 import { ReadDatabase } from '../../prisma/read-database';
 import { SearchIndexService } from '../search/search-index.service';
 import { StorageService } from '../media/storage.service';
+import { Spelling } from './spelling';
 import { ratingSummary, roundRating } from '../../common/rating';
 import { ancestorsOf, descendantIds } from './category-tree';
 import {
@@ -40,6 +48,7 @@ export class CatalogQueryService {
     private readonly storage: StorageService,
     private readonly search: SearchIndexService,
     private readonly config: ConfigService<Env, true>,
+    private readonly spelling: Spelling,
   ) {}
 
   /** Public catalog reads tolerate a second of staleness: the read replica when there is one. */
@@ -101,8 +110,123 @@ export class CatalogQueryService {
     });
   }
 
-  async listProducts(query: ProductListQuery): Promise<PagedResult<ProductCard>> {
-    return this.list(query, { status: 'ACTIVE' }, true);
+  /**
+   * The storefront listing. A search that finds nothing is retried with misspelled words
+   * fixed ("hedphones" → "headphones"); the page then says which words it searched for.
+   */
+  async listProducts(query: ProductListQuery): Promise<ProductPage> {
+    const result = await this.list(query, { status: 'ACTIVE' }, true);
+    if (result.total > 0 || !query.q) return result;
+    const corrected = await this.spelling.correct(query.q);
+    if (!corrected || corrected === query.q.toLowerCase()) return result;
+    const retry = await this.list({ ...query, q: corrected }, { status: 'ACTIVE' }, true);
+    return retry.total > 0 ? { ...retry, correctedQuery: corrected } : result;
+  }
+
+  /**
+   * Filters for a listing (p10-03): variant options first (color, size…), then known specs,
+   * each value with how many products have it. Counts follow the other filters, not the
+   * facet's own, so picking "32 GB" still shows how many have 64 GB. Only for a search, a
+   * category, a brand or a store (never the whole catalog at once).
+   */
+  async facets(query: ProductListQuery): Promise<Facet[]> {
+    if (!query.q && !query.category && !query.brand && !query.seller) return [];
+    const where: Prisma.ProductWhereInput = {
+      status: 'ACTIVE',
+      variants: { some: { isActive: true } },
+    };
+    if (query.category) {
+      const ids = await this.categoryAndDescendantIds(query.category);
+      if (!ids.length) return [];
+      where.categoryId = { in: ids };
+    }
+    if (query.brand) where.brand = { slug: query.brand };
+    if (query.seller) where.seller = { handle: query.seller };
+    if (query.q) {
+      const rank = await this.searchRank(query.q, 'ACTIVE');
+      if (!rank.size) return [];
+      where.id = { in: [...rank.keys()] };
+    }
+    const rows = await this.prisma.product.findMany({
+      where,
+      take: MAX_CANDIDATES,
+      select: {
+        attributes: true,
+        variants: { where: { isActive: true }, select: { options: true } },
+      },
+    });
+
+    // Each product's values per key (options can have several: every color it comes in).
+    const products = rows.map((row) => {
+      const values = new Map<string, Set<string>>();
+      for (const [key, value] of Object.entries(
+        (row.attributes ?? {}) as Record<string, unknown>,
+      )) {
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          values.set(key, new Set([String(value)]));
+        }
+      }
+      for (const variant of row.variants) {
+        for (const [key, value] of Object.entries(
+          (variant.options ?? {}) as Record<string, unknown>,
+        )) {
+          if (typeof value !== 'string') continue;
+          const set = values.get(`option:${key}`) ?? new Set<string>();
+          set.add(value);
+          values.set(`option:${key}`, set);
+        }
+      }
+      return values;
+    });
+
+    const selected = groupFilters(query.f ?? []);
+    const id = (key: string) =>
+      (OPTION_NAMES as readonly string[]).includes(key) ? `option:${key}` : key;
+    const matches = (product: Map<string, Set<string>>, except: string) =>
+      Object.entries(selected).every(
+        ([key, values]) => key === except || values.some((v) => product.get(id(key))?.has(v)),
+      );
+
+    const candidates = [
+      ...OPTION_NAMES.map((name) => ({ key: name, kind: 'option' as const })),
+      ...Object.keys(SPECS).map((key) => ({ key, kind: 'spec' as const })),
+    ];
+    const facets: Facet[] = [];
+    for (const { key, kind } of candidates) {
+      const counts = new Map<string, number>();
+      const seen = new Set<string>();
+      let having = 0;
+      for (const product of products) {
+        const values = product.get(id(key));
+        if (!values) continue;
+        having++;
+        values.forEach((value) => seen.add(value));
+        if (!matches(product, key)) continue;
+        for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      const chosen = selected[key] ?? [];
+      // Worth showing when the listing has 2–16 different values; then only values that
+      // still match something (or are chosen) are listed.
+      const useful = seen.size >= 2 && seen.size <= 16 && having >= 2;
+      if (!useful && !chosen.length) continue;
+      if ([...seen].some((value) => value.length > 40)) continue;
+      const all = [...new Set([...counts.keys(), ...chosen])];
+      const numeric = all.every((value) => sizeOf(value) !== null);
+      const values = all
+        .map((value) => ({
+          value,
+          count: counts.get(value) ?? 0,
+          selected: chosen.includes(value),
+        }))
+        .sort((a, b) =>
+          numeric
+            ? sizeOf(a.value)! - sizeOf(b.value)!
+            : b.count - a.count || a.value.localeCompare(b.value),
+        );
+      facets.push({ key, kind, values });
+      if (facets.length >= 8) break;
+    }
+    return facets;
   }
 
   async listProductsForAdmin(
@@ -118,7 +242,15 @@ export class CatalogQueryService {
       include: productInclude,
     });
     if (!product) throw new NotFoundException('We could not find that product.');
-    return this.toDetail(product, true);
+    const detail = await this.toDetail(product, true);
+    // When it would arrive if ordered now (p10-04); none while it is sold out.
+    const inStock = detail.variants.some((v) => v.isActive && v.available > 0);
+    return {
+      ...detail,
+      delivery: inStock
+        ? deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS)
+        : null,
+    };
   }
 
   /**
@@ -186,6 +318,15 @@ export class CatalogQueryService {
     if (query.brand) where.brand = { slug: query.brand };
     if (query.seller) where.seller = { handle: query.seller };
 
+    // Spec and option filters (p10-03): the products that have every chosen key.
+    let filtered: string[] | null = null;
+    const filters = groupFilters(query.f ?? []);
+    if (Object.keys(filters).length) {
+      filtered = await this.idsMatchingFilters(filters);
+      if (!filtered.length) return emptyPage(query);
+      where.id = { in: filtered };
+    }
+
     // Newest first with no search or computed filters: let the database page it, so the
     // total is exact and only one page of products is loaded.
     if (
@@ -202,7 +343,10 @@ export class CatalogQueryService {
     if (query.q) {
       rank = await this.searchRank(query.q, baseWhere.status as string | undefined);
       if (!rank.size) return emptyPage(query);
-      where.id = { in: [...rank.keys()] };
+      const keep = filtered ? new Set(filtered) : null;
+      const hits = [...rank.keys()].filter((hit) => !keep || keep.has(hit));
+      if (!hits.length) return emptyPage(query);
+      where.id = { in: hits };
     }
     return this.pageByFacts(query, where, activeVariantsOnly, rank);
   }
@@ -387,6 +531,19 @@ export class CatalogQueryService {
     return new Map(rows.map((row) => [row.id, row.rank]));
   }
 
+  /** Products with every key (a spec or a variant option) set to one of its chosen values. */
+  private async idsMatchingFilters(filters: Record<string, string[]>): Promise<string[]> {
+    const conditions = Object.entries(filters).map(([key, values]) =>
+      (OPTION_NAMES as readonly string[]).includes(key)
+        ? Prisma.sql`EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id
+            AND v.is_active AND v.options->>${key} = ANY(${values}::text[]))`
+        : Prisma.sql`p.attributes->>${key} = ANY(${values}::text[])`,
+    );
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id::text AS id FROM products p WHERE ${Prisma.join(conditions, ' AND ')}`;
+    return rows.map((row) => row.id);
+  }
+
   async categoryAndDescendantIds(slug: string): Promise<string[]> {
     const categories = await this.prisma.category.findMany({
       select: { id: true, slug: true, parentId: true },
@@ -486,6 +643,14 @@ export class CatalogQueryService {
       updatedAt: product.updatedAt.toISOString(),
     };
   }
+}
+
+/** "32", "1.4", "512GB", "1TB" → comparable numbers (sizes in GB); null for other text. */
+function sizeOf(value: string): number | null {
+  const match = /^(-?\d+(?:\.\d+)?)\s*(tb|gb|mb)?$/i.exec(value.trim());
+  if (!match) return null;
+  const unit = { tb: 1024, gb: 1, mb: 1 / 1024 }[(match[2] ?? 'gb').toLowerCase() as 'gb'];
+  return Number(match[1]) * unit;
 }
 
 function emptyPage(query: { page: number; pageSize: number }): PagedResult<ProductCard> {

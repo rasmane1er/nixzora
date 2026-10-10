@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable } from 'react-native';
+import { type PickedPhoto, ReviewPhotoPicker } from '@/components/ReviewPhotoPicker';
 import { Banner, Button, Card, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -28,6 +29,7 @@ export default function ReviewScreen() {
   const [rating, setRating] = useState(0);
   const [headline, setHeadline] = useState('');
   const [body, setBody] = useState('');
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [errors, setErrors] = useState<Partial<Record<'rating' | 'title' | 'body', string>>>({});
 
   // Editing: start from what the customer wrote last time.
@@ -41,7 +43,11 @@ export default function ReviewScreen() {
 
   const submit = useMutation({
     mutationFn: (input: { rating: number; title: string; body: string }) =>
-      api.catalog.submitReview(slug, input),
+      api.catalog.submitReview(slug, {
+        ...input,
+        // Only when photos were added here: otherwise an edit keeps the earlier ones.
+        ...(photos.length ? { photoKeys: photos.map((photo) => photo.key) } : {}),
+      }),
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: keys.reviews }),
@@ -151,6 +157,7 @@ export default function ReviewScreen() {
           error={errors.body}
           style={{ minHeight: 140, textAlignVertical: 'top' }}
         />
+        <ReviewPhotoPicker value={photos} onChange={setPhotos} />
       </Card>
 
       {submit.error ? <Banner tone="error">{errorMessage(submit.error)}</Banner> : null}

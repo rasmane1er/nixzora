@@ -3,6 +3,7 @@ import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { currentCart } from '@/lib/api';
+import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { applyCoupon, removeCoupon, updateLine } from './actions';
@@ -197,6 +198,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           ) : (
             <p className="free-ship">{tc('gotFreeShipping')}</p>
           )}
+          <DeliveryPromise window={cart.delivery} />
           {blocked || cart.coupon?.problem ? (
             <p className="banner banner--info">{blocked ? tc('fixItems') : tc('removeCode')}</p>
           ) : (

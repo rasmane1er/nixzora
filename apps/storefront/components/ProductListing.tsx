@@ -1,10 +1,13 @@
+import { filterValueLabel, optionLabel, specLabel } from '@nixzora/i18n';
 import {
+  type Facet,
+  FILTER_PATTERN,
   type PagedResult,
   type ProductCard as Card,
   type SponsoredProduct,
 } from '@nixzora/validation';
 import Link from 'next/link';
-import { getT } from '@/lib/i18n';
+import { getLocale, getT } from '@/lib/i18n';
 import { AboutAds } from './AboutAds';
 import { ProductCard } from './ProductCard';
 
@@ -17,12 +20,15 @@ export type ListingFilters = {
   inStock?: string;
   sort?: string;
   page?: string;
+  /** Spec and option filters, "key:value" (p10-03). */
+  f?: string[];
 };
 
 function href(base: string, filters: ListingFilters, page: number): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries({ ...filters, page: String(page) })) {
-    if (value && !(base.startsWith('/c/') && key === 'category')) search.set(key, value);
+    if (Array.isArray(value)) value.forEach((v) => search.append(key, v));
+    else if (value && !(base.startsWith('/c/') && key === 'category')) search.set(key, value);
   }
   return `${base}?${search.toString()}`;
 }
@@ -34,6 +40,7 @@ export async function ProductListing({
   result,
   brands,
   sponsored = [],
+  facets = [],
 }: {
   base: string;
   filters: ListingFilters;
@@ -41,9 +48,14 @@ export async function ProductListing({
   brands: { slug: string; name: string }[];
   /** Sponsored products shown first in the grid. */
   sponsored?: SponsoredProduct[];
+  /** Spec and option filters with counts. */
+  facets?: Facet[];
 }) {
   const t = await getT('catalog');
   const p = await getT('product');
+  const locale = await getLocale();
+  const facetName = (facet: Facet) =>
+    facet.kind === 'option' ? optionLabel(facet.key, locale) : specLabel(facet.key, locale);
   return (
     <div className="listing">
       <form className="filters card" action={base}>
@@ -80,6 +92,24 @@ export async function ProductListing({
             />
           </div>
         </fieldset>
+        {facets.map((facet) => (
+          <fieldset key={facet.key}>
+            <legend>{facetName(facet)}</legend>
+            <div className="facet-values">
+              {facet.values.map((v) => (
+                <label key={v.value} className="check">
+                  <input
+                    type="checkbox"
+                    name="f"
+                    value={`${facet.key}:${v.value}`}
+                    defaultChecked={v.selected}
+                  />{' '}
+                  {filterValueLabel(v.value, locale)} <span className="count">({v.count})</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
         <label className="check">
           <input
             type="checkbox"
@@ -182,6 +212,7 @@ export function toApiQuery(filters: ListingFilters, extra: Record<string, string
     ...extra,
   };
   for (const [key, value] of Object.entries(values)) if (value) search.set(key, value);
+  for (const filter of filters.f ?? []) search.append('f', filter);
   return `?${search.toString()}`;
 }
 
@@ -200,5 +231,9 @@ export function filtersFrom(params: Record<string, string | string[] | undefined
     inStock: get('inStock'),
     sort: get('sort'),
     page: get('page'),
+    f: [params.f ?? []]
+      .flat()
+      .filter((v): v is string => typeof v === 'string' && FILTER_PATTERN.test(v))
+      .slice(0, 30),
   };
 }

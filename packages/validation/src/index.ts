@@ -10,6 +10,7 @@ export * from './assistant';
 export * from './auth';
 export * from './catalog';
 export * from './commerce';
+export * from './delivery';
 export * from './health';
 export * from './marketplace';
 export * from './mobile';

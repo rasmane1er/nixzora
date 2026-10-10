@@ -158,7 +158,12 @@ export class AccountHubService {
   async preferences(userId: string): Promise<AccountPreferences> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { marketingEmails: true, reviewRequests: true, personalizedPicks: true },
+      select: {
+        marketingEmails: true,
+        reviewRequests: true,
+        personalizedPicks: true,
+        stockAlerts: true,
+      },
     });
     return user;
   }
@@ -167,7 +172,12 @@ export class AccountHubService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: input,
-      select: { marketingEmails: true, reviewRequests: true, personalizedPicks: true },
+      select: {
+        marketingEmails: true,
+        reviewRequests: true,
+        personalizedPicks: true,
+        stockAlerts: true,
+      },
     });
     // Turning personalized picks off also forgets what was recorded for them (p10-02).
     if (input.personalizedPicks === false) {

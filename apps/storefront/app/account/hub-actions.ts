@@ -229,6 +229,7 @@ export async function savePreferences(form: FormData): Promise<void> {
           marketingEmails: form.get('marketingEmails') === 'on',
           reviewRequests: form.get('reviewRequests') === 'on',
           personalizedPicks: form.get('personalizedPicks') === 'on',
+          stockAlerts: form.get('stockAlerts') === 'on',
         },
       }),
     (await getT('account'))('preferencesSaved'),

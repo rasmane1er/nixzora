@@ -10,6 +10,11 @@ export const ReviewCreateSchema = z.object({
     .trim()
     .min(20, { message: 'Tell other shoppers a little more (20+ characters).' })
     .max(5000),
+  /** Up to four uploaded photos (p10-05), in order; replaces the earlier ones when editing. */
+  photoKeys: z
+    .array(z.string().regex(/^products\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.(jpg|png|webp|avif)$/))
+    .max(4)
+    .optional(),
 });
 
 export const ReviewStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
@@ -32,6 +37,10 @@ export type ReviewView = {
   author: string;
   verifiedPurchase: boolean;
   createdAt: string;
+  /** Shoppers' photos (p10-05). */
+  photos: { url: string }[];
+  /** "Was this helpful?" yes votes. */
+  helpfulCount: number;
 };
 
 export type RatingSummary = {
@@ -41,8 +50,11 @@ export type RatingSummary = {
   distribution: [number, number, number, number, number];
 };
 
-/** How a product's reviews are ordered: verified buyers first, then newest ("relevant"). */
-export const REVIEW_SORTS = ['relevant', 'newest', 'highest', 'lowest'] as const;
+/**
+ * How a product's reviews are ordered: verified buyers and the most helpful first, then newest
+ * ("relevant"); or the most helpful, newest, highest or lowest rated.
+ */
+export const REVIEW_SORTS = ['relevant', 'helpful', 'newest', 'highest', 'lowest'] as const;
 export type ReviewSort = (typeof REVIEW_SORTS)[number];
 
 export const ReviewListQuerySchema = z.object({
@@ -50,6 +62,11 @@ export const ReviewListQuerySchema = z.object({
   sort: z.enum(REVIEW_SORTS).default('relevant'),
   /** Only reviews with this many stars. */
   rating: z.coerce.number().int().min(1).max(5).optional(),
+  /** Only reviews with photos. */
+  withPhotos: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
 });
 export type ReviewListQuery = z.infer<typeof ReviewListQuerySchema>;
 
@@ -87,6 +104,62 @@ export const ProductCopySuggestionSchema = z.object({
   notes: z.array(z.string()),
 });
 export type ProductCopySuggestion = z.infer<typeof ProductCopySuggestionSchema>;
+
+// ───────────── Questions and answers (p10-05) ─────────────
+
+export const QuestionCreateSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(10, { message: 'Ask a full question (10+ characters).' })
+    .max(500),
+});
+export type QuestionCreate = z.infer<typeof QuestionCreateSchema>;
+
+export const AnswerCreateSchema = z.object({ body: z.string().trim().min(2).max(1000) });
+export type AnswerCreate = z.infer<typeof AnswerCreateSchema>;
+
+export const QuestionListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  /** Search the questions and answers. */
+  q: z.string().trim().max(100).optional(),
+});
+export type QuestionListQuery = z.infer<typeof QuestionListQuerySchema>;
+
+/** Who answered: the store selling it, NIXZORA staff, or a customer who bought it. */
+export type AnswerRole = 'SELLER' | 'STAFF' | 'BUYER';
+
+export type AnswerView = {
+  id: string;
+  body: string;
+  role: AnswerRole;
+  /** The store's name, "NIXZORA", or the buyer's first name and initial. */
+  author: string;
+  createdAt: string;
+};
+
+export type QuestionView = {
+  id: string;
+  body: string;
+  author: string;
+  createdAt: string;
+  answers: AnswerView[];
+};
+
+export type QuestionPage = {
+  questions: QuestionView[];
+  page: number;
+  totalPages: number;
+  total: number;
+  /** For the signed-in shopper: may they answer (the seller, staff, or a buyer of it)? */
+  canAnswer: boolean;
+};
+
+/** Ops and seller lists: the question with its product. */
+export type QuestionWithProduct = QuestionView & {
+  status: 'PUBLISHED' | 'HIDDEN';
+  product: { id: string; slug: string; title: string };
+};
 
 export type AdminReviewView = ReviewView & {
   status: z.infer<typeof ReviewStatusSchema>;
@@ -323,3 +396,8 @@ export const RiskReviewSchema = z.object({
 
 export type AdminRiskQuery = z.infer<typeof AdminRiskQuerySchema>;
 export type RiskReview = z.infer<typeof RiskReviewSchema>;
+
+// ───────────── Alerts (p10-06) ─────────────
+
+export type ProductAlertKind = 'BACK_IN_STOCK' | 'PRICE_DROP';
+export type ProductAlertRef = { productId: string; kind: ProductAlertKind };

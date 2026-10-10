@@ -46,6 +46,13 @@ what they cannot decide on their own. Nothing here is legal advice.
    "sharing" or "targeted advertising" under CCPA/CPRA and other state laws, and add ad terms to
    the seller agreement (pricing per click, budgets, ad credit never paid out, removal of ads
    that break the rules).
+9. **Reviews with photos, questions and answers, alerts (Oct 2026).** Shoppers can add photos
+   to reviews and post questions and answers, shown with their first name and initial; staff
+   can hide posts. Saved products send price-drop and back-in-stock pushes and emails (on by
+   default, off in preferences). Confirm the content rules and takedown process for shopper
+   photos (faces, copyrighted images), whether these alerts count as marketing under CAN-SPAM
+   (they are triggered by the shopper's own saves, but an opt-out link is included anyway), and
+   that delivery estimates ("Arrives Thu – Tue") are worded as estimates under FTC shipping rules.
 
 ## Sales tax (tax adviser)
 

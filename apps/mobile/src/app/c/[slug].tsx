@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { FilterButton } from '@/components/FilterSheet';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
 import { type Sort, SortChips } from '@/components/SortChips';
@@ -40,7 +41,13 @@ export default function CategoryScreen() {
   const [sort, setSort] = useState<Sort>('newest');
   const categories = useCategories();
   const category = find(categories.data ?? [], slug);
-  const results = useProductList({ category: slug, sort });
+  const [filters, setFilters] = useState<string[]>([]);
+  const results = useProductList({ category: slug, sort, f: filters });
+  const facets = useQuery({
+    queryKey: ['facets', 'category', slug, filters],
+    queryFn: () => api.catalog.facets({ category: slug, f: filters }),
+    staleTime: 60_000,
+  });
   const products = results.data?.pages.flatMap((page) => page.items) ?? [];
   const name = category ? departmentName(category.slug, category.name) : undefined;
 
@@ -73,6 +80,7 @@ export default function CategoryScreen() {
         </ScrollView>
       ) : null}
       <SortChips value={sort} onChange={setSort} options={['newest', 'price_asc', 'price_desc']} />
+      <FilterButton facets={facets.data ?? []} value={filters} onChange={setFilters} />
       {results.error && !results.data ? (
         <Banner tone="error">{errorMessage(results.error)}</Banner>
       ) : null}

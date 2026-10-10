@@ -79,3 +79,15 @@ export async function removeCoupon(): Promise<void> {
   }
   redirect('/cart');
 }
+
+/** "Frequently bought together → Add all" (p10-06): adds each, one of each, in order. */
+export async function addAllToCart(variantIds: string[]): Promise<AddResult> {
+  const ids = [...new Set(variantIds)].filter((id) => UUID.test(id)).slice(0, 4);
+  if (!ids.length) return { ok: false, error: (await getT('cart'))('chooseOption') };
+  let result: AddResult = { ok: false, error: '' };
+  for (const id of ids) {
+    result = await addToCart(id, 1);
+    if (!result.ok) return result;
+  }
+  return result;
+}

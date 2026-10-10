@@ -1,3 +1,4 @@
+import { recordTracking } from './tracking';
 import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type Address, type LabelPurchase, type OrderView } from '@nixzora/validation';
@@ -145,6 +146,7 @@ export class LabelsService {
       .set(`webhook:shipping:${event.id}`, '1', 'EX', 7 * 86_400, 'NX')
       .catch(() => 'OK');
     if (first !== 'OK') return 'duplicate';
+    await recordTracking(this.prisma, event);
     if (event.status === 'other') return 'ignored';
     // A seller's own shipment: the first scan releases its earnings to the normal hold (p9-05).
     const sellerShipments = await this.prisma.$transaction((tx) =>

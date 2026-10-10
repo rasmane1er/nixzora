@@ -53,3 +53,9 @@ export function specLabel(key: string, locale: Locale): string {
 export function optionLabel(name: string, locale: Locale): string {
   return page(locale)[`option_${name}`] ?? spelledOut(name, locale);
 }
+
+/** A filter value as shoppers read it: true/false become Yes/No; everything else as stored. */
+export function filterValueLabel(value: string, locale: Locale): string {
+  const words = catalogs.search[locale];
+  return value === 'true' ? words.yes : value === 'false' ? words.no : value;
+}

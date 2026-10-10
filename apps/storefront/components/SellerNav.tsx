@@ -6,6 +6,7 @@ const LINKS = [
   { href: '/sell', label: 'navOverview' },
   { href: '/sell/orders', label: 'navOrders' },
   { href: '/sell/feedback', label: 'navFeedback' },
+  { href: '/sell/questions', label: 'navQuestions' },
   { href: '/sell/listings', label: 'navListings' },
   { href: '/sell/analytics', label: 'navAnalytics' },
   { href: '/sell/earnings', label: 'navEarnings' },

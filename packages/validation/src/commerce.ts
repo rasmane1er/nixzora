@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
 
 // ───────────── Addresses ─────────────
@@ -149,6 +150,8 @@ export type Cart = {
   totals: Totals;
   /** The applied coupon, or why the one entered no longer applies. */
   coupon: { code: string; description: string | null; problem: string | null } | null;
+  /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
+  delivery?: DeliveryWindow | null;
 };
 
 // ───────────── Checkout and orders ─────────────
@@ -202,6 +205,16 @@ export type OrderItemView = {
   totalCents: number;
 };
 
+/** A carrier scan (p10-04), newest first in lists. */
+export type TrackingStep = {
+  status: 'LABEL_CREATED' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'EXCEPTION' | 'OTHER';
+  /** The carrier's words, e.g. "Arrived at USPS Regional Facility". */
+  description: string;
+  /** "Baltimore, MD", when the carrier says. */
+  location: string | null;
+  at: string;
+};
+
 export type ShipmentView = {
   /** null for NIXZORA's own items. */
   seller: { handle: string; displayName: string } | null;
@@ -213,6 +226,10 @@ export type ShipmentView = {
   rating: { value: number; comment: string | null } | null;
   /** Until when the customer can rate or change it: delivered seller shipments only. */
   ratableUntil: string | null;
+  /** Expected delivery while it is on its way (p10-04). */
+  estimatedDelivery?: DeliveryWindow | null;
+  /** Carrier scans, newest first. */
+  events?: TrackingStep[];
 };
 
 /** Customers rate a delivered seller shipment 1–5; the comment goes to the seller and staff only. */
@@ -255,6 +272,10 @@ export type OrderView = {
   timeline: { status: OrderStatus; at: string }[];
   createdAt: string;
   placedAt: string | null;
+  /** Expected delivery until it is delivered (p10-04): the carrier's date when it gives one. */
+  estimatedDelivery?: DeliveryWindow | null;
+  /** Carrier scans for `tracking`, newest first. */
+  trackingEvents?: TrackingStep[];
 };
 
 export type OrderSummary = Pick<

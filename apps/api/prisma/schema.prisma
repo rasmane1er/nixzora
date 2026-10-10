@@ -45,6 +45,8 @@ model User {
   /// Picks from views, searches, cart, saves, orders and assistant chats (p10-02). Off also stops
   /// recording those signals.
   personalizedPicks Boolean    @default(true) @map("personalized_picks")
+  /// Back-in-stock and price-drop alerts by push and email (p10-06).
+  stockAlerts       Boolean    @default(true) @map("stock_alerts")
   /// Profile photo (an uploaded image's storage key).
   avatarKey         String?    @map("avatar_key")
   /// Language for the website, the app, emails and push: "en", "fr" or "es".
@@ -68,6 +70,10 @@ model User {
   identities         UserIdentity[]
   productEvents      ProductEvent[]
   interests          ShopperInterest[]
+  reviewVotes        ReviewVote[]
+  questions          ProductQuestion[]
+  answers            ProductAnswer[]
+  productAlerts      ProductAlert[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -334,6 +340,8 @@ model Product {
   wishlist      WishlistItem[]
   events        ProductEvent[]
   adCampaigns   AdCampaignProduct[]
+  questions     ProductQuestion[]
+  alerts        ProductAlert[]
   reviewInsight ReviewInsight?
   searchDoc     ProductSearchDoc?
 
@@ -636,13 +644,88 @@ model Review {
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "Was this helpful?" yes votes (p10-05), kept with each vote.
+  helpfulCount Int @default(0) @map("helpful_count")
+
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos  ReviewPhoto[]
+  votes   ReviewVote[]
 
   @@unique([productId, userId])
   @@index([productId, status])
   @@index([status, createdAt])
   @@map("reviews")
+}
+
+/// A shopper's photo on their review (p10-05), checked and re-encoded like product photos.
+model ReviewPhoto {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  reviewId   String   @map("review_id") @db.Uuid
+  storageKey String   @map("storage_key")
+  position   Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, position])
+  @@map("review_photos")
+}
+
+/// One "helpful" vote per customer per review.
+model ReviewVote {
+  reviewId  String   @map("review_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, userId])
+  @@map("review_votes")
+}
+
+enum QuestionStatus {
+  PUBLISHED
+  /// Hidden by staff (spam, personal data, off topic).
+  HIDDEN
+}
+
+/// A shopper's question on a product page (p10-05).
+model ProductQuestion {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  productId   String         @map("product_id") @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  body        String
+  status      QuestionStatus @default(PUBLISHED)
+  answerCount Int            @default(0) @map("answer_count")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers ProductAnswer[]
+
+  @@index([productId, status, createdAt])
+  @@index([createdAt])
+  @@map("product_questions")
+}
+
+/// An answer from the product's seller, NIXZORA staff or a customer who bought it.
+model ProductAnswer {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  questionId String         @map("question_id") @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  /// SELLER, STAFF or BUYER: shown next to the answer.
+  role       String
+  body       String
+  status     QuestionStatus @default(PUBLISHED)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  question ProductQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, createdAt])
+  @@map("product_answers")
 }
 
 model WishlistItem {
@@ -1242,6 +1325,34 @@ model EmailSuppression {
   @@map("email_suppressions")
 }
 
+// ───────────── Delivery tracking (p10-04) ─────────────
+
+/// What the carrier says about a tracking number: its delivery estimate (EasyPost trackers).
+model ShipmentTracker {
+  trackingNumber      String    @id @map("tracking_number")
+  carrier             String?
+  estimatedDeliveryAt DateTime? @map("estimated_delivery_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("shipment_trackers")
+}
+
+/// Carrier scans ("Arrived at facility", "Out for delivery"), shown on the order page.
+model ShipmentEvent {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  trackingNumber String   @map("tracking_number")
+  /// LABEL_CREATED, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, EXCEPTION or OTHER
+  status         String
+  description    String
+  location       String?
+  occurredAt     DateTime @map("occurred_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([trackingNumber, occurredAt, status])
+  @@index([trackingNumber, occurredAt])
+  @@map("shipment_events")
+}
+
 // ───────────── Smart picks (p10-02) ─────────────
 
 enum ShopperInterestSource {
@@ -1357,4 +1468,29 @@ model AdDailyStat {
   @@id([campaignId, productId, day])
   @@index([day])
   @@map("ad_daily_stats")
+}
+
+// ───────────── Alerts (p10-06) ─────────────
+
+enum ProductAlertKind {
+  BACK_IN_STOCK
+  PRICE_DROP
+}
+
+/// Tell this customer when the product is back in stock, or cheaper than `priceCents`.
+/// Asked for on a sold-out product page, and kept for saved (wishlist) products.
+model ProductAlert {
+  userId     String           @map("user_id") @db.Uuid
+  productId  String           @map("product_id") @db.Uuid
+  kind       ProductAlertKind
+  /// PRICE_DROP: the price last seen or told; alerts fire 5% or more below it.
+  priceCents Int?             @map("price_cents")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId, kind])
+  @@index([kind, productId])
+  @@map("product_alerts")
 }

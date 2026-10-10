@@ -1,9 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
   type CategoryNode,
-  type PagedResult,
-  type ProductCard,
+  type Facet,
+  type ProductPage,
+  type SearchSuggestions,
   type ProductDetail,
   ProductDetailSchema,
   type ProductListQuery,
@@ -16,14 +17,19 @@ import {
 import { ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { Public } from '../identity/guards/decorators';
+import { requestLocale } from '../assistant/replies';
 import { CatalogQueryService } from './catalog-query.service';
+import { SearchHelpService } from './search-help.service';
 
 /** Storefront and mobile app catalog. Public: no sign-in needed to browse. */
 @ApiTags('catalog')
 @Public()
 @Controller({ path: 'catalog', version: '1' })
 export class CatalogController {
-  constructor(private readonly catalog: CatalogQueryService) {}
+  constructor(
+    private readonly catalog: CatalogQueryService,
+    private readonly help: SearchHelpService,
+  ) {}
 
   @Get('categories')
   categories(): Promise<CategoryNode[]> {
@@ -49,10 +55,29 @@ export class CatalogController {
   })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'f', required: false, example: 'ram_gb:32', isArray: true })
   products(
     @Query(new ZodValidationPipe(ProductListQuerySchema)) query: ProductListQuery,
-  ): Promise<PagedResult<ProductCard>> {
+  ): Promise<ProductPage> {
     return this.catalog.listProducts(query);
+  }
+
+  /** Spec and option filters for a search, category, brand or store, with counts. */
+  @Get('facets')
+  async facets(
+    @Query(new ZodValidationPipe(ProductListQuerySchema)) query: ProductListQuery,
+  ): Promise<{ facets: Facet[] }> {
+    return { facets: await this.catalog.facets(query) };
+  }
+
+  /** What the search box offers while the shopper types. */
+  @Get('suggest')
+  @ApiQuery({ name: 'q', example: 'head' })
+  suggest(
+    @Query('q') q: string | undefined,
+    @Headers('accept-language') acceptLanguage?: string,
+  ): Promise<SearchSuggestions> {
+    return this.help.suggest(String(q ?? '').slice(0, 200), requestLocale(acceptLanguage));
   }
 
   /** For the app's barcode scanner: barcode, SKU or product link → product slug. */

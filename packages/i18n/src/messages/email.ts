@@ -137,6 +137,16 @@ export const email = defineMessages({
     push_returnApproved_body: 'Your return for order {number} was approved.',
     push_returnRejected_title: 'Return update',
     push_returnRejected_body: 'We could not accept the return for order {number}.',
+    alert_backInStock_subject: 'Back in stock: {title}',
+    alert_backInStock_text:
+      '{title} is back in stock at {price}. Stock can go quickly.\n\n{link}\n\nYou asked us to tell you. Turn these alerts off in your preferences: {prefs}\n',
+    alert_priceDrop_subject: 'Price drop: {title} is now {price}',
+    alert_priceDrop_text:
+      '{title}, which you saved, is now {price} (was {was}).\n\n{link}\n\nTurn price and stock alerts off in your preferences: {prefs}\n',
+    push_backInStock_title: 'Back in stock',
+    push_backInStock_body: '{title} is available again: {price}.',
+    push_priceDrop_title: 'Price drop',
+    push_priceDrop_body: '{title} is now {price} (was {was}).',
   },
   fr: {
     auth_duplicate_subject:
@@ -268,6 +278,16 @@ export const email = defineMessages({
     push_returnApproved_body: 'Votre retour pour la commande {number} a été accepté.',
     push_returnRejected_title: 'Mise à jour de votre retour',
     push_returnRejected_body: 'Nous n’avons pas pu accepter le retour pour la commande {number}.',
+    alert_backInStock_subject: 'De retour en stock : {title}',
+    alert_backInStock_text:
+      '{title} est de nouveau en stock à {price}. Le stock peut partir vite.\n\n{link}\n\nVous nous avez demandé de vous prévenir. Désactivez ces alertes dans vos préférences : {prefs}\n',
+    alert_priceDrop_subject: 'Baisse de prix : {title} est à {price}',
+    alert_priceDrop_text:
+      '{title}, que vous avez enregistré, est maintenant à {price} (au lieu de {was}).\n\n{link}\n\nDésactivez les alertes de prix et de stock dans vos préférences : {prefs}\n',
+    push_backInStock_title: 'De retour en stock',
+    push_backInStock_body: '{title} est de nouveau disponible : {price}.',
+    push_priceDrop_title: 'Baisse de prix',
+    push_priceDrop_body: '{title} est maintenant à {price} (au lieu de {was}).',
   },
   es: {
     auth_duplicate_subject: 'Alguien intentó crear una cuenta de NIXZORA con tu correo electrónico',
@@ -396,5 +416,15 @@ export const email = defineMessages({
     push_returnApproved_body: 'Tu devolución del pedido {number} fue aprobada.',
     push_returnRejected_title: 'Actualización de tu devolución',
     push_returnRejected_body: 'No pudimos aceptar la devolución del pedido {number}.',
+    alert_backInStock_subject: 'De nuevo disponible: {title}',
+    alert_backInStock_text:
+      '{title} vuelve a estar disponible por {price}. Puede agotarse pronto.\n\n{link}\n\nNos pediste que te avisáramos. Desactiva estos avisos en tus preferencias: {prefs}\n',
+    alert_priceDrop_subject: 'Bajó de precio: {title} ahora cuesta {price}',
+    alert_priceDrop_text:
+      '{title}, que guardaste, ahora cuesta {price} (antes {was}).\n\n{link}\n\nDesactiva los avisos de precio y disponibilidad en tus preferencias: {prefs}\n',
+    push_backInStock_title: 'De nuevo disponible',
+    push_backInStock_body: '{title} vuelve a estar disponible: {price}.',
+    push_priceDrop_title: 'Bajó de precio',
+    push_priceDrop_body: '{title} ahora cuesta {price} (antes {was}).',
   },
 });

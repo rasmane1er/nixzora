@@ -27,6 +27,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BoughtTogether } from '@/components/BoughtTogether';
+import { DeliveryPromise } from '@/components/Delivery';
+import { ProductQuestions } from '@/components/ProductQuestions';
+import { StockAlertButton } from '@/components/StockAlertButton';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
 import { ProductReviews } from '@/components/ProductReviews';
@@ -516,6 +520,7 @@ export default function ProductScreen() {
             <Text variant="small" tone={stock.tone}>
               {stock.text}
             </Text>
+            <DeliveryPromise window={item.delivery} />
 
             {canBuy ? (
               <Row style={{ gap: space.lg }}>
@@ -531,7 +536,9 @@ export default function ProductScreen() {
                   onPress={onAdd}
                 />
               </Row>
-            ) : null}
+            ) : (
+              <StockAlertButton productId={item.id} />
+            )}
             {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
             {added ? (
               <Banner tone="ok">
@@ -584,11 +591,29 @@ export default function ProductScreen() {
 
             {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
             <ProductReviews slug={slug} />
+            <ProductQuestions slug={slug} />
 
-            <ProductRail
-              title={tp('oftenBoughtTogether')}
-              products={related.data?.boughtTogether ?? []}
-            />
+            {(related.data?.boughtTogether ?? []).some((o) => o.inStock && o.defaultVariantId) ? (
+              <BoughtTogether
+                title={tp('oftenBoughtTogether')}
+                current={
+                  sellable.filter((v) => v.available > 0).length === 1
+                    ? {
+                        variantId: sellable.find((v) => v.available > 0)!.id,
+                        title: item.title,
+                        priceCents: sellable.find((v) => v.available > 0)!.priceCents,
+                        image: item.images[0]?.url ?? null,
+                      }
+                    : null
+                }
+                others={related.data?.boughtTogether ?? []}
+              />
+            ) : (
+              <ProductRail
+                title={tp('oftenBoughtTogether')}
+                products={related.data?.boughtTogether ?? []}
+              />
+            )}
             <ProductRail title={ta('sponsoredRelated')} sponsored={sponsored.data?.ads ?? []} />
             <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
             <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />

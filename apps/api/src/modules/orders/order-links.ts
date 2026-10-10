@@ -57,7 +57,7 @@ export const orderInclude = {
   items: true,
   sellerOrders: {
     include: {
-      seller: { select: { handle: true, displayName: true } },
+      seller: { select: { handle: true, displayName: true, handlingDays: true } },
       rating: { select: { rating: true, comment: true } },
     },
   },
@@ -93,7 +93,7 @@ function shipments(order: OrderRow): OrderView['shipments'] {
   }
   for (const part of order.sellerOrders) {
     out.push({
-      seller: part.seller,
+      seller: { handle: part.seller.handle, displayName: part.seller.displayName },
       status: part.status === 'PAID' ? 'PROCESSING' : part.status,
       tracking: tracking(part.trackingCarrier, part.trackingNumber),
       itemIds: order.items.filter((item) => item.sellerId === part.sellerId).map((item) => item.id),

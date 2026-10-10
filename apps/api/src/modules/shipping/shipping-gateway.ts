@@ -23,11 +23,24 @@ export type Label = {
   postageCents: number;
 };
 
+/** One carrier scan, as shown on the order page (p10-04). */
+export type TrackingDetail = {
+  status: 'LABEL_CREATED' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'EXCEPTION' | 'OTHER';
+  description: string;
+  location: string | null;
+  at: Date;
+};
+
 /** A verified tracking update. */
 export type TrackingEvent = {
   id: string;
   trackingNumber: string;
   status: 'in_transit' | 'delivered' | 'other';
+  carrier?: string | null;
+  /** The carrier's own delivery estimate, when it gives one. */
+  estimatedDeliveryAt?: Date | null;
+  /** Every scan so far (trackers resend the full history). */
+  details?: TrackingDetail[];
 };
 
 export interface ShippingGateway {

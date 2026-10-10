@@ -143,6 +143,77 @@ code,
 .site-search button {
   border-radius: 0 999px 999px 0;
 }
+/* Search suggestions (p10-03) */
+.site-search {
+  position: relative;
+}
+.suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgb(0 0 0 / 0.14);
+  padding: 6px;
+  max-height: min(70vh, 520px);
+  overflow: auto;
+}
+.suggest[hidden] {
+  display: none;
+}
+.suggest__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 10px 4px;
+}
+.suggest__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.suggest__option[aria-selected='true'] {
+  background: color-mix(in srgb, var(--color-signal) 12%, transparent);
+}
+.suggest__option img {
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--bg);
+}
+.suggest__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest__detail {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.correction {
+  margin: 0 0 12px;
+}
+.facet-values {
+  display: grid;
+  gap: 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+.facet-values .check {
+  font-size: 14px;
+}
+.facet-values .count {
+  color: var(--muted);
+}
 .site-header__links {
   display: flex;
   align-items: center;
@@ -3634,4 +3705,211 @@ td.neg {
   .signup-row {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Delivery dates and tracking (p10-04) */
+.delivery-promise {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 15px;
+}
+.delivery-promise svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ok-fg);
+}
+.delivery-promise > span {
+  display: grid;
+  gap: 2px;
+}
+.delivery-promise .muted {
+  font-size: 13px;
+}
+.scans {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--line);
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+.scans li {
+  display: grid;
+  gap: 2px;
+  position: relative;
+}
+.scans li::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.scans li:first-child::before {
+  background: var(--color-signal);
+}
+.scans li[data-status='delivered']::before {
+  background: var(--ok-fg);
+}
+.scans li[data-status='exception']::before {
+  background: var(--err-fg);
+}
+.tracking-empty {
+  font-size: 14px;
+}
+
+/* Review photos, helpful votes, questions and answers (p10-05) */
+.review-photos,
+.review-photo-picks {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-photos button {
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: none;
+  cursor: zoom-in;
+}
+.review-photos img,
+.review-photo-picks img {
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.review-photo-picks li {
+  position: relative;
+}
+.review-photo-picks button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--fg, #111);
+  color: var(--bg);
+  cursor: pointer;
+  line-height: 1;
+}
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(10 10 12 / 0.92);
+  display: grid;
+  place-items: center;
+  padding: 48px 16px 16px;
+}
+.photo-viewer img {
+  max-width: min(100%, 1000px);
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.photo-viewer__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: #fff;
+  color: #111;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.review-helpful {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.qa-search input {
+  width: 100%;
+  max-width: 480px;
+}
+.qa-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+.qa-item {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.qa-q,
+.qa-a p {
+  margin: 0;
+}
+.qa-a {
+  display: grid;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 2px solid var(--line);
+}
+.qa-meta {
+  font-size: 13px;
+}
+.qa-ask {
+  max-width: 720px;
+}
+.qa-answer textarea {
+  width: 100%;
+}
+.badge--seller {
+  background: var(--color-signal-strong);
+  color: #fff;
+}
+.badge--staff {
+  background: var(--color-ink, #0e1726);
+  color: #fff;
+}
+
+/* Frequently bought together (p10-06) */
+.bundle {
+  display: grid;
+  gap: 12px;
+}
+.bundle__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.bundle__items label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 400;
+}
+.bundle__items img {
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg);
+}
+.bundle__total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
 }

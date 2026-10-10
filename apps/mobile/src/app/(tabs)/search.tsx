@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FilterButton } from '@/components/FilterSheet';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
 import { type Sort, SortChips } from '@/components/SortChips';
@@ -22,11 +23,13 @@ export default function SearchScreen() {
   const t = useT('appShop');
   const tc = useT('common');
   const ta = useT('ads');
+  const ts = useT('search');
   const { departmentName } = useFormatters();
   const params = useLocalSearchParams<{ q?: string }>();
   const [text, setText] = useState(params.q ?? '');
   const [q, setQ] = useState(params.q ?? '');
   const [sort, setSort] = useState<Sort>('relevance');
+  const [filters, setFilters] = useState<string[]>([]);
   const categories = useCategories();
 
   // A link like /search?q=monitor replaces the current query.
@@ -42,11 +45,31 @@ export default function SearchScreen() {
     const timer = setTimeout(() => setQ(text.trim()), 350);
     return () => clearTimeout(timer);
   }, [text]);
+  // A new search starts without the previous search's filters.
+  useEffect(() => setFilters([]), [q]);
 
-  const query = useMemo(() => ({ q, sort }), [q, sort]);
+  const suggestions = useQuery({
+    queryKey: ['suggest', text.trim().toLowerCase()],
+    queryFn: () => api.catalog.suggest(text.trim()),
+    enabled: text.trim().length > 0,
+    staleTime: 60_000,
+  });
+  const query = useMemo(() => ({ q, sort, f: filters }), [q, sort, filters]);
+  const facets = useQuery({
+    queryKey: ['facets', q, filters],
+    queryFn: () => api.catalog.facets({ q, f: filters }),
+    enabled: q.length > 0,
+    staleTime: 60_000,
+  });
   const results = useProductList(query);
   const products = results.data?.pages.flatMap((page) => page.items) ?? [];
   const total = results.data?.pages[0]?.total ?? 0;
+  const corrected = results.data?.pages[0]?.correctedQuery;
+  const pick = (next: string) => {
+    setText(next);
+    setQ(next);
+  };
+  const s = suggestions.data;
   const searching = q.length > 0;
   const ads = useQuery({
     queryKey: ['ads', 'search', q],
@@ -102,7 +125,66 @@ export default function SearchScreen() {
           <Ionicons name="barcode-outline" size={22} color={p.fg} />
         </Pressable>
       </View>
+      {s && text.trim() && text.trim() !== q ? (
+        <View style={{ gap: space.sm }} accessibilityLabel={ts('suggestionsLabel')}>
+          {s.correction ? (
+            <Pressable accessibilityRole="button" onPress={() => pick(s.correction!)}>
+              <Text tone="signal" style={{ fontFamily: fonts.bodyBold }}>
+                {ts('didYouMean', { q: s.correction })}
+              </Text>
+            </Pressable>
+          ) : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+            {s.completions.map((completion) => (
+              <Pressable
+                key={completion}
+                accessibilityRole="button"
+                onPress={() => pick(completion)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderWidth: 1,
+                  borderColor: p.line,
+                  borderRadius: 999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                }}
+              >
+                <Ionicons name="search" size={13} color={p.muted} />
+                <Text variant="small">{completion}</Text>
+              </Pressable>
+            ))}
+            {s.categories.map((category) => (
+              <PressableLink
+                key={category.slug}
+                href={`/c/${category.slug}`}
+                accessibilityRole="link"
+                style={{
+                  borderWidth: 1,
+                  borderColor: p.line,
+                  borderRadius: 999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
+                  {category.name} →
+                </Text>
+              </PressableLink>
+            ))}
+          </View>
+        </View>
+      ) : null}
       <SortChips value={sort} onChange={setSort} />
+      {searching ? (
+        <FilterButton facets={facets.data ?? []} value={filters} onChange={setFilters} />
+      ) : null}
+      {corrected ? (
+        <Text variant="small" accessibilityLiveRegion="polite">
+          {ts('showingResultsFor', { corrected, q })}
+        </Text>
+      ) : null}
       {results.error && !results.data ? (
         <Banner tone="error">{errorMessage(results.error)}</Banner>
       ) : null}

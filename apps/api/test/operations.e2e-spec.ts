@@ -275,7 +275,7 @@ describe('Promotions, reviews, wishlist, refunds, returns and labels (e2e)', () 
       const reviewUrl = `/api/v1/catalog/products/${productSlug}/reviews`;
       await http().post(reviewUrl).set(bearer(customerToken)).send(early).expect(403);
       const notYet = await http().get(`${reviewUrl}/mine`).set(bearer(customerToken)).expect(200);
-      expect(notYet.body).toEqual({ review: null, canReview: false });
+      expect(notYet.body).toEqual({ review: null, canReview: false, helpfulVotes: [] });
       for (const action of ['start', 'ship'] as const) {
         await http()
           .post(`/api/v1/admin/orders/${bought.orderId}/fulfillment`)

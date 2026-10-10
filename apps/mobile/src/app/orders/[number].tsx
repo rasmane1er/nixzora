@@ -6,6 +6,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { ExpectedDelivery, TrackingScans } from '@/components/Delivery';
 import { OrderStatusPill } from '@/components/OrderStatusPill';
 import { RateSeller } from '@/components/RateSeller';
 import { Totals } from '@/components/Totals';
@@ -184,6 +185,7 @@ export default function OrderScreen() {
 
         <Card>
           <Timeline order={o} />
+          {!o.shipments.length ? <ExpectedDelivery window={o.estimatedDelivery} /> : null}
           {o.shipments.length ? (
             // Marketplace order: one parcel for NIXZORA's items and one per seller.
             o.shipments.map((part) => (
@@ -209,6 +211,10 @@ export default function OrderScreen() {
                     {part.tracking.carrier} · <Text variant="mono">{part.tracking.number}</Text>
                   </Text>
                 ) : null}
+                {part.status !== 'DELIVERED' ? (
+                  <ExpectedDelivery window={part.estimatedDelivery} />
+                ) : null}
+                {part.tracking ? <TrackingScans events={part.events} /> : null}
                 {part.tracking?.url ? (
                   <Button
                     title={to('trackPackage')}
@@ -232,6 +238,7 @@ export default function OrderScreen() {
               <Text variant="small" muted>
                 {o.tracking.carrier} · <Text variant="mono">{o.tracking.number}</Text>
               </Text>
+              <TrackingScans events={o.trackingEvents} />
               {o.tracking.url ? (
                 <Button
                   title={to('trackPackage')}

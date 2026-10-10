@@ -5,10 +5,24 @@ import {
   type Parcel,
   type ShipAddress,
   type ShippingGateway,
+  type TrackingDetail,
   type TrackingEvent,
 } from './shipping-gateway';
 
 type Rate = { id: string; carrier: string; service: string; rate: string };
+
+/** EasyPost tracking statuses → the steps the order page shows. */
+const STEP: Record<string, TrackingDetail['status']> = {
+  pre_transit: 'LABEL_CREATED',
+  in_transit: 'IN_TRANSIT',
+  out_for_delivery: 'OUT_FOR_DELIVERY',
+  delivered: 'DELIVERED',
+  available_for_pickup: 'OUT_FOR_DELIVERY',
+  return_to_sender: 'EXCEPTION',
+  failure: 'EXCEPTION',
+  error: 'EXCEPTION',
+  cancelled: 'EXCEPTION',
+};
 
 /**
  * EasyPost over its REST API (no SDK needed): create a shipment, buy the lowest rate, and
@@ -107,15 +121,49 @@ export class EasyPostGateway implements ShippingGateway {
     const event = JSON.parse(rawBody.toString('utf8')) as {
       id: string;
       description: string;
-      result?: { tracking_code?: string; status?: string };
+      result?: {
+        tracking_code?: string;
+        status?: string;
+        carrier?: string;
+        est_delivery_date?: string | null;
+        tracking_details?: {
+          status?: string;
+          message?: string;
+          datetime?: string;
+          tracking_location?: { city?: string | null; state?: string | null } | null;
+        }[];
+      };
     };
     if (event.description !== 'tracker.updated' || !event.result?.tracking_code) return null;
     const status =
       event.result.status === 'delivered'
         ? 'delivered'
-        : event.result.status === 'in_transit'
+        : event.result.status === 'in_transit' || event.result.status === 'out_for_delivery'
           ? 'in_transit'
           : 'other';
-    return { id: event.id, trackingNumber: event.result.tracking_code, status };
+    const details = (event.result.tracking_details ?? []).flatMap((d) => {
+      const at = d.datetime ? new Date(d.datetime) : null;
+      if (!at || Number.isNaN(at.getTime())) return [];
+      const place = [d.tracking_location?.city, d.tracking_location?.state].filter(Boolean);
+      return [
+        {
+          status: STEP[d.status ?? ''] ?? ('OTHER' as const),
+          description: (d.message ?? '').slice(0, 200) || (d.status ?? ''),
+          location: place.length ? place.join(', ') : null,
+          at,
+        },
+      ];
+    });
+    const estimate = event.result.est_delivery_date
+      ? new Date(event.result.est_delivery_date)
+      : null;
+    return {
+      id: event.id,
+      trackingNumber: event.result.tracking_code,
+      status,
+      carrier: event.result.carrier ?? null,
+      estimatedDeliveryAt: estimate && !Number.isNaN(estimate.getTime()) ? estimate : null,
+      details,
+    };
   }
 }

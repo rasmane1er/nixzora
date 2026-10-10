@@ -2,7 +2,9 @@ import { Logo } from '@nixzora/ui';
 import Link from 'next/link';
 import { type SellerMeResponse } from '@nixzora/validation';
 import { api, catalog, currentCart } from '@/lib/api';
-import { departmentName, getT } from '@/lib/i18n';
+import { INTL_LOCALE } from '@nixzora/i18n';
+import { departmentName, getLocale, getT } from '@/lib/i18n';
+import { SearchBox } from './SearchBox';
 import { isSignedIn } from '@/lib/session';
 
 const ICONS = {
@@ -40,6 +42,8 @@ export async function SiteHeader() {
   const count = cart?.itemCount ?? 0;
   const t = await getT('common');
   const l = await getT('layout');
+  const s = await getT('search');
+  const locale = await getLocale();
   const names = await Promise.all(categories.map((category) => departmentName(category)));
   // Sellers get their dashboard; everyone else is invited to sell.
   const hasStore = signedIn
@@ -54,17 +58,20 @@ export async function SiteHeader() {
         <Link href="/" className="logo" aria-label={l('home')}>
           <Logo size={34} />
         </Link>
-        <form action="/search" className="site-search" role="search">
-          <input
-            type="search"
-            name="q"
-            placeholder={t('searchPlaceholder')}
-            aria-label={t('searchLabel')}
-          />
-          <button className="btn btn--primary" type="submit">
-            {t('search')}
-          </button>
-        </form>
+        <SearchBox
+          labels={{
+            placeholder: t('searchPlaceholder'),
+            label: t('searchLabel'),
+            submit: t('search'),
+            suggestions: s('suggestionsLabel'),
+            didYouMean: s('didYouMean', { q: '{q}' }),
+            searches: s('searches'),
+            departments: s('departments'),
+            brands: s('brands'),
+            products: s('products'),
+          }}
+          formatPrice={{ locale: INTL_LOCALE[locale], currency: 'USD' }}
+        />
         <nav className="site-header__links" aria-label={l('accountAndCart')}>
           <Link href="/assistant" className="hide-sm header-link">
             <HeaderIcon d={ICONS.assistant} />

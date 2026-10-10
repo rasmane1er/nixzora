@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { CartLineRow } from '@/components/CartLineRow';
 import { useIsOnline } from '@/components/OfflineToast';
+import { DeliveryPromise } from '@/components/Delivery';
 import { Totals } from '@/components/Totals';
 import {
   Banner,
@@ -117,6 +118,7 @@ export default function CartScreen() {
       <Card>
         <Totals totals={data.totals} taxKnown={false} />
       </Card>
+      <DeliveryPromise window={data.delivery} />
       {blocked ? <Banner tone="warn">{t('fixItemsAbove')}</Banner> : null}
       {!online ? <Banner tone="warn">{t('connectToCheckOut')}</Banner> : null}
       <Button

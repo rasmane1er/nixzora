@@ -67,7 +67,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Payments</b>: card details go directly to our payment processor, Stripe. We keep only the payment status, card brand and last four digits.',
     privacyCollectActivity:
-      '<b>Shopping activity</b>: your cart, saved products, the products you view, what you search for, reviews you write and messages you send to the shopping assistant. Before you sign in, product views and searches are tied to a random id stored in your browser or the app, not to you.',
+      '<b>Shopping activity</b>: your cart, saved products, the products you view, what you search for, reviews (and their photos), questions and answers you write and messages you send to the shopping assistant. Before you sign in, product views and searches are tied to a random id stored in your browser or the app, not to you.',
     privacyCollectDevice:
       '<b>Device and security data</b>: IP address, browser or device type, sign-in history and, in the app, a push-notification token if you allow notifications.',
     privacyUseTitle: 'Why we use it',
@@ -217,7 +217,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Paiements</b> : les données de carte sont transmises directement à notre prestataire de paiement, Stripe. Nous ne conservons que le statut du paiement, la marque de la carte et ses quatre derniers chiffres.',
     privacyCollectActivity:
-      '<b>Activité d’achat</b> : votre panier, les produits enregistrés, les produits que vous consultez, ce que vous recherchez, les avis que vous rédigez et les messages que vous envoyez à l’assistant d’achat. Avant votre connexion, les consultations et les recherches sont associées à un identifiant aléatoire stocké dans votre navigateur ou l’application, et non à vous.',
+      '<b>Activité d’achat</b> : votre panier, les produits enregistrés, les produits que vous consultez, ce que vous recherchez, les avis (et leurs photos), questions et réponses que vous rédigez et les messages que vous envoyez à l’assistant d’achat. Avant votre connexion, les consultations et les recherches sont associées à un identifiant aléatoire stocké dans votre navigateur ou l’application, et non à vous.',
     privacyCollectDevice:
       '<b>Données d’appareil et de sécurité</b> : adresse IP, type de navigateur ou d’appareil, historique de connexion et, dans l’application, un jeton de notification push si vous autorisez les notifications.',
     privacyUseTitle: 'Pourquoi nous les utilisons',
@@ -368,7 +368,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Pagos</b>: los datos de la tarjeta van directamente a nuestro procesador de pagos, Stripe. Solo guardamos el estado del pago, la marca de la tarjeta y los últimos cuatro dígitos.',
     privacyCollectActivity:
-      '<b>Actividad de compra</b>: tu carrito, los productos guardados, los productos que ves, lo que buscas, las reseñas que escribes y los mensajes que envías al asistente de compras. Antes de que inicies sesión, las visitas y las búsquedas se asocian a un identificador aleatorio guardado en tu navegador o en la app, no a ti.',
+      '<b>Actividad de compra</b>: tu carrito, los productos guardados, los productos que ves, lo que buscas, las reseñas (y sus fotos), preguntas y respuestas que escribes y los mensajes que envías al asistente de compras. Antes de que inicies sesión, las visitas y las búsquedas se asocian a un identificador aleatorio guardado en tu navegador o en la app, no a ti.',
     privacyCollectDevice:
       '<b>Datos del dispositivo y de seguridad</b>: dirección IP, tipo de navegador o dispositivo, historial de inicios de sesión y, en la app, un token de notificaciones push si permites las notificaciones.',
     privacyUseTitle: 'Para qué lo usamos',

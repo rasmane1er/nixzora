@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   type AdminReviewQuery,
   type AdminReviewView,
@@ -18,21 +23,24 @@ import { AuditService } from '../audit/audit.service';
 import { type AuthUser } from '../identity/auth-user';
 import { type ActorContext } from '../identity/guards/actor.decorator';
 import { REVIEWS_CHANGED } from '../insights/events';
+import { MediaIntakeService } from '../media/media-intake.service';
+import { StorageService } from '../media/storage.service';
 import { roundRating } from '../../common/rating';
 
 const reviewInclude = {
   user: { select: { firstName: true, lastName: true, email: true } },
   product: { select: { id: true, slug: true, title: true } },
+  photos: { orderBy: { position: 'asc' }, select: { storageKey: true } },
 } satisfies Prisma.ReviewInclude;
 type ReviewRow = Prisma.ReviewGetPayload<{ include: typeof reviewInclude }>;
 
 /** "Ada L." — first name and initial only; never the email address. */
-function authorName(user: ReviewRow['user']): string {
+export function authorName(user: { firstName: string | null; lastName: string | null }): string {
   if (user.firstName) return `${user.firstName}${user.lastName ? ` ${user.lastName[0]}.` : ''}`;
   return 'NIXZORA customer';
 }
 
-function toView(row: ReviewRow): ReviewView {
+function toView(row: ReviewRow, url: (key: string) => string): ReviewView {
   return {
     id: row.id,
     rating: row.rating,
@@ -41,6 +49,8 @@ function toView(row: ReviewRow): ReviewView {
     author: authorName(row.user),
     verifiedPurchase: row.verifiedPurchase,
     createdAt: row.createdAt.toISOString(),
+    photos: row.photos.map((photo) => ({ url: url(photo.storageKey) })),
+    helpfulCount: row.helpfulCount,
   };
 }
 
@@ -53,7 +63,13 @@ const REVIEW_PAGE_SIZE = 10;
 
 /** Ties always fall back to the newest review first, so pages never shuffle. */
 const REVIEW_ORDER: Record<ReviewSort, Prisma.ReviewOrderByWithRelationInput[]> = {
-  relevant: [{ verifiedPurchase: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+  relevant: [
+    { verifiedPurchase: 'desc' },
+    { helpfulCount: 'desc' },
+    { createdAt: 'desc' },
+    { id: 'desc' },
+  ],
+  helpful: [{ helpfulCount: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
   newest: [{ createdAt: 'desc' }, { id: 'desc' }],
   highest: [{ rating: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
   lowest: [{ rating: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
@@ -67,7 +83,11 @@ export class ReviewsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
+    private readonly intake: MediaIntakeService,
   ) {}
+
+  private readonly url = (key: string) => this.storage.publicUrl(key);
 
   private async productId(slug: string): Promise<string> {
     const product = await this.prisma.product.findFirst({
@@ -102,7 +122,11 @@ export class ReviewsService {
   async forProduct(slug: string, query: ReviewListQuery): Promise<ReviewPage> {
     const productId = await this.productId(slug);
     const where = { productId, status: 'APPROVED' as const };
-    const shown = query.rating ? { ...where, rating: query.rating } : where;
+    const shown = {
+      ...where,
+      ...(query.rating ? { rating: query.rating } : {}),
+      ...(query.withPhotos ? { photos: { some: {} } } : {}),
+    };
     const [byStar, rows] = await Promise.all([
       this.prisma.review.groupBy({ by: ['rating'], where, _count: { _all: true } }),
       this.prisma.review.findMany({
@@ -117,10 +141,11 @@ export class ReviewsService {
     for (const row of byStar) distribution[row.rating - 1] = row._count._all;
     const count = distribution.reduce((a, b) => a + b, 0);
     const sum = distribution.reduce((acc, n, i) => acc + n * (i + 1), 0);
-    const total = query.rating ? (distribution[query.rating - 1] ?? 0) : count;
+    const total =
+      query.rating || query.withPhotos ? await this.prisma.review.count({ where: shown }) : count;
     return {
       summary: { average: count ? roundRating(sum / count) : null, count, distribution },
-      reviews: rows.map(toView),
+      reviews: rows.map((row) => toView(row, this.url)),
       page: query.page,
       totalPages: totalPages(total, REVIEW_PAGE_SIZE),
       total,
@@ -134,15 +159,27 @@ export class ReviewsService {
   async mine(
     slug: string,
     user: AuthUser,
-  ): Promise<{ review: (ReviewView & { status: string }) | null; canReview: boolean }> {
+  ): Promise<{
+    review: (ReviewView & { status: string }) | null;
+    canReview: boolean;
+    /** Reviews of this product the customer marked helpful (p10-05). */
+    helpfulVotes: string[];
+  }> {
     const productId = await this.productId(slug);
-    const row = await this.prisma.review.findUnique({
-      where: { productId_userId: { productId, userId: user.id } },
-      include: reviewInclude,
-    });
+    const [row, votes] = await Promise.all([
+      this.prisma.review.findUnique({
+        where: { productId_userId: { productId, userId: user.id } },
+        include: reviewInclude,
+      }),
+      this.prisma.reviewVote.findMany({
+        where: { userId: user.id, review: { productId } },
+        select: { reviewId: true },
+      }),
+    ]);
     return {
-      review: row ? { ...toView(row), status: row.status } : null,
+      review: row ? { ...toView(row, this.url), status: row.status } : null,
       canReview: row !== null || (await this.received(productId, user.id)),
+      helpfulVotes: votes.map((vote) => vote.reviewId),
     };
   }
 
@@ -192,14 +229,83 @@ export class ReviewsService {
       body: input.body,
       verifiedPurchase: received || (previous?.verifiedPurchase ?? false),
     };
-    const review = await this.prisma.review.upsert({
-      where: { productId_userId: { productId, userId: user.id } },
-      create: { productId, userId: user.id, ...data },
-      update: { ...data, status: 'PENDING', moderatedAt: null, moderatedById: null },
+    // Photos are checked and re-encoded like product photos before they are kept.
+    const photoKeys = [...new Set(input.photoKeys ?? [])];
+    for (const key of photoKeys) {
+      if (!(await this.intake.ensureReady(key))) {
+        throw new BadRequestException('One of the photos did not finish uploading. Try again.');
+      }
+    }
+    const review = await this.prisma.$transaction(async (tx) => {
+      const saved = await tx.review.upsert({
+        where: { productId_userId: { productId, userId: user.id } },
+        create: { productId, userId: user.id, ...data },
+        update: { ...data, status: 'PENDING', moderatedAt: null, moderatedById: null },
+      });
+      if (input.photoKeys !== undefined) {
+        await tx.reviewPhoto.deleteMany({ where: { reviewId: saved.id } });
+        await tx.reviewPhoto.createMany({
+          data: photoKeys.map((storageKey, position) => ({
+            reviewId: saved.id,
+            storageKey,
+            position,
+          })),
+        });
+      }
+      return saved;
     });
     // An edited review goes back to moderation, so it leaves the product's insights for now.
     if (previous?.status === 'APPROVED') await this.reviewsChanged(productId);
     return { status: review.status };
+  }
+
+  /** A fresh upload link for a review photo (images up to 8 MB). */
+  photoUpload(contentType: Parameters<StorageService['createUpload']>[0], sizeBytes: number) {
+    if (sizeBytes > 8 * 1024 * 1024) {
+      throw new BadRequestException('Photos can be up to 8 MB.');
+    }
+    return this.storage.createUpload(contentType, sizeBytes);
+  }
+
+  /**
+   * "Was this helpful?" (p10-05): one vote per customer per review, never on your own. Voting
+   * twice changes nothing; `helpful: false` takes the vote back.
+   */
+  async vote(
+    reviewId: string,
+    helpful: boolean,
+    user: AuthUser,
+  ): Promise<{ helpfulCount: number; voted: boolean }> {
+    const review = await this.prisma.review.findFirst({
+      where: { id: reviewId, status: 'APPROVED' },
+      select: { userId: true },
+    });
+    if (!review) throw new NotFoundException('We could not find that review.');
+    if (review.userId === user.id) {
+      throw new ForbiddenException('You cannot vote for your own review.');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const key = { reviewId_userId: { reviewId, userId: user.id } };
+      const existing = await tx.reviewVote.findUnique({ where: key });
+      if (helpful && !existing) {
+        await tx.reviewVote.create({ data: { reviewId, userId: user.id } });
+        await tx.review.update({
+          where: { id: reviewId },
+          data: { helpfulCount: { increment: 1 } },
+        });
+      } else if (!helpful && existing) {
+        await tx.reviewVote.delete({ where: key });
+        await tx.review.update({
+          where: { id: reviewId },
+          data: { helpfulCount: { decrement: 1 } },
+        });
+      }
+      const after = await tx.review.findUniqueOrThrow({
+        where: { id: reviewId },
+        select: { helpfulCount: true },
+      });
+      return { helpfulCount: after.helpfulCount, voted: helpful };
+    });
   }
 
   // ───── Moderation ─────
@@ -218,7 +324,7 @@ export class ReviewsService {
     ]);
     return pagedResult(
       rows.map((row) => ({
-        ...toView(row),
+        ...toView(row, this.url),
         status: row.status,
         product: row.product,
         authorEmail: row.user.email,

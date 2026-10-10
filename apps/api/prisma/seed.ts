@@ -1194,6 +1194,67 @@ async function main(): Promise<void> {
     });
   }
 
+  // Demo questions and answers (p10-05), once per product. Fictional, like the reviews.
+  const DEMO_QUESTIONS: Record<string, [string, [string, 'BUYER' | 'SELLER' | 'STAFF'][]][]> = {
+    'halo-anc-headphones': [
+      [
+        'Can I use them with a wired cable on a plane?',
+        [['Yes, a 3.5 mm cable comes in the box and works with the battery off.', 'BUYER']],
+      ],
+      [
+        'Do they fold flat for a small bag?',
+        [['They fold flat and the case is about the size of a hardcover book.', 'BUYER']],
+      ],
+    ],
+    'brightline-studio-headphones': [
+      [
+        'Is the cable replaceable?',
+        [
+          [
+            'Yes, it is a standard 3.5 mm cable with a twist lock; spares are on our store page.',
+            'SELLER',
+          ],
+        ],
+      ],
+    ],
+    'vela-13-air': [
+      [
+        'How many external monitors does it support?',
+        [['Two over USB-C (one at 6K), plus the built-in display.', 'STAFF']],
+      ],
+    ],
+    'hearth-electric-kettle': [['Does it have a keep-warm setting?', []]],
+  };
+  const brightlineOwner = await prisma.user.findUnique({
+    where: { email: 'seller@demo.nixzora.com' },
+    select: { id: true },
+  });
+  for (const [slug, questions] of Object.entries(DEMO_QUESTIONS)) {
+    const product = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+    if (!product || (await prisma.productQuestion.count({ where: { productId: product.id } })))
+      continue;
+    for (const [i, [body, answers]] of questions.entries()) {
+      await prisma.productQuestion.create({
+        data: {
+          productId: product.id,
+          userId: reviewerIds[(i + 2) % reviewerIds.length]!,
+          body,
+          answerCount: answers.length,
+          answers: {
+            create: answers.map(([text, role], j) => ({
+              role,
+              body: text,
+              userId:
+                role === 'SELLER' && brightlineOwner
+                  ? brightlineOwner.id
+                  : reviewerIds[(i + j) % reviewerIds.length]!,
+            })),
+          },
+        },
+      });
+    }
+  }
+
   // A demo code shoppers can try at checkout.
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },
