@@ -103,3 +103,45 @@ export async function addBundleToCart(bundleId: string): Promise<AddResult> {
     return { ok: false, error: errorMessage(error) };
   }
 }
+
+// ───── Saved for later (p10-21) ─────
+
+async function savedStep(
+  form: FormData,
+  path: (id: string) => string,
+  method: string,
+  notice?: string,
+) {
+  const variantId = String(form.get('variantId') ?? '');
+  if (!UUID.test(variantId)) redirect('/cart');
+  let message: string | null = null;
+  try {
+    await api(path(variantId), { method });
+    revalidatePath('/', 'layout');
+  } catch (error) {
+    message = errorMessage(error);
+  }
+  redirect(
+    message
+      ? `/cart?error=${encodeURIComponent(message)}`
+      : notice
+        ? `/cart?notice=${encodeURIComponent(notice)}`
+        : '/cart',
+  );
+}
+
+/** Cart line → Saved for later (signed in). */
+export async function saveForLater(form: FormData): Promise<void> {
+  const t = await getT('saved');
+  await savedStep(form, (id) => `/cart/items/${id}/save`, 'POST', t('savedNotice'));
+}
+
+/** Saved for later → cart. */
+export async function moveSavedToCart(form: FormData): Promise<void> {
+  const t = await getT('saved');
+  await savedStep(form, (id) => `/me/saved/${id}/cart`, 'POST', t('movedNotice'));
+}
+
+export async function removeSaved(form: FormData): Promise<void> {
+  await savedStep(form, (id) => `/me/saved/${id}`, 'DELETE');
+}

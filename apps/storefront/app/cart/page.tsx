@@ -2,13 +2,15 @@ import { INTL_LOCALE, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { currentCart } from '@/lib/api';
+import { api, currentCart } from '@/lib/api';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/PlusNotes';
 import { isSignedIn } from '@/lib/session';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { applyCoupon, removeCoupon, updateLine } from './actions';
+import { type SavedItem } from '@nixzora/validation';
+import { applyCoupon, removeCoupon, saveForLater, updateLine } from './actions';
+import { SavedForLater } from './SavedForLater';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('cart');
@@ -19,6 +21,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const cart = await currentCart();
   const error = param(params, 'error');
+  const notice = param(params, 'notice');
+  const signedIn = await isSignedIn();
+  // Saved for later (p10-21): on the account, so signed-in shoppers only.
+  const saved = signedIn ? await api<SavedItem[]>('/me/saved').catch((): SavedItem[] => []) : [];
+  const sv = await getT('saved');
   const tc = await getT('cart');
   const to = await getT('order');
   const bd = await getT('bundles');
@@ -33,6 +40,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
       <div className="wrap section">
         <h1>{tc('title')}</h1>
         {error ? <p className="banner banner--error">{error}</p> : null}
+        {notice ? (
+          <p className="banner banner--ok" role="status">
+            {notice}
+          </p>
+        ) : null}
         <div className="empty card" style={{ marginTop: 20 }}>
           <p>{tc('empty')}</p>
           <p style={{ marginTop: 12 }}>
@@ -41,12 +53,12 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
             </Link>
           </p>
         </div>
+        <SavedForLater items={saved} />
       </div>
     );
   }
 
   const blocked = cart.lines.some((line) => line.problem);
-  const signedIn = await isSignedIn();
   const t = cart.totals;
   const threshold = t.subtotalCents + t.freeShippingRemainingCents;
 
@@ -59,6 +71,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
       {error ? (
         <p className="banner banner--error" role="alert" style={{ marginBottom: 16 }}>
           {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="banner banner--ok" role="status" style={{ marginBottom: 16 }}>
+          {notice}
         </p>
       ) : null}
 
@@ -119,6 +136,22 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                       {tCommon('remove')}
                     </button>
                   </form>
+                  {signedIn ? (
+                    <form action={saveForLater} style={{ margin: 0 }}>
+                      <input type="hidden" name="variantId" value={line.variantId} />
+                      <button className="btn btn--link" type="submit">
+                        {sv('saveForLater')}
+                      </button>
+                    </form>
+                  ) : (
+                    <Link
+                      className="btn btn--link"
+                      href="/account/login?next=%2Fcart"
+                      title={sv('signInToSave')}
+                    >
+                      {sv('saveForLater')}
+                    </Link>
+                  )}
                 </div>
               </div>
               <div className="num">
@@ -257,6 +290,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           </Link>
         </aside>
       </div>
+      <SavedForLater items={saved} />
     </div>
   );
 }

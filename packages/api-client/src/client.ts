@@ -1,5 +1,7 @@
 import type {
   BrowsingHistory,
+  CartAndSaved,
+  SavedItem,
   HelpAction,
   HelpConversation,
   PriceHistory,
@@ -578,6 +580,14 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** Saved for later (p10-21). */
+      saved: () => request<SavedItem[]>('GET', '/me/saved'),
+      saveForLater: (variantId: string) =>
+        request<CartAndSaved>('POST', `/cart/items/${enc(variantId)}/save`),
+      moveSavedToCart: (variantId: string) =>
+        request<CartAndSaved>('POST', `/me/saved/${enc(variantId)}/cart`),
+      removeSaved: (variantId: string) =>
+        request<SavedItem[]>('DELETE', `/me/saved/${enc(variantId)}`),
       /** Browsing history (p10-19). */
       history: () => request<BrowsingHistory>('GET', '/me/history'),
       forgetViewed: (productId: string) => request<void>('DELETE', `/me/history/${enc(productId)}`),

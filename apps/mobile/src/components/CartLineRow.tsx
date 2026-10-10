@@ -1,7 +1,7 @@
 import type { CartLine } from '@nixzora/validation';
 import { PressableLink } from './PressableLink';
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { optionsText, useFormatters } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
@@ -13,11 +13,15 @@ export function CartLineRow({
   line,
   busy,
   onQuantity,
+  onSave,
 }: {
   line: CartLine;
   busy?: boolean;
   onQuantity: (quantity: number) => void;
+  /** Saved for later (p10-21). */
+  onSave?: () => void;
 }) {
+  const ts = useT('saved');
   const p = usePalette();
   const { money } = useFormatters();
   const t = useT('appShop');
@@ -72,6 +76,19 @@ export function CartLineRow({
           />
           <Text style={{ fontFamily: fonts.displayMedium }}>{money(line.lineTotalCents)}</Text>
         </View>
+        {onSave ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${ts('saveForLater')}: ${line.productTitle}`}
+            disabled={busy}
+            onPress={onSave}
+            style={{ alignSelf: 'flex-start', paddingVertical: 4 }}
+          >
+            <Text variant="small" tone="signal" style={{ fontFamily: fonts.bodyBold }}>
+              {ts('saveForLater')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

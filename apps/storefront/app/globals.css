@@ -5183,3 +5183,65 @@ td.neg {
   border-radius: 10px;
   font-size: 14px;
 }
+
+/* Saved for later (p10-21) */
+.saved {
+  margin-top: 32px;
+  display: grid;
+  gap: 12px;
+}
+.saved__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.saved__item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.saved__img {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tile, #f3f3f3);
+}
+.saved__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.saved__body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.saved__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.saved__down {
+  color: var(--ok-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.saved__up {
+  color: var(--muted);
+  font-size: 13px;
+}
+.saved__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+@media (max-width: 480px) {
+  .saved__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

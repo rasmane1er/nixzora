@@ -31,4 +31,5 @@ export * from './bundles';
 export * from './clip-coupons';
 export * from './history';
 export * from './help-agent';
+export * from './saved';
 export * from './messaging';

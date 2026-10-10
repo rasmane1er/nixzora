@@ -6,6 +6,7 @@ import { CartLineRow } from '@/components/CartLineRow';
 import { useIsOnline } from '@/components/OfflineToast';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PlusShippingNote } from '@/components/PlusNote';
+import { SavedForLater, useSaved } from '@/components/SavedForLater';
 import { Totals } from '@/components/Totals';
 import {
   Banner,
@@ -36,10 +37,17 @@ export default function CartScreen() {
   );
   const applyCoupon = useCartMutation((value: string) => api.cart.applyCoupon(value));
   const removeCoupon = useCartMutation(() => api.cart.removeCoupon());
+  const saved = useSaved();
 
   const data = cart.data;
   const refresh = (
-    <RefreshControl refreshing={cart.isRefetching} onRefresh={() => void cart.refetch()} />
+    <RefreshControl
+      refreshing={cart.isRefetching}
+      onRefresh={() => {
+        void cart.refetch();
+        if (saved.signedIn) void saved.list.refetch();
+      }}
+    />
   );
 
   if (!data?.lines.length) {
@@ -53,12 +61,13 @@ export default function CartScreen() {
             action={<Button title={t('startShopping')} onPress={() => router.navigate('/')} />}
           />
         )}
+        <SavedForLater saved={saved} />
       </Screen>
     );
   }
 
   const blocked = data.lines.some((line) => line.problem);
-  const error = update.error ?? applyCoupon.error ?? removeCoupon.error;
+  const error = update.error ?? applyCoupon.error ?? removeCoupon.error ?? saved.save.error;
 
   return (
     <Screen refreshControl={refresh}>
@@ -70,6 +79,9 @@ export default function CartScreen() {
               line={line}
               busy={update.isPending && update.variables?.variantId === line.variantId}
               onQuantity={(quantity) => update.mutate({ variantId: line.variantId, quantity })}
+              onSave={() =>
+                saved.signedIn ? saved.save.mutate(line.variantId) : router.push('/sign-in')
+              }
             />
           </View>
         ))}
@@ -131,6 +143,7 @@ export default function CartScreen() {
       <Text variant="small" muted style={{ textAlign: 'center' }}>
         {t('securePayment')}
       </Text>
+      <SavedForLater saved={saved} />
       <View style={{ height: space.lg }} />
     </Screen>
   );

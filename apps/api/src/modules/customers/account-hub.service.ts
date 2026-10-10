@@ -362,6 +362,9 @@ export class AccountHubService {
         plusMembership: true,
         couponClips: { include: { coupon: { include: { product: { select: { title: true } } } } } },
         helpConversations: { include: { messages: { orderBy: { createdAt: 'asc' } } } },
+        savedItems: {
+          include: { variant: { select: { title: true, product: { select: { title: true } } } } },
+        },
         conversations: {
           include: {
             seller: { select: { displayName: true } },
@@ -489,6 +492,12 @@ export class AccountHubService {
         product: c.coupon.product.title,
         clippedAt: c.createdAt,
         usedAt: c.usedAt,
+      })),
+      savedForLater: user.savedItems.map((s) => ({
+        product: s.variant.product.title,
+        option: s.variant.title,
+        quantity: s.quantity,
+        savedAt: s.createdAt,
       })),
       helpChats: user.helpConversations.map((c) => ({
         startedAt: c.createdAt,

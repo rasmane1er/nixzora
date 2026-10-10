@@ -46,3 +46,4 @@ export { bundles } from './bundles';
 export { clips } from './clips';
 export { history } from './history';
 export { helpAgent } from './helpAgent';
+export { saved } from './saved';
