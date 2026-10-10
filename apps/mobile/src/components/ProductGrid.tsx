@@ -12,6 +12,7 @@ import { ProductCard } from './ProductCard';
 export function ProductGrid({
   products,
   header,
+  footer,
   empty,
   onEndReached,
   loadingMore,
@@ -20,6 +21,8 @@ export function ProductGrid({
 }: {
   products: Card[];
   header?: ReactElement;
+  /** Shown after the last product, once everything has loaded. */
+  footer?: ReactElement;
   empty?: ReactElement;
   onEndReached?: () => void;
   loadingMore?: boolean;
@@ -49,7 +52,7 @@ export function ProductGrid({
         onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
       }
       ListFooterComponent={
-        loadingMore ? <ActivityIndicator style={{ marginVertical: space.lg }} /> : null
+        loadingMore ? <ActivityIndicator style={{ marginVertical: space.lg }} /> : (footer ?? null)
       }
       renderItem={({ item }) => (
         // A fixed width keeps cards in a short last row the same size as the rest.

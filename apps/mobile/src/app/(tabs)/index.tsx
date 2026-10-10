@@ -10,6 +10,7 @@ import { Logo } from '@/components/Logo';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
+import { ShopFooter } from '@/components/ShopFooter';
 import { Banner, Button, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
@@ -226,6 +227,7 @@ export default function HomeScreen() {
       <ProductGrid
         products={newIn.filter((product) => !featuredIds.has(product.id))}
         header={header}
+        footer={<ShopFooter />}
         refreshing={products.isRefetching}
         onRefresh={() => {
           void products.refetch();

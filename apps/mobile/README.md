@@ -42,13 +42,14 @@ Try the scanner on the demo catalog: every demo variant has a fake EAN-13 in the
 
 ## Commands
 
-| Command                                   | What it does                                        |
-| ----------------------------------------- | --------------------------------------------------- |
-| `pnpm --filter @nixzora/mobile dev`       | Expo dev server                                     |
-| `pnpm --filter @nixzora/mobile test`      | Unit and screen tests (Jest, Testing Library)       |
-| `pnpm --filter @nixzora/mobile lint`      | ESLint                                              |
-| `pnpm --filter @nixzora/mobile typecheck` | TypeScript                                          |
-| `pnpm --filter @nixzora/mobile web`       | Web preview for quick checks (not the real website) |
+| Command                                        | What it does                                                                                                                                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm --filter @nixzora/mobile dev`            | Expo dev server                                                                                                                                                                                                    |
+| `pnpm --filter @nixzora/mobile test`           | Unit and screen tests (Jest, Testing Library)                                                                                                                                                                      |
+| `pnpm --filter @nixzora/mobile lint`           | ESLint                                                                                                                                                                                                             |
+| `pnpm --filter @nixzora/mobile typecheck`      | TypeScript                                                                                                                                                                                                         |
+| `pnpm --filter @nixzora/mobile web`            | Web preview for quick checks (not the real website)                                                                                                                                                                |
+| `pnpm --filter @nixzora/mobile update:preview` | Builds the shared packages, then publishes an over-the-air update to preview builds. Always use this rather than a bare `eas update`: the app bundles the packages' built `dist`, so a stale build ships old code. |
 
 ## Layout
 

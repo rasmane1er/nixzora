@@ -8,11 +8,11 @@ import { Platform, Pressable, Switch, View } from 'react-native';
 import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { applySavedTheme, setTheme, type ThemeChoice } from '@/lib/appearance';
 import { availableBiometric, type BiometricKind } from '@/lib/biometrics';
-import { api } from '@/lib/api';
 import { deviceSignIn, useDeviceSignInAccount } from '@/lib/device-sign-in';
 import { APP_VARIANT, APP_VERSION } from '@/lib/config';
 import { sendTestReport } from '@/lib/sentry';
-import { language, useLocale, useT } from '@/lib/i18n';
+import { chooseLanguage as chooseLanguageEverywhere } from '@/lib/choose-language';
+import { useLocale, useT } from '@/lib/i18n';
 import { enablePush, pushStatus, type PushStatus } from '@/lib/push';
 import { session, useSession } from '@/lib/session';
 import { fonts, space, usePalette } from '@/lib/theme';
@@ -109,11 +109,7 @@ export default function SettingsScreen() {
     void setTheme(choice);
   };
 
-  const chooseLanguage = (next: Locale) => {
-    void language.choose(next);
-    // One language everywhere: the website and emails follow the account's choice.
-    if (status === 'signedIn') void api.me.setLanguage(next).catch(() => undefined);
-  };
+  const chooseLanguage = (next: Locale) => chooseLanguageEverywhere(next, status === 'signedIn');
 
   const togglePush = async (on: boolean) => {
     setError(null);
