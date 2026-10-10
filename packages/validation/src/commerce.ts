@@ -100,6 +100,13 @@ export const SavedAddressSchema = AddressSchema.extend({
 /** Opaque guest cart id: 32 random bytes, base64url. */
 export const CartIdSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, { message: 'Invalid cart.' });
 
+/** Buy now: the one item to check out straight away, in its own cart. */
+export const BuyNowSchema = z.object({
+  variantId: z.uuid(),
+  quantity: z.number().int().min(1).max(20).default(1),
+});
+export type BuyNow = z.infer<typeof BuyNowSchema>;
+
 export const CartItemAddSchema = z.object({
   variantId: z.uuid(),
   quantity: z.number().int().min(1).max(20).default(1),
@@ -158,6 +165,8 @@ export type Cart = {
 
 export const CheckoutRequestSchema = z.object({
   cartId: CartIdSchema.optional(),
+  /** Check out a Buy now cart (p10-05) instead of the shopper's cart; the cart stays as it is. */
+  buyNowId: CartIdSchema.optional(),
   email: EmailSchema,
   shippingAddress: AddressSchema,
   /** Signed-in customers: keep this address in the address book. */

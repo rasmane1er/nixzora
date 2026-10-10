@@ -1,10 +1,11 @@
-import { type MeResponse, type SavedAddress } from '@nixzora/validation';
+import { type Cart, CartIdSchema, type MeResponse, type SavedAddress } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { api, currentCart } from '@/lib/api';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { getFormat, getT } from '@/lib/i18n';
+import { param, type SearchParams } from '@/lib/params';
 import { accessToken } from '@/lib/session';
 import { CheckoutForm } from './CheckoutForm';
 
@@ -13,10 +14,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title'), robots: { index: false } };
 }
 
-export default async function CheckoutPage() {
-  const cart = await currentCart();
-  if (!cart || cart.lines.length === 0) redirect('/cart');
-  if (cart.lines.some((line) => line.problem) || cart.coupon?.problem) redirect('/cart');
+export default async function CheckoutPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  // Buy now (p10-05): a one-item cart of its own, from the product page.
+  const buy = CartIdSchema.safeParse(param(params, 'buy'));
+  const from = param(params, 'from');
+  const back = from && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(from) ? `/p/${from}` : '/';
+  const buyNowId = buy.success ? buy.data : undefined;
+  const cart = buyNowId
+    ? await api<Cart>(`/cart/buy-now/${buyNowId}`).catch(() => null)
+    : await currentCart();
+  if (!cart || cart.lines.length === 0) redirect(buyNowId ? back : '/cart');
+  if (!buyNowId && (cart.lines.some((line) => line.problem) || cart.coupon?.problem)) {
+    redirect('/cart');
+  }
+  const l = await getT('lists');
 
   const signedIn = Boolean(await accessToken());
   const [me, addresses] = signedIn
@@ -35,9 +47,15 @@ export default async function CheckoutPage() {
       <p className="eyebrow">{tc('secureCheckout')}</p>
       <h1 style={{ marginBottom: 20 }}>{tc('whereToSend')}</h1>
       <div className="cart">
-        <CheckoutForm email={me?.email} signedIn={Boolean(me)} addresses={addresses} />
+        <CheckoutForm
+          email={me?.email}
+          signedIn={Boolean(me)}
+          addresses={addresses}
+          buyNowId={buyNowId}
+        />
         <aside className="card summary" aria-label={to('orderSummary')}>
           <h2>{tc('yourOrder')}</h2>
+          {buyNowId ? <p className="muted">{l('buyNowNote')}</p> : null}
           <ul className="mini-lines">
             {cart.lines.map((line) => (
               <li key={line.variantId}>
@@ -64,9 +82,15 @@ export default async function CheckoutPage() {
             <dd className="muted">{tc('nextStep')}</dd>
           </dl>
           <DeliveryPromise window={cart.delivery} />
-          <Link href="/cart" className="muted" style={{ fontSize: 14 }}>
-            {tc('editCart')}
-          </Link>
+          {buyNowId ? (
+            <Link href={back} className="muted" style={{ fontSize: 14 }}>
+              {l('backToProduct')}
+            </Link>
+          ) : (
+            <Link href="/cart" className="muted" style={{ fontSize: 14 }}>
+              {tc('editCart')}
+            </Link>
+          )}
         </aside>
       </div>
     </div>

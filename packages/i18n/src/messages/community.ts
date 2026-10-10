@@ -80,7 +80,8 @@ export const community = defineMessages({
     askPlaceholder: 'Que voulez-vous savoir sur ce produit ?',
     askButton: 'Demander',
     askSignIn: 'Connectez-vous pour poser une question',
-    asked: 'Votre question est publiée. La boutique et les clients qui l’ont acheté peuvent répondre.',
+    asked:
+      'Votre question est publiée. La boutique et les clients qui l’ont acheté peuvent répondre.',
     noQuestions: 'Pas encore de question. Posez la première.',
     noMatchingQuestions: 'Aucune question ne correspond à cette recherche.',
     answerButton: 'Répondre',
@@ -139,7 +140,8 @@ export const community = defineMessages({
     askPlaceholder: '¿Qué quieres saber de este producto?',
     askButton: 'Preguntar',
     askSignIn: 'Inicia sesión para hacer una pregunta',
-    asked: 'Tu pregunta está publicada. La tienda y los clientes que lo compraron pueden responder.',
+    asked:
+      'Tu pregunta está publicada. La tienda y los clientes que lo compraron pueden responder.',
     noQuestions: 'Aún no hay preguntas. Haz la primera.',
     noMatchingQuestions: 'Ninguna pregunta coincide con esa búsqueda.',
     answerButton: 'Responder',

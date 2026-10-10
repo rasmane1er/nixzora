@@ -1,7 +1,13 @@
 import { ApiError, errorMessage } from '@nixzora/api-client';
-import { type Address, AddressSchema, type SavedAddress, US_STATES } from '@nixzora/validation';
+import {
+  type Address,
+  AddressSchema,
+  CartIdSchema,
+  type SavedAddress,
+  US_STATES,
+} from '@nixzora/validation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { useIsOnline } from '@/components/OfflineToast';
@@ -66,7 +72,18 @@ export default function CheckoutScreen() {
   const online = useIsOnline();
   const { status, user } = useSession();
   const signedIn = status === 'signedIn';
-  const cart = useCart();
+  // Buy now (p10-05): a one-item cart of its own, from the product screen.
+  const params = useLocalSearchParams<{ buy?: string }>();
+  const buy = CartIdSchema.safeParse(params.buy);
+  const buyNowId = buy.success ? buy.data : undefined;
+  const mainCart = useCart();
+  const buyCart = useQuery({
+    queryKey: ['buyNow', buyNowId],
+    queryFn: () => api.cart.buyNowCart(buyNowId!),
+    enabled: !!buyNowId,
+  });
+  const cart = buyNowId ? buyCart : mainCart;
+  const l = useT('lists');
   const addresses = useQuery({
     queryKey: keys.addresses,
     queryFn: () => api.account.addresses(),
@@ -93,8 +110,11 @@ export default function CheckoutScreen() {
   const region = (US_STATES as readonly string[]).includes(form.region) ? form.region : undefined;
   // Tax depends on the state: show the real total once it is known.
   const priced = useQuery({
-    queryKey: [...keys.cart, 'priced', region],
-    queryFn: () => api.cart.get(region as (typeof US_STATES)[number]),
+    queryKey: [...keys.cart, 'priced', region, buyNowId],
+    queryFn: () =>
+      buyNowId
+        ? api.cart.buyNowCart(buyNowId, region as (typeof US_STATES)[number])
+        : api.cart.get(region as (typeof US_STATES)[number]),
     enabled: !!region,
   });
   const totals = (region ? priced.data?.totals : undefined) ?? cart.data?.totals;
@@ -143,6 +163,7 @@ export default function CheckoutScreen() {
     const result = await pay(session_, { email: order.email, address: order.address });
     if (result.outcome === 'paid') {
       await client.invalidateQueries({ queryKey: keys.cart });
+      await client.invalidateQueries({ queryKey: ['buyNow'] });
       await client.invalidateQueries({ queryKey: keys.orders });
       await client.invalidateQueries({ queryKey: ['me'] });
       router.replace({
@@ -165,9 +186,11 @@ export default function CheckoutScreen() {
         email: valid.email,
         shippingAddress: valid.address,
         saveAddress: signedIn && chosenId === 'new' ? saveAddress : undefined,
-        cartId: signedIn ? undefined : (session.cartId() ?? undefined),
+        ...(buyNowId
+          ? { buyNowId }
+          : { cartId: signedIn ? undefined : (session.cartId() ?? undefined) }),
       });
-      if (!signedIn) session.setCartId(null);
+      if (!signedIn && !buyNowId) session.setCartId(null);
       await collect(
         { number: response.orderNumber, token: response.accessToken, ...valid },
         response.payment,
@@ -206,6 +229,7 @@ export default function CheckoutScreen() {
 
   return (
     <Screen>
+      {buyNowId && !pending ? <Banner>{l('buyNowNote')}</Banner> : null}
       {!signedIn && !pending ? (
         <Banner>
           {rich(t('haveAccount'), {

@@ -7,7 +7,7 @@ import {
   type ProductDetail,
   type Variant,
 } from '@nixzora/validation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
@@ -30,6 +30,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoughtTogether } from '@/components/BoughtTogether';
 import { DeliveryPromise } from '@/components/Delivery';
 import { ProductQuestions } from '@/components/ProductQuestions';
+import { AddToListButton } from '@/components/AddToListButton';
+import { DealTimer, DEAL_RED, useDealLabel } from '@/components/DealTimer';
 import { StockAlertButton } from '@/components/StockAlertButton';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
@@ -286,6 +288,16 @@ export default function ProductScreen() {
   const add = useCartMutation(({ variantId, qty }: { variantId: string; qty: number }) =>
     api.cart.add(variantId, qty),
   );
+  const l = useT('lists');
+  const dealLabel = useDealLabel();
+  // Buy now (p10-05): its own one-item cart, then straight to checkout.
+  const buyNow = useMutation({
+    mutationFn: ({ variantId, qty }: { variantId: string; qty: number }) =>
+      api.cart.buyNow(variantId, qty),
+    onSuccess: (cart) => {
+      if (cart.cartId) router.push({ pathname: '/checkout', params: { buy: cart.cartId } });
+    },
+  });
 
   if (product.isLoading) {
     return <ActivityIndicator style={{ flex: 1, backgroundColor: p.bg }} />;
@@ -411,6 +423,16 @@ export default function ProductScreen() {
               </Text>
             </View>
 
+            {item.deal ? (
+              <View style={{ gap: space.xs }}>
+                <View style={[styles.dealBadge, { backgroundColor: DEAL_RED }]}>
+                  <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
+                    {dealLabel(item.deal)}
+                  </Text>
+                </View>
+                <DealTimer deal={item.deal} />
+              </View>
+            ) : null}
             {variant ? (
               <Price
                 cents={variant.priceCents}
@@ -539,7 +561,17 @@ export default function ProductScreen() {
             ) : (
               <StockAlertButton productId={item.id} />
             )}
+            {canBuy ? (
+              <Button
+                title={l('buyNow')}
+                tone="secondary"
+                loading={buyNow.isPending}
+                onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
+              />
+            ) : null}
+            <AddToListButton productId={item.id} />
             {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
+            {buyNow.error ? <Banner tone="error">{errorMessage(buyNow.error)}</Banner> : null}
             {added ? (
               <Banner tone="ok">
                 {tp('addedToCart')}{' '}
@@ -658,4 +690,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   option: { borderWidth: 1, borderRadius: radius, paddingHorizontal: 14, paddingVertical: 10 },
+  dealBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
 });

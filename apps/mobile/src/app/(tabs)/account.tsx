@@ -53,6 +53,7 @@ export default function AccountScreen() {
   const [busy, setBusy] = useState(false);
   const t = useT('appAccount');
   const tc = useT('common');
+  const tl = useT('lists');
 
   if (status !== 'signedIn' || !user) {
     return (
@@ -124,6 +125,7 @@ export default function AccountScreen() {
             badge: c?.openOrders ? t('badgeOnTheWay', { count: c.openOrders }) : undefined,
           },
           { icon: 'heart-outline', label: t('menuWishlist'), href: '/wishlist' },
+          { icon: 'list-outline', label: tl('title'), href: '/lists' },
           { icon: 'refresh-outline', label: t('menuBuyAgain'), href: '/account/buy-again' },
           {
             icon: 'return-down-back-outline',

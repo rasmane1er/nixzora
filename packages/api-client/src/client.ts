@@ -1,4 +1,12 @@
 import type {
+  DealListQuery,
+  DealsPage,
+  SharedListView,
+  ShoppingListCreate,
+  ShoppingListItemInput,
+  ShoppingListSummary,
+  ShoppingListUpdate,
+  ShoppingListView,
   ProductAlertKind,
   ProductAlertRef,
   QuestionPage,
@@ -284,6 +292,9 @@ export function createApiClient(options: ClientOptions) {
       /** A link to upload one review photo; send its storageKey in `photoKeys`. */
       reviewPhotoUpload: (body: UploadRequest) =>
         request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Today's deals: live ones ending soonest first, and what starts next (p10-07). */
+      deals: (query: DealListQuery = {}) =>
+        request<DealsPage>('GET', '/catalog/deals', { query: query as Query }),
       /** Questions and answers on a product page; `canAnswer` is for the signed-in shopper. */
       questions: (slug: string, query: { page?: number; q?: string } = {}) =>
         request<QuestionPage>('GET', `/catalog/products/${enc(slug)}/questions`, {
@@ -363,6 +374,14 @@ export function createApiClient(options: ClientOptions) {
       applyCoupon: (code: string) =>
         request<Cart>('POST', '/cart/coupon', { body: { code }, cart: true }),
       removeCoupon: () => request<Cart>('DELETE', '/cart/coupon', { cart: true }),
+      /**
+       * Buy now (p10-05): a separate cart with just this item. Check out with its cartId as
+       * `buyNowId`; it never replaces the remembered guest cart id.
+       */
+      buyNow: (variantId: string, quantity = 1) =>
+        request<Cart>('POST', '/cart/buy-now', { body: { variantId, quantity } }),
+      buyNowCart: (id: string, region?: UsState) =>
+        request<Cart>('GET', `/cart/buy-now/${enc(id)}`, { query: { region } }),
       /** After sign-in: move the guest cart's lines into the account's cart. */
       merge: (guestCartId: string) =>
         request<Cart>('POST', '/cart/merge', { body: { guestCartId } }),
@@ -374,6 +393,7 @@ export function createApiClient(options: ClientOptions) {
         shippingAddress: Address;
         saveAddress?: boolean;
         cartId?: string;
+        buyNowId?: string;
       }) => request<CheckoutResponse>('POST', '/checkout', { body }),
       /** A new payment session for an unpaid order (after a declined card). */
       payment: (number: string, token?: string) =>
@@ -469,6 +489,26 @@ export function createApiClient(options: ClientOptions) {
       alerts: () => request<ProductAlertRef[]>('GET', '/me/alerts'),
       setAlert: (productId: string, kind: ProductAlertKind, on: boolean) =>
         request<void>(on ? 'PUT' : 'DELETE', `/me/alerts/${enc(productId)}`, { query: { kind } }),
+      /** Lists and registries (p10-08). */
+      lists: () => request<ShoppingListSummary[]>('GET', '/me/lists'),
+      list: (id: string) => request<ShoppingListView>('GET', `/me/lists/${enc(id)}`),
+      /** Ids of your lists that hold this product. */
+      listsContaining: (productId: string) =>
+        request<string[]>('GET', `/me/lists/containing/${enc(productId)}`),
+      createList: (body: Partial<ShoppingListCreate> & { name: string }) =>
+        request<ShoppingListSummary>('POST', '/me/lists', { body }),
+      updateList: (id: string, body: ShoppingListUpdate) =>
+        request<ShoppingListView>('PATCH', `/me/lists/${enc(id)}`, { body }),
+      deleteList: (id: string) => request<void>('DELETE', `/me/lists/${enc(id)}`),
+      addToList: (id: string, body: ShoppingListItemInput) =>
+        request<ShoppingListView>('POST', `/me/lists/${enc(id)}/items`, { body }),
+      removeFromList: (id: string, productId: string) =>
+        request<ShoppingListView>('DELETE', `/me/lists/${enc(id)}/items/${enc(productId)}`),
+      /** A new private link; the old one stops working. */
+      resetListLink: (id: string) =>
+        request<ShoppingListView>('POST', `/me/lists/${enc(id)}/reset-link`),
+      /** Someone's shared list, by its private link. */
+      sharedList: (token: string) => request<SharedListView>('GET', `/lists/${enc(token)}`),
       wish: (productId: string) => request<void>('PUT', `/me/wishlist/${enc(productId)}`),
       unwish: (productId: string) => request<void>('DELETE', `/me/wishlist/${enc(productId)}`),
     },

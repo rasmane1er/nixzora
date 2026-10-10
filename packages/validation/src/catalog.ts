@@ -260,6 +260,15 @@ export const ProductCardSchema = z.object({
   rating: z.object({ average: z.number().nullable(), count: z.number().int() }).optional(),
   /** Set when the product has a single option, so a card can add it to the cart directly. */
   defaultVariantId: z.uuid().nullable().optional(),
+  /** A live deal (p10-07): when it ends and, for limited ones, how much is claimed (0–100). */
+  deal: z
+    .object({
+      kind: z.enum(['LIGHTNING', 'DAY']),
+      percentOff: z.number().int(),
+      endsAt: z.string(),
+      claimedPercent: z.number().int().nullable(),
+    })
+    .optional(),
 });
 
 export const VariantSchema = z.object({

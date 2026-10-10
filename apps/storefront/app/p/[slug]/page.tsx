@@ -22,7 +22,9 @@ import { cspNonce } from '@/lib/csp-nonce';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
+import { DealTimer } from '@/components/DealTimer';
 import { AddToCart } from './AddToCart';
+import { AddToList } from './AddToList';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { BoughtTogether } from './BoughtTogether';
@@ -59,6 +61,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
   };
 }
+
+/** The server's clock for this render (the deal countdown starts from it). */
+const renderedAt = () => Date.now();
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
@@ -107,6 +112,7 @@ export default async function ProductPage({ params }: Props) {
   );
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
+  const d = await getT('deals');
   const a = await getT('ads');
   const p = await getT('product');
   const c = await getT('common');
@@ -195,8 +201,23 @@ export default async function ProductPage({ params }: Props) {
               wasLabel={p('was')}
             />
           </div>
+          {product.deal ? (
+            <div className="pdp-deal">
+              <span className="card-badge card-badge--deal pdp-deal__badge">
+                {d(product.deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} ·{' '}
+                {d('percentOff', { percent: f.percent(product.deal.percentOff / 100) })}
+              </span>
+              <DealTimer
+                endsAt={product.deal.endsAt}
+                claimedPercent={
+                  product.deal.kind === 'LIGHTNING' ? product.deal.claimedPercent : null
+                }
+                initialNow={renderedAt()}
+              />
+            </div>
+          ) : null}
           <DeliveryPromise window={product.delivery} />
-          <AddToCart variants={product.variants} />
+          <AddToCart variants={product.variants} slug={product.slug} />
           {!inStock ? (
             <StockAlert
               productId={product.id}
@@ -205,12 +226,13 @@ export default async function ProductPage({ params }: Props) {
               initial={alerts.some((x) => x.productId === product.id && x.kind === 'BACK_IN_STOCK')}
             />
           ) : null}
-          <div>
+          <div className="pdp-save">
             <WishButton
               productId={product.id}
               slug={product.slug}
               initial={wishIds.includes(product.id)}
             />
+            <AddToList productId={product.id} slug={product.slug} />
           </div>
           <p className="sold-by">
             {t('soldBy')}{' '}

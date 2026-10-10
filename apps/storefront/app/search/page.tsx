@@ -34,9 +34,11 @@ export default async function SearchPage({ searchParams }: Props) {
       <div className="section-head">
         <div className="stack" style={{ gap: 6 }}>
           <p className="eyebrow">{filters.q ? t('searchEyebrow') : t('catalogEyebrow')}</p>
-          <h1>{filters.q
+          <h1>
+            {filters.q
               ? t('resultsFor', { q: result?.correctedQuery ?? filters.q })
-              : t('allProducts')}</h1>
+              : t('allProducts')}
+          </h1>
         </div>
       </div>
       {filters.q ? <SearchTracker q={filters.q} /> : null}

@@ -108,11 +108,7 @@ export type ProductCopySuggestion = z.infer<typeof ProductCopySuggestionSchema>;
 // ───────────── Questions and answers (p10-05) ─────────────
 
 export const QuestionCreateSchema = z.object({
-  body: z
-    .string()
-    .trim()
-    .min(10, { message: 'Ask a full question (10+ characters).' })
-    .max(500),
+  body: z.string().trim().min(10, { message: 'Ask a full question (10+ characters).' }).max(500),
 });
 export type QuestionCreate = z.infer<typeof QuestionCreateSchema>;
 

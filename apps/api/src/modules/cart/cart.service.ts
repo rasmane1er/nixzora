@@ -13,14 +13,19 @@ import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
 import { PricingService } from './pricing.service';
 
-/** Whose cart: a signed-in customer's, or a guest's opaque id. */
-export type CartOwner = { userId: string } | { guestId: string };
+/**
+ * Whose cart: a signed-in customer's, a guest's opaque id, or a one-off "Buy now" cart (p10-05)
+ * that holds the single item being bought right away and leaves the main cart untouched.
+ */
+export type CartOwner = { userId: string } | { guestId: string } | { buyNowId: string };
 
 const TTL_SECONDS = 30 * 24 * 3600;
 const MAX_LINES = 50;
 const MAX_QUANTITY = 20;
 /** The applied coupon code lives in the cart hash under this field. */
 const COUPON_FIELD = '__coupon';
+/** A Buy now cart only needs to outlive one checkout. */
+const BUY_NOW_TTL_SECONDS = 6 * 3600;
 
 /**
  * Carts live in Redis as a hash of variantId → quantity. Prices are never stored in the cart:
@@ -41,7 +46,27 @@ export class CartService {
   }
 
   private key(owner: CartOwner): string {
-    return 'userId' in owner ? `cart:u:${owner.userId}` : `cart:g:${owner.guestId}`;
+    if ('userId' in owner) return `cart:u:${owner.userId}`;
+    if ('buyNowId' in owner) return `cart:b:${owner.buyNowId}`;
+    return `cart:g:${owner.guestId}`;
+  }
+
+  /**
+   * Starts a Buy now cart holding just this item, so checking out right away never sweeps up
+   * (or empties) everything else in the shopper's cart. The id is a secret, like a guest cart's.
+   */
+  async buyNow(variantId: string, quantity: number): Promise<Cart> {
+    await this.assertSellable(variantId);
+    const owner = { buyNowId: CartService.newGuestId() };
+    const key = this.key(owner);
+    await this.run(() =>
+      this.redis.client
+        .multi()
+        .hset(key, variantId, Math.min(MAX_QUANTITY, quantity))
+        .expire(key, BUY_NOW_TTL_SECONDS)
+        .exec(),
+    );
+    return this.view(owner);
   }
 
   async quantities(owner: CartOwner): Promise<Map<string, number>> {
@@ -193,7 +218,7 @@ export class CartService {
     );
     return {
       delivery: buyable.length ? deliveryWindow(new Date(), handling) : null,
-      cartId: 'guestId' in owner ? owner.guestId : null,
+      cartId: 'guestId' in owner ? owner.guestId : 'buyNowId' in owner ? owner.buyNowId : null,
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
       totals: this.pricing.totals(subtotal, region, check?.ok ? check.discountCents : 0),

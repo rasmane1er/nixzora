@@ -54,6 +54,12 @@ export default function HomeScreen() {
     queryFn: async () => api.recommendations.forYou(await visitorId()),
     staleTime: 60_000,
   });
+  const deals = useQuery({
+    queryKey: ['deals', 'home'],
+    queryFn: () => api.catalog.deals(),
+    staleTime: 30_000,
+  });
+  const td = useT('deals');
   const ads = useQuery({
     queryKey: ['ads', 'home', status],
     queryFn: async () => api.ads.forPage({ placement: 'home' }, await visitorId()),
@@ -198,6 +204,12 @@ export default function HomeScreen() {
           </View>
         </View>
       ) : null}
+
+      <ProductRail
+        title={td('railTitle')}
+        products={(deals.data?.live ?? []).slice(0, 12)}
+        action={{ label: td('seeAll'), onPress: () => router.push('/deals') }}
+      />
 
       {(picks.data?.rows ?? []).map((row, i) => (
         <ProductRail

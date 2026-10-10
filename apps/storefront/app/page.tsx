@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { smartRowTitle } from '@nixzora/i18n';
-import { type Recommendations } from '@nixzora/validation';
+import { type DealsPage, type Recommendations } from '@nixzora/validation';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductRail } from '@/components/ProductRail';
 import { sponsored } from '@/lib/ads';
@@ -12,7 +12,7 @@ import { visitorId } from '@/lib/visitor';
 
 export default async function HomePage() {
   const visitor = await visitorId();
-  const [categories, newest, picks, ads] = await Promise.all([
+  const [categories, newest, picks, ads, deals] = await Promise.all([
     catalog.categories().catch(() => []),
     catalog.products('?sort=newest&pageSize=8&inStock=true').catch(() => null),
     // With the guest cart id, so "Goes with your cart" works before sign-in.
@@ -21,11 +21,13 @@ export default async function HomePage() {
       { cart: true },
     ).catch(() => null),
     sponsored({ placement: 'home' }),
+    api<DealsPage>('/catalog/deals', { revalidate: 30 }).catch(() => null),
   ]);
-  const [t, p, a, names] = await Promise.all([
+  const [t, p, a, d, names] = await Promise.all([
     getT('home'),
     getT('product'),
     getT('ads'),
+    getT('deals'),
     Promise.all(categories.map((category) => departmentName(category))),
   ]);
   const prompts = [t('prompt1'), t('prompt2'), t('prompt3'), t('prompt4')];
@@ -121,6 +123,13 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      <ProductRail
+        id="deals"
+        title={d('railTitle')}
+        products={(deals?.live ?? []).slice(0, 12)}
+        link={{ href: '/deals', label: d('seeAll') }}
+      />
 
       {(picks?.rows ?? []).map((row, i) => (
         <ProductRail

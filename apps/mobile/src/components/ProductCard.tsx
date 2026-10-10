@@ -11,6 +11,7 @@ import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
+import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
 import { PressableLink } from './PressableLink';
 import { Price } from './Price';
 import { Stars } from './Stars';
@@ -34,18 +35,21 @@ export function ProductCard({
   const tp = useT('product');
   const ta = useT('ads');
   const { percent } = useFormatters();
+  const dealLabel = useDealLabel();
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
-  const badge = onSale
-    ? {
-        top: false,
-        text: tp('sale', {
-          percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
-        }),
-      }
-    : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
-      ? { top: true, text: tp('topRated') }
-      : null;
+  const badge = product.deal
+    ? { top: false, deal: true, text: dealLabel(product.deal) }
+    : onSale
+      ? {
+          top: false,
+          text: tp('sale', {
+            percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
+          }),
+        }
+      : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
+        ? { top: true, text: tp('topRated') }
+        : null;
 
   return (
     <View style={[styles.card, { backgroundColor: p.card, borderColor: p.line }]}>
@@ -112,6 +116,7 @@ export function ProductCard({
             currency={product.currency}
             prefix={product.defaultVariantId ? undefined : tp('from')}
           />
+          {product.deal ? <DealTimer deal={product.deal} /> : null}
           {!product.inStock ? (
             <Text variant="small" tone="error">
               {tp('soldOut')}
@@ -121,7 +126,12 @@ export function ProductCard({
       </PressableLink>
       {badge ? (
         <View
-          style={[styles.badge, { backgroundColor: badge.top ? '#2457C5' : brand.signal }]}
+          style={[
+            styles.badge,
+            {
+              backgroundColor: 'deal' in badge ? DEAL_RED : badge.top ? '#2457C5' : brand.signal,
+            },
+          ]}
           pointerEvents="none"
         >
           <Text variant="small" style={styles.badgeText}>

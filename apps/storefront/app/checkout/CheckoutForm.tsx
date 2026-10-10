@@ -29,10 +29,13 @@ export function CheckoutForm({
   email,
   signedIn,
   addresses,
+  buyNowId,
 }: {
   email?: string;
   signedIn: boolean;
   addresses: SavedAddress[];
+  /** Checking out a Buy now cart instead of the shopper's cart (p10-05). */
+  buyNowId?: string;
 }) {
   const t = useT('checkout');
   const [state, action, pending] = useActionState<CheckoutState, FormData>(placeOrder, {});
@@ -57,6 +60,7 @@ export function CheckoutForm({
   return (
     // Remount after each attempt so every field (selects included) shows what was submitted.
     <form action={action} className="form" key={`${formKey}:${JSON.stringify(state.values ?? {})}`}>
+      {buyNowId ? <input type="hidden" name="buyNowId" value={buyNowId} /> : null}
       {state.error ? (
         <p className="banner banner--error" role="alert">
           {state.error}

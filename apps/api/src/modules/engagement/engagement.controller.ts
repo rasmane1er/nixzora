@@ -6,7 +6,9 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  NotFoundException,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -34,6 +36,12 @@ import {
   QuestionListQuerySchema,
   type UploadRequest,
   UploadRequestSchema,
+  type ShoppingListCreate,
+  ShoppingListCreateSchema,
+  type ShoppingListItemInput,
+  ShoppingListItemSchema,
+  type ShoppingListUpdate,
+  ShoppingListUpdateSchema,
 } from '@nixzora/validation';
 import { z } from 'zod';
 import { ApiZodBody } from '../../common/api-docs';
@@ -48,6 +56,7 @@ import {
   Public,
   RequirePermissions,
 } from '../identity/guards/decorators';
+import { ListsService } from './lists.service';
 import { QuestionsService } from './questions.service';
 import { ReviewsService } from './reviews.service';
 import { WishlistService } from './wishlist.service';
@@ -242,5 +251,98 @@ export class WishlistController {
     @Param('productId', new ParseUUIDPipe()) productId: string,
   ): Promise<void> {
     return this.wishlist.remove(user.id, productId);
+  }
+}
+
+/** Lists and registries (p10-08). */
+@ApiTags('account')
+@ApiBearerAuth()
+@RequirePermissions('account.manage.own')
+@Controller({ path: 'me/lists', version: '1' })
+export class ListsController {
+  constructor(private readonly lists: ListsService) {}
+
+  @Get()
+  mine(@CurrentUser() user: AuthUser) {
+    return this.lists.mine(user.id);
+  }
+
+  /** Which of your lists hold this product. */
+  @Get('containing/:productId')
+  containing(
+    @Param('productId', new ParseUUIDPipe()) productId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lists.containing(user.id, productId);
+  }
+
+  @Post()
+  @ApiZodBody(ShoppingListCreateSchema)
+  create(
+    @Body(new ZodValidationPipe(ShoppingListCreateSchema)) body: ShoppingListCreate,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lists.create(user.id, body);
+  }
+
+  @Get(':id')
+  view(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: AuthUser) {
+    return this.lists.view(user.id, id);
+  }
+
+  @Patch(':id')
+  @ApiZodBody(ShoppingListUpdateSchema)
+  update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(ShoppingListUpdateSchema)) body: ShoppingListUpdate,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lists.update(user.id, id, body);
+  }
+
+  @Post(':id/reset-link')
+  @HttpCode(HttpStatus.OK)
+  resetLink(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: AuthUser) {
+    return this.lists.resetLink(user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: AuthUser) {
+    return this.lists.remove(user.id, id);
+  }
+
+  @Post(':id/items')
+  @ApiZodBody(ShoppingListItemSchema)
+  addItem(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(ShoppingListItemSchema)) body: ShoppingListItemInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lists.addItem(user.id, id, body);
+  }
+
+  @Delete(':id/items/:productId')
+  removeItem(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('productId', new ParseUUIDPipe()) productId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lists.removeItem(user.id, id, productId);
+  }
+}
+
+/** A shared list or registry, for anyone with its link. */
+@ApiTags('catalog')
+@Public()
+@Controller({ path: 'lists', version: '1' })
+export class SharedListsController {
+  constructor(private readonly lists: ListsService) {}
+
+  @Get(':token')
+  shared(@Param('token') token: string) {
+    if (!/^[A-Za-z0-9_-]{16,40}$/.test(token))
+      throw new NotFoundException('This list is private or no longer exists.');
+    return this.lists.shared(token);
   }
 }

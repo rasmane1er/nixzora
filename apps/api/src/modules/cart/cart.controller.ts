@@ -15,6 +15,8 @@ import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
   type ApplyCoupon,
   ApplyCouponSchema,
+  type BuyNow,
+  BuyNowSchema,
   type Cart,
   CartIdSchema,
   type CartItemAdd,
@@ -125,6 +127,29 @@ export class CartController {
     @Headers('x-cart-id') cartId: string | undefined,
   ): Promise<Cart> {
     return this.carts.removeCoupon(this.owner(user, cartId, true)!);
+  }
+
+  /**
+   * Buy now (p10-05): a separate cart holding just this item. Check it out by sending its
+   * cartId as buyNowId; the shopper's own cart is left as it was.
+   */
+  @Post('buy-now')
+  @OptionalAuth()
+  @ApiZodBody(BuyNowSchema)
+  buyNow(@Body(new ZodValidationPipe(BuyNowSchema)) body: BuyNow): Promise<Cart> {
+    return this.carts.buyNow(body.variantId, body.quantity);
+  }
+
+  @Get('buy-now/:id')
+  @OptionalAuth()
+  @ApiQuery({ name: 'region', required: false, description: 'US state, to estimate tax' })
+  buyNowCart(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(RegionQuery)) query: z.infer<typeof RegionQuery>,
+  ): Promise<Cart> {
+    const parsed = CartIdSchema.safeParse(id);
+    if (!parsed.success) throw new BadRequestException('That cart id is not valid.');
+    return this.carts.view({ buyNowId: parsed.data }, query.region);
   }
 
   /** Call right after sign-in so nothing a guest added is lost. */

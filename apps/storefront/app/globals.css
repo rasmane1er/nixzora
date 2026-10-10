@@ -1331,6 +1331,78 @@ table.plain th {
   color: inherit;
   cursor: pointer;
 }
+.btn--buy-now {
+  background: var(--fg);
+  color: var(--bg);
+}
+.btn--buy-now:hover {
+  opacity: 0.9;
+}
+.pdp-deal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.pdp-deal .pdp-deal__badge {
+  position: static;
+}
+.pdp-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+.add-to-list {
+  position: relative;
+}
+.add-to-list__panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(320px, 86vw);
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
+}
+.add-to-list__panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+.add-to-list__panel label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+.add-to-list__panel label .muted {
+  margin-left: auto;
+  font-size: 12px;
+}
+.add-to-list__new {
+  display: flex;
+  gap: 8px;
+}
+.add-to-list__panel > * {
+  min-width: 0;
+}
+.add-to-list__panel label span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.add-to-list__new input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
 .wish[aria-pressed='true'] {
   border-color: var(--color-signal);
   color: var(--color-signal-text);
@@ -1603,6 +1675,9 @@ table.plain th {
 .rail .section-head {
   align-items: center;
 }
+.rail__link {
+  margin-left: auto;
+}
 .rail__track {
   list-style: none;
   margin: 0 calc(-1 * var(--gutter));
@@ -1743,6 +1818,40 @@ table.plain th {
   background: var(--fg);
   color: var(--bg);
 }
+.deal-tabs {
+  margin: 8px 0 20px;
+}
+.cat-nav__deals {
+  font-weight: 600;
+}
+.deal-upcoming {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+}
+.deal-upcoming a {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.deal-upcoming img {
+  border-radius: 8px;
+  object-fit: cover;
+  flex: none;
+}
+.deal-upcoming span {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+}
 .seller-steps {
   list-style: none;
   padding: 0;
@@ -1813,11 +1922,13 @@ table.plain th {
     justify-self: start;
   }
 }
+.pill--deal-live,
 .pill--seller-active,
 .pill--listing-active {
   background: var(--ok-bg);
   color: var(--ok-fg);
 }
+.pill--deal-scheduled,
 .pill--seller-pending,
 .pill--listing-pending_review {
   background: var(--warn-bg);
@@ -3395,6 +3506,44 @@ td.neg {
 .card-badge--top {
   background: #2457c5;
 }
+/* Deals (p10-07) */
+.card-badge--deal {
+  background: #b3261e;
+}
+.deal-timer {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.deal-timer__time {
+  color: #b3261e;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme='dark'] .deal-timer__time {
+  color: #ff8a80;
+}
+.deal-claimed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.deal-claimed__bar {
+  flex: 1;
+  max-width: 120px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.deal-claimed__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #b3261e;
+}
 .card-heart {
   position: absolute;
   top: 8px;
@@ -3916,4 +4065,53 @@ td.neg {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
+}
+
+/* ───────────── Lists and registries (p10-08) ───────────── */
+.list-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+.list-tile {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.list-tile:hover {
+  border-color: var(--color-signal);
+}
+.list-tile__art {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  min-height: 45px;
+  border-radius: 8px;
+  background: var(--line);
+  overflow: hidden;
+}
+.list-tile__art img {
+  width: 100%;
+  height: 45px;
+  object-fit: cover;
+}
+.list-tile .muted {
+  font-size: 13px;
+}
+.list-form h2 {
+  margin: 0;
+}
+.copy-link {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.copy-link input {
+  flex: 1;
+  min-width: min(260px, 100%);
 }

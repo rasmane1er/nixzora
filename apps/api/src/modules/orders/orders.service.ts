@@ -118,11 +118,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (user && !user.permissions.includes('orders.create')) {
       throw new ConflictException('This account cannot place orders.');
     }
-    const owner: CartOwner | null = user
-      ? { userId: user.id }
-      : input.cartId
-        ? { guestId: input.cartId }
-        : null;
+    const owner: CartOwner | null = input.buyNowId
+      ? { buyNowId: input.buyNowId }
+      : user
+        ? { userId: user.id }
+        : input.cartId
+          ? { guestId: input.cartId }
+          : null;
     if (!owner) throw new BadRequestException('Your cart is empty.');
 
     const cart = await this.carts.view(owner, input.shippingAddress.region);

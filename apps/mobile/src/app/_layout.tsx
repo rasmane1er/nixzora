@@ -54,6 +54,8 @@ function RootLayout() {
   const { status } = useSession();
   const t = useT('appShop');
   const to = useT('order');
+  const tl = useT('lists');
+  const td = useT('deals');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -110,6 +112,9 @@ function RootLayout() {
                 <Stack.Screen name="orders/[number]" options={{ title: t('titleOrder') }} />
                 <Stack.Screen name="return/[number]" options={{ title: to('startReturn') }} />
                 <Stack.Screen name="wishlist" options={{ title: t('titleWishlist') }} />
+                <Stack.Screen name="deals" options={{ title: td('title') }} />
+                <Stack.Screen name="lists/index" options={{ title: tl('title') }} />
+                <Stack.Screen name="lists/[id]" options={{ title: '' }} />
                 <Stack.Screen name="account/security" options={{ title: t('titleSecurity') }} />
                 <Stack.Screen name="account/addresses" options={{ title: t('titleAddresses') }} />
                 <Stack.Screen name="account/returns" options={{ title: t('titleReturns') }} />

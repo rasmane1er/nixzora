@@ -1,6 +1,6 @@
 import type { ProductCard as Card, SponsoredProduct } from '@nixzora/validation';
-import { ScrollView, View } from 'react-native';
-import { space } from '@/lib/theme';
+import { Pressable, ScrollView, View } from 'react-native';
+import { fonts, space } from '@/lib/theme';
 import { ProductCard } from './ProductCard';
 import { Text } from './ui';
 
@@ -15,7 +15,10 @@ export function ProductRail({
   products = [],
   sponsored,
   inset = space.lg,
+  action,
 }: {
+  /** A "See all" link beside the title. */
+  action?: { label: string; onPress: () => void };
   title: string;
   products?: Card[];
   /** Ads (p10-01): each card is labelled and records its click. */
@@ -27,7 +30,18 @@ export function ProductRail({
   if (!items.length) return null;
   return (
     <View style={{ gap: space.sm }} accessibilityRole="list" accessibilityLabel={title}>
-      <Text variant="heading">{title}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text variant="heading" style={{ flexShrink: 1 }}>
+          {title}
+        </Text>
+        {action ? (
+          <Pressable accessibilityRole="link" onPress={action.onPress} hitSlop={8}>
+            <Text tone="signal" style={{ fontFamily: fonts.bodyBold }}>
+              {action.label}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

@@ -43,6 +43,7 @@ export async function SiteHeader() {
   const t = await getT('common');
   const l = await getT('layout');
   const s = await getT('search');
+  const dealsLabel = (await getT('deals'))('navDeals');
   const locale = await getLocale();
   const names = await Promise.all(categories.map((category) => departmentName(category)));
   // Sellers get their dashboard; everyone else is invited to sell.
@@ -96,6 +97,9 @@ export async function SiteHeader() {
       </div>
       {categories.length ? (
         <nav className="wrap cat-nav" aria-label={l('departments')}>
+          <Link href="/deals" className="cat-nav__deals">
+            {dealsLabel}
+          </Link>
           {categories.map((category, i) => (
             <Link key={category.id} href={`/c/${category.slug}`}>
               {names[i]}

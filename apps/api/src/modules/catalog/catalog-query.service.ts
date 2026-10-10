@@ -242,7 +242,9 @@ export class CatalogQueryService {
       include: productInclude,
     });
     if (!product) throw new NotFoundException('We could not find that product.');
-    const detail = await this.toDetail(product, true);
+    // With its live deal, if any (p10-07), like every product card.
+    const [detail] = await this.withRatings([await this.toDetail(product, true)]);
+    if (!detail) throw new NotFoundException('We could not find that product.');
     // When it would arrive if ordered now (p10-04); none while it is sold out.
     const inStock = detail.variants.some((v) => v.isActive && v.available > 0);
     return {
@@ -583,21 +585,49 @@ export class CatalogQueryService {
     );
   }
 
-  /** Adds each card's approved-review average and count, in one query. */
+  /** Adds each card's approved-review average and count, and its live deal, in two queries. */
   private async withRatings<C extends ProductCard>(cards: C[]): Promise<C[]> {
     if (!cards.length) return cards;
-    const rows = await this.prisma.review.groupBy({
-      by: ['productId'],
-      where: { productId: { in: cards.map((card) => card.id) }, status: 'APPROVED' },
-      _avg: { rating: true },
-      _count: { _all: true },
-    });
+    const ids = cards.map((card) => card.id);
+    const [rows, deals] = await Promise.all([
+      this.prisma.review.groupBy({
+        by: ['productId'],
+        where: { productId: { in: ids }, status: 'APPROVED' },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      this.prisma.deal.findMany({
+        where: { productId: { in: ids }, status: 'LIVE' },
+        select: {
+          productId: true,
+          kind: true,
+          percentOff: true,
+          endsAt: true,
+          quantity: true,
+          claimed: true,
+        },
+      }),
+    ]);
     const byId = new Map(rows.map((row) => [row.productId, row]));
+    const dealById = new Map(deals.map((deal) => [deal.productId, deal]));
     return cards.map((card) => {
       const row = byId.get(card.id);
       const average = row?._avg.rating;
+      const deal = dealById.get(card.id);
       return {
         ...card,
+        ...(deal
+          ? {
+              deal: {
+                kind: deal.kind,
+                percentOff: deal.percentOff,
+                endsAt: deal.endsAt.toISOString(),
+                claimedPercent: deal.quantity
+                  ? Math.min(100, Math.round((deal.claimed / deal.quantity) * 100))
+                  : null,
+              },
+            }
+          : {}),
         rating: {
           average: average == null ? null : roundRating(average),
           count: row?._count._all ?? 0,

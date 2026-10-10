@@ -277,6 +277,19 @@ export class CatalogAdminService {
     const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
     if (!variant) throw new NotFoundException('Variant not found.');
 
+    // A live deal owns the price until it ends (p10-07): it restores the regular price then.
+    if (input.priceCents !== undefined || input.compareAtCents !== undefined) {
+      const deal = await this.prisma.deal.findFirst({
+        where: { productId: variant.productId, status: 'LIVE' },
+        select: { endsAt: true },
+      });
+      if (deal) {
+        throw new ConflictException(
+          `A deal is running on this product until ${deal.endsAt.toISOString().slice(0, 16).replace('T', ' ')} UTC. Change the price after it ends, or cancel the deal.`,
+        );
+      }
+    }
+
     const price = input.priceCents ?? variant.priceCents;
     const compareAt =
       input.compareAtCents === undefined ? variant.compareAtCents : input.compareAtCents;

@@ -53,7 +53,7 @@ export function isBusinessDay(day: string): boolean {
 export function addBusinessDays(day: string, n: number): string {
   let current = day;
   while (!isBusinessDay(current)) current = addDays(current, 1);
-  for (let left = n; left > 0; ) {
+  for (let left = n; left > 0;) {
     current = addDays(current, 1);
     if (isBusinessDay(current)) left--;
   }

@@ -1255,6 +1255,56 @@ async function main(): Promise<void> {
     }
   }
 
+  // Demo deals (p10-07), once per product: a week-long day deal, a lightning deal live now and
+  // one starting tomorrow. The API starts and ends them on schedule.
+  const SEED_ACTOR = '00000000-0000-0000-0000-000000000000';
+  const now = Date.now();
+  const DEMO_DEALS = [
+    {
+      slug: 'stride-runner',
+      kind: 'DAY' as const,
+      percentOff: 20,
+      from: 0,
+      hours: 7 * 24,
+      quantity: null,
+    },
+    {
+      slug: 'drift-earbuds',
+      kind: 'LIGHTNING' as const,
+      percentOff: 30,
+      from: 0,
+      hours: 12,
+      quantity: 40,
+    },
+    {
+      slug: 'brightline-studio-headphones',
+      kind: 'LIGHTNING' as const,
+      percentOff: 25,
+      from: 20,
+      hours: 6,
+      quantity: 25,
+    },
+  ];
+  for (const deal of DEMO_DEALS) {
+    const product = await prisma.product.findUnique({
+      where: { slug: deal.slug },
+      select: { id: true, sellerId: true },
+    });
+    if (!product || (await prisma.deal.count({ where: { productId: product.id } }))) continue;
+    await prisma.deal.create({
+      data: {
+        productId: product.id,
+        kind: deal.kind,
+        percentOff: deal.percentOff,
+        startsAt: new Date(now + deal.from * 3_600_000),
+        endsAt: new Date(now + (deal.from + deal.hours) * 3_600_000),
+        quantity: deal.quantity,
+        sellerId: product.sellerId,
+        createdById: product.sellerId && brightlineOwner ? brightlineOwner.id : SEED_ACTOR,
+      },
+    });
+  }
+
   // A demo code shoppers can try at checkout.
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },

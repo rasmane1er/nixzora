@@ -61,7 +61,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const o = await accountApi<AccountOverview>('/me/overview', '/account');
   const { counts, profile, security } = o;
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
-  const [t, tc, f] = await Promise.all([getT('account'), getT('common'), getFormat()]);
+  const [t, tc, f, l] = await Promise.all([
+    getT('account'),
+    getT('common'),
+    getFormat(),
+    getT('lists'),
+  ]);
   const since = f.monthYear(profile.memberSince);
 
   const groups: Group[] = [
@@ -92,6 +97,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
           label: t('wishlist'),
           hint: counts.wishlist ? t('savedCount', { count: counts.wishlist }) : undefined,
         },
+        { href: '/account/lists', icon: 'lists', label: l('title') },
         { href: '/account/buy-again', icon: 'buyAgain', label: t('buyAgain') },
         {
           href: '/account/reviews',

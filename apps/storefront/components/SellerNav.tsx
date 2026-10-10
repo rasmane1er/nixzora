@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/sell/listings', label: 'navListings' },
   { href: '/sell/analytics', label: 'navAnalytics' },
   { href: '/sell/earnings', label: 'navEarnings' },
+  { href: '/sell/deals', label: 'navDeals' },
   { href: '/sell/ads', label: 'navAds' },
   { href: '/sell/settings', label: 'navSettings' },
 ] as const;

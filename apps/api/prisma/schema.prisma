@@ -74,6 +74,7 @@ model User {
   questions          ProductQuestion[]
   answers            ProductAnswer[]
   productAlerts      ProductAlert[]
+  lists              ShoppingList[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -342,6 +343,8 @@ model Product {
   adCampaigns   AdCampaignProduct[]
   questions     ProductQuestion[]
   alerts        ProductAlert[]
+  deals         Deal[]
+  listItems     ShoppingListItem[]
   reviewInsight ReviewInsight?
   searchDoc     ProductSearchDoc?
 
@@ -1493,4 +1496,95 @@ model ProductAlert {
   @@id([userId, productId, kind])
   @@index([kind, productId])
   @@map("product_alerts")
+}
+
+// ───────────── Deals (p10-07) ─────────────
+
+enum DealKind {
+  /// A few hours, often with a limited quantity ("72% claimed").
+  LIGHTNING
+  /// Up to a week.
+  DAY
+}
+
+enum DealStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+/// A limited-time price drop on every variant of a product. While live, the variants' prices are
+/// lowered (the regular price becomes the "was" price) and restored when it ends.
+model Deal {
+  id             String     @id @default(uuid(7)) @db.Uuid
+  productId      String     @map("product_id") @db.Uuid
+  kind           DealKind
+  percentOff     Int        @map("percent_off")
+  startsAt       DateTime   @map("starts_at")
+  endsAt         DateTime   @map("ends_at")
+  /// Units at the deal price (lightning deals); null for no limit.
+  quantity       Int?
+  claimed        Int        @default(0)
+  status         DealStatus @default(SCHEDULED)
+  /// Each variant's price and "was" price before the deal: {variantId: [price, compareAt]}.
+  originalPrices Json?      @map("original_prices")
+  /// The store that created it, or null for NIXZORA staff.
+  sellerId       String?    @map("seller_id") @db.Uuid
+  createdById    String     @map("created_by_id") @db.Uuid
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status, startsAt])
+  @@index([status, endsAt])
+  @@index([productId, status])
+  @@map("deals")
+}
+
+// ───────────── Lists and registries (p10-08) ─────────────
+
+enum ShoppingListKind {
+  LIST
+  /// A gift registry: an occasion and a date, shared with guests.
+  REGISTRY
+}
+
+/// A named list besides "Saved" (the wishlist): "Birthday", "New home". Shareable by link.
+model ShoppingList {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  name       String
+  kind       ShoppingListKind @default(LIST)
+  /// Registries: the date of the occasion.
+  eventDate  DateTime?        @map("event_date") @db.Date
+  note       String?
+  /// Anyone with the link can see it; nobody else can.
+  isShared   Boolean          @default(false) @map("is_shared")
+  shareToken String           @unique @map("share_token")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ShoppingListItem[]
+
+  @@index([userId, createdAt])
+  @@map("shopping_lists")
+}
+
+model ShoppingListItem {
+  listId    String   @map("list_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  /// How many the owner wants (registries).
+  quantity  Int      @default(1)
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  list    ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([listId, productId])
+  @@index([productId])
+  @@map("shopping_list_items")
 }

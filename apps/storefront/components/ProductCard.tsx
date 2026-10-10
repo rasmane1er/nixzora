@@ -6,6 +6,10 @@ import { adHref } from '@/lib/ads';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
 import { wishedIds } from '@/lib/wishlist';
 import { CardAdd, CardHeart } from './CardActions';
+import { DealTimer } from './DealTimer';
+
+/** The server's clock for this render (deal countdowns start from it). */
+const renderedAt = () => Date.now();
 
 /** Stars for an average out of 5 (half stars rounded to the nearest half). */
 function StarRow({ average }: { average: number }) {
@@ -39,9 +43,10 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, locale, f, wishlist] = await Promise.all([
+  const [t, a, d, locale, f, wishlist] = await Promise.all([
     getT('product'),
     getT('ads'),
+    getT('deals'),
     getLocale(),
     getFormat(),
     wishedIds(),
@@ -49,19 +54,27 @@ export async function ProductCard({
   const wished = wishlist.has(product.id);
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
-  const badge = onSale
+  const deal = product.deal;
+  const badge = deal
     ? {
-        kind: 'sale',
-        text: t('sale', {
-          percent: f.percent(
-            Math.round((1 - product.priceFromCents / (product.compareAtCents as number)) * 100) /
-              100,
-          ),
-        }),
+        kind: 'deal',
+        text: `${d(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${d('percentOff', {
+          percent: f.percent(deal.percentOff / 100),
+        })}`,
       }
-    : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
-      ? { kind: 'top', text: t('topRated') }
-      : null;
+    : onSale
+      ? {
+          kind: 'sale',
+          text: t('sale', {
+            percent: f.percent(
+              Math.round((1 - product.priceFromCents / (product.compareAtCents as number)) * 100) /
+                100,
+            ),
+          }),
+        }
+      : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
+        ? { kind: 'top', text: t('topRated') }
+        : null;
 
   const body = (
     <>
@@ -101,6 +114,13 @@ export async function ProductCard({
           locale={INTL_LOCALE[locale]}
           wasLabel={t('was')}
         />
+        {deal ? (
+          <DealTimer
+            endsAt={deal.endsAt}
+            claimedPercent={deal.kind === 'LIGHTNING' ? deal.claimedPercent : null}
+            initialNow={renderedAt()}
+          />
+        ) : null}
         <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
           {product.inStock ? t('inStock') : t('soldOut')}
         </span>

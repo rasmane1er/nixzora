@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../../cart/actions';
+import { buyNow } from '../../checkout/actions';
 
 /** Variant picker + quantity + add to cart. Prices shown here are display only; the server re-prices. */
-export function AddToCart({ variants }: { variants: Variant[] }) {
+export function AddToCart({ variants, slug }: { variants: Variant[]; slug: string }) {
   const buyable = variants.filter((variant) => variant.isActive);
   const firstInStock = buyable.find((variant) => variant.available > 0) ?? buyable[0];
   const t = useT('productPage');
@@ -20,6 +21,8 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const [buying, startBuying] = useTransition();
+  const l = useT('lists');
   const selected = useMemo(() => buyable.find((v) => v.id === selectedId), [buyable, selectedId]);
 
   if (!selected) return <p className="banner banner--info">{t('unavailable')}</p>;
@@ -39,6 +42,16 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
       setStatus(
         result.ok ? { kind: 'ok', text: t('addedToCart') } : { kind: 'error', text: result.error },
       );
+    });
+  }
+
+  function buy() {
+    if (!selected) return;
+    setStatus(null);
+    startBuying(async () => {
+      // Goes straight to checkout; only comes back here if something is wrong.
+      const result = await buyNow(selected.id, quantity, slug);
+      setStatus({ kind: 'error', text: result.error });
     });
   }
 
@@ -135,6 +148,16 @@ export function AddToCart({ variants }: { variants: Variant[] }) {
                 })}
         </button>
       </div>
+      {max > 0 ? (
+        <button
+          className="btn btn--buy-now"
+          type="button"
+          onClick={buy}
+          disabled={buying || pending}
+        >
+          {buying ? l('buyingNow') : l('buyNow')}
+        </button>
+      ) : null}
       <span
         className={`stock${selected.available === 0 ? ' stock--out' : selected.available <= 5 ? ' stock--low' : ''}`}
       >
