@@ -93,6 +93,7 @@ export default function OrderScreen() {
   const [push, setPush] = useState<PushStatus | null>(null);
   const w = useT('wallet');
   const g = useT('gifts');
+  const ti = useT('inbox');
   const client = useQueryClient();
   // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
   const cancel = useMutation({
@@ -257,6 +258,22 @@ export default function OrderScreen() {
                     tone="ghost"
                     icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
                     onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
+                  />
+                ) : null}
+                {part.seller && status === 'signedIn' ? (
+                  <Button
+                    title={ti('contactStore', { store: part.seller.displayName })}
+                    tone="ghost"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/messages/new',
+                        params: {
+                          store: part.seller!.handle,
+                          name: part.seller!.displayName,
+                          order: o.number,
+                        },
+                      })
+                    }
                   />
                 ) : null}
                 {part.seller && part.ratableUntil ? (

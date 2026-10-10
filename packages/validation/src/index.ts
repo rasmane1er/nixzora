@@ -26,3 +26,4 @@ export * from './taxonomy';
 export * from './variant-options';
 export * from './gift-cards';
 export * from './subscriptions';
+export * from './messaging';

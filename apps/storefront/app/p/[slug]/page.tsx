@@ -115,6 +115,7 @@ export default async function ProductPage({ params }: Props) {
   const t = await getT('productPage');
   const d = await getT('deals');
   const w = await getT('wallet');
+  const ib = await getT('inbox');
   // 1-click (p10-09): only when a saved card and an address are ready.
   const oneClick = signedIn && inStock ? await oneClickSetup() : null;
   const a = await getT('ads');
@@ -259,6 +260,12 @@ export default async function ProductPage({ params }: Props) {
               <>
                 <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>{' '}
                 <SellerRating rating={product.seller.rating} />
+                {' · '}
+                <Link
+                  href={`/account/messages/new?store=${product.seller.handle}&product=${product.id}`}
+                >
+                  {ib('askStore')}
+                </Link>
               </>
             ) : (
               <strong>NIXZORA</strong>

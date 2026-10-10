@@ -342,6 +342,7 @@ export default function ProductScreen() {
     },
   });
   const ts = useT('subscribe');
+  const tib = useT('inbox');
   const [subInterval, setSubInterval] = useState<string>('30');
   // Subscribe & Save (p10-11): the first delivery is ordered at once, on the saved card.
   const subscribeNow = useMutation({
@@ -716,6 +717,24 @@ export default function ProductScreen() {
               </Card>
             ) : null}
             <AddToListButton productId={item.id} />
+            {item.seller ? (
+              <Button
+                title={tib('askStore')}
+                tone="ghost"
+                onPress={() =>
+                  status === 'signedIn'
+                    ? router.push({
+                        pathname: '/messages/new',
+                        params: {
+                          store: item.seller!.handle,
+                          name: item.seller!.displayName,
+                          product: item.id,
+                        },
+                      })
+                    : router.push('/sign-in')
+                }
+              />
+            ) : null}
             {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
             {buyNow.error ? <Banner tone="error">{errorMessage(buyNow.error)}</Banner> : null}
             {added ? (

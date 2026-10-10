@@ -220,6 +220,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
 async function Shipments({ order, token }: { order: OrderView; token?: string }) {
   const t = await getT('order');
   const d = await getT('delivery');
+  const ib = await getT('inbox');
   const locale = await getLocale();
   return (
     <ul className="shipments">
@@ -241,6 +242,17 @@ async function Shipments({ order, token }: { order: OrderView; token?: string })
                   : t('fromNixzora')}
               </strong>{' '}
               <span className="muted">· {t(`shipment_${shipment.status}`)}</span>
+              {seller && !token ? (
+                <>
+                  {' · '}
+                  <Link
+                    href={`/account/messages/new?store=${seller.handle}&order=${order.number}`}
+                    style={{ fontSize: 14 }}
+                  >
+                    {ib('contactStore', { store: seller.displayName })}
+                  </Link>
+                </>
+              ) : null}
             </div>
             <div className="muted" style={{ fontSize: 14 }}>
               {items.map((item) => `${item.quantity} × ${item.productTitle}`).join(', ')}

@@ -38,3 +38,4 @@ export { store } from './store';
 export { wallet } from './wallet';
 export { gifts } from './gifts';
 export { subscribe } from './subscribe';
+export { inbox } from './inbox';

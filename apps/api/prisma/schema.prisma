@@ -80,6 +80,7 @@ model User {
   paymentCards       PaymentCard[]
   giftEntries        GiftBalanceEntry[]
   subscriptions      Subscription[]
+  conversations      Conversation[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -587,6 +588,58 @@ model GiftCard {
   @@index([orderId])
   @@index([recipientEmail])
   @@map("gift_cards")
+}
+
+enum MessageAuthor {
+  CUSTOMER
+  SELLER
+  STAFF
+}
+
+/// Customer ↔ store messages (p10-12), kept inside NIXZORA: neither side sees the other's email.
+model Conversation {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  customerId     String    @map("customer_id") @db.Uuid
+  sellerId       String    @map("seller_id") @db.Uuid
+  /// What it is about (optional): a product, an order, or both.
+  productId      String?   @map("product_id") @db.Uuid
+  orderId        String?   @map("order_id") @db.Uuid
+  subject        String
+  closedAt       DateTime? @map("closed_at")
+  lastMessageAt  DateTime  @default(now()) @map("last_message_at")
+  customerReadAt DateTime? @map("customer_read_at")
+  sellerReadAt   DateTime? @map("seller_read_at")
+  /// Reported by either side for staff to look at.
+  reportedAt     DateTime? @map("reported_at")
+  reportReason   String?   @map("report_reason")
+  /// Hidden by staff (abuse, off-platform payment requests).
+  hiddenAt       DateTime? @map("hidden_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  customer User                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  seller   Seller                @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  messages ConversationMessage[]
+
+  @@index([customerId, lastMessageAt])
+  @@index([sellerId, lastMessageAt])
+  @@index([reportedAt])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  conversationId String        @map("conversation_id") @db.Uuid
+  author         MessageAuthor
+  authorUserId   String?       @map("author_user_id") @db.Uuid
+  body           String
+  /// Email addresses or phone numbers were taken out (kept on NIXZORA, ADR-0034).
+  redacted       Boolean       @default(false)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("conversation_messages")
 }
 
 enum SubscriptionStatus {
@@ -1261,6 +1314,7 @@ model Seller {
   ratings         SellerRating[]
   adCampaigns     AdCampaign[]
   adClicks        AdClick[]
+  conversations   Conversation[]
 
   @@index([status, createdAt])
   @@map("sellers")

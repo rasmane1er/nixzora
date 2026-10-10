@@ -69,6 +69,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   ]);
   const g = await getT('gifts');
   const sb = await getT('subscribe');
+  const ib = await getT('inbox');
   const since = f.monthYear(profile.memberSince);
 
   const groups: Group[] = [
@@ -100,6 +101,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
           hint: counts.wishlist ? t('savedCount', { count: counts.wishlist }) : undefined,
         },
         { href: '/account/lists', icon: 'lists', label: l('title') },
+        { href: '/account/messages', icon: 'chat', label: ib('title') },
         { href: '/account/subscriptions', icon: 'buyAgain', label: sb('title') },
         {
           href: '/account/gift-cards',

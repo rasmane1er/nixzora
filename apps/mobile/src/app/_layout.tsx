@@ -58,6 +58,7 @@ function RootLayout() {
   const td = useT('deals');
   const tg = useT('gifts');
   const ts = useT('subscribe');
+  const ti = useT('inbox');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -118,6 +119,9 @@ function RootLayout() {
                 <Stack.Screen name="lists/index" options={{ title: tl('title') }} />
                 <Stack.Screen name="account/gift-cards" options={{ title: tg('balanceTitle') }} />
                 <Stack.Screen name="account/subscriptions" options={{ title: ts('title') }} />
+                <Stack.Screen name="messages/index" options={{ title: ti('title') }} />
+                <Stack.Screen name="messages/[id]" options={{ title: '' }} />
+                <Stack.Screen name="messages/new" options={{ title: '' }} />
                 <Stack.Screen name="lists/[id]" options={{ title: '' }} />
                 <Stack.Screen name="account/security" options={{ title: t('titleSecurity') }} />
                 <Stack.Screen name="account/addresses" options={{ title: t('titleAddresses') }} />

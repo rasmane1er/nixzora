@@ -149,6 +149,10 @@ export const email = defineMessages({
     sub_failed_subject: 'We couldn’t charge your Subscribe & Save delivery',
     sub_failed_text:
       'Hi,\n\nWe couldn’t charge your card for Subscribe & Save order {number} ({items}).\n{problem}\n\nPay for it here to send it on its way: {payLink}\nOr choose another card for your subscriptions: {subsLink}\n',
+    msg_new_subject: 'New message from {from}: {subject}',
+    msg_new_text:
+      '{from} wrote:\n\n{body}\n\nReply on NIXZORA: {link}\n\nFor your safety, keep conversations and payments on NIXZORA.\n',
+    push_message_title: 'Message from {from}',
     sub_created_subject: 'You subscribed to {item}',
     sub_created_text:
       'You subscribed to {item}: {quantity} every {interval}, at {percent} off (10% when 3 or more subscriptions arrive together).\n\nWe charge {card} for each delivery until you cancel. Your next one is planned for {date}.\n\nChange, skip or cancel any time: {subsLink}\n',
@@ -310,6 +314,10 @@ export const email = defineMessages({
     sub_failed_subject: 'Nous n’avons pas pu débiter votre livraison Abonnez-vous et économisez',
     sub_failed_text:
       'Bonjour,\n\nNous n’avons pas pu débiter votre carte pour la commande Abonnez-vous et économisez {number} ({items}).\n{problem}\n\nPayez-la ici pour qu’elle parte : {payLink}\nOu choisissez une autre carte pour vos abonnements : {subsLink}\n',
+    msg_new_subject: 'Nouveau message de {from} : {subject}',
+    msg_new_text:
+      '{from} a écrit :\n\n{body}\n\nRépondez sur NIXZORA : {link}\n\nPour votre sécurité, gardez les échanges et les paiements sur NIXZORA.\n',
+    push_message_title: 'Message de {from}',
     sub_created_subject: 'Vous êtes abonné à {item}',
     sub_created_text:
       'Vous êtes abonné à {item} : {quantity} tous les {interval}, avec {percent} de réduction (10 % quand 3 abonnements ou plus arrivent ensemble).\n\nNous débitons {card} à chaque livraison jusqu’à ce que vous annuliez. La prochaine est prévue le {date}.\n\nModifiez, sautez ou annulez à tout moment : {subsLink}\n',
@@ -468,6 +476,10 @@ export const email = defineMessages({
     sub_failed_subject: 'No pudimos cobrar tu entrega de Suscríbete y ahorra',
     sub_failed_text:
       'Hola:\n\nNo pudimos cobrar tu tarjeta para el pedido de Suscríbete y ahorra {number} ({items}).\n{problem}\n\nPágalo aquí para que salga: {payLink}\nO elige otra tarjeta para tus suscripciones: {subsLink}\n',
+    msg_new_subject: 'Nuevo mensaje de {from}: {subject}',
+    msg_new_text:
+      '{from} escribió:\n\n{body}\n\nResponde en NIXZORA: {link}\n\nPor tu seguridad, mantén las conversaciones y los pagos en NIXZORA.\n',
+    push_message_title: 'Mensaje de {from}',
     sub_created_subject: 'Te suscribiste a {item}',
     sub_created_text:
       'Te suscribiste a {item}: {quantity} cada {interval}, con {percent} de descuento (10 % cuando llegan juntas 3 suscripciones o más).\n\nCobramos a {card} en cada entrega hasta que canceles. La próxima está prevista para el {date}.\n\nCambia, salta o cancela cuando quieras: {subsLink}\n',

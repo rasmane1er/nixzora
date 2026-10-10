@@ -355,6 +355,16 @@ export class AccountHubService {
         reviews: { include: { product: { select: { title: true, slug: true } } } },
         wishlist: { include: { product: { select: { title: true, slug: true } } } },
         interests: { orderBy: { updatedAt: 'desc' }, take: 500 },
+        lists: { include: { items: { include: { product: { select: { title: true } } } } } },
+        paymentCards: true,
+        giftEntries: { orderBy: { createdAt: 'asc' } },
+        subscriptions: { include: { product: { select: { title: true } } } },
+        conversations: {
+          include: {
+            seller: { select: { displayName: true } },
+            messages: { orderBy: { createdAt: 'asc' } },
+          },
+        },
         identities: { select: { provider: true, createdAt: true } },
         sessions: {
           where: { revokedAt: null, expiresAt: { gt: new Date() } },
@@ -430,6 +440,46 @@ export class AccountHubService {
         text: i.text,
         source: i.source === 'ASSISTANT' ? 'assistant' : 'search',
         lastUsedAt: i.updatedAt,
+      })),
+      lists: user.lists.map((l) => ({
+        name: l.name,
+        kind: l.kind,
+        shared: l.isShared,
+        eventDate: l.eventDate,
+        items: l.items.map((i) => ({
+          product: i.product.title,
+          quantity: i.quantity,
+          note: i.note,
+        })),
+      })),
+      // Card numbers stay with the payment provider: only what identifies the card (p10-09).
+      savedCards: user.paymentCards.map((c) => ({
+        brand: c.brand,
+        last4: c.last4,
+        expires: `${String(c.expMonth).padStart(2, '0')}/${c.expYear}`,
+        savedAt: c.createdAt,
+      })),
+      giftCardBalance: user.giftEntries.map((e) => ({
+        kind: e.kind.toLowerCase(),
+        amountCents: e.amountCents,
+        note: e.note,
+        at: e.createdAt,
+      })),
+      subscriptions: user.subscriptions.map((sub) => ({
+        product: sub.product.title,
+        quantity: sub.quantity,
+        everyDays: sub.intervalDays,
+        status: sub.status.toLowerCase(),
+        nextOrderAt: sub.nextOrderAt,
+      })),
+      messages: user.conversations.map((c) => ({
+        store: c.seller.displayName,
+        subject: c.subject,
+        messages: c.messages.map((m) => ({
+          from: m.author === 'CUSTOMER' ? 'you' : m.author === 'SELLER' ? 'store' : 'nixzora',
+          body: m.body,
+          at: m.createdAt,
+        })),
       })),
     };
   }

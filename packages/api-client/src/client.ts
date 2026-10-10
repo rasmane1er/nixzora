@@ -1,4 +1,7 @@
 import type {
+  ConversationStart,
+  ConversationSummary,
+  ConversationView,
   SubscribeResult,
   SubscriptionUpdate,
   SubscriptionView,
@@ -509,6 +512,15 @@ export function createApiClient(options: ClientOptions) {
         request<PaymentCardView[]>('POST', `/me/payment-cards/${enc(id)}/default`),
       removeCard: (id: string) =>
         request<PaymentCardView[]>('DELETE', `/me/payment-cards/${enc(id)}`),
+      /** Messages with stores (p10-12). */
+      conversations: () => request<ConversationSummary[]>('GET', '/me/messages'),
+      conversation: (id: string) => request<ConversationView>('GET', `/me/messages/${enc(id)}`),
+      messageStore: (body: ConversationStart) =>
+        request<ConversationView>('POST', '/me/messages', { body }),
+      replyToStore: (id: string, body: string) =>
+        request<ConversationView>('POST', `/me/messages/${enc(id)}`, { body: { body } }),
+      reportConversation: (id: string, reason: string) =>
+        request<ConversationView>('POST', `/me/messages/${enc(id)}/report`, { body: { reason } }),
       /** Subscribe & Save (p10-11). Subscribing orders the first delivery at once. */
       subscriptions: () => request<SubscriptionView[]>('GET', '/me/subscriptions'),
       subscribe: (body: { variantId: string; quantity: number; intervalDays: number }) =>
