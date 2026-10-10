@@ -87,6 +87,9 @@ model User {
   supportRequests    SupportRequest[]
   helpConversations  HelpConversation[]
   savedItems         SavedItem[]
+  referralCode       ReferralCode?
+  referralsMade      Referral[]              @relation("referrer")
+  referredBy         Referral?               @relation("referred")
   sellerApplication  SellerApplicationDraft?
   passkeys           Passkey[]
   deviceSignIns      DeviceSignIn[]
@@ -607,6 +610,8 @@ enum GiftEntryKind {
   REFUND
   /// Credit from NIXZORA staff (goodwill).
   GRANT
+  /// Refer a friend (p10-23): the friend's first order shipped.
+  REFERRAL
 }
 
 /// An e-gift card (p10-10). Only a keyed hash of the code is stored; the code itself goes once
@@ -2080,4 +2085,44 @@ model SavedItem {
   @@id([userId, variantId])
   @@index([userId, createdAt])
   @@map("saved_items")
+}
+
+/// Refer a friend (p10-23, ADR-0045): each customer's code to share.
+model ReferralCode {
+  userId    String   @id @map("user_id") @db.Uuid
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referral_codes")
+}
+
+enum ReferralStatus {
+  PENDING
+  REWARDED
+  REJECTED
+}
+
+/// One friend who joined with someone's code.
+model Referral {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  referrerId  String         @map("referrer_id") @db.Uuid
+  referredId  String         @unique @map("referred_id") @db.Uuid
+  status      ReferralStatus @default(PENDING)
+  /// SAME_HOUSEHOLD, SMALL_ORDER or YEARLY_LIMIT when rejected.
+  reason      String?
+  /// The friend's one-time welcome code.
+  couponCode  String?        @map("coupon_code")
+  /// The friend's first shipped order, which decided the reward.
+  orderId     String?        @map("order_id") @db.Uuid
+  rewardCents Int            @default(0) @map("reward_cents")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  rewardedAt  DateTime?      @map("rewarded_at")
+
+  referrer User @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId, createdAt])
+  @@map("referrals")
 }

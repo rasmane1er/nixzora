@@ -10,7 +10,7 @@ import {
   type SignUpValues,
 } from '@nixzora/validation';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Banner, Button, Field, Row, Screen, Text } from '@/components/ui';
@@ -35,6 +35,22 @@ function countryName(iso: string, locale: string): string {
 /** The same sign-up as the website: names, email, optional mobile, password twice, consent. */
 export default function RegisterScreen() {
   const locale = language.get();
+  // Refer a friend (p10-23): an invite link opened the app here with ?ref=CODE.
+  const { ref } = useLocalSearchParams<{ ref?: string }>();
+  const referral =
+    typeof ref === 'string' && /^[A-Za-z0-9]{6,12}$/.test(ref) ? ref.toUpperCase() : null;
+  const tr = useT('referrals');
+  /** After the account exists: claim the invite, then show the welcome gift. */
+  const afterSignUp = async () => {
+    if (referral) {
+      // A code that doesn't work any more just doesn't apply.
+      await api.account.claimReferral(referral).catch(() => undefined);
+      router.replace('/account/referrals');
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace('/account');
+  };
   const [values, setValues] = useState<SignUpValues>({
     firstName: '',
     lastName: '',
@@ -95,8 +111,7 @@ export default function RegisterScreen() {
         language: locale,
       });
       await completeSignIn(tokens);
-      if (router.canGoBack()) router.back();
-      else router.replace('/account');
+      await afterSignUp();
     } catch (e) {
       setError(e instanceof ApiError ? e : errorMessage(e));
     } finally {
@@ -119,14 +134,14 @@ export default function RegisterScreen() {
     <Screen>
       <Text variant="title">{t('registerHeading')}</Text>
       <Text muted>{t('registerIntro')}</Text>
+      {referral ? <Banner tone="ok">{tr('inviteNote', { code: referral })}</Banner> : null}
       <SocialSignIn
         intent="signup"
         onResult={async (result) => {
           // An existing account with two-step verification: finish on the sign-in screen.
           if ('mfaRequired' in result) return router.replace('/sign-in');
           await completeSignIn(result);
-          if (router.canGoBack()) router.back();
-          else router.replace('/account');
+          await afterSignUp();
         }}
       />
       <Row style={{ alignItems: 'flex-start' }}>

@@ -362,6 +362,9 @@ export class AccountHubService {
         plusMembership: true,
         couponClips: { include: { coupon: { include: { product: { select: { title: true } } } } } },
         helpConversations: { include: { messages: { orderBy: { createdAt: 'asc' } } } },
+        referralCode: true,
+        referralsMade: { select: { status: true, rewardCents: true, createdAt: true } },
+        referredBy: { select: { couponCode: true, createdAt: true } },
         savedItems: {
           include: { variant: { select: { title: true, product: { select: { title: true } } } } },
         },
@@ -493,6 +496,17 @@ export class AccountHubService {
         clippedAt: c.createdAt,
         usedAt: c.usedAt,
       })),
+      referrals: {
+        code: user.referralCode?.code ?? null,
+        invited: user.referralsMade.map((r) => ({
+          status: r.status.toLowerCase(),
+          rewardCents: r.rewardCents,
+          joinedAt: r.createdAt,
+        })),
+        joinedWithInvite: user.referredBy
+          ? { at: user.referredBy.createdAt, welcomeCode: user.referredBy.couponCode }
+          : null,
+      },
       savedForLater: user.savedItems.map((s) => ({
         product: s.variant.product.title,
         option: s.variant.title,

@@ -16,7 +16,16 @@ import { register, type SignUpState } from '../actions';
 type Field = keyof SignUpValues;
 
 /** The sign-up form: every field checked as you go, and kept if something needs fixing. */
-export function RegisterForm({ next, defaultCountry }: { next: string; defaultCountry: string }) {
+export function RegisterForm({
+  next,
+  defaultCountry,
+  referral = null,
+}: {
+  next: string;
+  defaultCountry: string;
+  /** A friend's invite code (p10-23). */
+  referral?: string | null;
+}) {
   const t = useT('auth');
   const locale = useLocale();
   const [state, action, pending] = useActionState<SignUpState, FormData>(register, {});
@@ -69,6 +78,7 @@ export function RegisterForm({ next, defaultCountry }: { next: string; defaultCo
   return (
     <form action={action} className="form signup-form" noValidate>
       <input type="hidden" name="next" value={next} />
+      {referral ? <input type="hidden" name="referral" value={referral} /> : null}
       {state.error ? (
         <p className="banner banner--error" role="alert">
           {state.error}

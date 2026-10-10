@@ -1,4 +1,6 @@
 import type {
+  ReferralInvitePreview,
+  ReferralView,
   BrowsingHistory,
   CartAndSaved,
   SavedItem,
@@ -580,6 +582,14 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** Refer a friend (p10-23). */
+      referral: () => request<ReferralView>('GET', '/me/referral'),
+      claimReferral: (code: string) =>
+        request<ReferralView>('POST', '/me/referral/claim', { body: { code } }),
+      referralWelcome: () =>
+        request<{ welcome: ReferralView['welcome'] }>('GET', '/me/referral/welcome'),
+      referralPreview: (code: string) =>
+        request<ReferralInvitePreview>('GET', `/referrals/${enc(code)}`),
       /** Saved for later (p10-21). */
       saved: () => request<SavedItem[]>('GET', '/me/saved'),
       saveForLater: (variantId: string) =>

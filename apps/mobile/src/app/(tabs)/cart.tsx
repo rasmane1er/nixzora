@@ -1,4 +1,5 @@
 import { errorMessage } from '@nixzora/api-client';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, View } from 'react-native';
@@ -20,6 +21,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useFormatters } from '@/lib/format';
 import { useCart, useCartMutation } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { space } from '@/lib/theme';
@@ -38,6 +40,14 @@ export default function CartScreen() {
   const applyCoupon = useCartMutation((value: string) => api.cart.applyCoupon(value));
   const removeCoupon = useCartMutation(() => api.cart.removeCoupon());
   const saved = useSaved();
+  // Refer a friend (p10-23): a welcome code not used yet, offered while no code is applied.
+  const tr = useT('referrals');
+  const { money } = useFormatters();
+  const welcome = useQuery({
+    queryKey: ['referral-welcome'],
+    queryFn: () => api.account.referralWelcome().then((r) => r.welcome),
+    enabled: saved.signedIn,
+  });
 
   const data = cart.data;
   const refresh = (
@@ -87,6 +97,22 @@ export default function CartScreen() {
         ))}
       </View>
       {error ? <Banner tone="error">{errorMessage(error)}</Banner> : null}
+      {welcome.data && !welcome.data.used && !data.coupon ? (
+        <Card style={{ gap: space.sm }}>
+          <Text>
+            {tr('cartBanner', {
+              amount: money(welcome.data.amountCents),
+              code: welcome.data.code,
+            })}
+          </Text>
+          <Button
+            title={tr('apply')}
+            tone="secondary"
+            loading={applyCoupon.isPending}
+            onPress={() => applyCoupon.mutate(welcome.data!.code)}
+          />
+        </Card>
+      ) : null}
 
       <Card>
         {data.coupon ? (

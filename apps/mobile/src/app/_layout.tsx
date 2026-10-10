@@ -65,6 +65,7 @@ function RootLayout() {
   const tcl = useT('clips');
   const thi = useT('history');
   const tha = useT('helpAgent');
+  const trf = useT('referrals');
   const tgf = useT('gift');
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_600SemiBold,
@@ -153,6 +154,8 @@ function RootLayout() {
                 <Stack.Screen name="help/index" options={{ title: t('titleHelp') }} />
                 <Stack.Screen name="help/contact" options={{ title: t('titleContact') }} />
                 <Stack.Screen name="help/chat" options={{ title: tha('title') }} />
+                <Stack.Screen name="account/referrals" options={{ title: trf('navTitle') }} />
+                <Stack.Screen name="r/[code]" options={{ title: trf('navTitle') }} />
                 <Stack.Screen
                   name="gift-receipt/[number]"
                   options={{ title: tgf('receiptTitle') }}

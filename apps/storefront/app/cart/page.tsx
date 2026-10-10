@@ -8,7 +8,7 @@ import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/Plus
 import { isSignedIn } from '@/lib/session';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { type SavedItem } from '@nixzora/validation';
+import { type ReferralView, type SavedItem } from '@nixzora/validation';
 import { applyCoupon, removeCoupon, saveForLater, updateLine } from './actions';
 import { SavedForLater } from './SavedForLater';
 
@@ -26,6 +26,13 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   // Saved for later (p10-21): on the account, so signed-in shoppers only.
   const saved = signedIn ? await api<SavedItem[]>('/me/saved').catch((): SavedItem[] => []) : [];
   const sv = await getT('saved');
+  // Refer a friend (p10-23): a welcome code not used yet, offered while no code is applied.
+  const welcome = signedIn
+    ? await api<{ welcome: ReferralView['welcome'] }>('/me/referral/welcome')
+        .then((r) => r.welcome)
+        .catch(() => null)
+    : null;
+  const rf = await getT('referrals');
   const tc = await getT('cart');
   const to = await getT('order');
   const bd = await getT('bundles');
@@ -77,6 +84,17 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
         <p className="banner banner--ok" role="status" style={{ marginBottom: 16 }}>
           {notice}
         </p>
+      ) : null}
+      {welcome && !welcome.used && !cart.coupon ? (
+        <form action={applyCoupon} className="banner banner--ok welcome-banner">
+          <input type="hidden" name="code" value={welcome.code} />
+          <span>
+            {rf('cartBanner', { amount: f.money(welcome.amountCents), code: welcome.code })}
+          </span>
+          <button className="btn btn--secondary btn--sm" type="submit">
+            {rf('apply')}
+          </button>
+        </form>
       ) : null}
 
       <div className="cart">

@@ -30,8 +30,16 @@ async function guessCountry(locale: keyof typeof LANGUAGE_COUNTRY): Promise<stri
 
 export default async function RegisterPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const next = param(params, 'next') ?? '/account';
-  const [providers, t, locale] = await Promise.all([socialProviders(), getT('auth'), getLocale()]);
+  // Refer a friend (p10-23): an invite code from /r/CODE is claimed once the account exists.
+  const refRaw = param(params, 'ref');
+  const ref = refRaw && /^[A-Za-z0-9]{6,12}$/.test(refRaw) ? refRaw.toUpperCase() : null;
+  const next = param(params, 'next') ?? (ref ? `/account/referrals?claim=${ref}` : '/account');
+  const [providers, t, locale, rf] = await Promise.all([
+    socialProviders(),
+    getT('auth'),
+    getLocale(),
+    getT('referrals'),
+  ]);
   const country = await guessCountry(locale);
   const reasons = [
     { icon: <BoxIcon />, title: t('why1Title'), body: t('why1Body') },
@@ -46,6 +54,11 @@ export default async function RegisterPage({ searchParams }: { searchParams: Sea
           <h1>{t('registerHeading')}</h1>
           <p className="muted">{t('registerIntro')}</p>
         </header>
+        {ref ? (
+          <p className="banner banner--ok" role="status">
+            {rf('inviteNote', { code: ref })}
+          </p>
+        ) : null}
         {param(params, 'error') ? (
           <p className="banner banner--error" role="alert">
             {param(params, 'error')}
@@ -57,7 +70,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Sea
           intent="signup"
           scriptNonce={await cspNonce()}
         />
-        <RegisterForm next={next} defaultCountry={country} />
+        <RegisterForm next={next} defaultCountry={country} referral={ref} />
         <p className="signup__foot">
           {rich(t('alreadyHaveOne'), {
             link: (chunk) => (

@@ -5296,3 +5296,74 @@ td.neg {
     box-shadow: none;
   }
 }
+
+/* Refer a friend (p10-23) */
+.invite {
+  max-width: 560px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  text-align: center;
+  justify-items: center;
+}
+.share-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.share-link input {
+  flex: 1 1 260px;
+  min-width: 0;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: inherit;
+}
+.referral-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.referral-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.referral-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.referral-list li:first-child {
+  border-top: 0;
+}
+.referral-status {
+  font-size: 14px;
+  color: var(--muted);
+}
+.referral-status--rewarded {
+  color: var(--ok-fg);
+  font-weight: 600;
+}
+.referral-rules {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+.welcome-gift {
+  border-color: var(--color-signal);
+}
+.welcome-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

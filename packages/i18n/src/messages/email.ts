@@ -40,6 +40,10 @@ export const email = defineMessages({
     order_html_tax: 'Tax',
     order_html_total: 'Total',
     order_html_shipTo: 'Shipping to',
+    referral_aFriend: 'your friend',
+    referral_reward_subject: 'You earned {amount} for inviting {friend}',
+    referral_reward_text:
+      '{friend} placed their first order with your invite, so we added {amount} to your NIXZORA balance. It comes off your next order automatically.\n\nSee your invites: {link}',
     order_giftWrap: 'Gift wrap: {amount}',
     order_html_giftWrap: 'Gift wrap',
     order_html_gift: 'Gift',
@@ -243,6 +247,10 @@ export const email = defineMessages({
     order_html_tax: 'Taxes',
     order_html_total: 'Total',
     order_html_shipTo: 'Livraison à',
+    referral_aFriend: 'votre ami',
+    referral_reward_subject: 'Vous avez gagné {amount} en parrainant {friend}',
+    referral_reward_text:
+      '{friend} a passé sa première commande grâce à votre invitation : nous avons ajouté {amount} à votre solde NIXZORA. Il sera déduit de votre prochaine commande.\n\nVos invitations : {link}',
     order_giftWrap: 'Emballage cadeau : {amount}',
     order_html_giftWrap: 'Emballage cadeau',
     order_html_gift: 'Cadeau',
@@ -445,6 +453,10 @@ export const email = defineMessages({
     order_html_tax: 'Impuestos',
     order_html_total: 'Total',
     order_html_shipTo: 'Envío a',
+    referral_aFriend: 'tu amigo',
+    referral_reward_subject: 'Ganaste {amount} por invitar a {friend}',
+    referral_reward_text:
+      '{friend} hizo su primer pedido con tu invitación, así que añadimos {amount} a tu saldo de NIXZORA. Se descuenta en tu próximo pedido.\n\nTus invitaciones: {link}',
     order_giftWrap: 'Envoltorio de regalo: {amount}',
     order_html_giftWrap: 'Envoltorio de regalo',
     order_html_gift: 'Regalo',

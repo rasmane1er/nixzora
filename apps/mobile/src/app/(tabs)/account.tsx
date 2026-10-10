@@ -60,6 +60,7 @@ export default function AccountScreen() {
   const tcl = useT('clips');
   const thi = useT('history');
   const tha = useT('helpAgent');
+  const trf = useT('referrals');
   const ti = useT('inbox');
 
   if (status !== 'signedIn' || !user) {
@@ -214,6 +215,7 @@ export default function AccountScreen() {
       <MenuList
         title={t('groupHelp')}
         items={[
+          { icon: 'gift-outline', label: trf('navTitle'), href: '/account/referrals' },
           { icon: 'chatbubbles-outline', label: tha('hubLabel'), href: '/help/chat' },
           { icon: 'chatbubble-ellipses-outline', label: t('menuHelp'), href: '/help' },
           { icon: 'document-text-outline', label: t('menuPolicies'), href: '/account/policies' },

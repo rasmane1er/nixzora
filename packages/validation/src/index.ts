@@ -32,4 +32,5 @@ export * from './clip-coupons';
 export * from './history';
 export * from './help-agent';
 export * from './saved';
+export * from './referrals';
 export * from './messaging';

@@ -126,6 +126,17 @@ export async function register(_: SignUpState, form: FormData): Promise<SignUpSt
     }
     return { error: errorMessage(error), fieldErrors, values: kept };
   }
+  // Refer a friend (p10-23): the invite this sign-up came from. A code that doesn't work any
+  // more just doesn't apply; the account is made either way.
+  const referral = String(form.get('referral') ?? '').toUpperCase();
+  if (/^[A-Z0-9]{6,12}$/.test(referral)) {
+    await api('/me/referral/claim', {
+      method: 'POST',
+      auth: false,
+      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      body: { code: referral },
+    }).catch(() => undefined);
+  }
   await finish(tokens, next);
   return {};
 }

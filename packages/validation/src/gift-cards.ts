@@ -30,7 +30,14 @@ export type GiftCardPurchase = z.infer<typeof GiftCardPurchaseSchema>;
 export const GiftCardRedeemSchema = z.object({ code: z.string().trim().min(12).max(40) });
 export type GiftCardRedeem = z.infer<typeof GiftCardRedeemSchema>;
 
-export const GIFT_ENTRY_KINDS = ['REDEEM', 'SPEND', 'RELEASE', 'REFUND', 'GRANT'] as const;
+export const GIFT_ENTRY_KINDS = [
+  'REDEEM',
+  'SPEND',
+  'RELEASE',
+  'REFUND',
+  'GRANT',
+  'REFERRAL',
+] as const;
 export type GiftEntryKind = (typeof GIFT_ENTRY_KINDS)[number];
 
 export type GiftBalanceView = {
