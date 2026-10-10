@@ -1,7 +1,7 @@
 'use client';
 
-import { rich } from '@nixzora/i18n';
-import { type SavedAddress, US_STATES } from '@nixzora/validation';
+import { cardBrand, rich } from '@nixzora/i18n';
+import { type PaymentCardView, type SavedAddress, US_STATES } from '@nixzora/validation';
 import { useActionState, useState } from 'react';
 import { useT } from '@/components/I18nProvider';
 import { type CheckoutState, placeOrder } from './actions';
@@ -30,14 +30,22 @@ export function CheckoutForm({
   signedIn,
   addresses,
   buyNowId,
+  cards = [],
 }: {
   email?: string;
   signedIn: boolean;
   addresses: SavedAddress[];
+  /** Saved cards that can pay now (p10-09). */
+  cards?: PaymentCardView[];
   /** Checking out a Buy now cart instead of the shopper's cart (p10-05). */
   buyNowId?: string;
 }) {
   const t = useT('checkout');
+  const w = useT('wallet');
+  const usable = cards.filter((card) => !card.expired);
+  const [cardId, setCardId] = useState(
+    () => usable.find((card) => card.isDefault)?.id ?? usable[0]?.id ?? '',
+  );
   const [state, action, pending] = useActionState<CheckoutState, FormData>(placeOrder, {});
   const initial = addresses[0] ? fromSaved(addresses[0]) : {};
   const [defaults, setDefaults] = useState<Defaults>({ email, ...initial });
@@ -157,8 +165,48 @@ export function CheckoutForm({
         <p className="hint">{t('shipWithinUs')}</p>
       </section>
 
+      {signedIn ? (
+        <section className="card form">
+          <h2>{w('payWith')}</h2>
+          {usable.length ? (
+            <div className="pay-choice" role="radiogroup" aria-label={w('payWith')}>
+              {usable.map((card) => (
+                <label key={card.id}>
+                  <input
+                    type="radio"
+                    name="paymentCardId"
+                    value={card.id}
+                    checked={cardId === card.id}
+                    onChange={() => setCardId(card.id)}
+                  />
+                  {w('cardLabel', { brand: cardBrand(card.brand), last4: card.last4 })}
+                </label>
+              ))}
+              <label>
+                <input
+                  type="radio"
+                  name="paymentCardId"
+                  value=""
+                  checked={cardId === ''}
+                  onChange={() => setCardId('')}
+                />
+                {w('newCard')}
+              </label>
+            </div>
+          ) : null}
+          {cardId === '' ? (
+            <label className="check">
+              <input type="checkbox" name="saveCard" /> {w('saveCard')}
+              <span className="hint" style={{ display: 'block' }}>
+                {w('saveCardHint')}
+              </span>
+            </label>
+          ) : null}
+        </section>
+      ) : null}
+
       <button className="btn btn--primary btn--block" type="submit" disabled={pending}>
-        {pending ? t('placingOrder') : t('continueToPayment')}
+        {pending ? t('placingOrder') : cardId ? w('placeOrder') : t('continueToPayment')}
       </button>
     </form>
   );

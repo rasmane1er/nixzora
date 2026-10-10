@@ -1,4 +1,5 @@
 import type {
+  PaymentCardView,
   DealListQuery,
   DealsPage,
   SharedListView,
@@ -394,6 +395,10 @@ export function createApiClient(options: ClientOptions) {
         saveAddress?: boolean;
         cartId?: string;
         buyNowId?: string;
+        /** Keep the card for 1-click (signed in, p10-09). */
+        saveCard?: boolean;
+        /** Pay now with a saved card. */
+        paymentCardId?: string;
       }) => request<CheckoutResponse>('POST', '/checkout', { body }),
       /** A new payment session for an unpaid order (after a declined card). */
       payment: (number: string, token?: string) =>
@@ -414,6 +419,9 @@ export function createApiClient(options: ClientOptions) {
           query: { token },
           auth: token ? 'none' : 'auto',
         }),
+      /** Cancel a just-placed order (p10-09): within 30 minutes, before it is packed. */
+      cancel: (number: string, token?: string) =>
+        request<OrderView>('POST', `/orders/${enc(number)}/cancel`, { query: { token } }),
       requestReturn: (number: string, body: ReturnCreate, token?: string) =>
         request<ReturnView>('POST', `/orders/${enc(number)}/returns`, { body, query: { token } }),
       returns: (number: string, token?: string) =>
@@ -489,6 +497,12 @@ export function createApiClient(options: ClientOptions) {
       alerts: () => request<ProductAlertRef[]>('GET', '/me/alerts'),
       setAlert: (productId: string, kind: ProductAlertKind, on: boolean) =>
         request<void>(on ? 'PUT' : 'DELETE', `/me/alerts/${enc(productId)}`, { query: { kind } }),
+      /** Saved cards (p10-09): brand, last four and expiry; the numbers stay with Stripe. */
+      paymentCards: () => request<PaymentCardView[]>('GET', '/me/payment-cards'),
+      setDefaultCard: (id: string) =>
+        request<PaymentCardView[]>('POST', `/me/payment-cards/${enc(id)}/default`),
+      removeCard: (id: string) =>
+        request<PaymentCardView[]>('DELETE', `/me/payment-cards/${enc(id)}`),
       /** Lists and registries (p10-08). */
       lists: () => request<ShoppingListSummary[]>('GET', '/me/lists'),
       list: (id: string) => request<ShoppingListView>('GET', `/me/lists/${enc(id)}`),

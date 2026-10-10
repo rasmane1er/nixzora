@@ -1,11 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import type { OrderView } from '@nixzora/validation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
 import { ExpectedDelivery, TrackingScans } from '@/components/Delivery';
 import { OrderStatusPill } from '@/components/OrderStatusPill';
 import { RateSeller } from '@/components/RateSeller';
@@ -91,6 +91,16 @@ export default function OrderScreen() {
   const tc = useT('common');
   const { money, shortDate } = useFormatters();
   const [push, setPush] = useState<PushStatus | null>(null);
+  const w = useT('wallet');
+  const client = useQueryClient();
+  // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
+  const cancel = useMutation({
+    mutationFn: () => api.orders.cancel(number, token),
+    onSuccess: (view) => {
+      client.setQueryData(keys.order(number), view);
+      void client.invalidateQueries({ queryKey: keys.orders });
+    },
+  });
   const order = useQuery({
     queryKey: keys.order(number),
     queryFn: () => api.orders.get(number, token),
@@ -146,6 +156,31 @@ export default function OrderScreen() {
       >
         {placed ? (
           <Banner tone="ok">{t('orderPlaced', { number: o.number, email: o.email })}</Banner>
+        ) : null}
+        {cancel.isSuccess ? <Banner tone="ok">{w('cancelled')}</Banner> : null}
+        {cancel.error ? <Banner tone="error">{errorMessage(cancel.error)}</Banner> : null}
+        {o.cancellableUntil ? (
+          <Card>
+            <Text>
+              {w('cancelUntil', {
+                time: new Date(o.cancellableUntil).toLocaleTimeString([], {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                }),
+              })}
+            </Text>
+            <Button
+              title={w('cancelOrder')}
+              tone="ghost"
+              loading={cancel.isPending}
+              onPress={() =>
+                Alert.alert(w('cancelOrder'), w('cancelConfirm'), [
+                  { text: w('keepOrder'), style: 'cancel' },
+                  { text: w('cancelOrder'), style: 'destructive', onPress: () => cancel.mutate() },
+                ])
+              }
+            />
+          </Card>
         ) : null}
         {placed && status === 'signedIn' && push !== 'on' && push !== 'unsupported' ? (
           <Card>

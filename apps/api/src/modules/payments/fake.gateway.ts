@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { BadRequestException } from '@nestjs/common';
 import {
+  type CardDetails,
   type CreateIntentInput,
   type PaymentEvent,
   type PaymentEventType,
@@ -25,8 +26,35 @@ export class FakeGateway implements PaymentGateway {
     const existing = this.intents.get(input.idempotencyKey);
     const id = existing ?? `fake_pi_${randomUUID().replace(/-/g, '')}`;
     this.intents.set(input.idempotencyKey, id);
-    return { id, clientSecret: FakeGateway.secretFor(id) };
+    const clientSecret = FakeGateway.secretFor(id);
+    if (!input.paymentMethodId) return { id, clientSecret, status: 'pending' as const };
+    // Saved cards: tests mark a card to decline (or to need 3-D Secure) by its id.
+    if (input.paymentMethodId.includes('decline')) {
+      return { id, clientSecret, status: 'failed' as const, failure: 'Your card was declined.' };
+    }
+    if (input.paymentMethodId.includes('3ds') && !input.offSession) {
+      return { id, clientSecret, status: 'requires_action' as const };
+    }
+    return { id, clientSecret, status: 'succeeded' as const };
   }
+
+  async ensureCustomer(input: { userId: string; existing: string | null }) {
+    return input.existing ?? `fake_cus_${input.userId.replace(/-/g, '')}`;
+  }
+
+  /** The test card: Visa ending 4242, a different id for each payment. */
+  async savedCard(paymentId: string): Promise<CardDetails | null> {
+    const hash = createHash('sha256').update(`nixzora-fake-pm:${paymentId}`).digest('hex');
+    return {
+      methodId: `fake_pm_${hash.slice(0, 24)}`,
+      brand: 'visa',
+      last4: '4242',
+      expMonth: 12,
+      expYear: 2030,
+    };
+  }
+
+  async detachCard(): Promise<void> {}
 
   async clientSecret(paymentId: string): Promise<string> {
     return FakeGateway.secretFor(paymentId);

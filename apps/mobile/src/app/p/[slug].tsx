@@ -47,6 +47,7 @@ import { t as translate, useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
+import { cardBrand } from '@nixzora/i18n';
 import { useSession } from '@/lib/session';
 import { visitorId } from '@/lib/visitor';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
@@ -248,7 +249,7 @@ export default function ProductScreen() {
     slug: string;
     variant?: string;
   }>();
-  const { status } = useSession();
+  const { status, user } = useSession();
   const product = useQuery({
     queryKey: keys.product(slug),
     queryFn: () => api.catalog.product(slug),
@@ -291,6 +292,50 @@ export default function ProductScreen() {
   const l = useT('lists');
   const dealLabel = useDealLabel();
   // Buy now (p10-05): its own one-item cart, then straight to checkout.
+  const w = useT('wallet');
+  // 1-click (p10-09): the default saved card and address, when both exist.
+  const oneClickCards = useQuery({
+    queryKey: ['payment-cards'],
+    queryFn: () => api.account.paymentCards(),
+    enabled: status === 'signedIn',
+  });
+  const oneClickAddresses = useQuery({
+    queryKey: keys.addresses,
+    queryFn: () => api.account.addresses(),
+    enabled: status === 'signedIn',
+  });
+  const cardsOk = (oneClickCards.data ?? []).filter((c) => !c.expired);
+  const oneClickCard = cardsOk.find((c) => c.isDefault) ?? cardsOk[0];
+  const oneClickAddress =
+    oneClickAddresses.data?.find((a) => a.isDefaultShipping) ?? oneClickAddresses.data?.[0];
+  const oneClick = useMutation({
+    mutationFn: async ({ variantId, qty }: { variantId: string; qty: number }) => {
+      const cart = await api.cart.buyNow(variantId, qty);
+      const a = oneClickAddress!;
+      return api.checkout.start({
+        buyNowId: cart.cartId ?? undefined,
+        email: user!.email,
+        shippingAddress: {
+          fullName: a.fullName,
+          line1: a.line1,
+          line2: a.line2 || undefined,
+          city: a.city,
+          region: a.region,
+          postalCode: a.postalCode,
+          country: a.country,
+          phone: a.phone || undefined,
+        },
+        paymentCardId: oneClickCard!.id,
+      });
+    },
+    onSuccess: (response) => {
+      if (!response.paid) return;
+      router.push({
+        pathname: '/orders/[number]',
+        params: { number: response.orderNumber, token: response.accessToken, placed: '1' },
+      });
+    },
+  });
   const buyNow = useMutation({
     mutationFn: ({ variantId, qty }: { variantId: string; qty: number }) =>
       api.cart.buyNow(variantId, qty),
@@ -561,6 +606,30 @@ export default function ProductScreen() {
             ) : (
               <StockAlertButton productId={item.id} />
             )}
+            {canBuy && oneClickCard && oneClickAddress && user ? (
+              <View style={{ gap: space.xs }}>
+                <Button
+                  title={w('oneClick')}
+                  tone="secondary"
+                  loading={oneClick.isPending}
+                  onPress={() => oneClick.mutate({ variantId: variant.id, qty: quantity })}
+                />
+                <Text variant="small" muted>
+                  {w('oneClickNote', {
+                    name: oneClickAddress.fullName,
+                    city: oneClickAddress.city,
+                    card: w('cardLabel', {
+                      brand: cardBrand(oneClickCard.brand),
+                      last4: oneClickCard.last4,
+                    }),
+                  })}
+                </Text>
+              </View>
+            ) : null}
+            {oneClick.error ? <Banner tone="error">{errorMessage(oneClick.error)}</Banner> : null}
+            {oneClick.data?.paymentProblem ? (
+              <Banner tone="error">{oneClick.data.paymentProblem}</Banner>
+            ) : null}
             {canBuy ? (
               <Button
                 title={l('buyNow')}

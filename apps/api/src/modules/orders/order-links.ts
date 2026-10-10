@@ -1,5 +1,6 @@
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import {
+  CUSTOMER_CANCEL_MINUTES,
   type OrderStatus,
   type OrderView,
   RETURN_WINDOW_DAYS,
@@ -50,6 +51,22 @@ export function returnableUntil(order: {
   if (!order.deliveredAt || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status))
     return null;
   const until = new Date(order.deliveredAt.getTime() + RETURN_WINDOW_MS);
+  return until > new Date() ? until.toISOString() : null;
+}
+
+/**
+ * Customers can cancel their own order for a short while after placing it (p10-09), as long as
+ * nobody has started on it: paid, nothing packed or shipped.
+ */
+export function cancellableUntil(order: {
+  status: string;
+  placedAt: Date | null;
+  trackingNumber: string | null;
+  sellerOrders?: { status: string }[];
+}): string | null {
+  if (order.status !== 'PAID' || !order.placedAt || order.trackingNumber) return null;
+  if ((order.sellerOrders ?? []).some((part) => part.status !== 'PAID')) return null;
+  const until = new Date(order.placedAt.getTime() + CUSTOMER_CANCEL_MINUTES * 60_000);
   return until > new Date() ? until.toISOString() : null;
 }
 
@@ -150,6 +167,7 @@ export function toOrderView(order: OrderRow): OrderView {
         : null,
     shipments: shipments(order),
     returnableUntil: returnableUntil(order),
+    cancellableUntil: cancellableUntil(order),
     timeline,
     createdAt: order.createdAt.toISOString(),
     placedAt: order.placedAt?.toISOString() ?? null,

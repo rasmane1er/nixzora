@@ -4115,3 +4115,78 @@ td.neg {
   flex: 1;
   min-width: min(260px, 100%);
 }
+
+/* ───────────── Saved cards (p10-09) ───────────── */
+.saved-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.saved-cards li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.saved-cards__name {
+  display: grid;
+  gap: 2px;
+}
+.saved-cards__name .pill {
+  justify-self: start;
+}
+.saved-cards__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.pay-choice {
+  display: grid;
+  gap: 8px;
+}
+.pay-choice label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.pay-choice label:has(input:checked) {
+  border-color: var(--fg);
+}
+.one-click {
+  display: grid;
+  gap: 6px;
+}
+.one-click .muted {
+  font-size: 13px;
+}
+.cancel-order summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.cancel-order summary::-webkit-details-marker {
+  display: none;
+}
+.cancel-order__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}

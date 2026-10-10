@@ -17,7 +17,10 @@ type Props = { params: Promise<{ number: string }>; searchParams: SearchParams }
 
 export default async function PayPage({ params, searchParams }: Props) {
   const { number } = await params;
-  const token = param(await searchParams, 'token');
+  const search = await searchParams;
+  const token = param(search, 'token');
+  // Why a saved card did not go through (p10-09): the form below lets the customer retry.
+  const problem = param(search, 'error');
   if (!/^NX-[A-Z0-9]{6}$/.test(number)) notFound();
   const qs = token ? `?token=${encodeURIComponent(token)}` : '';
 
@@ -46,6 +49,11 @@ export default async function PayPage({ params, searchParams }: Props) {
       <h1 style={{ marginBottom: 20 }}>{t('paymentTitle')}</h1>
       <div className="cart">
         <section className="card stack">
+          {problem ? (
+            <p className="banner banner--error" role="alert">
+              {problem}
+            </p>
+          ) : null}
           <PayForm session={session} returnPath={returnPath} />
           <p className="muted" style={{ fontSize: 13 }}>
             {t('heldNotice')}

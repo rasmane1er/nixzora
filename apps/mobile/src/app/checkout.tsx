@@ -15,7 +15,7 @@ import { DeliveryPromise } from '@/components/Delivery';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, EmptyState, Field, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { rich } from '@nixzora/i18n';
+import { cardBrand, rich } from '@nixzora/i18n';
 import { useFormatters } from '@/lib/format';
 import { useCart } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
@@ -84,6 +84,17 @@ export default function CheckoutScreen() {
   });
   const cart = buyNowId ? buyCart : mainCart;
   const l = useT('lists');
+  const w = useT('wallet');
+  // Saved cards (p10-09): pay with one now, or keep the new card for next time.
+  const cards = useQuery({
+    queryKey: ['payment-cards'],
+    queryFn: () => api.account.paymentCards(),
+    enabled: signedIn,
+  });
+  const usableCards = (cards.data ?? []).filter((card) => !card.expired);
+  const [cardChoice, setCardChoice] = useState<string | null>(null);
+  const cardId = cardChoice ?? usableCards.find((c) => c.isDefault)?.id ?? usableCards[0]?.id ?? '';
+  const [saveCard, setSaveCard] = useState(false);
   const addresses = useQuery({
     queryKey: keys.addresses,
     queryFn: () => api.account.addresses(),
@@ -189,12 +200,28 @@ export default function CheckoutScreen() {
         ...(buyNowId
           ? { buyNowId }
           : { cartId: signedIn ? undefined : (session.cartId() ?? undefined) }),
+        ...(signedIn && cardId ? { paymentCardId: cardId } : {}),
+        ...(signedIn && !cardId && saveCard ? { saveCard: true } : {}),
       });
       if (!signedIn && !buyNowId) session.setCartId(null);
-      await collect(
-        { number: response.orderNumber, token: response.accessToken, ...valid },
-        response.payment,
-      );
+      const order = { number: response.orderNumber, token: response.accessToken, ...valid };
+      if (response.paid) {
+        await client.invalidateQueries({ queryKey: keys.cart });
+        await client.invalidateQueries({ queryKey: ['buyNow'] });
+        await client.invalidateQueries({ queryKey: keys.orders });
+        router.replace({
+          pathname: '/orders/[number]',
+          params: { number: order.number, token: order.token, placed: '1' },
+        });
+        return;
+      }
+      if (response.paymentProblem) {
+        // The saved card did not go through: the order waits, the payment sheet can retry.
+        setPending(order);
+        setProblem(response.paymentProblem);
+        return;
+      }
+      await collect(order, response.payment);
     } catch (error) {
       setProblem(errorMessage(error));
       if (error instanceof ApiError && error.status === 409) void cart.refetch();
@@ -367,6 +394,59 @@ export default function CheckoutScreen() {
             autoComplete="tel"
             textContentType="telephoneNumber"
           />
+          {signedIn ? (
+            <>
+              <Text variant="heading">{w('payWith')}</Text>
+              {usableCards.map((card) => (
+                <Pressable
+                  key={card.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: cardId === card.id }}
+                  onPress={() => setCardChoice(card.id)}
+                  style={{
+                    borderWidth: cardId === card.id ? 2 : 1,
+                    borderColor: cardId === card.id ? p.fg : p.line,
+                    borderRadius: radius,
+                    padding: space.md,
+                  }}
+                >
+                  <Text style={{ fontFamily: fonts.bodyMedium }}>
+                    {w('cardLabel', { brand: cardBrand(card.brand), last4: card.last4 })}
+                  </Text>
+                </Pressable>
+              ))}
+              {usableCards.length ? (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: cardId === '' }}
+                  onPress={() => setCardChoice('')}
+                  style={{
+                    borderWidth: cardId === '' ? 2 : 1,
+                    borderColor: cardId === '' ? p.fg : p.line,
+                    borderRadius: radius,
+                    padding: space.md,
+                  }}
+                >
+                  <Text style={{ fontFamily: fonts.bodyMedium }}>{w('newCard')}</Text>
+                </Pressable>
+              ) : null}
+              {cardId === '' ? (
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text>{w('saveCard')}</Text>
+                    <Text variant="small" muted>
+                      {w('saveCardHint')}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={saveCard}
+                    onValueChange={setSaveCard}
+                    accessibilityLabel={w('saveCard')}
+                  />
+                </Row>
+              ) : null}
+            </>
+          ) : null}
           {signedIn && chosenId === 'new' ? (
             <Row style={{ justifyContent: 'space-between' }}>
               <Text>{t('saveToAddressBook')}</Text>

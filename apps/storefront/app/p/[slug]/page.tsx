@@ -6,7 +6,7 @@ import {
   type ReviewInsights as Insights,
   type ReviewPage,
 } from '@nixzora/validation';
-import { INTL_LOCALE, rich, specLabel as sharedSpecLabel } from '@nixzora/i18n';
+import { cardBrand, INTL_LOCALE, rich, specLabel as sharedSpecLabel } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
 import { cspNonce } from '@/lib/csp-nonce';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
+import { oneClickSetup } from '@/lib/one-click';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
 import { DealTimer } from '@/components/DealTimer';
@@ -113,6 +114,9 @@ export default async function ProductPage({ params }: Props) {
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
   const d = await getT('deals');
+  const w = await getT('wallet');
+  // 1-click (p10-09): only when a saved card and an address are ready.
+  const oneClick = signedIn && inStock ? await oneClickSetup() : null;
   const a = await getT('ads');
   const p = await getT('product');
   const c = await getT('common');
@@ -217,7 +221,21 @@ export default async function ProductPage({ params }: Props) {
             </div>
           ) : null}
           <DeliveryPromise window={product.delivery} />
-          <AddToCart variants={product.variants} slug={product.slug} />
+          <AddToCart
+            variants={product.variants}
+            slug={product.slug}
+            oneClick={
+              oneClick
+                ? {
+                    shipTo: `${oneClick.address.fullName}, ${oneClick.address.city}`,
+                    card: w('cardLabel', {
+                      brand: cardBrand(oneClick.card.brand),
+                      last4: oneClick.card.last4,
+                    }),
+                  }
+                : null
+            }
+          />
           {!inStock ? (
             <StockAlert
               productId={product.id}

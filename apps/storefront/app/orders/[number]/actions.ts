@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { api, errorMessage } from '@/lib/api';
 import { getT } from '@/lib/i18n';
 
@@ -59,4 +60,23 @@ export async function rateSeller(_: RatingState, form: FormData): Promise<Rating
   } catch (error) {
     return { error: errorMessage(error) };
   }
+}
+
+/** Cancels a just-placed order (p10-09); the API checks the 30-minute window. */
+export async function cancelOrder(form: FormData): Promise<void> {
+  const number = String(form.get('number') ?? '');
+  const token = String(form.get('token') ?? '');
+  if (!/^NX-[A-Z0-9]{6}$/.test(number)) return;
+  const qs = token ? `token=${encodeURIComponent(token)}&` : '';
+  let message: string;
+  try {
+    await api(`/orders/${number}/cancel${token ? `?token=${encodeURIComponent(token)}` : ''}`, {
+      method: 'POST',
+    });
+    message = `notice=${encodeURIComponent((await getT('wallet'))('cancelled'))}`;
+  } catch (error) {
+    message = `error=${encodeURIComponent(errorMessage(error))}`;
+  }
+  revalidatePath(`/orders/${number}`);
+  redirect(`/orders/${number}?${qs}${message}`);
 }

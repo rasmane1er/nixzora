@@ -10,9 +10,11 @@ import {
   AdminOrdersController,
   AdminReturnsController,
   CheckoutController,
+  PaymentCardsController,
   PaymentsController,
 } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { PaymentCardsService } from './payment-cards.service';
 import { RefundsService } from './refunds.service';
 import { ReturnsService } from './returns.service';
 import { AdminRiskController } from './risk-review.controller';
@@ -24,11 +26,19 @@ import { SellerRatingsService } from './seller-ratings.service';
     CheckoutController,
     AccountOrdersController,
     PaymentsController,
+    PaymentCardsController,
     AdminOrdersController,
     AdminReturnsController,
     AdminRiskController,
   ],
-  providers: [OrdersService, OrderEmails, RefundsService, ReturnsService, SellerRatingsService],
-  exports: [OrdersService, ReturnsService],
+  providers: [
+    OrdersService,
+    OrderEmails,
+    RefundsService,
+    ReturnsService,
+    SellerRatingsService,
+    PaymentCardsService,
+  ],
+  exports: [OrdersService, ReturnsService, PaymentCardsService],
 })
 export class OrdersModule {}

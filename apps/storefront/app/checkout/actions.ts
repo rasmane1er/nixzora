@@ -4,6 +4,7 @@ import { type Cart, CartIdSchema, type CheckoutResponse, US_STATES } from '@nixz
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { getT } from '@/lib/i18n';
+import { oneClickSetup } from '@/lib/one-click';
 import { accessToken, guestCartId } from '@/lib/session';
 
 export type CheckoutState = {
@@ -49,11 +50,56 @@ export async function buyNow(
   redirect(`/checkout?buy=${cart.cartId}${from}`);
 }
 
+/**
+ * 1-click (p10-09): this item alone, to the default address, charged to the default saved card,
+ * then straight to the order page (where it can still be cancelled for 30 minutes).
+ */
+export async function oneClickBuy(
+  variantId: string,
+  quantity: number,
+  slug: string,
+): Promise<{ error: string }> {
+  if (!UUID.test(variantId)) return { error: (await getT('cart'))('chooseOption') };
+  const setup = await oneClickSetup();
+  if (!setup) return buyNow(variantId, quantity, slug);
+  let checkout: CheckoutResponse;
+  try {
+    const cart = await api<Cart>('/cart/buy-now', {
+      method: 'POST',
+      body: { variantId, quantity: Math.min(20, Math.max(1, Math.trunc(quantity) || 1)) },
+    });
+    const a = setup.address;
+    const address = {
+      fullName: a.fullName,
+      line1: a.line1,
+      line2: a.line2 || undefined,
+      city: a.city,
+      region: a.region,
+      postalCode: a.postalCode,
+      country: a.country,
+      phone: a.phone || undefined,
+    };
+    checkout = await api<CheckoutResponse>('/checkout', {
+      method: 'POST',
+      body: {
+        buyNowId: cart.cartId,
+        email: setup.email,
+        shippingAddress: address,
+        paymentCardId: setup.card.id,
+      },
+    });
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  redirect(afterCheckout(checkout));
+}
+
 export async function placeOrder(_: CheckoutState, form: FormData): Promise<CheckoutState> {
   const values = Object.fromEntries(FIELDS.map((f) => [f, String(form.get(f) ?? '').trim()]));
   const signedIn = Boolean(await accessToken());
   const cartId = await guestCartId();
   const buy = CartIdSchema.safeParse(form.get('buyNowId'));
+  const paymentCardId = String(form.get('paymentCardId') ?? '');
   const buyNowId = buy.success ? buy.data : null;
   const t = await getT('checkout');
 
@@ -69,6 +115,9 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
         ...(buyNowId ? { buyNowId } : signedIn || !cartId ? {} : { cartId }),
         email: values.email,
         saveAddress: signedIn && form.get('saveAddress') === 'on',
+        // Saved cards (p10-09): pay now with one, or keep the new card for next time.
+        ...(signedIn && UUID.test(paymentCardId) ? { paymentCardId } : {}),
+        ...(signedIn && !paymentCardId && form.get('saveCard') === 'on' ? { saveCard: true } : {}),
         shippingAddress: {
           fullName: values.fullName,
           line1: values.line1,
@@ -99,5 +148,15 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
     return { values, error: errorMessage(error) };
   }
 
-  redirect(`/checkout/pay/${checkout.orderNumber}?token=${checkout.accessToken}`);
+  redirect(afterCheckout(checkout));
+}
+
+/** Where a new order goes next: its page when a saved card paid, else the payment form. */
+function afterCheckout(checkout: CheckoutResponse): string {
+  const token = `token=${checkout.accessToken}`;
+  if (checkout.paid) return `/orders/${checkout.orderNumber}?${token}&placed=1`;
+  const problem = checkout.paymentProblem
+    ? `&error=${encodeURIComponent(checkout.paymentProblem)}`
+    : '';
+  return `/checkout/pay/${checkout.orderNumber}?${token}${problem}`;
 }

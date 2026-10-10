@@ -9,6 +9,7 @@ export { defineMessages, type Catalog } from './define';
 export { filterValueLabel, optionLabel, specLabel } from './catalog-labels';
 export { smartRowTitle } from './smart-rows';
 export { deliveryRange } from './delivery-format';
+export { cardBrand } from './messages/wallet';
 
 export type Namespace = keyof typeof catalogs;
 /** Every namespace's messages for one language. */

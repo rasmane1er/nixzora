@@ -33,6 +33,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type CartOwner, CartService } from '../cart/cart.service';
+import { PaymentCardsService } from './payment-cards.service';
 import { type AuthUser } from '../identity/auth-user';
 import { InventoryService } from '../inventory/inventory.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -51,6 +52,7 @@ import {
   splitBySeller,
 } from './marketplace';
 import {
+  cancellableUntil,
   newOrderNumber,
   orderAccessToken,
   orderInclude,
@@ -86,6 +88,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     private readonly coupons: CouponsService,
     private readonly refunds: RefundsService,
     private readonly risk: RiskService,
+    private readonly cards: PaymentCardsService,
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGateway,
   ) {}
 
@@ -154,6 +157,14 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       quantity: line.quantity,
     }));
 
+    // Saved cards (p10-09): only for the signed-in customer who saved them.
+    if ((input.paymentCardId || input.saveCard) && !user) {
+      throw new BadRequestException('Sign in to use or save a card.');
+    }
+    const card = input.paymentCardId
+      ? await this.cards.usable(user!.id, input.paymentCardId)
+      : null;
+
     // Fraud signals (ADR-0024): decline the worst before holding any stock.
     const assessment = await this.risk.assessCheckout({
       email: user?.email ?? input.email,
@@ -201,8 +212,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       throw error;
     }
 
-    let intent: { id: string; clientSecret: string };
+    let intent: Awaited<ReturnType<PaymentGateway['createIntent']>>;
     try {
+      const saveCard = Boolean(user && input.saveCard && !card);
+      const customerId = user && (card || saveCard) ? await this.cards.customerFor(user) : null;
       intent = await this.gateway.createIntent({
         amountCents: order.totalCents,
         currency: order.currency,
@@ -210,6 +223,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         orderNumber: order.number,
         email: order.email,
         idempotencyKey: `order-${order.id}`,
+        customerId,
+        saveCard,
+        paymentMethodId: card?.providerMethodId ?? null,
       });
       await this.prisma.payment.create({
         data: {
@@ -219,6 +235,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           status: 'REQUIRES_ACTION',
           amountCents: order.totalCents,
           currency: order.currency,
+          saveCard,
+          paymentCardId: card?.id ?? null,
         },
       });
     } catch (error) {
@@ -252,12 +270,31 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       metadata: { number: order.number, totalCents: order.totalCents, items: items.length },
     });
 
+    // A saved card that went through: the order is paid now, no payment form. (Stripe also
+    // sends its webhook; applying the same success twice changes nothing.)
+    if (intent.status === 'succeeded') {
+      await this.applyPaymentEvent({
+        id: `sync_${intent.id}`,
+        type: 'succeeded',
+        paymentId: intent.id,
+        amountCents: order.totalCents,
+        currency: order.currency,
+      });
+    }
+
     return {
       orderId: order.id,
       orderNumber: order.number,
       accessToken: this.accessToken(order.id),
       payment: this.session(intent.clientSecret, order),
       totals: cart.totals,
+      paid: intent.status === 'succeeded',
+      paymentProblem:
+        intent.status === 'failed'
+          ? (intent.failure ?? 'Your card was declined. Try another card.')
+          : intent.status === 'requires_action'
+            ? 'Your bank wants to confirm this payment. Finish it on the payment page.'
+            : null,
     };
   }
 
@@ -523,6 +560,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         .afterPayment(payment.orderId, payment.providerPaymentId)
         .catch((error: Error) => this.logger.warn(`Payment risk check failed: ${error.message}`));
       await this.emptyCart(payment.orderId);
+      await this.cards
+        .rememberFromPayment(payment.providerPaymentId)
+        .catch((error: Error) => this.logger.warn(`Saving a card failed: ${error.message}`));
       await this.audit.record({
         action: 'orders.paid',
         actorType: 'SYSTEM',
@@ -756,6 +796,42 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       },
     });
     return this.byIdForAdmin(id);
+  }
+
+  /**
+   * The customer cancels their own order (p10-09): within a short window after placing it, while
+   * nothing is packed or shipped. Refunds in full and puts the stock back.
+   */
+  async customerCancel(order: OrderRow, meta?: RequestMeta): Promise<OrderView> {
+    if (!cancellableUntil(order)) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'NOT_CANCELLABLE',
+        message:
+          'This order can no longer be cancelled here. Once it arrives you can return it, or contact us now.',
+      });
+    }
+    await assertNoSellerShipped(this.prisma, order.id);
+    await this.refunds.refund(order, this.refunds.remaining(order), 'Cancelled by the customer', {
+      cancel: true,
+      restock: order.items
+        .filter((item) => item.variantId)
+        .map((item) => ({ variantId: item.variantId!, quantity: item.quantity })),
+    });
+    await this.audit.record({
+      action: 'orders.cancelled_by_customer',
+      actorId: order.userId,
+      entityType: 'order',
+      entityId: order.id,
+      meta,
+      metadata: { number: order.number },
+    });
+    const fresh = await this.prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+      include: orderInclude,
+    });
+    return this.view(fresh);
   }
 
   /** Unpaid: cancel the payment and free the holds. Paid, not shipped: refund in full and restock. */

@@ -171,6 +171,10 @@ export const CheckoutRequestSchema = z.object({
   shippingAddress: AddressSchema,
   /** Signed-in customers: keep this address in the address book. */
   saveAddress: z.boolean().optional(),
+  /** Signed-in customers: keep the card they pay with for next time (p10-09). */
+  saveCard: z.boolean().optional(),
+  /** Signed-in customers: pay now with this saved card (1-click), no payment form. */
+  paymentCardId: z.uuid().optional(),
 });
 
 export type CheckoutResponse = {
@@ -180,6 +184,25 @@ export type CheckoutResponse = {
   accessToken: string;
   payment: PaymentSession;
   totals: Totals;
+  /** Paid already (a saved card that went through): skip the payment form. */
+  paid?: boolean;
+  /** Why a saved card did not go through; the payment form lets the customer try again. */
+  paymentProblem?: string | null;
+};
+
+/** How long after placing an order the customer can cancel it themselves (p10-09). */
+export const CUSTOMER_CANCEL_MINUTES = 30;
+
+/** A card the customer kept (p10-09). The number stays with the payment provider. */
+export type PaymentCardView = {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+  /** Past its expiry month: can't be used. */
+  expired: boolean;
 };
 
 export type PaymentSession = {
@@ -278,6 +301,8 @@ export type OrderView = {
   shipments: ShipmentView[];
   /** Delivered within the return window and not fully returned yet. */
   returnableUntil: string | null;
+  /** Until when the customer can still cancel it themselves (paid, not being packed yet). */
+  cancellableUntil?: string | null;
   timeline: { status: OrderStatus; at: string }[];
   createdAt: string;
   placedAt: string | null;

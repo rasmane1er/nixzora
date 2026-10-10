@@ -1,4 +1,10 @@
-import { type Cart, CartIdSchema, type MeResponse, type SavedAddress } from '@nixzora/validation';
+import {
+  type Cart,
+  CartIdSchema,
+  type MeResponse,
+  type PaymentCardView,
+  type SavedAddress,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -31,12 +37,13 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const l = await getT('lists');
 
   const signedIn = Boolean(await accessToken());
-  const [me, addresses] = signedIn
+  const [me, addresses, cards] = signedIn
     ? await Promise.all([
         api<MeResponse>('/auth/me').catch(() => null),
         api<SavedAddress[]>('/me/addresses').catch(() => []),
+        api<PaymentCardView[]>('/me/payment-cards').catch((): PaymentCardView[] => []),
       ])
-    : [null, [] as SavedAddress[]];
+    : [null, [] as SavedAddress[], [] as PaymentCardView[]];
 
   const t = cart.totals;
   const tc = await getT('checkout');
@@ -52,6 +59,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           signedIn={Boolean(me)}
           addresses={addresses}
           buyNowId={buyNowId}
+          cards={cards}
         />
         <aside className="card summary" aria-label={to('orderSummary')}>
           <h2>{tc('yourOrder')}</h2>

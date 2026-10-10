@@ -17,6 +17,7 @@ import { param, type SearchParams } from '@/lib/params';
 import { isSignedIn } from '@/lib/session';
 import { RateSellerForm } from './RateSellerForm';
 import { ReturnForm } from './ReturnForm';
+import { cancelOrder } from './actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('order');
@@ -53,7 +54,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
   }
 
   const t = await getT('order');
+  const w = await getT('wallet');
   const f = await getFormat();
+  const placed = param(search, 'placed') === '1';
+  const notice = param(search, 'notice');
+  const problem = param(search, 'error');
   const locale = await getLocale();
   const waiting = order.status === 'PENDING_PAYMENT' && confirming;
   const unpaid = order.status === 'PENDING_PAYMENT' && !confirming;
@@ -77,6 +82,45 @@ export default async function OrderPage({ params, searchParams }: Props) {
           <StatusPill status={order.status} /> · {t('receiptSentTo', { email: order.email })}
         </p>
       </div>
+
+      {problem ? (
+        <p className="banner banner--error" role="alert">
+          {problem}
+        </p>
+      ) : notice ? (
+        <p className="banner banner--ok" role="status">
+          {notice}
+        </p>
+      ) : placed && order.status !== 'CANCELLED' ? (
+        <p className="banner banner--ok" role="status">
+          {w('placedTitle')}
+        </p>
+      ) : null}
+
+      {/* Changed your mind (p10-09): cancel within 30 minutes, before anything is packed. */}
+      {order.cancellableUntil ? (
+        <details className="card cancel-order">
+          <summary>
+            {w('cancelUntil', {
+              time: new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone: 'America/New_York',
+                timeZoneName: 'short',
+              }).format(new Date(order.cancellableUntil)),
+            })}{' '}
+            <span className="btn btn--secondary btn--sm">{w('cancelOrder')}</span>
+          </summary>
+          <form action={cancelOrder} className="cancel-order__confirm">
+            <input type="hidden" name="number" value={order.number} />
+            <input type="hidden" name="token" value={token ?? ''} />
+            <p style={{ margin: 0 }}>{w('cancelConfirm')}</p>
+            <button className="btn btn--danger btn--sm" type="submit">
+              {w('cancelOrder')}
+            </button>
+          </form>
+        </details>
+      ) : null}
 
       {unpaid ? (
         <p className="banner banner--info">

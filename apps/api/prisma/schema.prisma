@@ -51,6 +51,8 @@ model User {
   avatarKey         String?    @map("avatar_key")
   /// Language for the website, the app, emails and push: "en", "fr" or "es".
   language          String     @default("en")
+  /// The payment provider's customer (Stripe cus_...) that holds this account's saved cards.
+  paymentCustomerId String?    @unique @map("payment_customer_id")
   mfaEnabled        Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
   mfaSecretEnc      String?    @map("mfa_secret_enc")
@@ -75,6 +77,7 @@ model User {
   answers            ProductAnswer[]
   productAlerts      ProductAlert[]
   lists              ShoppingList[]
+  paymentCards       PaymentCard[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -536,6 +539,10 @@ model Payment {
   currency          String          @db.Char(3)
   /// The card holder disputed the charge (chargeback).
   disputedAt        DateTime?       @map("disputed_at")
+  /// The customer asked to keep the card used for this payment (p10-09).
+  saveCard          Boolean         @default(false) @map("save_card")
+  /// The saved card charged, for 1-click and saved-card checkouts.
+  paymentCardId     String?         @map("payment_card_id") @db.Uuid
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
@@ -544,6 +551,27 @@ model Payment {
 
   @@index([orderId])
   @@map("payments")
+}
+
+/// A card the customer chose to keep (p10-09). The card itself stays with the payment provider:
+/// only its brand, last four digits and expiry are copied here for display.
+model PaymentCard {
+  id               String          @id @default(uuid(7)) @db.Uuid
+  userId           String          @map("user_id") @db.Uuid
+  provider         PaymentProvider
+  /// The provider's payment method (Stripe pm_...).
+  providerMethodId String          @unique @map("provider_method_id")
+  brand            String
+  last4            String          @db.Char(4)
+  expMonth         Int             @map("exp_month")
+  expYear          Int             @map("exp_year")
+  isDefault        Boolean         @default(false) @map("is_default")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payment_cards")
 }
 
 model Refund {

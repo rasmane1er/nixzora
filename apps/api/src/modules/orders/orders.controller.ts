@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Headers,
@@ -28,6 +29,7 @@ import {
   type OrderSummary,
   type OrderView,
   type PagedResult,
+  type PaymentCardView,
   type PaymentSession,
   type AdminReturnQuery,
   AdminReturnQuerySchema,
@@ -62,6 +64,7 @@ import { FakeGateway } from '../payments/fake.gateway';
 import { PAYMENT_GATEWAY, type PaymentGateway } from '../payments/payment-gateway';
 import { type OrderRow } from './order-links';
 import { OrdersService } from './orders.service';
+import { PaymentCardsService } from './payment-cards.service';
 import { ReturnsService } from './returns.service';
 import { SellerRatingsService } from './seller-ratings.service';
 
@@ -130,6 +133,24 @@ export class CheckoutController {
     @MaybeUser() user: AuthUser | undefined,
   ): Promise<PaymentSession> {
     return this.orders.paymentSession(await this.find(orderNumber(number), query.token, user));
+  }
+
+  /** Cancel a just-placed order (p10-09): within 30 minutes, before anything is packed. */
+  @Post('orders/:number/cancel')
+  @OptionalAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle(perMinute(10))
+  @ApiQuery({ name: 'token', required: false })
+  async cancel(
+    @Param('number') number: string,
+    @Query(new ZodValidationPipe(TokenQuery)) query: z.infer<typeof TokenQuery>,
+    @MaybeUser() user: AuthUser | undefined,
+    @ReqMeta() meta: RequestMeta,
+  ): Promise<OrderView> {
+    return this.orders.customerCancel(
+      await this.find(orderNumber(number), query.token, user),
+      meta,
+    );
   }
 
   /** Start a return (delivered orders, within 30 days). */
@@ -204,6 +225,37 @@ export class AccountOrdersController {
   @RequirePermissions('orders.read.own')
   async get(@CurrentUser() user: AuthUser, @Param('number') number: string): Promise<OrderView> {
     return this.orders.view(await this.orders.byNumberForUser(orderNumber(number), user.id));
+  }
+}
+
+/** Saved cards (p10-09): list, choose the default for 1-click, remove. */
+@ApiTags('account')
+@ApiBearerAuth()
+@Controller({ path: 'me/payment-cards', version: '1' })
+export class PaymentCardsController {
+  constructor(private readonly cards: PaymentCardsService) {}
+
+  @Get()
+  list(@CurrentUser() user: AuthUser): Promise<PaymentCardView[]> {
+    return this.cards.list(user.id);
+  }
+
+  @Post(':id/default')
+  @HttpCode(HttpStatus.OK)
+  setDefault(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<PaymentCardView[]> {
+    return this.cards.setDefault(user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<PaymentCardView[]> {
+    return this.cards.remove(user.id, id);
   }
 }
 

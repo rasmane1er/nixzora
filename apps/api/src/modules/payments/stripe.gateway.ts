@@ -1,7 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import Stripe from 'stripe';
 import {
+  type CardDetails,
   type CreateIntentInput,
+  type IntentStatus,
   type PaymentEvent,
   type PaymentEventType,
   type PaymentGateway,
@@ -14,6 +16,22 @@ const EVENT_TYPES: Record<string, PaymentEventType> = {
   'payment_intent.canceled': 'canceled',
   'charge.dispute.created': 'disputed',
 };
+
+function statusOf(status: Stripe.PaymentIntent.Status): IntentStatus {
+  switch (status) {
+    case 'succeeded':
+      return 'succeeded';
+    case 'processing':
+      return 'processing';
+    case 'requires_action':
+      return 'requires_action';
+    case 'requires_payment_method':
+    case 'canceled':
+      return 'failed';
+    default:
+      return 'pending';
+  }
+}
 
 /**
  * Stripe Payment Element flow: the server creates a PaymentIntent, the browser confirms it
@@ -32,18 +50,78 @@ export class StripeGateway implements PaymentGateway {
   }
 
   async createIntent(input: CreateIntentInput) {
-    const intent = await this.stripe.paymentIntents.create(
-      {
-        amount: input.amountCents,
-        currency: input.currency.toLowerCase(),
-        automatic_payment_methods: { enabled: true },
-        receipt_email: input.email,
-        description: `NIXZORA order ${input.orderNumber}`,
-        metadata: { orderId: input.orderId, orderNumber: input.orderNumber },
-      },
-      { idempotencyKey: input.idempotencyKey },
+    const saved = input.paymentMethodId ?? null;
+    const params: Stripe.PaymentIntentCreateParams = {
+      amount: input.amountCents,
+      currency: input.currency.toLowerCase(),
+      receipt_email: input.email,
+      description: `NIXZORA order ${input.orderNumber}`,
+      metadata: { orderId: input.orderId, orderNumber: input.orderNumber },
+      ...(input.customerId ? { customer: input.customerId } : {}),
+      // Kept for later charges, including while the customer is away (Subscribe & Save).
+      ...(input.saveCard && input.customerId ? { setup_future_usage: 'off_session' } : {}),
+      ...(saved
+        ? {
+            payment_method: saved,
+            payment_method_types: ['card'],
+            confirm: true,
+            ...(input.offSession ? { off_session: true } : {}),
+          }
+        : { automatic_payment_methods: { enabled: true } }),
+    };
+    try {
+      const intent = await this.stripe.paymentIntents.create(params, {
+        idempotencyKey: input.idempotencyKey,
+      });
+      return {
+        id: intent.id,
+        clientSecret: intent.client_secret!,
+        status: saved ? statusOf(intent.status) : ('pending' as const),
+      };
+    } catch (error) {
+      // A declined saved card: Stripe still made the intent, and says why.
+      if (error instanceof Stripe.errors.StripeCardError && error.payment_intent) {
+        const intent = error.payment_intent;
+        return {
+          id: intent.id,
+          clientSecret: intent.client_secret!,
+          status:
+            intent.status === 'requires_action'
+              ? ('requires_action' as const)
+              : ('failed' as const),
+          failure: error.message,
+        };
+      }
+      throw error;
+    }
+  }
+
+  async ensureCustomer(input: { userId: string; email: string; existing: string | null }) {
+    if (input.existing) return input.existing;
+    const customer = await this.stripe.customers.create(
+      { email: input.email, metadata: { userId: input.userId } },
+      { idempotencyKey: `customer-${input.userId}` },
     );
-    return { id: intent.id, clientSecret: intent.client_secret! };
+    return customer.id;
+  }
+
+  async savedCard(paymentId: string): Promise<CardDetails | null> {
+    const intent = await this.stripe.paymentIntents.retrieve(paymentId, {
+      expand: ['payment_method'],
+    });
+    const method = intent.payment_method;
+    if (!intent.setup_future_usage || typeof method !== 'object' || !method?.card) return null;
+    return {
+      methodId: method.id,
+      brand: method.card.brand,
+      last4: method.card.last4,
+      expMonth: method.card.exp_month,
+      expYear: method.card.exp_year,
+    };
+  }
+
+  async detachCard(methodId: string): Promise<void> {
+    await this.stripe.paymentMethods.detach(methodId);
   }
 
   async clientSecret(paymentId: string): Promise<string> {

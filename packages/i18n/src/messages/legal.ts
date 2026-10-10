@@ -65,7 +65,7 @@ export const legal = defineMessages({
     privacyCollectOrders:
       '<b>Orders</b>: items, prices, shipping and billing addresses, phone number and order history.',
     privacyCollectPayments:
-      '<b>Payments</b>: card details go directly to our payment processor, Stripe. We keep only the payment status, card brand and last four digits.',
+      '<b>Payments</b>: card details go directly to our payment processor, Stripe. We keep only the payment status, card brand and last four digits. If you choose to save a card for 1-click, Stripe keeps it on your account and we keep its brand, last four digits and expiry date; remove it any time under Payment methods.',
     privacyCollectActivity:
       '<b>Shopping activity</b>: your cart, saved products, the products you view, what you search for, reviews (and their photos), questions and answers you write and messages you send to the shopping assistant. Before you sign in, product views and searches are tied to a random id stored in your browser or the app, not to you.',
     privacyCollectDevice:
@@ -215,7 +215,7 @@ export const legal = defineMessages({
     privacyCollectOrders:
       '<b>Commandes</b> : articles, prix, adresses de livraison et de facturation, numéro de téléphone et historique des commandes.',
     privacyCollectPayments:
-      '<b>Paiements</b> : les données de carte sont transmises directement à notre prestataire de paiement, Stripe. Nous ne conservons que le statut du paiement, la marque de la carte et ses quatre derniers chiffres.',
+      '<b>Paiements</b> : les données de carte sont transmises directement à notre prestataire de paiement, Stripe. Nous ne conservons que le statut du paiement, la marque de la carte et ses quatre derniers chiffres. Si vous enregistrez une carte pour l’achat en 1 clic, Stripe la conserve pour votre compte et nous gardons sa marque, ses quatre derniers chiffres et sa date d’expiration ; supprimez-la à tout moment dans Moyens de paiement.',
     privacyCollectActivity:
       '<b>Activité d’achat</b> : votre panier, les produits enregistrés, les produits que vous consultez, ce que vous recherchez, les avis (et leurs photos), questions et réponses que vous rédigez et les messages que vous envoyez à l’assistant d’achat. Avant votre connexion, les consultations et les recherches sont associées à un identifiant aléatoire stocké dans votre navigateur ou l’application, et non à vous.',
     privacyCollectDevice:
@@ -366,7 +366,7 @@ export const legal = defineMessages({
     privacyCollectOrders:
       '<b>Pedidos</b>: artículos, precios, direcciones de envío y facturación, número de teléfono e historial de pedidos.',
     privacyCollectPayments:
-      '<b>Pagos</b>: los datos de la tarjeta van directamente a nuestro procesador de pagos, Stripe. Solo guardamos el estado del pago, la marca de la tarjeta y los últimos cuatro dígitos.',
+      '<b>Pagos</b>: los datos de la tarjeta van directamente a nuestro procesador de pagos, Stripe. Solo guardamos el estado del pago, la marca de la tarjeta y los últimos cuatro dígitos. Si eliges guardar una tarjeta para comprar en 1 clic, Stripe la guarda en tu cuenta y nosotros guardamos su marca, los últimos cuatro dígitos y la fecha de vencimiento; quítala cuando quieras en Métodos de pago.',
     privacyCollectActivity:
       '<b>Actividad de compra</b>: tu carrito, los productos guardados, los productos que ves, lo que buscas, las reseñas (y sus fotos), preguntas y respuestas que escribes y los mensajes que envías al asistente de compras. Antes de que inicies sesión, las visitas y las búsquedas se asocian a un identificador aleatorio guardado en tu navegador o en la app, no a ti.',
     privacyCollectDevice:
