@@ -31,10 +31,12 @@ export async function OrderTotals({
     | 'plusSavingsCents'
     | 'shippingSpeed'
     | 'kind'
+    | 'bundleDiscountCents'
   >;
 }) {
   const t = await getT('order');
   const pl = await getT('plus');
+  const bd = await getT('bundles');
   const g = await getT('gifts');
   const f = await getFormat();
   const m = (cents: number) => f.money(cents, order.currency);
@@ -42,12 +44,18 @@ export async function OrderTotals({
     <dl>
       <dt>{t('subtotal')}</dt>
       <dd>{m(order.subtotalCents)}</dd>
-      {order.discountCents ? (
+      {order.bundleDiscountCents ? (
+        <>
+          <dt>{bd('orderLine')}</dt>
+          <dd className="discount">−{m(order.bundleDiscountCents)}</dd>
+        </>
+      ) : null}
+      {order.discountCents - (order.bundleDiscountCents ?? 0) ? (
         <>
           <dt>
             {order.couponCode ? t('discountWithCode', { code: order.couponCode }) : t('discount')}
           </dt>
-          <dd className="discount">−{m(order.discountCents)}</dd>
+          <dd className="discount">−{m(order.discountCents - (order.bundleDiscountCents ?? 0))}</dd>
         </>
       ) : null}
       {order.kind === 'PLUS' ? null : (

@@ -1305,6 +1305,41 @@ async function main(): Promise<void> {
     });
   }
 
+  // Bundle & save (p10-16): two of NIXZORA's own sets, made once.
+  const DEMO_BUNDLES = [
+    {
+      title: 'Desk setup',
+      percentOff: 10,
+      slugs: ['arden-34-ultrawide', 'lumen-desk-speakers', 'tactile-precision-mouse'],
+    },
+    {
+      title: 'Morning routine',
+      percentOff: 15,
+      slugs: ['brewline-coffee-maker', 'dewdrop-daily-sunscreen'],
+    },
+  ];
+  for (const bundle of DEMO_BUNDLES) {
+    if (await prisma.bundle.count({ where: { title: bundle.title, sellerId: null } })) continue;
+    const found = await prisma.product.findMany({
+      where: { slug: { in: bundle.slugs }, status: 'ACTIVE', sellerId: null },
+      select: { id: true, slug: true },
+    });
+    if (found.length !== bundle.slugs.length) continue;
+    await prisma.bundle.create({
+      data: {
+        title: bundle.title,
+        percentOff: bundle.percentOff,
+        createdById: SEED_ACTOR,
+        items: {
+          create: bundle.slugs.map((slug, position) => ({
+            productId: found.find((p) => p.slug === slug)!.id,
+            position,
+          })),
+        },
+      },
+    });
+  }
+
   // A demo code shoppers can try at checkout.
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },

@@ -354,6 +354,7 @@ model Product {
   questions     ProductQuestion[]
   alerts        ProductAlert[]
   deals         Deal[]
+  bundleItems   BundleItem[]
   listItems     ShoppingListItem[]
   subscriptions Subscription[]
   reviewInsight ReviewInsight?
@@ -463,6 +464,10 @@ model Order {
   taxCents            Int           @default(0) @map("tax_cents")
   discountCents       Int           @default(0) @map("discount_cents")
   couponCode          String?       @map("coupon_code")
+  /// Bundle & save (p10-16): part of discountCents from bundles in the order.
+  bundleDiscountCents Int           @default(0) @map("bundle_discount_cents")
+  /// Who funds each bundle discount: {sellerId or "nixzora": cents}.
+  bundleDiscounts     Json?         @map("bundle_discounts")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
   language            String        @default("en")
   /// Total refunded so far (partial refunds and returns).
@@ -1876,4 +1881,44 @@ model PlusMembership {
 
   @@index([status, currentPeriodEnd])
   @@map("plus_memberships")
+}
+
+// ───────────── Bundle & save (p10-16) ─────────────
+
+enum BundleStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// Products sold together for less: every product in the cart once → percentOff on that set.
+/// All from one store (which funds the discount), or all NIXZORA's own.
+model Bundle {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  title       String
+  percentOff  Int          @map("percent_off")
+  status      BundleStatus @default(ACTIVE)
+  /// The store that made it, or null for NIXZORA staff (NIXZORA's own products).
+  sellerId    String?      @map("seller_id") @db.Uuid
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  items BundleItem[]
+
+  @@index([status])
+  @@index([sellerId])
+  @@map("bundles")
+}
+
+model BundleItem {
+  bundleId  String @map("bundle_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  position  Int    @default(0)
+
+  bundle  Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([bundleId, productId])
+  @@index([productId])
+  @@map("bundle_items")
 }

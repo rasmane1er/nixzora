@@ -91,3 +91,15 @@ export async function addAllToCart(variantIds: string[]): Promise<AddResult> {
   }
   return result;
 }
+
+/** Bundle & save (p10-16): one of each product in the bundle, added together. */
+export async function addBundleToCart(bundleId: string): Promise<AddResult> {
+  if (!UUID.test(bundleId)) return { ok: false, error: (await getT('bundles'))('unavailable') };
+  try {
+    const cart = await api<Cart>(`/cart/bundles/${bundleId}`, { method: 'POST', cart: true });
+    await remember(cart);
+    return { ok: true, itemCount: cart.itemCount };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}

@@ -1,4 +1,5 @@
 import {
+  type BundleView,
   type MyPlus,
   type ProductAlertRef,
   type QuestionPage,
@@ -31,6 +32,7 @@ import { CompareButton } from '@/components/CompareButton';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { BoughtTogether } from './BoughtTogether';
+import { BundleOffer } from './BundleOffer';
 import { Questions } from './Questions';
 import { ReviewList } from './ReviewList';
 import { StockAlert } from './StockAlert';
@@ -79,6 +81,11 @@ export default async function ProductPage({ params }: Props) {
         .catch(() => false)
     : false;
   const inStock = product.variants.some((v) => v.isActive && v.available > 0);
+  // Bundle & save (p10-16): bundles this product is in.
+  const bundleOffers = await api<BundleView[]>(`/catalog/products/${slug}/bundles`, {
+    auth: false,
+    revalidate: 60,
+  }).catch((): BundleView[] => []);
   const [reviews, wishIds, myReview, related, insights, ads, questions, alerts] = await Promise.all(
     [
       api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
@@ -409,6 +416,14 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {bundleOffers.length ? (
+        <div className="section stack" style={{ gap: 12 }}>
+          {bundleOffers.map((bundle) => (
+            <BundleOffer key={bundle.id} bundle={bundle} currentId={product.id} />
+          ))}
+        </div>
+      ) : null}
 
       <Questions slug={product.slug} initial={questions} signedIn={signedIn} />
 

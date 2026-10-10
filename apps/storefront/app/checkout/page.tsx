@@ -51,6 +51,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const t = cart.totals;
   const tc = await getT('checkout');
   const to = await getT('order');
+  const bd = await getT('bundles');
   const f = await getFormat();
   return (
     <div className="wrap section">
@@ -83,10 +84,18 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           <dl>
             <dt>{to('subtotal')}</dt>
             <dd>{f.money(t.subtotalCents)}</dd>
-            {t.discountCents ? (
+            {t.bundleDiscountCents ? (
+              <>
+                <dt>{bd('savings')}</dt>
+                <dd className="discount">−{f.money(t.bundleDiscountCents)}</dd>
+              </>
+            ) : null}
+            {t.discountCents - (t.bundleDiscountCents ?? 0) ? (
               <>
                 <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
-                <dd className="discount">−{f.money(t.discountCents)}</dd>
+                <dd className="discount">
+                  −{f.money(t.discountCents - (t.bundleDiscountCents ?? 0))}
+                </dd>
               </>
             ) : null}
             <dt>{to('shipping')}</dt>

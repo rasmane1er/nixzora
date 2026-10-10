@@ -42,3 +42,4 @@ export { inbox } from './inbox';
 export { compare } from './compare';
 export { photo } from './photo';
 export { plus } from './plus';
+export { bundles } from './bundles';

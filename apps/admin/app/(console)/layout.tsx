@@ -26,6 +26,7 @@ const NAV: { href: string; label: MessageKey<'ops'>; permission: string }[] = [
   { href: '/questions', label: 'nav_questions', permission: 'reviews.moderate' },
   { href: '/coupons', label: 'nav_coupons', permission: 'promotions.manage' },
   { href: '/deals', label: 'nav_deals', permission: 'promotions.manage' },
+  { href: '/bundles', label: 'nav_bundles', permission: 'promotions.manage' },
   { href: '/gift-cards', label: 'nav_gift_cards', permission: 'orders.read.all' },
   { href: '/ads', label: 'nav_ads', permission: 'promotions.manage' },
   { href: '/support', label: 'nav_support', permission: 'support.manage' },

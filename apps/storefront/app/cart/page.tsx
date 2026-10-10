@@ -21,6 +21,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const error = param(params, 'error');
   const tc = await getT('cart');
   const to = await getT('order');
+  const bd = await getT('bundles');
   const tCommon = await getT('common');
   const tp = await getT('product');
   const f = await getFormat();
@@ -145,10 +146,18 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           <dl>
             <dt>{to('subtotal')}</dt>
             <dd>{f.money(t.subtotalCents)}</dd>
-            {t.discountCents ? (
+            {t.bundleDiscountCents ? (
+              <>
+                <dt>{bd('savings')}</dt>
+                <dd className="discount">−{f.money(t.bundleDiscountCents)}</dd>
+              </>
+            ) : null}
+            {t.discountCents - (t.bundleDiscountCents ?? 0) ? (
               <>
                 <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
-                <dd className="discount">−{f.money(t.discountCents)}</dd>
+                <dd className="discount">
+                  −{f.money(t.discountCents - (t.bundleDiscountCents ?? 0))}
+                </dd>
               </>
             ) : null}
             <dt>{to('shipping')}</dt>
@@ -162,6 +171,17 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               {f.money(t.subtotalCents - t.discountCents + t.shippingCents)}
             </dd>
           </dl>
+          {cart.bundles?.length ? (
+            <ul className="bundle-lines">
+              {cart.bundles.map((b) => (
+                <li key={b.id}>
+                  {bd('cartLine', { title: b.title })}
+                  {b.sets > 1 ? ` · ${bd('cartSets', { count: b.sets })}` : ''} · −
+                  {f.money(b.discountCents)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {cart.coupon ? (
             <form action={removeCoupon} className="coupon">
               <span>

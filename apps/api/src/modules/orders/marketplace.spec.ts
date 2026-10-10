@@ -87,6 +87,23 @@ describe('splitBySeller with NIXZORA Plus', () => {
   });
 });
 
+describe('splitBySeller with bundles', () => {
+  it("takes a store's bundle discount off its items before commission", async () => {
+    const { tx, writes } = fakeTx();
+    await splitBySeller(tx, {
+      id: 'o3',
+      number: 'NX-3',
+      subtotalCents: 5000,
+      shippingCents: 0,
+      bundleDiscounts: { s1: 500 },
+      items: [{ sellerId: 's1', totalCents: 5000 }],
+    });
+    const part = writes.find((w) => w.model === 'sellerOrder')!.data;
+    // 12% commission on $45.00, not on $50.00.
+    expect(part).toMatchObject({ itemsCents: 4500, commissionCents: 540, netCents: 4500 - 540 });
+  });
+});
+
 describe('allocateRefund', () => {
   const part = (sellerId: string, itemsCents: number) => ({
     id: `p-${sellerId}`,

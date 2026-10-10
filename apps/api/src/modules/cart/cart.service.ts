@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
@@ -15,6 +16,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { PlusBenefits } from '../plus/plus-benefits.service';
+import { type BundleSaving, bundleSavings } from './bundle-savings';
 import { availableOf } from '../catalog/catalog-mappers';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -145,6 +147,71 @@ export class CartService {
     return { cartId: null, lines: [], itemCount: 0, totals: this.pricing.totals(0), coupon: null };
   }
 
+  /** Active bundles every product of which is in these lines, with what they save. */
+  async bundles(lines: CartLine[]): Promise<BundleSaving[]> {
+    if (lines.length < 2) return [];
+    const productIds = [...new Set(lines.map((line) => line.productId))];
+    const rows = await this.prisma.bundle.findMany({
+      where: { status: 'ACTIVE', items: { some: { productId: { in: productIds } } } },
+      include: { items: { select: { productId: true } } },
+    });
+    const present = new Set(productIds);
+    return bundleSavings(
+      lines,
+      rows
+        .filter((row) => row.items.every((item) => present.has(item.productId)))
+        .map((row) => ({
+          id: row.id,
+          title: row.title,
+          percentOff: row.percentOff,
+          sellerId: row.sellerId,
+          productIds: row.items.map((item) => item.productId),
+        })),
+    );
+  }
+
+  /** "Add bundle to cart": one of each product (their only option), added together. */
+  async addBundle(owner: CartOwner, bundleId: string): Promise<Cart> {
+    const bundle = await this.prisma.bundle.findFirst({
+      where: { id: bundleId, status: 'ACTIVE' },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                status: true,
+                variants: { where: { isActive: true }, select: { id: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!bundle) throw new NotFoundException('That bundle is no longer offered.');
+    const variants = bundle.items.map((item) =>
+      item.product.status === 'ACTIVE' && item.product.variants.length === 1
+        ? item.product.variants[0]!.id
+        : null,
+    );
+    if (variants.some((id) => !id)) {
+      throw new ConflictException('Part of this bundle isn’t available right now.');
+    }
+    for (const variantId of variants) await this.assertSellable(variantId!);
+    const current = await this.quantities(owner);
+    const added = variants.filter((id) => !current.has(id!)).length;
+    if (current.size + added > MAX_LINES) {
+      throw new BadRequestException(`A cart can hold up to ${MAX_LINES} different items.`);
+    }
+    for (const variantId of variants) {
+      await this.write(
+        owner,
+        variantId!,
+        Math.min(MAX_QUANTITY, (current.get(variantId!) ?? 0) + 1),
+      );
+    }
+    return this.view(owner);
+  }
+
   async couponCode(owner: CartOwner): Promise<string | null> {
     return this.run(() => this.redis.client.hget(this.key(owner), COUPON_FIELD));
   }
@@ -236,6 +303,8 @@ export class CartService {
     const subtotal = lines
       .filter((line) => line.problem !== 'UNAVAILABLE')
       .reduce((sum, line) => sum + line.lineTotalCents, 0);
+    // Bundle & save (p10-16): complete sets of a bundle take its percentage off.
+    const bundles = await this.bundles(lines.filter((line) => !line.problem));
 
     // A coupon that stops applying (expired, cart too small) stays visible with the reason.
     const code = await this.couponCode(owner);
@@ -258,10 +327,19 @@ export class CartService {
       cartId: 'guestId' in owner ? owner.guestId : 'buyNowId' in owner ? owner.buyNowId : null,
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
-      totals: this.pricing.totals(subtotal, region, check?.ok ? check.discountCents : 0, 'USD', {
-        member,
-        twoDay: own,
-      }),
+      totals: this.pricing.totals(
+        subtotal,
+        region,
+        check?.ok ? check.discountCents : 0,
+        'USD',
+        { member, twoDay: own },
+        bundles.reduce((sum, b) => sum + b.discountCents, 0),
+      ),
+      ...(bundles.length
+        ? {
+            bundles: bundles.map(({ sellerId: _seller, ...bundle }) => bundle),
+          }
+        : {}),
       coupon:
         code && check
           ? {

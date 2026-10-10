@@ -22,6 +22,8 @@ type SplitOrder = {
   shippingCents: number;
   /** Shipping a Plus member did not pay (p10-15): NIXZORA pays sellers their share of it. */
   shippingWaivedCents?: number;
+  /** Bundle & save (p10-16): each store's bundle discount, which it funds. */
+  bundleDiscounts?: unknown;
   items: { sellerId: string | null; totalCents: number }[];
 };
 
@@ -44,7 +46,16 @@ export async function splitBySeller(tx: Tx, order: SplitOrder): Promise<number> 
     const shippingCents = order.subtotalCents
       ? Math.round((shipping * itemsCents) / order.subtotalCents)
       : 0;
-    const commissionCents = commissionOf(itemsCents, seller.commissionBps);
+    // A store's own bundles come off its items; commission is on what it actually sold for.
+    const bundled = Math.min(
+      itemsCents,
+      Math.max(
+        0,
+        Number((order.bundleDiscounts as Record<string, number> | null)?.[seller.id] ?? 0),
+      ),
+    );
+    const soldCents = itemsCents - bundled;
+    const commissionCents = commissionOf(soldCents, seller.commissionBps);
     const existing = await tx.sellerOrder.findUnique({
       where: { orderId_sellerId: { orderId: order.id, sellerId: seller.id } },
       select: { id: true, status: true },
@@ -63,11 +74,11 @@ export async function splitBySeller(tx: Tx, order: SplitOrder): Promise<number> 
       data: {
         orderId: order.id,
         sellerId: seller.id,
-        itemsCents,
+        itemsCents: soldCents,
         shippingCents,
         commissionBps: seller.commissionBps,
         commissionCents,
-        netCents: itemsCents + shippingCents - commissionCents,
+        netCents: soldCents + shippingCents - commissionCents,
       },
     });
     await tx.outboxEvent.create({

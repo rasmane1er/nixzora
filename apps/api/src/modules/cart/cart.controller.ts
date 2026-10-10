@@ -87,6 +87,17 @@ export class CartController {
     return this.carts.add(this.owner(user, cartId, true)!, body.variantId, body.quantity);
   }
 
+  /** Bundle & save (p10-16): one of each product in the bundle, added together. */
+  @Post('bundles/:bundleId')
+  @OptionalAuth()
+  addBundle(
+    @MaybeUser() user: AuthUser | undefined,
+    @Headers('x-cart-id') cartId: string | undefined,
+    @Param('bundleId', new ParseUUIDPipe()) bundleId: string,
+  ): Promise<Cart> {
+    return this.carts.addBundle(this.owner(user, cartId, true)!, bundleId);
+  }
+
   @Patch('items/:variantId')
   @OptionalAuth()
   @ApiZodBody(CartItemUpdateSchema)

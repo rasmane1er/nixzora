@@ -274,6 +274,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       ...cart,
       lines,
       coupon: null,
+      bundles: [],
       totals: this.pricing.totals(subtotal, region, 0, 'USD', plus),
     };
   }
@@ -471,6 +472,14 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     assessment: CheckoutAssessment | null,
     subscriptionByVariant?: Map<string, string>,
   ): Promise<OrderRow> {
+    // Bundle & save (p10-16): who funds each bundle's discount (a store, or NIXZORA).
+    const funded: Record<string, number> = {};
+    if (totals.bundleDiscountCents) {
+      for (const saving of await this.carts.bundles(lines)) {
+        const key = saving.sellerId ?? 'nixzora';
+        funded[key] = (funded[key] ?? 0) + saving.discountCents;
+      }
+    }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
         return await this.prisma.$transaction(async (tx) => {
@@ -507,6 +516,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               shippingCents: totals.shippingCents,
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,
+              bundleDiscountCents: totals.bundleDiscountCents ?? 0,
+              ...(totals.bundleDiscountCents
+                ? { bundleDiscounts: funded as Prisma.InputJsonObject }
+                : {}),
               // NIXZORA Plus (p10-15): what membership changed on this order.
               shippingSpeed: totals.shippingSpeed ?? 'STANDARD',
               shippingWaivedCents: totals.shippingWaivedCents ?? 0,

@@ -31,6 +31,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoughtTogether } from '@/components/BoughtTogether';
+import { BundleOfferCard } from '@/components/BundleOfferCard';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
 import { ProductQuestions } from '@/components/ProductQuestions';
@@ -264,6 +265,13 @@ export default function ProductScreen() {
   const [chosen, setChosen] = useState<string | undefined>(variantParam);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  // Bundle & save (p10-16).
+  const bundles = useQuery({
+    queryKey: ['catalog', 'bundles', slug],
+    queryFn: () => api.catalog.bundles(slug),
+    enabled: !!product.data,
+    staleTime: 60_000,
+  });
   const related = useQuery({
     queryKey: ['catalog', 'related', slug],
     queryFn: () => api.catalog.related(slug),
@@ -833,6 +841,10 @@ export default function ProductScreen() {
             {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
             <ProductReviews slug={slug} />
             <ProductQuestions slug={slug} />
+
+            {(bundles.data ?? []).map((bundle) => (
+              <BundleOfferCard key={bundle.id} bundle={bundle} currentId={item.id} />
+            ))}
 
             {(related.data?.boughtTogether ?? []).some((o) => o.inStock && o.defaultVariantId) ? (
               <BoughtTogether

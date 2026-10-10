@@ -148,6 +148,7 @@ export default function OrderScreen() {
     taxCents: o.taxCents,
     totalCents: o.totalCents,
     freeShippingRemainingCents: 0,
+    ...(o.bundleDiscountCents ? { bundleDiscountCents: o.bundleDiscountCents } : {}),
   };
 
   return (

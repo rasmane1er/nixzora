@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { type GiftCardLine } from './gift-cards';
+import { type CartBundle } from './bundles';
 import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
 
@@ -154,6 +155,8 @@ export type Totals = {
   shippingWaivedCents?: number;
   /** NIXZORA Plus: 2-day delivery for NIXZORA's own items. */
   shippingSpeed?: 'STANDARD' | 'TWO_DAY';
+  /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
+  bundleDiscountCents?: number;
 };
 
 export type Cart = {
@@ -164,6 +167,8 @@ export type Cart = {
   totals: Totals;
   /** The applied coupon, or why the one entered no longer applies. */
   coupon: { code: string; description: string | null; problem: string | null } | null;
+  /** Bundles the cart completes (p10-16), each with its saving. */
+  bundles?: CartBundle[];
   /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
   delivery?: DeliveryWindow | null;
 };
@@ -317,6 +322,8 @@ export type OrderView = {
   /** NIXZORA Plus: NIXZORA's own parcel ships 2-day, and what Plus saved on this order. */
   shippingSpeed?: 'STANDARD' | 'TWO_DAY';
   plusSavingsCents?: number;
+  /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
+  bundleDiscountCents?: number;
   /** Part of the total paid from the gift card balance. */
   giftBalanceCents?: number;
   /** The gift cards bought with this order. */

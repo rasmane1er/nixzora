@@ -1,4 +1,5 @@
 import type {
+  BundleView,
   CompareView,
   MyPlus,
   PlusJoin,
@@ -307,6 +308,9 @@ export function createApiClient(options: ClientOptions) {
       /** A link to upload one review photo; send its storageKey in `photoKeys`. */
       reviewPhotoUpload: (body: UploadRequest) =>
         request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Bundle & save (p10-16): the bundles a product is in. */
+      bundles: (slug: string) =>
+        request<BundleView[]>('GET', `/catalog/products/${enc(slug)}/bundles`),
       /** Compare up to 4 products side by side (p10-13). */
       compare: (slugs: string[]) =>
         request<CompareView>('GET', '/catalog/compare', { query: { products: slugs.join(',') } }),
@@ -393,6 +397,9 @@ export function createApiClient(options: ClientOptions) {
       get: (region?: UsState) => request<Cart>('GET', '/cart', { query: { region }, cart: true }),
       add: (variantId: string, quantity = 1) =>
         request<Cart>('POST', '/cart/items', { body: { variantId, quantity }, cart: true }),
+      /** One of each product in a bundle (p10-16). */
+      addBundle: (bundleId: string) =>
+        request<Cart>('POST', `/cart/bundles/${enc(bundleId)}`, { cart: true }),
       update: (variantId: string, quantity: number) =>
         request<Cart>('PATCH', `/cart/items/${enc(variantId)}`, {
           body: { quantity },

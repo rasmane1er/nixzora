@@ -18,6 +18,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { VisualSearchModule } from './modules/visual-search/visual-search.module';
 import { PlusModule } from './modules/plus/plus.module';
+import { BundlesModule } from './modules/bundles/bundles.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -97,6 +98,7 @@ import { RedisModule } from './redis/redis.module';
     MessagingModule,
     VisualSearchModule,
     PlusModule,
+    BundlesModule,
     InsightsModule,
     SellersModule,
     NotificationsModule,

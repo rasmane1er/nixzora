@@ -22,10 +22,13 @@ export class PricingService {
     currency = 'USD',
     /** NIXZORA Plus (p10-15): shipping is free for members, and NIXZORA's items go 2-day. */
     plus: { member: boolean; twoDay?: boolean } = { member: false },
+    /** Bundle & save (p10-16): taken off before the coupon. */
+    bundleCents = 0,
   ): Totals {
     const flat = this.config.get('SHIPPING_FLAT_CENTS', { infer: true });
     const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
-    const discount = Math.min(Math.max(0, discountCents), subtotalCents);
+    const bundle = Math.min(Math.max(0, bundleCents), subtotalCents);
+    const discount = bundle + Math.min(Math.max(0, discountCents), subtotalCents - bundle);
     const goods = subtotalCents - discount;
     const standardCents = subtotalCents === 0 || goods >= threshold ? 0 : flat;
     const shippingCents = plus.member ? 0 : standardCents;
@@ -44,6 +47,7 @@ export class PricingService {
         : subtotalCents === 0
           ? threshold
           : Math.max(0, threshold - goods),
+      ...(bundle ? { bundleDiscountCents: bundle } : {}),
       ...(plus.member
         ? {
             shippingWaivedCents: standardCents,
