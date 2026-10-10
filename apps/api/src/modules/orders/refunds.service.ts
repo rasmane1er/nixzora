@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadGatewayException,
   BadRequestException,
@@ -10,6 +11,7 @@ import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PAYMENT_GATEWAY, type PaymentGateway } from '../payments/payment-gateway';
+import { refundToGiftBalance } from './gift-ledger';
 import { allocateRefund } from './marketplace';
 
 const REFUNDABLE = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'] as const;
@@ -18,6 +20,8 @@ export type RefundableOrder = {
   id: string;
   number: string;
   status: string;
+  /** Gift card orders (p10-10) refund in full and void their cards. */
+  kind?: 'GOODS' | 'GIFT_CARD';
   totalCents: number;
   refundedCents: number;
   items: {
@@ -73,20 +77,34 @@ export class RefundsService {
         `You can refund up to ${(remaining / 100).toFixed(2)} on this order.`,
       );
     }
-    const payment = await this.prisma.payment.findFirst({
+    // Card first, then the gift card balance (p10-10): each gets back at most what it paid.
+    const payments = await this.prisma.payment.findMany({
       where: { orderId: order.id, status: { in: ['SUCCEEDED', 'PARTIALLY_REFUNDED'] } },
+      include: { refunds: { select: { amountCents: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    if (!payment) throw new ConflictException('No captured payment to refund.');
+    const card = payments.find((p) => p.provider !== 'GIFT_BALANCE');
+    const gift = payments.find((p) => p.provider === 'GIFT_BALANCE');
+    if (!card && !gift) throw new ConflictException('No captured payment to refund.');
+    const left = (p?: (typeof payments)[number]) =>
+      p ? p.amountCents - p.refunds.reduce((sum, r) => sum + r.amountCents, 0) : 0;
+    const cardCents = Math.min(amountCents, Math.max(0, left(card)));
+    const giftCents = amountCents - cardCents;
+    if (giftCents > Math.max(0, left(gift))) {
+      throw new ConflictException('This order has less left to refund than that.');
+    }
+    if (order.kind === 'GIFT_CARD') await this.assertGiftCardsRefundable(order, amountCents);
 
-    let refund: { id: string; status: string };
-    try {
-      refund = await this.gateway.refund(payment.providerPaymentId, amountCents, reason);
-    } catch (error) {
-      this.logger.error(`Refund failed for ${order.number}: ${(error as Error).message}`);
-      throw new BadGatewayException(
-        'The refund could not be issued. Nothing was changed; try again.',
-      );
+    let providerRefund: { id: string; status: string } | null = null;
+    if (cardCents > 0 && card) {
+      try {
+        providerRefund = await this.gateway.refund(card.providerPaymentId, cardCents, reason);
+      } catch (error) {
+        this.logger.error(`Refund failed for ${order.number}: ${(error as Error).message}`);
+        throw new BadGatewayException(
+          'The refund could not be issued. Nothing was changed; try again.',
+        );
+      }
     }
 
     const refundedCents = order.refundedCents + amountCents;
@@ -105,30 +123,66 @@ export class RefundsService {
       if (!updated.count) {
         // The provider refund went through; record it anyway and flag for review.
         this.logger.error(
-          `Concurrent refund on ${order.number}; recording provider refund ${refund.id}.`,
+          `Concurrent refund on ${order.number}; recording provider refund ${providerRefund?.id}.`,
         );
         await tx.order.update({
           where: { id: order.id },
           data: { refundedCents: { increment: amountCents } },
         });
       }
-      const row = await tx.refund.create({
-        data: {
-          paymentId: payment.id,
-          providerRefundId: refund.id,
-          amountCents,
-          reason,
-          status: refund.status,
-        },
-      });
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: { status: full ? 'REFUNDED' : 'PARTIALLY_REFUNDED' },
-      });
+      if (order.kind === 'GIFT_CARD') {
+        // Voided with the refund; a code redeemed a moment ago keeps its value (logged).
+        await tx.giftCard.updateMany({
+          where: { orderId: order.id, status: { in: ['PENDING', 'ACTIVE'] } },
+          data: { status: 'VOID' },
+        });
+      }
+      const rows: { id: string }[] = [];
+      if (providerRefund && card) {
+        rows.push(
+          await tx.refund.create({
+            data: {
+              paymentId: card.id,
+              providerRefundId: providerRefund.id,
+              amountCents: cardCents,
+              reason,
+              status: providerRefund.status,
+            },
+          }),
+        );
+        await tx.payment.update({
+          where: { id: card.id },
+          data: { status: cardCents >= left(card) ? 'REFUNDED' : 'PARTIALLY_REFUNDED' },
+        });
+      }
+      if (giftCents > 0 && gift) {
+        const owner = await tx.giftBalanceEntry.findFirst({
+          where: { orderId: order.id, kind: 'SPEND' },
+          select: { userId: true },
+        });
+        if (owner) {
+          await refundToGiftBalance(tx, owner.userId, order.id, giftCents, reason);
+        }
+        rows.push(
+          await tx.refund.create({
+            data: {
+              paymentId: gift.id,
+              providerRefundId: `gift_refund_${randomUUID()}`,
+              amountCents: giftCents,
+              reason,
+              status: 'succeeded',
+            },
+          }),
+        );
+        await tx.payment.update({
+          where: { id: gift.id },
+          data: { status: giftCents >= left(gift) ? 'REFUNDED' : 'PARTIALLY_REFUNDED' },
+        });
+      }
       await allocateRefund(
         tx,
         order,
-        { id: row.id, amountCents, cancel: Boolean(options.cancel) },
+        { id: rows[0]!.id, amountCents, cancel: Boolean(options.cancel) },
         options.restock,
       );
       if (options.restock?.length) await this.inventory.restock(tx, options.restock);
@@ -147,6 +201,20 @@ export class RefundsService {
         },
       });
     });
+  }
+
+  /**
+   * Refunding a gift card order (p10-10) voids its cards, so only in full, and only while none
+   * has been redeemed.
+   */
+  private async assertGiftCardsRefundable(order: RefundableOrder, amountCents: number) {
+    if (amountCents < this.remaining(order)) {
+      throw new ConflictException('Gift card orders are refunded in full only.');
+    }
+    const redeemed = await this.prisma.giftCard.count({
+      where: { orderId: order.id, status: 'REDEEMED' },
+    });
+    if (redeemed) throw new ConflictException('A gift card in this order was already redeemed.');
   }
 
   /** orderItemId + quantity → variant + quantity, checked against what was bought. */

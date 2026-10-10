@@ -2,7 +2,7 @@
 
 import { RoleKeySchema } from '@nixzora/validation';
 import { api } from '@/lib/api';
-import { perform, text, uuidField } from '@/lib/forms';
+import { cents, perform, text, uuidField } from '@/lib/forms';
 import { getT } from '@/lib/i18n';
 
 function role(form: FormData): string {
@@ -58,5 +58,20 @@ export async function addNote(form: FormData): Promise<void> {
     `/users/${id}`,
     () => api(`/admin/users/${id}/notes`, { method: 'POST', body: { body: text(form, 'body') } }),
     t('noteAdded'),
+  );
+}
+
+/** Goodwill credit to the customer's gift card balance (p10-10). */
+export async function grantGiftCredit(form: FormData): Promise<void> {
+  const id = uuidField(form, 'id');
+  const t = await getT('gifts');
+  await perform(
+    `/users/${id}`,
+    () =>
+      api(`/admin/users/${id}/gift-credit`, {
+        method: 'POST',
+        body: { amountCents: cents(form, 'amount'), note: text(form, 'note') ?? '' },
+      }),
+    t('granted'),
   );
 }

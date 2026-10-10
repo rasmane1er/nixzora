@@ -5,6 +5,7 @@ import { LanguagePicker } from './LanguagePicker';
 export async function SiteFooter() {
   const t = await getT('layout');
   const c = await getT('common');
+  const g = await getT('gifts');
   return (
     <footer className="site-footer">
       <div className="wrap site-footer__row">
@@ -16,6 +17,7 @@ export async function SiteFooter() {
         <nav aria-label={t('footerNav')}>
           <Link href="/search">{t('allProducts')}</Link>
           <Link href="/account/orders">{t('yourOrders')}</Link>
+          <Link href="/gift-cards">{g('navGiftCards')}</Link>
           <Link href="/help">{t('help')}</Link>
           <Link href="/policies/shipping">{t('shipping')}</Link>
           <Link href="/policies/returns">{t('returns')}</Link>

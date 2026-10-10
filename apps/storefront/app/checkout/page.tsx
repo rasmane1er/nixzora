@@ -1,6 +1,7 @@
 import {
   type Cart,
   CartIdSchema,
+  type GiftBalanceView,
   type MeResponse,
   type PaymentCardView,
   type SavedAddress,
@@ -37,13 +38,14 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const l = await getT('lists');
 
   const signedIn = Boolean(await accessToken());
-  const [me, addresses, cards] = signedIn
+  const [me, addresses, cards, gift] = signedIn
     ? await Promise.all([
         api<MeResponse>('/auth/me').catch(() => null),
         api<SavedAddress[]>('/me/addresses').catch(() => []),
         api<PaymentCardView[]>('/me/payment-cards').catch((): PaymentCardView[] => []),
+        api<GiftBalanceView>('/me/gift-cards').catch(() => null),
       ])
-    : [null, [] as SavedAddress[], [] as PaymentCardView[]];
+    : [null, [] as SavedAddress[], [] as PaymentCardView[], null];
 
   const t = cart.totals;
   const tc = await getT('checkout');
@@ -60,6 +62,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           addresses={addresses}
           buyNowId={buyNowId}
           cards={cards}
+          giftBalanceCents={gift?.balanceCents ?? 0}
         />
         <aside className="card summary" aria-label={to('orderSummary')}>
           <h2>{tc('yourOrder')}</h2>

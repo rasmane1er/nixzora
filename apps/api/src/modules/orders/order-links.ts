@@ -47,7 +47,10 @@ export function ratableUntil(part: { status: string; deliveredAt: Date | null })
 export function returnableUntil(order: {
   status: string;
   deliveredAt: Date | null;
+  kind?: string;
 }): string | null {
+  // Gift cards (p10-10) aren't returned: an unredeemed one can be refunded by support.
+  if (order.kind === 'GIFT_CARD') return null;
   if (!order.deliveredAt || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status))
     return null;
   const until = new Date(order.deliveredAt.getTime() + RETURN_WINDOW_MS);
@@ -78,6 +81,7 @@ export const orderInclude = {
       rating: { select: { rating: true, comment: true } },
     },
   },
+  giftCards: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.OrderInclude;
 export type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
@@ -168,6 +172,18 @@ export function toOrderView(order: OrderRow): OrderView {
     shipments: shipments(order),
     returnableUntil: returnableUntil(order),
     cancellableUntil: cancellableUntil(order),
+    kind: order.kind ?? 'GOODS',
+    giftBalanceCents: order.giftBalanceCents ?? 0,
+    // Optional so rows loaded without the gift cards (older fixtures) still map.
+    giftCards: (order.giftCards ?? []).map((card) => ({
+      id: card.id,
+      amountCents: card.amountCents,
+      recipientName: card.recipientName,
+      recipientEmail: card.recipientEmail,
+      status: card.status,
+      last4: card.last4,
+      sentAt: card.sentAt?.toISOString() ?? null,
+    })),
     timeline,
     createdAt: order.createdAt.toISOString(),
     placedAt: order.placedAt?.toISOString() ?? null,

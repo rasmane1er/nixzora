@@ -1,6 +1,7 @@
 import { type OrderView, type PaymentSession } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { GiftCardLines } from '@/components/GiftCardLines';
 import { notFound, redirect } from 'next/navigation';
 import { AddressBlock, OrderItems, OrderTotals } from '@/components/OrderSummary';
 import { api, ApiError } from '@/lib/api';
@@ -64,8 +65,14 @@ export default async function PayPage({ params, searchParams }: Props) {
           <OrderItems order={order} />
           <OrderTotals order={order} />
           <div className="stack" style={{ gap: 4 }}>
-            <strong>{to('shippingTo')}</strong>
-            <AddressBlock address={order.shippingAddress} />
+            {order.kind === 'GIFT_CARD' ? (
+              <GiftCardLines order={order} />
+            ) : (
+              <>
+                <strong>{to('shippingTo')}</strong>
+                <AddressBlock address={order.shippingAddress} />
+              </>
+            )}
           </div>
           <Link href="/cart" className="muted" style={{ fontSize: 14 }}>
             {t('changeSomething')}

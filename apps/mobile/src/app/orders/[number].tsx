@@ -92,6 +92,7 @@ export default function OrderScreen() {
   const { money, shortDate } = useFormatters();
   const [push, setPush] = useState<PushStatus | null>(null);
   const w = useT('wallet');
+  const g = useT('gifts');
   const client = useQueryClient();
   // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
   const cancel = useMutation({
@@ -306,6 +307,11 @@ export default function OrderScreen() {
           ))}
           <Divider />
           <Totals totals={totals} />
+          {o.giftBalanceCents ? (
+            <Text variant="small" muted>
+              {g('balanceLine')}: −{money(o.giftBalanceCents, o.currency)}
+            </Text>
+          ) : null}
           {o.refundedCents ? (
             <Text variant="small" tone="ok">
               {t('refundedAmount', { amount: money(o.refundedCents, o.currency) })}
@@ -313,17 +319,32 @@ export default function OrderScreen() {
           ) : null}
         </Card>
 
-        <Card>
-          <Text variant="heading">{to('shippingTo')}</Text>
-          <Text>
-            {a.fullName}
-            {'\n'}
-            {a.line1}
-            {a.line2 ? `\n${a.line2}` : ''}
-            {'\n'}
-            {a.city}, {a.region} {a.postalCode}
-          </Text>
-        </Card>
+        {o.kind === 'GIFT_CARD' ? (
+          <Card>
+            {(o.giftCards ?? []).map((card) => (
+              <Text key={card.id}>
+                {money(card.amountCents, o.currency)} ·{' '}
+                {card.status === 'PENDING'
+                  ? g('pendingSend', { name: card.recipientName, email: card.recipientEmail })
+                  : card.status === 'VOID'
+                    ? g('voided', { name: card.recipientName })
+                    : g('sentTo', { name: card.recipientName, email: card.recipientEmail })}
+              </Text>
+            ))}
+          </Card>
+        ) : (
+          <Card>
+            <Text variant="heading">{to('shippingTo')}</Text>
+            <Text>
+              {a.fullName}
+              {'\n'}
+              {a.line1}
+              {a.line2 ? `\n${a.line2}` : ''}
+              {'\n'}
+              {a.city}, {a.region} {a.postalCode}
+            </Text>
+          </Card>
+        )}
 
         {o.returnableUntil ? (
           <Button

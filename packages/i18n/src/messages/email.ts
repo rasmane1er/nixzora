@@ -143,6 +143,12 @@ export const email = defineMessages({
     alert_priceDrop_subject: 'Price drop: {title} is now {price}',
     alert_priceDrop_text:
       '{title}, which you saved, is now {price} (was {was}).\n\n{link}\n\nTurn price and stock alerts off in your preferences: {prefs}\n',
+    giftCard_subject: '{sender} sent you a {amount} NIXZORA gift card',
+    giftCard_text:
+      'Hi {recipient},\n\n{sender} sent you a NIXZORA gift card worth {amount}.\n{message}\nYour code: {code}\n\nTo use it, sign in and add the code under Your account › Gift cards: {link}\nThe balance is spent first at checkout. It never expires and has no fees.\n\nKeep this code private: anyone who has it can add the money to their account.\n',
+    giftCard_sent_subject: 'Your gift card for {recipient} is on its way',
+    giftCard_sent_text:
+      'We emailed your {amount} NIXZORA gift card to {recipient} ({email}).\n\nOrder {number}: {orderLink}\n',
     push_backInStock_title: 'Back in stock',
     push_backInStock_body: '{title} is available again: {price}.',
     push_priceDrop_title: 'Price drop',
@@ -284,6 +290,12 @@ export const email = defineMessages({
     alert_priceDrop_subject: 'Baisse de prix : {title} est à {price}',
     alert_priceDrop_text:
       '{title}, que vous avez enregistré, est maintenant à {price} (au lieu de {was}).\n\n{link}\n\nDésactivez les alertes de prix et de stock dans vos préférences : {prefs}\n',
+    giftCard_subject: '{sender} vous offre une carte cadeau NIXZORA de {amount}',
+    giftCard_text:
+      'Bonjour {recipient},\n\n{sender} vous offre une carte cadeau NIXZORA d’une valeur de {amount}.\n{message}\nVotre code : {code}\n\nPour l’utiliser, connectez-vous et ajoutez le code dans Votre compte › Cartes cadeaux : {link}\nLe solde est utilisé en premier au paiement. Il n’expire jamais et n’a aucun frais.\n\nGardez ce code pour vous : toute personne qui le possède peut ajouter cet argent à son compte.\n',
+    giftCard_sent_subject: 'Votre carte cadeau pour {recipient} est en route',
+    giftCard_sent_text:
+      'Nous avons envoyé votre carte cadeau NIXZORA de {amount} à {recipient} ({email}).\n\nCommande {number} : {orderLink}\n',
     push_backInStock_title: 'De retour en stock',
     push_backInStock_body: '{title} est de nouveau disponible : {price}.',
     push_priceDrop_title: 'Baisse de prix',
@@ -422,6 +434,12 @@ export const email = defineMessages({
     alert_priceDrop_subject: 'Bajó de precio: {title} ahora cuesta {price}',
     alert_priceDrop_text:
       '{title}, que guardaste, ahora cuesta {price} (antes {was}).\n\n{link}\n\nDesactiva los avisos de precio y disponibilidad en tus preferencias: {prefs}\n',
+    giftCard_subject: '{sender} te envió una tarjeta de regalo NIXZORA de {amount}',
+    giftCard_text:
+      'Hola {recipient}:\n\n{sender} te envió una tarjeta de regalo NIXZORA por {amount}.\n{message}\nTu código: {code}\n\nPara usarla, inicia sesión y agrega el código en Tu cuenta › Tarjetas de regalo: {link}\nEl saldo se usa primero al pagar. Nunca vence y no tiene cargos.\n\nNo compartas este código: cualquiera que lo tenga puede agregar el dinero a su cuenta.\n',
+    giftCard_sent_subject: 'Tu tarjeta de regalo para {recipient} va en camino',
+    giftCard_sent_text:
+      'Enviamos tu tarjeta de regalo NIXZORA de {amount} a {recipient} ({email}).\n\nPedido {number}: {orderLink}\n',
     push_backInStock_title: 'De nuevo disponible',
     push_backInStock_body: '{title} vuelve a estar disponible: {price}.',
     push_priceDrop_title: 'Bajó de precio',

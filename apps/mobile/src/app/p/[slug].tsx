@@ -326,6 +326,7 @@ export default function ProductScreen() {
           phone: a.phone || undefined,
         },
         paymentCardId: oneClickCard!.id,
+        useGiftBalance: true,
       });
     },
     onSuccess: (response) => {

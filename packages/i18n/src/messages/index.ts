@@ -36,3 +36,4 @@ export { sellApply } from './sellApply';
 export { sellerTools } from './sellerTools';
 export { store } from './store';
 export { wallet } from './wallet';
+export { gifts } from './gifts';

@@ -1,4 +1,4 @@
-import { type AdminUser, type CustomerNoteView } from '@nixzora/validation';
+import { type AdminUser, type CustomerNoteView, type GiftBalanceView } from '@nixzora/validation';
 
 type CustomerOrder = {
   id: string;
@@ -20,7 +20,14 @@ import { param, query, type SearchParams } from '@/lib/format';
 import { isUuid } from '@/lib/forms';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { ROLE_KEYS, roleLabel } from '@/lib/roles';
-import { addNote, grantRole, resumeEmails, revokeRole, setStatus } from '../actions';
+import {
+  addNote,
+  grantGiftCredit,
+  grantRole,
+  resumeEmails,
+  revokeRole,
+  setStatus,
+} from '../actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const common = await getT('common');
@@ -47,10 +54,14 @@ export default async function UserPage({
   const { id } = await params;
   const search = await searchParams;
   const [me, user] = await Promise.all([currentStaff(), loadUser(id)]);
-  const [orders, notes] = await Promise.all([
+  const [orders, notes, gift] = await Promise.all([
     can(me, 'orders.read.all') ? load<CustomerOrder[]>(`/admin/users/${user.id}/orders`) : null,
     can(me, 'customers.notes') ? load<CustomerNoteView[]>(`/admin/users/${user.id}/notes`) : null,
+    can(me, 'orders.read.all')
+      ? load<GiftBalanceView>(`/admin/users/${user.id}/gift-balance`)
+      : null,
   ]);
+  const g = await getT('gifts');
   const [t, ops, common, f] = await Promise.all([
     getT('opsPeople'),
     getT('ops'),
@@ -248,6 +259,47 @@ export default async function UserPage({
                 </table>
               </div>
             )}
+          </section>
+        ) : null}
+
+        {gift ? (
+          <section className="card">
+            <h2>{g('creditTitle')}</h2>
+            <p>{g('balance', { amount: f.money(gift.balanceCents) })}</p>
+            {can(me, 'orders.refund') ? (
+              <form action={grantGiftCredit} className="form">
+                <input type="hidden" name="id" value={user.id} />
+                <div className="form-row">
+                  <label>
+                    {g('creditAmount')}
+                    <input name="amount" inputMode="decimal" required placeholder="15.00" />
+                  </label>
+                  <label>
+                    {g('creditNote')}
+                    <input name="note" required minLength={3} maxLength={200} />
+                  </label>
+                </div>
+                <div>
+                  <SubmitButton>{g('grant')}</SubmitButton>
+                </div>
+              </form>
+            ) : null}
+            {gift.entries.length ? (
+              <ul className="activity">
+                {gift.entries.slice(0, 10).map((entry) => (
+                  <li key={entry.id}>
+                    <span>
+                      {g(`kind_${entry.kind}`, { number: entry.orderNumber ?? '' })}
+                      {entry.note ? ` · ${entry.note}` : ''}
+                    </span>
+                    <span className="muted">
+                      {entry.amountCents < 0 ? '−' : '+'}
+                      {f.money(Math.abs(entry.amountCents))} · {f.dateTime(entry.createdAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
         ) : null}
 

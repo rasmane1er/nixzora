@@ -95,6 +95,15 @@ export default function CheckoutScreen() {
   const [cardChoice, setCardChoice] = useState<string | null>(null);
   const cardId = cardChoice ?? usableCards.find((c) => c.isDefault)?.id ?? usableCards[0]?.id ?? '';
   const [saveCard, setSaveCard] = useState(false);
+  // Gift card balance (p10-10): spent first unless switched off.
+  const g = useT('gifts');
+  const gift = useQuery({
+    queryKey: ['gift-balance'],
+    queryFn: () => api.account.giftBalance(),
+    enabled: signedIn,
+  });
+  const giftCents = gift.data?.balanceCents ?? 0;
+  const [useGift, setUseGift] = useState(true);
   const addresses = useQuery({
     queryKey: keys.addresses,
     queryFn: () => api.account.addresses(),
@@ -175,6 +184,7 @@ export default function CheckoutScreen() {
     if (result.outcome === 'paid') {
       await client.invalidateQueries({ queryKey: keys.cart });
       await client.invalidateQueries({ queryKey: ['buyNow'] });
+      await client.invalidateQueries({ queryKey: ['gift-balance'] });
       await client.invalidateQueries({ queryKey: keys.orders });
       await client.invalidateQueries({ queryKey: ['me'] });
       router.replace({
@@ -202,12 +212,14 @@ export default function CheckoutScreen() {
           : { cartId: signedIn ? undefined : (session.cartId() ?? undefined) }),
         ...(signedIn && cardId ? { paymentCardId: cardId } : {}),
         ...(signedIn && !cardId && saveCard ? { saveCard: true } : {}),
+        ...(signedIn && giftCents > 0 && useGift ? { useGiftBalance: true } : {}),
       });
       if (!signedIn && !buyNowId) session.setCartId(null);
       const order = { number: response.orderNumber, token: response.accessToken, ...valid };
       if (response.paid) {
         await client.invalidateQueries({ queryKey: keys.cart });
         await client.invalidateQueries({ queryKey: ['buyNow'] });
+        await client.invalidateQueries({ queryKey: ['gift-balance'] });
         await client.invalidateQueries({ queryKey: keys.orders });
         router.replace({
           pathname: '/orders/[number]',
@@ -397,6 +409,16 @@ export default function CheckoutScreen() {
           {signedIn ? (
             <>
               <Text variant="heading">{w('payWith')}</Text>
+              {giftCents > 0 ? (
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <Text style={{ flex: 1 }}>{g('useBalance', { amount: money(giftCents) })}</Text>
+                  <Switch
+                    value={useGift}
+                    onValueChange={setUseGift}
+                    accessibilityLabel={g('useBalance', { amount: money(giftCents) })}
+                  />
+                </Row>
+              ) : null}
               {usableCards.map((card) => (
                 <Pressable
                   key={card.id}

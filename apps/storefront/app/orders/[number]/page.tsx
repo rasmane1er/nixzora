@@ -2,6 +2,7 @@ import { deliveryRange, INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n
 import { type OrderView, type ReturnView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { GiftCardLines } from '@/components/GiftCardLines';
 import { notFound } from 'next/navigation';
 import {
   AddressBlock,
@@ -129,7 +130,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
         </p>
       ) : null}
 
-      {order.status !== 'PENDING_PAYMENT' && order.status !== 'CANCELLED' ? (
+      {order.kind !== 'GIFT_CARD' &&
+      order.status !== 'PENDING_PAYMENT' &&
+      order.status !== 'CANCELLED' ? (
         <section className="card stack">
           <OrderTimeline order={order} />
           {order.shipments.length ? (
@@ -197,8 +200,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
           <OrderTotals order={order} />
         </section>
         <section className="card stack">
-          <h2>{t('shippingTo')}</h2>
-          <AddressBlock address={order.shippingAddress} />
+          {order.kind === 'GIFT_CARD' ? (
+            <GiftCardLines order={order} />
+          ) : (
+            <>
+              <h2>{t('shippingTo')}</h2>
+              <AddressBlock address={order.shippingAddress} />
+            </>
+          )}
           {token ? <p className="hint">{t('keepLink')}</p> : null}
         </section>
       </div>

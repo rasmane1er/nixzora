@@ -4,6 +4,12 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { RiskModule } from '../risk/risk.module';
+import {
+  AccountGiftCardsController,
+  AdminGiftCardsController,
+  GiftCardsController,
+} from './gift-cards.controller';
+import { GiftCardsService } from './gift-cards.service';
 import { OrderEmails } from './order-emails';
 import {
   AccountOrdersController,
@@ -30,6 +36,9 @@ import { SellerRatingsService } from './seller-ratings.service';
     AdminOrdersController,
     AdminReturnsController,
     AdminRiskController,
+    GiftCardsController,
+    AccountGiftCardsController,
+    AdminGiftCardsController,
   ],
   providers: [
     OrdersService,
@@ -38,6 +47,7 @@ import { SellerRatingsService } from './seller-ratings.service';
     ReturnsService,
     SellerRatingsService,
     PaymentCardsService,
+    GiftCardsService,
   ],
   exports: [OrdersService, ReturnsService, PaymentCardsService],
 })

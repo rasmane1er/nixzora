@@ -22,6 +22,7 @@ import {
   pagedResult,
   type PagedResult,
   type PaymentSession,
+  type Totals,
   type RefundRequest,
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
@@ -33,6 +34,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type CartOwner, CartService } from '../cart/cart.service';
+import { giftBalance, releaseGiftBalance, spendGiftBalance } from './gift-ledger';
 import { PaymentCardsService } from './payment-cards.service';
 import { type AuthUser } from '../identity/auth-user';
 import { InventoryService } from '../inventory/inventory.service';
@@ -212,72 +214,134 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       throw error;
     }
 
-    let intent: Awaited<ReturnType<PaymentGateway['createIntent']>>;
-    try {
-      const saveCard = Boolean(user && input.saveCard && !card);
-      const customerId = user && (card || saveCard) ? await this.cards.customerFor(user) : null;
-      intent = await this.gateway.createIntent({
-        amountCents: order.totalCents,
-        currency: order.currency,
-        orderId: order.id,
-        orderNumber: order.number,
-        email: order.email,
-        idempotencyKey: `order-${order.id}`,
-        customerId,
-        saveCard,
-        paymentMethodId: card?.providerMethodId ?? null,
+    return this.startPayment(order, user, {
+      card,
+      saveCard: Boolean(user && input.saveCard && !card),
+      useGiftBalance: Boolean(user && input.useGiftBalance),
+      cartOwner: owner,
+      meta,
+      saveAddress: user && input.saveAddress ? input.shippingAddress : null,
+      totals: cart.totals,
+    });
+  }
+
+  /**
+   * Pays for a new order: gift card balance first (p10-10), then a saved card at once (p10-09)
+   * or a payment session for the payment form. A balance that covers everything, or a saved
+   * card that goes through, leaves the order paid when this returns.
+   */
+  async startPayment(
+    order: OrderRow,
+    user: AuthUser | undefined,
+    options: {
+      card: { id: string; providerMethodId: string } | null;
+      saveCard: boolean;
+      useGiftBalance: boolean;
+      cartOwner: CartOwner | null;
+      meta: RequestMeta;
+      saveAddress?: CheckoutRequest['shippingAddress'] | null;
+      totals: Totals;
+    },
+  ): Promise<CheckoutResponse> {
+    const { card, saveCard } = options;
+    let giftCents = 0;
+    if (user && options.useGiftBalance && order.kind === 'GOODS') {
+      giftCents = await this.prisma.$transaction(async (tx) => {
+        const cents = Math.min(await giftBalance(tx, user.id, true), order.totalCents);
+        if (cents <= 0) return 0;
+        await spendGiftBalance(tx, user.id, order.id, cents);
+        await tx.order.update({ where: { id: order.id }, data: { giftBalanceCents: cents } });
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            provider: 'GIFT_BALANCE',
+            providerPaymentId: `gift_${order.id}`,
+            // Taken now; the order is paid once the card part (if any) goes through.
+            status: cents < order.totalCents ? 'SUCCEEDED' : 'REQUIRES_ACTION',
+            amountCents: cents,
+            currency: order.currency,
+          },
+        });
+        return cents;
       });
-      await this.prisma.payment.create({
-        data: {
-          orderId: order.id,
-          provider: this.gateway.name,
-          providerPaymentId: intent.id,
-          status: 'REQUIRES_ACTION',
-          amountCents: order.totalCents,
+    }
+    const cardCents = order.totalCents - giftCents;
+
+    let intent: Awaited<ReturnType<PaymentGateway['createIntent']>> | null = null;
+    if (cardCents > 0) {
+      try {
+        const customerId = user && (card || saveCard) ? await this.cards.customerFor(user) : null;
+        intent = await this.gateway.createIntent({
+          amountCents: cardCents,
           currency: order.currency,
+          orderId: order.id,
+          orderNumber: order.number,
+          email: order.email,
+          idempotencyKey: `order-${order.id}`,
+          customerId,
           saveCard,
-          paymentCardId: card?.id ?? null,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Payment intent failed for ${order.number}: ${(error as Error).message}`);
-      await this.prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: 'CANCELLED',
-          cancelledAt: new Date(),
-          cancelReason: 'Payment service unavailable',
-        },
-      });
-      await this.releaseUnpaid(order);
-      throw new BadGatewayException(
-        'Payments are temporarily unavailable. You have not been charged.',
-      );
+          paymentMethodId: card?.providerMethodId ?? null,
+        });
+        await this.prisma.payment.create({
+          data: {
+            orderId: order.id,
+            provider: this.gateway.name,
+            providerPaymentId: intent.id,
+            status: 'REQUIRES_ACTION',
+            amountCents: cardCents,
+            currency: order.currency,
+            saveCard,
+            paymentCardId: card?.id ?? null,
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Payment intent failed for ${order.number}: ${(error as Error).message}`);
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+            cancelReason: 'Payment service unavailable',
+          },
+        });
+        await this.releaseUnpaid(order);
+        throw new BadGatewayException(
+          'Payments are temporarily unavailable. You have not been charged.',
+        );
+      }
     }
 
     // Remember which cart to empty once the payment succeeds.
-    await this.redis.client
-      .set(`order-cart:${order.id}`, JSON.stringify(owner), 'EX', 3 * 24 * 3600)
-      .catch(() => undefined);
-    if (user && input.saveAddress) await this.saveAddress(user.id, input.shippingAddress);
+    if (options.cartOwner) {
+      await this.redis.client
+        .set(`order-cart:${order.id}`, JSON.stringify(options.cartOwner), 'EX', 3 * 24 * 3600)
+        .catch(() => undefined);
+    }
+    if (user && options.saveAddress) await this.saveAddress(user.id, options.saveAddress);
 
     await this.audit.record({
       action: 'orders.checkout.started',
       actorId: user?.id ?? null,
       entityType: 'order',
       entityId: order.id,
-      meta,
-      metadata: { number: order.number, totalCents: order.totalCents, items: items.length },
+      meta: options.meta,
+      metadata: {
+        number: order.number,
+        totalCents: order.totalCents,
+        items: order.items.length,
+        ...(giftCents ? { giftBalanceCents: giftCents } : {}),
+      },
     });
 
-    // A saved card that went through: the order is paid now, no payment form. (Stripe also
-    // sends its webhook; applying the same success twice changes nothing.)
-    if (intent.status === 'succeeded') {
+    // Paid already: all by gift balance, or a saved card that went through. (Stripe also sends
+    // its webhook; applying the same success twice changes nothing.)
+    const paidBy = !intent ? `gift_${order.id}` : intent.status === 'succeeded' ? intent.id : null;
+    if (paidBy) {
       await this.applyPaymentEvent({
-        id: `sync_${intent.id}`,
+        id: `sync_${paidBy}`,
         type: 'succeeded',
-        paymentId: intent.id,
-        amountCents: order.totalCents,
+        paymentId: paidBy,
+        amountCents: intent ? cardCents : giftCents,
         currency: order.currency,
       });
     }
@@ -286,13 +350,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       orderId: order.id,
       orderNumber: order.number,
       accessToken: this.accessToken(order.id),
-      payment: this.session(intent.clientSecret, order),
-      totals: cart.totals,
-      paid: intent.status === 'succeeded',
+      payment: this.session(intent?.clientSecret ?? '', cardCents, order.currency),
+      totals: options.totals,
+      paid: Boolean(paidBy),
       paymentProblem:
-        intent.status === 'failed'
+        intent?.status === 'failed'
           ? (intent.failure ?? 'Your card was declined. Try another card.')
-          : intent.status === 'requires_action'
+          : intent?.status === 'requires_action'
             ? 'Your bank wants to confirm this payment. Finish it on the payment page.'
             : null,
     };
@@ -312,7 +376,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       });
     }
     const payment = await this.prisma.payment.findFirst({
-      where: { orderId: order.id },
+      where: { orderId: order.id, provider: { not: 'GIFT_BALANCE' } },
       orderBy: { createdAt: 'desc' },
     });
     if (!payment) throw new NotFoundException('No payment found for this order.');
@@ -323,19 +387,20 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         .map((item) => ({ variantId: item.variantId!, quantity: item.quantity })),
       this.config.get('CHECKOUT_HOLD_MINUTES', { infer: true }),
     );
-    return this.session(await this.gateway.clientSecret(payment.providerPaymentId), order);
+    return this.session(
+      await this.gateway.clientSecret(payment.providerPaymentId),
+      payment.amountCents,
+      payment.currency,
+    );
   }
 
-  private session(
-    clientSecret: string,
-    order: { totalCents: number; currency: string },
-  ): PaymentSession {
+  private session(clientSecret: string, amountCents: number, currency: string): PaymentSession {
     return {
       provider: this.gateway.name,
       clientSecret,
       publishableKey: this.gateway.publishableKey,
-      amountCents: order.totalCents,
-      currency: order.currency,
+      amountCents,
+      currency,
     };
   }
 
@@ -504,7 +569,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         }
         case 'succeeded': {
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'SUCCEEDED' } });
-          if (event.amountCents !== order.totalCents || event.currency !== order.currency) {
+          if (event.amountCents !== payment.amountCents || event.currency !== order.currency) {
             this.logger.error(
               `Amount mismatch on ${order.number}: paid ${event.amountCents} ${event.currency}`,
             );
@@ -581,6 +646,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   private async releaseUnpaid(order: { id: string; couponCode: string | null }): Promise<void> {
     await this.inventory.releaseOrder(order.id);
     if (order.couponCode) await this.coupons.release(order.couponCode);
+    await this.prisma.$transaction((tx) => releaseGiftBalance(tx, order.id));
   }
 
   /** What a payment is for (the fake gateway needs it to build its event). */

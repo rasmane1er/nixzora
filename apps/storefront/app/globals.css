@@ -4190,3 +4190,99 @@ td.neg {
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+
+/* ───────────── Gift cards (p10-10) ───────────── */
+.gift-hero {
+  aspect-ratio: 16 / 7;
+  max-height: 260px;
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 20%, rgb(255 140 70 / 0.55), transparent 45%),
+    linear-gradient(135deg, #0b1220 0%, #1b2740 60%, #c2410c 140%);
+}
+.gift-hero__logo {
+  font-family: var(--font-display), sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+.gift-hero__label {
+  font-size: 15px;
+  opacity: 0.85;
+}
+.gift-amounts {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gift-amounts legend {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.gift-amounts label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.gift-amounts label:has(input:checked) {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
+}
+.gift-amounts input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.gift-balance {
+  display: grid;
+  gap: 4px;
+}
+.gift-balance strong {
+  font-size: 34px;
+  font-family: var(--font-display), sans-serif;
+}
+.gift-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.gift-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.gift-history li:last-child {
+  border-bottom: 0;
+}
+.gift-history__plus {
+  color: var(--ok-fg);
+  font-weight: 600;
+}
+.gift-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.gift-lines .pill {
+  margin-left: 6px;
+}

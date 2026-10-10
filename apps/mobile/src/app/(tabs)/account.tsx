@@ -54,6 +54,7 @@ export default function AccountScreen() {
   const t = useT('appAccount');
   const tc = useT('common');
   const tl = useT('lists');
+  const tg = useT('gifts');
 
   if (status !== 'signedIn' || !user) {
     return (
@@ -126,6 +127,7 @@ export default function AccountScreen() {
           },
           { icon: 'heart-outline', label: t('menuWishlist'), href: '/wishlist' },
           { icon: 'list-outline', label: tl('title'), href: '/lists' },
+          { icon: 'gift-outline', label: tg('balanceTitle'), href: '/account/gift-cards' },
           { icon: 'refresh-outline', label: t('menuBuyAgain'), href: '/account/buy-again' },
           {
             icon: 'return-down-back-outline',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type GiftCardLine } from './gift-cards';
 import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
 
@@ -175,6 +176,8 @@ export const CheckoutRequestSchema = z.object({
   saveCard: z.boolean().optional(),
   /** Signed-in customers: pay now with this saved card (1-click), no payment form. */
   paymentCardId: z.uuid().optional(),
+  /** Signed-in customers: spend the gift card balance first (p10-10). */
+  useGiftBalance: z.boolean().optional(),
 });
 
 export type CheckoutResponse = {
@@ -303,6 +306,12 @@ export type OrderView = {
   returnableUntil: string | null;
   /** Until when the customer can still cancel it themselves (paid, not being packed yet). */
   cancellableUntil?: string | null;
+  /** Goods to ship, or e-gift cards sent by email (p10-10). */
+  kind?: 'GOODS' | 'GIFT_CARD';
+  /** Part of the total paid from the gift card balance. */
+  giftBalanceCents?: number;
+  /** The gift cards bought with this order. */
+  giftCards?: GiftCardLine[];
   timeline: { status: OrderStatus; at: string }[];
   createdAt: string;
   placedAt: string | null;

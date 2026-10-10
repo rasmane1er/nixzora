@@ -3,7 +3,7 @@
 import { cardBrand, rich } from '@nixzora/i18n';
 import { type PaymentCardView, type SavedAddress, US_STATES } from '@nixzora/validation';
 import { useActionState, useState } from 'react';
-import { useT } from '@/components/I18nProvider';
+import { useFormat, useT } from '@/components/I18nProvider';
 import { type CheckoutState, placeOrder } from './actions';
 
 type Defaults = Partial<
@@ -31,7 +31,10 @@ export function CheckoutForm({
   addresses,
   buyNowId,
   cards = [],
+  giftBalanceCents = 0,
 }: {
+  /** Gift card balance to spend first (p10-10). */
+  giftBalanceCents?: number;
   email?: string;
   signedIn: boolean;
   addresses: SavedAddress[];
@@ -42,6 +45,8 @@ export function CheckoutForm({
 }) {
   const t = useT('checkout');
   const w = useT('wallet');
+  const g = useT('gifts');
+  const f = useFormat();
   const usable = cards.filter((card) => !card.expired);
   const [cardId, setCardId] = useState(
     () => usable.find((card) => card.isDefault)?.id ?? usable[0]?.id ?? '',
@@ -168,6 +173,12 @@ export function CheckoutForm({
       {signedIn ? (
         <section className="card form">
           <h2>{w('payWith')}</h2>
+          {giftBalanceCents > 0 ? (
+            <label className="check">
+              <input type="checkbox" name="useGiftBalance" defaultChecked />{' '}
+              {g('useBalance', { amount: f.money(giftBalanceCents) })}
+            </label>
+          ) : null}
           {usable.length ? (
             <div className="pay-choice" role="radiogroup" aria-label={w('payWith')}>
               {usable.map((card) => (

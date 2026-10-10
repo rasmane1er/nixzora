@@ -27,9 +27,11 @@ export async function OrderTotals({
     | 'totalCents'
     | 'refundedCents'
     | 'currency'
+    | 'giftBalanceCents'
   >;
 }) {
   const t = await getT('order');
+  const g = await getT('gifts');
   const f = await getFormat();
   const m = (cents: number) => f.money(cents, order.currency);
   return (
@@ -50,6 +52,12 @@ export async function OrderTotals({
       <dd>{m(order.taxCents)}</dd>
       <dt className="total">{t('total')}</dt>
       <dd className="total">{m(order.totalCents)}</dd>
+      {order.giftBalanceCents ? (
+        <>
+          <dt>{g('balanceLine')}</dt>
+          <dd className="discount">−{m(order.giftBalanceCents)}</dd>
+        </>
+      ) : null}
       {order.refundedCents ? (
         <>
           <dt>{t('refunded')}</dt>

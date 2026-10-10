@@ -78,6 +78,7 @@ model User {
   productAlerts      ProductAlert[]
   lists              ShoppingList[]
   paymentCards       PaymentCard[]
+  giftEntries        GiftBalanceEntry[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -439,48 +440,54 @@ enum OrderStatus {
 }
 
 model Order {
-  id              String      @id @default(uuid(7)) @db.Uuid
+  id               String      @id @default(uuid(7)) @db.Uuid
   /// Customer-facing number, e.g. NX-10482
-  number          String      @unique
-  userId          String?     @map("user_id") @db.Uuid
-  email           String
-  status          OrderStatus @default(PENDING_PAYMENT)
-  currency        String      @default("USD") @db.Char(3)
-  subtotalCents   Int         @map("subtotal_cents")
-  shippingCents   Int         @default(0) @map("shipping_cents")
-  taxCents        Int         @default(0) @map("tax_cents")
-  discountCents   Int         @default(0) @map("discount_cents")
-  couponCode      String?     @map("coupon_code")
+  number           String      @unique
+  userId           String?     @map("user_id") @db.Uuid
+  email            String
+  status           OrderStatus @default(PENDING_PAYMENT)
+  currency         String      @default("USD") @db.Char(3)
+  subtotalCents    Int         @map("subtotal_cents")
+  shippingCents    Int         @default(0) @map("shipping_cents")
+  taxCents         Int         @default(0) @map("tax_cents")
+  discountCents    Int         @default(0) @map("discount_cents")
+  couponCode       String?     @map("coupon_code")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
-  language        String      @default("en")
+  language         String      @default("en")
   /// Total refunded so far (partial refunds and returns).
-  refundedCents   Int         @default(0) @map("refunded_cents")
+  refundedCents    Int         @default(0) @map("refunded_cents")
   /// Postage paid for the label, and where to print it.
-  labelUrl        String?     @map("label_url")
-  postageCents    Int?        @map("postage_cents")
-  totalCents      Int         @map("total_cents")
+  labelUrl         String?     @map("label_url")
+  postageCents     Int?        @map("postage_cents")
+  totalCents       Int         @map("total_cents")
   /// Address snapshots: orders never change when an address book entry does.
-  shippingAddress Json        @map("shipping_address")
-  billingAddress  Json?       @map("billing_address")
-  trackingCarrier String?     @map("tracking_carrier")
-  trackingNumber  String?     @map("tracking_number")
-  cancelReason    String?     @map("cancel_reason")
-  placedAt        DateTime?   @map("placed_at")
-  fulfillingAt    DateTime?   @map("fulfilling_at")
-  shippedAt       DateTime?   @map("shipped_at")
-  deliveredAt     DateTime?   @map("delivered_at")
-  cancelledAt     DateTime?   @map("cancelled_at")
+  shippingAddress  Json        @map("shipping_address")
+  billingAddress   Json?       @map("billing_address")
+  trackingCarrier  String?     @map("tracking_carrier")
+  trackingNumber   String?     @map("tracking_number")
+  cancelReason     String?     @map("cancel_reason")
+  placedAt         DateTime?   @map("placed_at")
+  fulfillingAt     DateTime?   @map("fulfilling_at")
+  shippedAt        DateTime?   @map("shipped_at")
+  deliveredAt      DateTime?   @map("delivered_at")
+  cancelledAt      DateTime?   @map("cancelled_at")
   /// Fraud review (ADR-0024): paid but not to be shipped until staff clear it.
-  riskHold        Boolean     @default(false) @map("risk_hold")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  riskHold         Boolean     @default(false) @map("risk_hold")
+  /// What was bought: goods to ship, or e-gift cards sent by email (p10-10).
+  kind             OrderKind   @default(GOODS)
+  /// Part of the total paid from the customer's gift card balance (p10-10).
+  giftBalanceCents Int         @default(0) @map("gift_balance_cents")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
 
-  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user            User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   payments        Payment[]
   returns         ReturnRequest[]
   sellerOrders    SellerOrder[]
   riskAssessments RiskAssessment[]
+  giftCards       GiftCard[]
+  giftEntries     GiftBalanceEntry[]
 
   @@index([userId, createdAt])
   @@index([status])
@@ -516,6 +523,85 @@ enum PaymentProvider {
   STRIPE
   /// Development and tests only: payments confirmed without a card.
   FAKE
+  /// The customer's gift card balance (p10-10), kept in NIXZORA's own ledger.
+  GIFT_BALANCE
+}
+
+enum OrderKind {
+  GOODS
+  GIFT_CARD
+}
+
+enum GiftCardStatus {
+  /// Bought, waiting for payment.
+  PENDING
+  /// Sent; the code can be redeemed.
+  ACTIVE
+  REDEEMED
+  /// Refunded or cancelled before it was redeemed.
+  VOID
+}
+
+enum GiftEntryKind {
+  /// A gift card redeemed into the balance.
+  REDEEM
+  /// Spent on an order.
+  SPEND
+  /// Given back: the order was not paid after all.
+  RELEASE
+  /// Refunded from an order paid (partly) with the balance.
+  REFUND
+  /// Credit from NIXZORA staff (goodwill).
+  GRANT
+}
+
+/// An e-gift card (p10-10). Only a keyed hash of the code is stored; the code itself goes once
+/// to the recipient by email. No expiry and no fees.
+model GiftCard {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  /// HMAC of the normalized code; null until the card is issued.
+  codeHash       String?        @unique @map("code_hash")
+  last4          String?        @db.Char(4)
+  amountCents    Int            @map("amount_cents")
+  status         GiftCardStatus @default(PENDING)
+  orderId        String         @map("order_id") @db.Uuid
+  recipientEmail String         @map("recipient_email")
+  recipientName  String         @map("recipient_name")
+  senderName     String         @map("sender_name")
+  message        String?
+  sentAt         DateTime?      @map("sent_at")
+  redeemedById   String?        @map("redeemed_by_id") @db.Uuid
+  redeemedAt     DateTime?      @map("redeemed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  order   Order              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  entries GiftBalanceEntry[]
+
+  @@index([orderId])
+  @@index([recipientEmail])
+  @@map("gift_cards")
+}
+
+/// The gift card balance ledger (p10-10): the balance is the sum of a customer's entries.
+model GiftBalanceEntry {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  kind        GiftEntryKind
+  /// Positive adds to the balance, negative spends it.
+  amountCents Int           @map("amount_cents")
+  giftCardId  String?       @map("gift_card_id") @db.Uuid
+  orderId     String?       @map("order_id") @db.Uuid
+  note        String?
+  createdById String?       @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  giftCard GiftCard? @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@map("gift_balance_entries")
 }
 
 enum PaymentStatus {

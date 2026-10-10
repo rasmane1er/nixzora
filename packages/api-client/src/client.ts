@@ -1,4 +1,5 @@
 import type {
+  GiftBalanceView,
   PaymentCardView,
   DealListQuery,
   DealsPage,
@@ -399,6 +400,8 @@ export function createApiClient(options: ClientOptions) {
         saveCard?: boolean;
         /** Pay now with a saved card. */
         paymentCardId?: string;
+        /** Spend the gift card balance first (p10-10). */
+        useGiftBalance?: boolean;
       }) => request<CheckoutResponse>('POST', '/checkout', { body }),
       /** A new payment session for an unpaid order (after a declined card). */
       payment: (number: string, token?: string) =>
@@ -503,6 +506,10 @@ export function createApiClient(options: ClientOptions) {
         request<PaymentCardView[]>('POST', `/me/payment-cards/${enc(id)}/default`),
       removeCard: (id: string) =>
         request<PaymentCardView[]>('DELETE', `/me/payment-cards/${enc(id)}`),
+      /** Gift card balance (p10-10): what's left, and what was added and spent. */
+      giftBalance: () => request<GiftBalanceView>('GET', '/me/gift-cards'),
+      redeemGiftCard: (code: string) =>
+        request<GiftBalanceView>('POST', '/me/gift-cards/redeem', { body: { code } }),
       /** Lists and registries (p10-08). */
       lists: () => request<ShoppingListSummary[]>('GET', '/me/lists'),
       list: (id: string) => request<ShoppingListView>('GET', `/me/lists/${enc(id)}`),

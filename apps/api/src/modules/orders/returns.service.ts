@@ -52,6 +52,11 @@ export class ReturnsService {
   ) {}
 
   async request(order: OrderRow, input: ReturnCreate): Promise<ReturnView> {
+    if (order.kind === 'GIFT_CARD') {
+      throw new ConflictException(
+        'Gift cards can’t be returned. If it hasn’t been used, contact us for a refund.',
+      );
+    }
     const until = returnWindowEnd(order);
     if (!until || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status)) {
       throw new ConflictException('Returns open once your order has been delivered.');

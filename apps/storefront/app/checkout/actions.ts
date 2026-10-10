@@ -86,6 +86,8 @@ export async function oneClickBuy(
         email: setup.email,
         shippingAddress: address,
         paymentCardId: setup.card.id,
+        // Like a normal checkout: any gift card balance goes first (p10-10).
+        useGiftBalance: true,
       },
     });
   } catch (error) {
@@ -118,6 +120,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
         // Saved cards (p10-09): pay now with one, or keep the new card for next time.
         ...(signedIn && UUID.test(paymentCardId) ? { paymentCardId } : {}),
         ...(signedIn && !paymentCardId && form.get('saveCard') === 'on' ? { saveCard: true } : {}),
+        ...(signedIn && form.get('useGiftBalance') === 'on' ? { useGiftBalance: true } : {}),
         shippingAddress: {
           fullName: values.fullName,
           line1: values.line1,
