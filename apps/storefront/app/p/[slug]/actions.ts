@@ -6,6 +6,8 @@ import {
   type QuestionView,
   type ReviewPage,
   type ReviewSort,
+  TRAFFIC_SOURCES,
+  type TrafficSource,
   type UploadTicket,
 } from '@nixzora/validation';
 import { revalidatePath } from 'next/cache';
@@ -40,11 +42,16 @@ export async function submitReview(_: ReviewState, form: FormData): Promise<Revi
 }
 
 /** Records a product view for recommendations. Never fails the page. */
-export async function recordView(productId: string): Promise<void> {
+export async function recordView(productId: string, source?: TrafficSource): Promise<void> {
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return;
+  const from =
+    source && (TRAFFIC_SOURCES as readonly string[]).includes(source) ? source : undefined;
   try {
     const visitor = await ensureVisitorId();
-    await api('/events/views', { method: 'POST', body: { productId, visitorId: visitor } });
+    await api('/events/views', {
+      method: 'POST',
+      body: { productId, visitorId: visitor, ...(from ? { source: from } : {}) },
+    });
   } catch {
     // Recommendations are best-effort.
   }

@@ -1,4 +1,7 @@
 import type {
+  TrafficSource,
+  SellerAnalytics,
+  SellerMeResponse,
   FollowedStore,
   FollowingFeed,
   FollowStatus,
@@ -376,8 +379,10 @@ export function createApiClient(options: ClientOptions) {
 
     recommendations: {
       /** Records that this shopper opened a product page (signed in, or by visitor id). */
-      view: (productId: string, visitorId?: string) =>
-        request<void>('POST', '/events/views', { body: { productId, visitorId } }),
+      view: (productId: string, visitorId?: string, source?: TrafficSource) =>
+        request<void>('POST', '/events/views', {
+          body: { productId, visitorId, ...(source ? { source } : {}) },
+        }),
       /** Picks from viewing history (and smart rows), or popular products. */
       forYou: (visitorId?: string) =>
         request<Recommendations>('GET', '/recommendations', {
@@ -543,6 +548,13 @@ export function createApiClient(options: ClientOptions) {
       /** Contact us / Report a problem (signed in, or with an email). */
       create: (body: SupportRequestCreate) =>
         request<SupportRequestView>('POST', '/support/requests', { body }),
+    },
+
+    /** The store you work for (the seller portal is on the web; the app shows its analytics). */
+    seller: {
+      me: () => request<SellerMeResponse>('GET', '/seller/me'),
+      analytics: (days: 7 | 30 | 90) =>
+        request<SellerAnalytics>('GET', '/seller/analytics', { query: { days } }),
     },
 
     /** The help agent (p10-20): a support chat about your orders. Signed in only. */

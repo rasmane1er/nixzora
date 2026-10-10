@@ -49,10 +49,11 @@ export class RecommendationsController {
     @Body(new ZodValidationPipe(ProductViewEventSchema)) body: ProductViewEvent,
     @MaybeUser() user: AuthUser | undefined,
   ): Promise<void> {
-    await this.recommendations.recordView(body.productId, {
-      userId: user?.id,
-      visitorId: body.visitorId,
-    });
+    await this.recommendations.recordView(
+      body.productId,
+      { userId: user?.id, visitorId: body.visitorId },
+      body.source,
+    );
   }
 
   /** A shopper searched (p10-02), for "Because you searched for…". Guests send their visitor id. */

@@ -67,7 +67,7 @@ export default async function SellerAnalyticsPage({
   const seller = await requireSeller('/sell/analytics');
   const stats = await api<SellerAnalytics>(`/seller/analytics?days=${days}`);
   const { totals, previous } = stats;
-  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const [t, f, st] = await Promise.all([getT('sellerTools'), getFormat(), getT('storeStats')]);
   const money = (cents: number) => f.money(cents, 'USD');
   const count = (n: number) => f.number(n);
 
@@ -130,6 +130,114 @@ export default async function SellerAnalyticsPage({
         </p>
       </section>
 
+      {/* Store analytics (p10-25): the funnel, where views came from, and followers. */}
+      <div className="stats-row">
+        {stats.funnel ? (
+          <section className="card stack" aria-labelledby="funnel-title">
+            <h2 id="funnel-title">{st('funnelTitle')}</h2>
+            <ol className="funnel">
+              {(
+                [
+                  ['funnelViews', stats.funnel.views],
+                  ['funnelCarts', stats.funnel.carts],
+                  ['funnelOrders', stats.funnel.orders],
+                ] as const
+              ).map(([label, value], i, steps) => {
+                const top = steps[0]![1];
+                const prev = i ? steps[i - 1]![1] : 0;
+                return (
+                  <li key={label}>
+                    <span className="funnel__label">
+                      <span>{st(label)}</span>
+                      <strong>{count(value)}</strong>
+                    </span>
+                    <span className="funnel__track" aria-hidden="true">
+                      <span
+                        className="funnel__bar"
+                        style={{
+                          width: `${top ? Math.min(100, Math.max(2, (value / top) * 100)) : 0}%`,
+                        }}
+                      />
+                    </span>
+                    {/* "Buy now" skips the cart, so orders can outnumber carts: no rate then. */}
+                    {i && prev && value <= prev ? (
+                      <span className="muted funnel__rate">
+                        {st('funnelRate', { rate: f.percent(value / prev) })}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ) : null}
+        {stats.sources ? (
+          <section className="card stack" aria-labelledby="sources-title">
+            <h2 id="sources-title">{st('sourcesTitle')}</h2>
+            {stats.sources.length ? (
+              <>
+                <ul className="sources">
+                  {stats.sources.map((row) => {
+                    const total = stats.sources!.reduce((sum, r) => sum + r.views, 0);
+                    return (
+                      <li key={row.source}>
+                        <span className="sources__label">
+                          <span>{st(`source_${row.source}`)}</span>
+                          <span className="muted">
+                            {count(row.views)} ·{' '}
+                            {st('share', { percent: f.percent(row.views / total) })}
+                          </span>
+                        </span>
+                        <span className="funnel__track" aria-hidden="true">
+                          <span
+                            className="funnel__bar"
+                            style={{
+                              width: `${Math.max(2, (row.views / stats.sources![0]!.views) * 100)}%`,
+                            }}
+                          />
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <details>
+                  <summary className="muted">{st('tableView')}</summary>
+                  <table className="plain">
+                    <thead>
+                      <tr>
+                        <th>{st('colSource')}</th>
+                        <th className="num">{st('colViews')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.sources.map((row) => (
+                        <tr key={row.source}>
+                          <td>{st(`source_${row.source}`)}</td>
+                          <td className="num">{count(row.views)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              </>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                {st('sourcesEmpty')}
+              </p>
+            )}
+          </section>
+        ) : null}
+        {stats.followers ? (
+          <section className="card stack" aria-labelledby="followers-title">
+            <h2 id="followers-title">{st('followersTitle')}</h2>
+            <strong className="stat-big">{count(stats.followers.total)}</strong>
+            <span className="muted">
+              {st('followersNew', { count: stats.followers.new, days })}
+            </span>
+          </section>
+        ) : null}
+      </div>
+
       <section className="card stack">
         <h2>{t('topProducts')}</h2>
         {stats.topProducts.length === 0 ? (
@@ -143,7 +251,9 @@ export default async function SellerAnalyticsPage({
                 <tr>
                   <th>{t('colProduct')}</th>
                   <th className="num">{t('colViews')}</th>
+                  <th className="num">{st('colCarts')}</th>
                   <th className="num">{t('colUnits')}</th>
+                  <th className="num">{st('colConversion')}</th>
                   <th className="num">{t('colSales')}</th>
                 </tr>
               </thead>
@@ -154,7 +264,11 @@ export default async function SellerAnalyticsPage({
                       <Link href={`/sell/listings/${product.productId}`}>{product.title}</Link>
                     </td>
                     <td className="num">{count(product.views)}</td>
+                    <td className="num">{count(product.carts ?? 0)}</td>
                     <td className="num">{count(product.units)}</td>
+                    <td className="num">
+                      {product.views ? f.percent(product.units / product.views) : '—'}
+                    </td>
                     <td className="num">{money(product.salesCents)}</td>
                   </tr>
                 ))}

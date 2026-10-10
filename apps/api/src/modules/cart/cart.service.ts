@@ -28,6 +28,7 @@ export type ClippedSaving = {
   sellerId: string | null;
 };
 import { availableOf } from '../catalog/catalog-mappers';
+import { countCartAdd } from '../catalog/traffic';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
 import { PricingService } from './pricing.service';
@@ -107,13 +108,15 @@ export class CartService {
   }
 
   async add(owner: CartOwner, variantId: string, quantity: number): Promise<Cart> {
-    await this.assertSellable(variantId);
+    const productId = await this.assertSellable(variantId);
     const current = await this.quantities(owner);
     if (!current.has(variantId) && current.size >= MAX_LINES) {
       throw new BadRequestException(`A cart can hold up to ${MAX_LINES} different items.`);
     }
     const next = Math.min(MAX_QUANTITY, (current.get(variantId) ?? 0) + quantity);
     await this.write(owner, variantId, next);
+    // Store analytics (p10-25): shopping carts only, not "Buy now" checkouts.
+    if (!('buyNowId' in owner)) await countCartAdd(this.prisma, productId);
     return this.view(owner);
   }
 
@@ -425,7 +428,8 @@ export class CartService {
     };
   }
 
-  private async assertSellable(variantId: string): Promise<void> {
+  /** The variant can be bought now; returns its product. */
+  private async assertSellable(variantId: string): Promise<string> {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
       include: { product: { select: { status: true } }, inventory: true },
@@ -436,6 +440,7 @@ export class CartService {
     if (availableOf(variant.inventory) === 0) {
       throw new BadRequestException('That item is sold out.');
     }
+    return variant.productId;
   }
 
   private async write(

@@ -368,6 +368,8 @@ model Product {
   subscriptions Subscription[]
   reviewInsight ReviewInsight?
   searchDoc     ProductSearchDoc?
+  viewSources   ProductViewSource[]
+  cartAdds      ProductCartAdd[]
 
   @@index([categoryId, status])
   @@index([sellerId, status])
@@ -2145,4 +2147,32 @@ model StoreFollow {
   @@id([userId, sellerId])
   @@index([sellerId])
   @@map("store_follows")
+}
+
+/// Store analytics (p10-25, ADR-0047): product page views per day and where they came from.
+/// Counts only: no shopper, so it counts everyone (also those who turned personalization off).
+model ProductViewSource {
+  productId String   @map("product_id") @db.Uuid
+  /// US Eastern calendar day.
+  day       DateTime @db.Date
+  /// SEARCH, CATEGORY, STORE, DEALS, RECOMMENDED, FOLLOWING, ASSISTANT, EXTERNAL, DIRECT or APP.
+  source    String
+  views     Int      @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, day, source])
+  @@map("product_view_sources")
+}
+
+/// Store analytics (p10-25): add-to-cart counts per product and day.
+model ProductCartAdd {
+  productId String   @map("product_id") @db.Uuid
+  day       DateTime @db.Date
+  adds      Int      @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, day])
+  @@map("product_cart_adds")
 }

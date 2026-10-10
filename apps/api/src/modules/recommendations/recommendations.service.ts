@@ -13,9 +13,11 @@ import {
   type Recommendations,
   type RelatedProducts,
   type SmartRow,
+  type TrafficSource,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
+import { countView } from '../catalog/traffic';
 import { ReadDatabase } from '../../prisma/read-database';
 import { CartService, type CartOwner } from '../cart/cart.service';
 import { CatalogQueryService } from '../catalog/catalog-query.service';
@@ -95,15 +97,26 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
     return user?.personalizedPicks ?? true;
   }
 
-  /** Records a product view. Returns false when it was ignored (anonymous, repeat or unknown). */
-  async recordView(productId: string, shopper: Shopper): Promise<boolean> {
-    if (!shopper.userId && !shopper.visitorId) return false;
-    if (!(await this.personalized(shopper.userId))) return false;
+  /**
+   * Records a product view. Returns false when it was ignored for picks (anonymous, opted out,
+   * repeat or unknown). Store analytics (p10-25) count every view of a live product except a
+   * quick repeat by the same shopper, and keep no shopper with the count.
+   */
+  async recordView(
+    productId: string,
+    shopper: Shopper,
+    source: TrafficSource = 'DIRECT',
+  ): Promise<boolean> {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, status: 'ACTIVE' },
       select: { id: true },
     });
     if (!product) return false;
+    const known = Boolean(shopper.userId || shopper.visitorId);
+    if (!known || !(await this.personalized(shopper.userId))) {
+      await countView(this.prisma, productId, source);
+      return false;
+    }
 
     const recent = await this.prisma.productEvent.findFirst({
       where: {
@@ -124,6 +137,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
         visitorId: shopper.visitorId ?? null,
       },
     });
+    await countView(this.prisma, productId, source);
     return true;
   }
 

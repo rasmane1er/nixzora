@@ -299,7 +299,7 @@ export default function ProductScreen() {
   useEffect(() => {
     if (!productId) return;
     void visitorId()
-      .then((id) => api.recommendations.view(productId, id))
+      .then((id) => api.recommendations.view(productId, id, 'APP'))
       .catch(() => undefined);
   }, [productId]);
   const add = useCartMutation(({ variantId, qty }: { variantId: string; qty: number }) =>

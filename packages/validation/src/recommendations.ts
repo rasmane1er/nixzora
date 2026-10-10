@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProductCardSchema } from './catalog';
+import { TRAFFIC_SOURCES } from './traffic';
 
 /**
  * A random id the browser or app keeps for a guest, so recommendations work before sign-in.
@@ -10,6 +11,8 @@ export const VisitorIdSchema = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/, 'Inval
 export const ProductViewEventSchema = z.object({
   productId: z.uuid(),
   visitorId: VisitorIdSchema.optional(),
+  /** Where the view came from, for store analytics (p10-25). */
+  source: z.enum(TRAFFIC_SOURCES).optional(),
 });
 export type ProductViewEvent = z.infer<typeof ProductViewEventSchema>;
 

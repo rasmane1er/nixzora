@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type TrafficSource } from './traffic';
 import { CARRIERS } from './commerce';
 import {
   ProductCardSchema,
@@ -300,7 +301,15 @@ export type SellerAnalytics = {
     units: number;
     salesCents: number;
     views: number;
+    /** Times it was added to a cart (p10-25). */
+    carts?: number;
   }[];
+  /** Store analytics (p10-25): from a product view to an order. */
+  funnel?: { views: number; carts: number; orders: number };
+  /** Product page views by where they came from, most first. */
+  sources?: { source: TrafficSource; views: number }[];
+  /** People following the store, and how many started in the period. */
+  followers?: { total: number; new: number };
 };
 
 export type SellerAnalyticsQuery = z.infer<typeof SellerAnalyticsQuerySchema>;

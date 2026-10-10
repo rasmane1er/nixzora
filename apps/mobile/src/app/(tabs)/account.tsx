@@ -49,6 +49,13 @@ export default function AccountScreen() {
     queryFn: () => api.me.overview(),
     enabled: status === 'signedIn',
   });
+  // Store analytics (p10-25): the store's team sees its dashboard here.
+  const myStore = useQuery({
+    queryKey: ['seller-me'],
+    queryFn: () => api.seller.me(),
+    enabled: status === 'signedIn',
+    staleTime: 10 * 60_000,
+  });
   const { deleted } = useLocalSearchParams<{ deleted?: string }>();
   const [busy, setBusy] = useState(false);
   const t = useT('appAccount');
@@ -62,6 +69,7 @@ export default function AccountScreen() {
   const tha = useT('helpAgent');
   const trf = useT('referrals');
   const tfl = useT('follows');
+  const tss = useT('storeStats');
   const ti = useT('inbox');
 
   if (status !== 'signedIn' || !user) {
@@ -212,6 +220,20 @@ export default function AccountScreen() {
           },
         ]}
       />
+
+      {myStore.data?.seller?.status === 'ACTIVE' ? (
+        <MenuList
+          title={myStore.data.seller.displayName}
+          items={[
+            {
+              icon: 'stats-chart-outline',
+              label: tss('appTitle'),
+              href: '/store-dashboard',
+              hint: tss('appMore'),
+            },
+          ]}
+        />
+      ) : null}
 
       <MenuList
         title={t('groupHelp')}
