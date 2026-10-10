@@ -32,11 +32,13 @@ export async function OrderTotals({
     | 'shippingSpeed'
     | 'kind'
     | 'bundleDiscountCents'
+    | 'clipDiscountCents'
   >;
 }) {
   const t = await getT('order');
   const pl = await getT('plus');
   const bd = await getT('bundles');
+  const cl = await getT('clips');
   const g = await getT('gifts');
   const f = await getFormat();
   const m = (cents: number) => f.money(cents, order.currency);
@@ -50,12 +52,25 @@ export async function OrderTotals({
           <dd className="discount">−{m(order.bundleDiscountCents)}</dd>
         </>
       ) : null}
-      {order.discountCents - (order.bundleDiscountCents ?? 0) ? (
+      {order.clipDiscountCents ? (
+        <>
+          <dt>{cl('savings')}</dt>
+          <dd className="discount">−{m(order.clipDiscountCents)}</dd>
+        </>
+      ) : null}
+      {order.discountCents - (order.bundleDiscountCents ?? 0) - (order.clipDiscountCents ?? 0) ? (
         <>
           <dt>
             {order.couponCode ? t('discountWithCode', { code: order.couponCode }) : t('discount')}
           </dt>
-          <dd className="discount">−{m(order.discountCents - (order.bundleDiscountCents ?? 0))}</dd>
+          <dd className="discount">
+            −
+            {m(
+              order.discountCents -
+                (order.bundleDiscountCents ?? 0) -
+                (order.clipDiscountCents ?? 0),
+            )}
+          </dd>
         </>
       ) : null}
       {order.kind === 'PLUS' ? null : (

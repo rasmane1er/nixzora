@@ -34,6 +34,8 @@ import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { BoughtTogether } from './BoughtTogether';
 import { BundleOffer } from './BundleOffer';
+import { ClipButton } from '@/components/ClipButton';
+import { clippedCouponIds, couponLabel } from '@/lib/coupons';
 import { Questions } from './Questions';
 import { ReviewList } from './ReviewList';
 import { StockAlert } from './StockAlert';
@@ -131,6 +133,7 @@ export default async function ProductPage({ params }: Props) {
   const t = await getT('productPage');
   const d = await getT('deals');
   const pl = await getT('plus');
+  const cl = await getT('clips');
   const w = await getT('wallet');
   const ib = await getT('inbox');
   const cmp = await getT('compare');
@@ -265,6 +268,13 @@ export default async function ProductPage({ params }: Props) {
                 initialNow={renderedAt()}
               />
             </div>
+          ) : null}
+          {product.coupon ? (
+            <ClipButton
+              couponId={product.coupon.id}
+              label={couponLabel(product.coupon, cl, f)}
+              initial={(await clippedCouponIds()).has(product.coupon.id)}
+            />
           ) : null}
           <DeliveryPromise
             window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}

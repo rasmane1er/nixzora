@@ -43,3 +43,4 @@ export { compare } from './compare';
 export { photo } from './photo';
 export { plus } from './plus';
 export { bundles } from './bundles';
+export { clips } from './clips';

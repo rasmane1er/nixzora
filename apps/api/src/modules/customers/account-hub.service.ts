@@ -360,6 +360,7 @@ export class AccountHubService {
         giftEntries: { orderBy: { createdAt: 'asc' } },
         subscriptions: { include: { product: { select: { title: true } } } },
         plusMembership: true,
+        couponClips: { include: { coupon: { include: { product: { select: { title: true } } } } } },
         conversations: {
           include: {
             seller: { select: { displayName: true } },
@@ -483,6 +484,11 @@ export class AccountHubService {
             trialUsedAt: user.plusMembership.trialUsedAt,
           }
         : null,
+      clippedCoupons: user.couponClips.map((c) => ({
+        product: c.coupon.product.title,
+        clippedAt: c.createdAt,
+        usedAt: c.usedAt,
+      })),
       messages: user.conversations.map((c) => ({
         store: c.seller.displayName,
         subject: c.subject,

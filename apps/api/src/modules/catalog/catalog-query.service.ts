@@ -619,7 +619,8 @@ export class CatalogQueryService {
     if (!cards.length) return cards;
     const ids = cards.map((card) => card.id);
     const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
-    const [rows, deals, bought] = await Promise.all([
+    const now = new Date();
+    const [rows, deals, bought, coupons] = await Promise.all([
       this.prisma.review.groupBy({
         by: ['productId'],
         where: { productId: { in: ids }, status: 'APPROVED' },
@@ -648,7 +649,30 @@ export class CatalogQueryService {
           AND o.placed_at > now() - interval '30 days'
           AND o.status::text = ANY(${BOUGHT_STATUSES})
         GROUP BY v.product_id`,
+      // A live coupon to clip (p10-18), one per product at a time.
+      this.prisma.clipCoupon.findMany({
+        where: {
+          productId: { in: ids },
+          status: 'ACTIVE',
+          startsAt: { lte: now },
+          endsAt: { gt: now },
+        },
+        select: {
+          id: true,
+          productId: true,
+          kind: true,
+          percentOff: true,
+          amountOffCents: true,
+          maxRedemptions: true,
+          redeemed: true,
+        },
+      }),
     ]);
+    const couponById = new Map(
+      coupons
+        .filter((c) => c.maxRedemptions === null || c.redeemed < c.maxRedemptions)
+        .map((c) => [c.productId, c]),
+    );
     const boughtById = new Map(bought.map((row) => [row.id, Number(row.units)]));
     const byId = new Map(rows.map((row) => [row.productId, row]));
     const dealById = new Map(deals.map((deal) => [deal.productId, deal]));
@@ -659,6 +683,16 @@ export class CatalogQueryService {
       return {
         ...card,
         boughtPastMonth: boughtStep(boughtById.get(card.id) ?? 0),
+        ...(couponById.has(card.id)
+          ? {
+              coupon: {
+                id: couponById.get(card.id)!.id,
+                kind: couponById.get(card.id)!.kind,
+                percentOff: couponById.get(card.id)!.percentOff,
+                amountOffCents: couponById.get(card.id)!.amountOffCents,
+              },
+            }
+          : {}),
         freeDelivery: card.priceFromCents >= threshold,
         ...(deal
           ? {

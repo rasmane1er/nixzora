@@ -22,6 +22,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const tc = await getT('cart');
   const to = await getT('order');
   const bd = await getT('bundles');
+  const cl = await getT('clips');
   const tCommon = await getT('common');
   const tp = await getT('product');
   const f = await getFormat();
@@ -152,11 +153,20 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                 <dd className="discount">−{f.money(t.bundleDiscountCents)}</dd>
               </>
             ) : null}
-            {t.discountCents - (t.bundleDiscountCents ?? 0) ? (
+            {t.clipDiscountCents ? (
+              <>
+                <dt>{cl('savings')}</dt>
+                <dd className="discount">−{f.money(t.clipDiscountCents)}</dd>
+              </>
+            ) : null}
+            {t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0) ? (
               <>
                 <dt>{to('discountWithCode', { code: cart.coupon?.code ?? '' })}</dt>
                 <dd className="discount">
-                  −{f.money(t.discountCents - (t.bundleDiscountCents ?? 0))}
+                  −
+                  {f.money(
+                    t.discountCents - (t.bundleDiscountCents ?? 0) - (t.clipDiscountCents ?? 0),
+                  )}
                 </dd>
               </>
             ) : null}
@@ -171,6 +181,15 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               {f.money(t.subtotalCents - t.discountCents + t.shippingCents)}
             </dd>
           </dl>
+          {cart.clippedCoupons?.length ? (
+            <ul className="bundle-lines">
+              {cart.clippedCoupons.map((c) => (
+                <li key={c.id}>
+                  {cl('cartLine', { product: c.productTitle })} · −{f.money(c.discountCents)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {cart.bundles?.length ? (
             <ul className="bundle-lines">
               {cart.bundles.map((b) => (

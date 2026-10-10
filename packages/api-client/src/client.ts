@@ -1,5 +1,6 @@
 import type {
   BundleView,
+  CouponsPage,
   CompareView,
   MyPlus,
   PlusJoin,
@@ -308,6 +309,8 @@ export function createApiClient(options: ClientOptions) {
       /** A link to upload one review photo; send its storageKey in `photoKeys`. */
       reviewPhotoUpload: (body: UploadRequest) =>
         request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Clip coupons (p10-18): every live coupon; `clipped` when signed in. */
+      coupons: () => request<CouponsPage>('GET', '/catalog/coupons'),
       /** Bundle & save (p10-16): the bundles a product is in. */
       bundles: (slug: string) =>
         request<BundleView[]>('GET', `/catalog/products/${enc(slug)}/bundles`),
@@ -556,6 +559,10 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** Clip coupons (p10-18): ids you've clipped and not used. */
+      clippedCoupons: () => request<string[]>('GET', '/me/coupons/clipped'),
+      clipCoupon: (id: string) => request<{ clipped: true }>('POST', `/me/coupons/${enc(id)}/clip`),
+      unclipCoupon: (id: string) => request<void>('DELETE', `/me/coupons/${enc(id)}/clip`),
       /** NIXZORA Plus (p10-15): the offer and your membership. */
       plusOffer: () => request<PlusOffer>('GET', '/plus'),
       plus: () => request<MyPlus>('GET', '/me/plus'),

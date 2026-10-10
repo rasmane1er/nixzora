@@ -17,6 +17,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { PlusBenefits } from '../plus/plus-benefits.service';
 import { type BundleSaving, bundleSavings } from './bundle-savings';
+
+export type ClippedSaving = {
+  id: string;
+  clipId: string;
+  productId: string;
+  productTitle: string;
+  discountCents: number;
+  sellerId: string | null;
+};
 import { availableOf } from '../catalog/catalog-mappers';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -170,6 +179,50 @@ export class CartService {
     );
   }
 
+  /**
+   * The shopper's clipped, unused coupons on products in these lines, with what each saves:
+   * a percentage off every unit of the product, or an amount off once (never more than the
+   * product's total).
+   */
+  async clipped(userId: string, lines: CartLine[], now = new Date()): Promise<ClippedSaving[]> {
+    if (!lines.length) return [];
+    const productIds = [...new Set(lines.map((line) => line.productId))];
+    const clips = await this.prisma.couponClip.findMany({
+      where: {
+        userId,
+        usedAt: null,
+        coupon: {
+          status: 'ACTIVE',
+          startsAt: { lte: now },
+          endsAt: { gt: now },
+          productId: { in: productIds },
+        },
+      },
+      include: { coupon: true },
+    });
+    const savings: ClippedSaving[] = [];
+    for (const clip of clips) {
+      const c = clip.coupon;
+      if (c.maxRedemptions !== null && c.redeemed >= c.maxRedemptions) continue;
+      const own = lines.filter((line) => line.productId === c.productId);
+      const total = own.reduce((sum, line) => sum + line.lineTotalCents, 0);
+      const discount =
+        c.kind === 'PERCENT'
+          ? Math.round((total * (c.percentOff ?? 0)) / 100)
+          : Math.min(c.amountOffCents ?? 0, total);
+      if (discount <= 0) continue;
+      savings.push({
+        id: c.id,
+        clipId: clip.id,
+        productId: c.productId,
+        productTitle: own[0]!.productTitle,
+        discountCents: discount,
+        sellerId: c.sellerId,
+      });
+    }
+    return savings;
+  }
+
   /** "Add bundle to cart": one of each product (their only option), added together. */
   async addBundle(owner: CartOwner, bundleId: string): Promise<Cart> {
     const bundle = await this.prisma.bundle.findFirst({
@@ -305,6 +358,13 @@ export class CartService {
       .reduce((sum, line) => sum + line.lineTotalCents, 0);
     // Bundle & save (p10-16): complete sets of a bundle take its percentage off.
     const bundles = await this.bundles(lines.filter((line) => !line.problem));
+    // Clipped coupons (p10-18): the shopper's, on products in the cart.
+    const clipped = memberId
+      ? await this.clipped(
+          memberId,
+          lines.filter((line) => !line.problem),
+        )
+      : [];
 
     // A coupon that stops applying (expired, cart too small) stays visible with the reason.
     const code = await this.couponCode(owner);
@@ -334,7 +394,18 @@ export class CartService {
         'USD',
         { member, twoDay: own },
         bundles.reduce((sum, b) => sum + b.discountCents, 0),
+        clipped.reduce((sum, c) => sum + c.discountCents, 0),
       ),
+      ...(clipped.length
+        ? {
+            clippedCoupons: clipped.map((c) => ({
+              id: c.id,
+              productId: c.productId,
+              productTitle: c.productTitle,
+              discountCents: c.discountCents,
+            })),
+          }
+        : {}),
       ...(bundles.length
         ? {
             bundles: bundles.map(({ sellerId: _seller, ...bundle }) => bundle),

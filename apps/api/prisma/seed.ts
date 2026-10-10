@@ -1340,6 +1340,39 @@ async function main(): Promise<void> {
     });
   }
 
+  // Clip coupons (p10-18): two on NIXZORA's own products, renewed when a seed runs after they end.
+  const DEMO_COUPONS = [
+    {
+      slug: 'brewline-coffee-maker',
+      kind: 'PERCENT' as const,
+      percentOff: 15,
+      amountOffCents: null,
+    },
+    { slug: 'drift-over-ear', kind: 'AMOUNT' as const, percentOff: null, amountOffCents: 2_000 },
+  ];
+  for (const coupon of DEMO_COUPONS) {
+    const product = await prisma.product.findUnique({
+      where: { slug: coupon.slug },
+      select: { id: true, sellerId: true },
+    });
+    if (!product || product.sellerId) continue;
+    const live = await prisma.clipCoupon.count({
+      where: { productId: product.id, status: 'ACTIVE', endsAt: { gt: new Date() } },
+    });
+    if (live) continue;
+    await prisma.clipCoupon.create({
+      data: {
+        productId: product.id,
+        kind: coupon.kind,
+        percentOff: coupon.percentOff,
+        amountOffCents: coupon.amountOffCents,
+        startsAt: new Date(),
+        endsAt: new Date(now + 60 * 86_400_000),
+        createdById: SEED_ACTOR,
+      },
+    });
+  }
+
   // A demo code shoppers can try at checkout.
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },

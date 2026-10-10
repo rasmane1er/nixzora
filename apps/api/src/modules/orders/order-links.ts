@@ -177,6 +177,7 @@ export function toOrderView(order: OrderRow): OrderView {
     shippingSpeed: order.shippingSpeed ?? 'STANDARD',
     plusSavingsCents: order.plusSavingsCents ?? 0,
     bundleDiscountCents: order.bundleDiscountCents ?? 0,
+    clipDiscountCents: order.clipDiscountCents ?? 0,
     giftBalanceCents: order.giftBalanceCents ?? 0,
     // Optional so rows loaded without the gift cards (older fixtures) still map.
     giftCards: (order.giftCards ?? []).map((card) => ({

@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoughtTogether } from '@/components/BoughtTogether';
 import { BundleOfferCard } from '@/components/BundleOfferCard';
 import { BoughtLine } from '@/components/CardExtras';
+import { ClipCouponButton } from '@/components/ClipCoupon';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
 import { ProductQuestions } from '@/components/ProductQuestions';
@@ -635,6 +636,7 @@ export default function ProductScreen() {
             <Text variant="small" tone={stock.tone}>
               {stock.text}
             </Text>
+            {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
             <DeliveryPromise
               window={member && !item.seller ? twoDayWindow(new Date()) : item.delivery}
               twoDay={member && !item.seller}

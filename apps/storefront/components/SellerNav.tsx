@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/sell/earnings', label: 'navEarnings' },
   { href: '/sell/deals', label: 'navDeals' },
   { href: '/sell/bundles', label: 'navBundles' },
+  { href: '/sell/coupons', label: 'navCoupons' },
   { href: '/sell/ads', label: 'navAds' },
   { href: '/sell/settings', label: 'navSettings' },
 ] as const;

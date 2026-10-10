@@ -12,6 +12,7 @@ import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 import { BoughtLine, DeliveryLine } from './CardExtras';
+import { CouponTag } from './ClipCoupon';
 import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
 import { PLUS_ACCENT, PlusPriceText } from './PlusNote';
 import { PressableLink } from './PressableLink';
@@ -125,6 +126,7 @@ export function ProductCard({
               percentOff={product.deal.percentOff}
             />
           ) : null}
+          {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
           {product.deal ? <DealTimer deal={product.deal} /> : null}
           <DeliveryLine product={product} />
           {!product.inStock ? (

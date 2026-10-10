@@ -4,6 +4,7 @@ import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { adHref } from '@/lib/ads';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
+import { couponLabel } from '@/lib/coupons';
 import { isPlusMember } from '@/lib/plus';
 import { wishedIds } from '@/lib/wishlist';
 import { CardAdd, CardHeart } from './CardActions';
@@ -44,11 +45,12 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, locale, f, wishlist, member] = await Promise.all([
+  const [t, a, d, pl, cl, locale, f, wishlist, member] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
     getT('plus'),
+    getT('clips'),
     getLocale(),
     getFormat(),
     wishedIds(),
@@ -159,6 +161,9 @@ export async function ProductCard({
               ),
             })}
           </span>
+        ) : null}
+        {product.coupon ? (
+          <span className="card-coupon">{couponLabel(product.coupon, cl, f)}</span>
         ) : null}
         {deal ? (
           <DealTimer

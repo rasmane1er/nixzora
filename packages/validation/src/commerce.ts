@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { type GiftCardLine } from './gift-cards';
 import { type CartBundle } from './bundles';
+import { type CartCoupon } from './clip-coupons';
 import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
 
@@ -157,6 +158,8 @@ export type Totals = {
   shippingSpeed?: 'STANDARD' | 'TWO_DAY';
   /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
   bundleDiscountCents?: number;
+  /** Clipped coupons (p10-18): the part of discountCents they saved. */
+  clipDiscountCents?: number;
 };
 
 export type Cart = {
@@ -169,6 +172,8 @@ export type Cart = {
   coupon: { code: string; description: string | null; problem: string | null } | null;
   /** Bundles the cart completes (p10-16), each with its saving. */
   bundles?: CartBundle[];
+  /** Clipped coupons that apply (p10-18). */
+  clippedCoupons?: CartCoupon[];
   /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
   delivery?: DeliveryWindow | null;
 };
@@ -324,6 +329,8 @@ export type OrderView = {
   plusSavingsCents?: number;
   /** Bundle & save (p10-16): the part of discountCents that bundles saved. */
   bundleDiscountCents?: number;
+  /** Clipped coupons (p10-18): the part of discountCents they saved. */
+  clipDiscountCents?: number;
   /** Part of the total paid from the gift card balance. */
   giftBalanceCents?: number;
   /** The gift cards bought with this order. */

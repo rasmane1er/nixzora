@@ -275,6 +275,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       lines,
       coupon: null,
       bundles: [],
+      clippedCoupons: [],
       totals: this.pricing.totals(subtotal, region, 0, 'USD', plus),
     };
   }
@@ -480,6 +481,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         funded[key] = (funded[key] ?? 0) + saving.discountCents;
       }
     }
+    // Clipped coupons (p10-18): which clips this order uses, and who funds them.
+    const clips = totals.clipDiscountCents && user ? await this.carts.clipped(user.id, lines) : [];
+    const clipFunded: Record<string, number> = {};
+    for (const clip of clips) {
+      const key = clip.sellerId ?? 'nixzora';
+      clipFunded[key] = (clipFunded[key] ?? 0) + clip.discountCents;
+    }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
         return await this.prisma.$transaction(async (tx) => {
@@ -517,6 +525,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,
               bundleDiscountCents: totals.bundleDiscountCents ?? 0,
+              clipDiscountCents: totals.clipDiscountCents ?? 0,
+              ...(totals.clipDiscountCents
+                ? { clipDiscounts: clipFunded as Prisma.InputJsonObject }
+                : {}),
               ...(totals.bundleDiscountCents
                 ? { bundleDiscounts: funded as Prisma.InputJsonObject }
                 : {}),
@@ -555,6 +567,25 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             where: { id: { in: holds } },
             data: { orderId: order.id },
           });
+          // Each clipped coupon is used once: by this order, within the coupon's budget.
+          for (const clip of clips) {
+            const used = await tx.couponClip.updateMany({
+              where: { id: clip.clipId, usedAt: null },
+              data: { usedAt: new Date(), orderId: order.id },
+            });
+            const counted = await tx.$executeRaw`
+              UPDATE clip_coupons SET redeemed = redeemed + 1, updated_at = now()
+              WHERE id = ${clip.id}::uuid AND status = 'ACTIVE'
+                AND (max_redemptions IS NULL OR redeemed < max_redemptions)`;
+            if (!used.count || counted !== 1) {
+              throw new ConflictException({
+                statusCode: 409,
+                error: 'Conflict',
+                code: 'CART_CHANGED',
+                message: `The coupon on ${clip.productTitle} just ran out. Review your cart.`,
+              });
+            }
+          }
           if (assessment) await this.risk.recordCheckout(assessment, order.id, tx);
           await tx.outboxEvent.create({
             data: {
@@ -730,6 +761,22 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   private async releaseUnpaid(order: { id: string; couponCode: string | null }): Promise<void> {
     await this.inventory.releaseOrder(order.id);
     if (order.couponCode) await this.coupons.release(order.couponCode);
+    // Clipped coupons (p10-18) come back to the customer, and to the coupon's budget.
+    await this.prisma.$transaction(async (tx) => {
+      const clips = await tx.couponClip.findMany({
+        where: { orderId: order.id },
+        select: { id: true, couponId: true },
+      });
+      for (const clip of clips) {
+        await tx.couponClip.update({
+          where: { id: clip.id },
+          data: { usedAt: null, orderId: null },
+        });
+        await tx.$executeRaw`
+          UPDATE clip_coupons SET redeemed = GREATEST(redeemed - 1, 0), updated_at = now()
+          WHERE id = ${clip.couponId}::uuid`;
+      }
+    });
     await this.prisma.$transaction((tx) => releaseGiftBalance(tx, order.id));
   }
 

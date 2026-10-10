@@ -82,6 +82,7 @@ model User {
   subscriptions      Subscription[]
   conversations      Conversation[]
   plusMembership     PlusMembership?
+  couponClips        CouponClip[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -355,6 +356,7 @@ model Product {
   alerts        ProductAlert[]
   deals         Deal[]
   bundleItems   BundleItem[]
+  clipCoupons   ClipCoupon[]
   listItems     ShoppingListItem[]
   subscriptions Subscription[]
   reviewInsight ReviewInsight?
@@ -468,6 +470,9 @@ model Order {
   bundleDiscountCents Int           @default(0) @map("bundle_discount_cents")
   /// Who funds each bundle discount: {sellerId or "nixzora": cents}.
   bundleDiscounts     Json?         @map("bundle_discounts")
+  /// Clipped coupons (p10-18): part of discountCents, and who funds it per store.
+  clipDiscountCents   Int           @default(0) @map("clip_discount_cents")
+  clipDiscounts       Json?         @map("clip_discounts")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
   language            String        @default("en")
   /// Total refunded so far (partial refunds and returns).
@@ -512,6 +517,7 @@ model Order {
   riskAssessments RiskAssessment[]
   giftCards       GiftCard[]
   giftEntries     GiftBalanceEntry[]
+  couponClips     CouponClip[]
   plusMembership  PlusMembership?    @relation(fields: [plusMembershipId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
@@ -1923,4 +1929,64 @@ model BundleItem {
   @@id([bundleId, productId])
   @@index([productId])
   @@map("bundle_items")
+}
+
+// ───────────── Clip coupons (p10-18) ─────────────
+
+enum ClipCouponKind {
+  PERCENT
+  AMOUNT
+}
+
+enum ClipCouponStatus {
+  ACTIVE
+  ENDED
+}
+
+/// "Save 15% with coupon" on one product: shoppers clip it, and it applies at checkout, once per
+/// customer. A store makes coupons for its own listings and funds them; NIXZORA staff for its own.
+model ClipCoupon {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  productId      String           @map("product_id") @db.Uuid
+  kind           ClipCouponKind
+  /// PERCENT: off every unit of the product in that order.
+  percentOff     Int?             @map("percent_off")
+  /// AMOUNT: off the order's units of the product, once.
+  amountOffCents Int?             @map("amount_off_cents")
+  startsAt       DateTime         @map("starts_at")
+  endsAt         DateTime         @map("ends_at")
+  /// Most orders that can use it (the store's budget); null for no limit.
+  maxRedemptions Int?             @map("max_redemptions")
+  redeemed       Int              @default(0)
+  status         ClipCouponStatus @default(ACTIVE)
+  sellerId       String?          @map("seller_id") @db.Uuid
+  createdById    String           @map("created_by_id") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  clips   CouponClip[]
+
+  @@index([productId, status])
+  @@index([status, endsAt])
+  @@map("clip_coupons")
+}
+
+/// A customer clipped a coupon; `orderId` once an order used it.
+model CouponClip {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  couponId  String    @map("coupon_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  orderId   String?   @map("order_id") @db.Uuid
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  coupon ClipCoupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order  Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([couponId, userId])
+  @@index([userId])
+  @@index([orderId])
+  @@map("coupon_clips")
 }

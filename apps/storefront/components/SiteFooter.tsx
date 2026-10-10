@@ -7,6 +7,7 @@ export async function SiteFooter() {
   const c = await getT('common');
   const g = await getT('gifts');
   const pl = await getT('plus');
+  const cl = await getT('clips');
   return (
     <footer className="site-footer">
       <div className="wrap site-footer__row">
@@ -20,6 +21,7 @@ export async function SiteFooter() {
           <Link href="/account/orders">{t('yourOrders')}</Link>
           <Link href="/gift-cards">{g('navGiftCards')}</Link>
           <Link href="/plus">{pl('metaTitle')}</Link>
+          <Link href="/coupons">{cl('navCoupons')}</Link>
           <Link href="/help">{t('help')}</Link>
           <Link href="/policies/shipping">{t('shipping')}</Link>
           <Link href="/policies/returns">{t('returns')}</Link>

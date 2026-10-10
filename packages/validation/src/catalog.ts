@@ -282,6 +282,15 @@ export const ProductCardSchema = z.object({
   freeDelivery: z.boolean().optional(),
   /** NIXZORA ships it: Plus members get it in 2 days (p10-15). */
   shipsFromNixzora: z.boolean().optional(),
+  /** A live coupon to clip (p10-18): "Save 15% with coupon". */
+  coupon: z
+    .object({
+      id: z.uuid(),
+      kind: z.enum(['PERCENT', 'AMOUNT']),
+      percentOff: z.number().int().nullable(),
+      amountOffCents: z.number().int().nullable(),
+    })
+    .optional(),
 });
 
 /**
