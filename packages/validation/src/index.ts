@@ -5,6 +5,7 @@ import { z } from 'zod';
 if ('window' in globalThis) z.config({ jitless: true });
 
 export * from './admin';
+export * from './advertising';
 export * from './assistant';
 export * from './auth';
 export * from './catalog';

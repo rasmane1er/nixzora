@@ -6,7 +6,11 @@ process.env.EMBEDDINGS_DRIVER = 'local';
 
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { RecommendationsSchema, RelatedProductsSchema } from '@nixzora/validation';
+import {
+  AuthTokensSchema,
+  RecommendationsSchema,
+  RelatedProductsSchema,
+} from '@nixzora/validation';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
@@ -136,6 +140,9 @@ describe('Recommendations (e2e)', () => {
     await prisma.productEvent.deleteMany({
       where: { visitorId: { startsWith: `visitor-${run}` } },
     });
+    await prisma.shopperInterest.deleteMany({
+      where: { visitorId: { startsWith: `visitor-${run}` } },
+    });
     await removeTestData(prisma, run);
     await app.close();
   });
@@ -210,5 +217,135 @@ describe('Recommendations (e2e)', () => {
     });
     expect(await app.get(RecommendationsService).purgeOldEvents()).toBeGreaterThanOrEqual(1);
     expect(await prisma.productEvent.count({ where: { visitorId: visitor(9) } })).toBe(0);
+  });
+
+  // ───────────── Smart picks (p10-02) ─────────────
+
+  const picksFor = async (query: Record<string, string>, headers: Record<string, string> = {}) =>
+    RecommendationsSchema.parse(
+      (await http().get('/api/v1/recommendations').query(query).set(headers).expect(200)).body,
+    );
+  const search = (q: string, visitorId: string, token?: string) =>
+    http()
+      .post('/api/v1/events/searches')
+      .set(token ? { Authorization: `Bearer ${token}` } : {})
+      .send({ q, visitorId })
+      .expect(204);
+
+  it('turns a search into a "because you searched" row, keeping the finished words', async () => {
+    for (const q of ['gps', 'gps run', `gps running watch ${run}`]) await search(q, visitor(20));
+    const rows = await prisma.shopperInterest.findMany({ where: { visitorId: visitor(20) } });
+    expect(rows.map((row) => row.text)).toEqual([`gps running watch ${run}`]);
+
+    const picks = await picksFor({ visitorId: visitor(20) });
+    const interest = picks.rows.find((row) => row.kind === 'interest');
+    expect(interest?.subject).toBe(`gps running watch ${run}`);
+    expect(interest?.source).toBe('search');
+    expect(interest?.products.map((card) => card.id)).toEqual(
+      expect.arrayContaining([ids.trail, ids.road]),
+    );
+  });
+
+  it('remembers what the shopper asked the assistant for', async () => {
+    await http()
+      .post('/api/v1/assistant/chat')
+      .send({
+        messages: [{ role: 'user', content: `a GPS sport watch for running ${run}` }],
+        visitorId: visitor(21),
+      })
+      .expect(200);
+    const [interest] = await prisma.shopperInterest.findMany({
+      where: { visitorId: visitor(21) },
+    });
+    expect(interest?.source).toBe('ASSISTANT');
+    // The search words the assistant understood, not the whole sentence.
+    expect(interest?.text).toContain('watch');
+    expect(interest?.text).not.toContain(' a ');
+  });
+
+  it('brings back a product the shopper keeps coming back to', async () => {
+    await view('band', visitor(22));
+    await prisma.productEvent.updateMany({
+      where: { visitorId: visitor(22) },
+      data: { createdAt: new Date(Date.now() - 3 * 3_600_000) },
+    });
+    await view('band', visitor(22));
+    const picks = await picksFor({ visitorId: visitor(22) });
+    expect(picks.rows.find((row) => row.kind === 'still_thinking')?.products[0]?.id).toBe(ids.band);
+  });
+
+  it('suggests what goes with the cart, from the categories that complement it', async () => {
+    const laptops = await prisma.category.findUniqueOrThrow({ where: { slug: 'laptops' } });
+    const mice = await prisma.category.findUniqueOrThrow({ where: { slug: 'mice' } });
+    await product('laptop', 'Test ultralight laptop', 'A light laptop.', laptops.id);
+    await product('mouse', 'Test travel mouse', 'A small wireless mouse.', mice.id);
+    const cart = await http()
+      .post('/api/v1/cart/items')
+      .send({ variantId: variants.laptop, quantity: 1 })
+      .expect(201);
+    const picks = await picksFor({}, { 'X-Cart-Id': cart.body.cartId });
+    const addons = picks.rows.find((row) => row.kind === 'cart_addons');
+    expect(addons?.products.map((card) => card.id)).toContain(ids.mouse);
+    expect(addons?.products.map((card) => card.id)).not.toContain(ids.laptop);
+  });
+
+  it('points out saved items that got cheaper', async () => {
+    const email = `picks-${run}@example.com`;
+    const token = AuthTokensSchema.parse(
+      (
+        await http()
+          .post('/api/v1/auth/register')
+          .send({ email, password: 'correct horse battery staple' })
+          .expect(201)
+      ).body,
+    ).accessToken;
+    const auth = { Authorization: `Bearer ${token}` };
+    await http().put(`/api/v1/me/wishlist/${ids.kettle}`).set(auth).expect(204);
+    await prisma.productVariant.update({
+      where: { id: variants.kettle },
+      data: { priceCents: 7_900 },
+    });
+    const picks = await picksFor({}, auth);
+    expect(picks.rows.find((row) => row.kind === 'saved_deals')?.products[0]?.id).toBe(ids.kettle);
+
+    // Turning personalized picks off forgets history and stops recording it.
+    await search('electric kettle', visitor(23), token);
+    await http()
+      .put('/api/v1/me/preferences')
+      .set(auth)
+      .send({ marketingEmails: false, reviewRequests: true, personalizedPicks: false })
+      .expect(200);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    expect(await prisma.shopperInterest.count({ where: { userId: user.id } })).toBe(0);
+    await search('electric kettle', visitor(23), token);
+    await http().post('/api/v1/events/views').set(auth).send({ productId: ids.kettle }).expect(204);
+    expect(await prisma.shopperInterest.count({ where: { userId: user.id } })).toBe(0);
+    expect(await prisma.productEvent.count({ where: { userId: user.id } })).toBe(0);
+    const off = await picksFor({}, auth);
+    expect(off.rows).toEqual([]);
+    expect(off.basis).toBe('popular');
+  });
+
+  it("clears a shopper's history on request", async () => {
+    const email = `clear-${run}@example.com`;
+    const token = AuthTokensSchema.parse(
+      (
+        await http()
+          .post('/api/v1/auth/register')
+          .send({ email, password: 'correct horse battery staple' })
+          .expect(201)
+      ).body,
+    ).accessToken;
+    const auth = { Authorization: `Bearer ${token}` };
+    await search('trail watch', visitor(24), token);
+    await http().post('/api/v1/events/views').set(auth).send({ productId: ids.trail }).expect(204);
+    await http()
+      .delete('/api/v1/me/shopping-history')
+      .query({ visitorId: visitor(24) })
+      .set(auth)
+      .expect(204);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    expect(await prisma.productEvent.count({ where: { userId: user.id } })).toBe(0);
+    expect(await prisma.shopperInterest.count({ where: { userId: user.id } })).toBe(0);
   });
 });

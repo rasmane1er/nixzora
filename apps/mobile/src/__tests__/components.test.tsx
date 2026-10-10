@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { ProductCard } from '@/components/ProductCard';
 import { Price } from '@/components/Price';
@@ -7,6 +7,13 @@ import { ProductRail } from '@/components/ProductRail';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Totals } from '@/components/Totals';
+import { api } from '@/lib/api';
+
+jest.mock('@/lib/api', () => ({
+  api: { ads: { click: jest.fn(async () => ({ slug: 'arden-27' })) }, cart: { add: jest.fn() } },
+}));
+jest.mock('@/lib/visitor', () => ({ visitorId: async () => 'visitor0123456789abcdef' }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
 
 function withQueries({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -127,6 +134,36 @@ describe('ProductCard', () => {
     });
     expect(screen.getByLabelText('Choose options: Arden 27')).toBeTruthy();
     expect(screen.getByText('From')).toBeTruthy();
+  });
+});
+
+describe('Sponsored products', () => {
+  const card = {
+    id: '0190a5b2-0000-7000-8000-000000000009',
+    slug: 'arden-27',
+    title: 'Arden 27',
+    brand: null,
+    category: { slug: 'monitors', name: 'Monitors' },
+    priceFromCents: 38900,
+    compareAtCents: null,
+    currency: 'USD',
+    inStock: true,
+    image: null,
+  };
+
+  it('labels an ad and records the click when it is opened', async () => {
+    render(
+      <ProductRail
+        title="Sponsored products"
+        sponsored={[{ product: card, token: 'signed.token' }]}
+      />,
+      { wrapper: withQueries },
+    );
+    expect(screen.getByText('Sponsored')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Sponsored: Arden 27'));
+    await waitFor(() =>
+      expect(api.ads.click).toHaveBeenCalledWith('signed.token', 'visitor0123456789abcdef'),
+    );
   });
 });
 

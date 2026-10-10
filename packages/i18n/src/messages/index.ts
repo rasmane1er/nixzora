@@ -1,3 +1,4 @@
+export { ads } from './ads';
 export { account } from './account';
 export { accountActivity } from './accountActivity';
 export { apiErrors } from './apiErrors';

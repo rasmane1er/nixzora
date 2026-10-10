@@ -28,29 +28,32 @@ enum UserStatus {
 }
 
 model User {
-  id              String     @id @default(uuid(7)) @db.Uuid
-  email           String     @unique
-  emailVerifiedAt DateTime?  @map("email_verified_at")
-  passwordHash    String?    @map("password_hash")
-  firstName       String?    @map("first_name")
-  lastName        String?    @map("last_name")
-  phone           String?
-  status          UserStatus @default(ACTIVE)
+  id                String     @id @default(uuid(7)) @db.Uuid
+  email             String     @unique
+  emailVerifiedAt   DateTime?  @map("email_verified_at")
+  passwordHash      String?    @map("password_hash")
+  firstName         String?    @map("first_name")
+  lastName          String?    @map("last_name")
+  phone             String?
+  status            UserStatus @default(ACTIVE)
   /// Deals and new arrivals by email: off until the customer opts in.
-  marketingEmails Boolean    @default(false) @map("marketing_emails")
+  marketingEmails   Boolean    @default(false) @map("marketing_emails")
   /// When the customer agreed to the Terms of Service and Privacy Policy at sign-up.
-  termsAcceptedAt DateTime?  @map("terms_accepted_at")
+  termsAcceptedAt   DateTime?  @map("terms_accepted_at")
   /// An email after delivery asking for a review.
-  reviewRequests  Boolean    @default(true) @map("review_requests")
+  reviewRequests    Boolean    @default(true) @map("review_requests")
+  /// Picks from views, searches, cart, saves, orders and assistant chats (p10-02). Off also stops
+  /// recording those signals.
+  personalizedPicks Boolean    @default(true) @map("personalized_picks")
   /// Profile photo (an uploaded image's storage key).
-  avatarKey       String?    @map("avatar_key")
+  avatarKey         String?    @map("avatar_key")
   /// Language for the website, the app, emails and push: "en", "fr" or "es".
-  language        String     @default("en")
-  mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
+  language          String     @default("en")
+  mfaEnabled        Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
-  mfaSecretEnc    String?    @map("mfa_secret_enc")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  mfaSecretEnc      String?    @map("mfa_secret_enc")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
 
   sessions           Session[]
   roles              UserRole[]
@@ -64,6 +67,7 @@ model User {
   pushDevices        PushDevice[]
   identities         UserIdentity[]
   productEvents      ProductEvent[]
+  interests          ShopperInterest[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -321,14 +325,15 @@ model Product {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  seller        Seller?           @relation(fields: [sellerId], references: [id], onDelete: Restrict)
-  category      Category          @relation(fields: [categoryId], references: [id])
-  brand         Brand?            @relation(fields: [brandId], references: [id])
+  seller        Seller?             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  category      Category            @relation(fields: [categoryId], references: [id])
+  brand         Brand?              @relation(fields: [brandId], references: [id])
   variants      ProductVariant[]
   images        ProductImage[]
   reviews       Review[]
   wishlist      WishlistItem[]
   events        ProductEvent[]
+  adCampaigns   AdCampaignProduct[]
   reviewInsight ReviewInsight?
   searchDoc     ProductSearchDoc?
 
@@ -641,9 +646,11 @@ model Review {
 }
 
 model WishlistItem {
-  userId    String   @map("user_id") @db.Uuid
-  productId String   @map("product_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  userId           String   @map("user_id") @db.Uuid
+  productId        String   @map("product_id") @db.Uuid
+  /// The product's "from" price when it was saved, for "now cheaper" picks (p10-02).
+  priceCentsAtSave Int?     @map("price_cents_at_save")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -998,6 +1005,8 @@ model Seller {
   agreementsAcceptedAt DateTime?     @map("agreements_accepted_at")
   /// Fraud review (ADR-0024): no payouts, automatic or manual, until staff clear it.
   payoutsHeld          Boolean       @default(false) @map("payouts_held")
+  /// Advertising credit granted by NIXZORA (p10-01): spent on clicks before earnings, never paid out.
+  adCreditCents        Int           @default(0) @map("ad_credit_cents")
 
   members         SellerMember[]
   riskAssessments RiskAssessment[]
@@ -1008,6 +1017,8 @@ model Seller {
   ledger          SellerLedgerEntry[]
   payouts         Payout[]
   ratings         SellerRating[]
+  adCampaigns     AdCampaign[]
+  adClicks        AdClick[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -1099,6 +1110,8 @@ enum SellerLedgerType {
   PAYOUT
   /// Manual or automatic correction.
   ADJUSTMENT
+  /// Sponsored product clicks beyond the store's ad credit (p10-01).
+  AD_SPEND
 }
 
 /// Append-only earnings ledger (ADR-0013): a seller's balance is the sum of its entries.
@@ -1227,4 +1240,121 @@ model EmailSuppression {
   createdAt DateTime               @default(now()) @map("created_at")
 
   @@map("email_suppressions")
+}
+
+// ───────────── Smart picks (p10-02) ─────────────
+
+enum ShopperInterestSource {
+  SEARCH
+  ASSISTANT
+}
+
+/// What a shopper is looking for in their own words: searches, and needs told to the assistant.
+/// Same identity rules and 180-day retention as product views (ProductEvent).
+model ShopperInterest {
+  id           String                @id @default(uuid(7)) @db.Uuid
+  userId       String?               @map("user_id") @db.Uuid
+  visitorId    String?               @map("visitor_id")
+  source       ShopperInterestSource
+  /// Lower case, single spaces, at most 120 characters.
+  text         String
+  /// The category the assistant understood, when it found one.
+  categorySlug String?               @map("category_slug")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@index([visitorId, updatedAt])
+  @@index([createdAt])
+  @@map("shopper_interests")
+}
+
+// ───────────── Sponsored products (p10-01) ─────────────
+
+enum AdCampaignStatus {
+  ACTIVE
+  /// Paused by the seller.
+  PAUSED
+  /// Stopped by staff; only staff can restore it.
+  SUSPENDED
+}
+
+/// A seller's sponsored products campaign: which listings, the most it pays per click and per day.
+model AdCampaign {
+  id               String           @id @default(uuid(7)) @db.Uuid
+  sellerId         String           @map("seller_id") @db.Uuid
+  name             String
+  status           AdCampaignStatus @default(ACTIVE)
+  suspendedReason  String?          @map("suspended_reason")
+  dailyBudgetCents Int              @map("daily_budget_cents")
+  /// Highest price per click; the actual price is set by the next ad below (second price).
+  bidCents         Int              @map("bid_cents")
+  /// Last day it runs (UTC); null runs until paused.
+  endsOn           DateTime?        @map("ends_on") @db.Date
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  seller   Seller              @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  products AdCampaignProduct[]
+  clicks   AdClick[]
+  stats    AdDailyStat[]
+
+  @@index([status])
+  @@index([sellerId, createdAt])
+  @@map("ad_campaigns")
+}
+
+model AdCampaignProduct {
+  campaignId String   @map("campaign_id") @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product  Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
+  @@index([productId])
+  @@map("ad_campaign_products")
+}
+
+/// One opened ad. Free clicks (repeat, the store's own staff, budget spent) cost 0. Charged to
+/// the store when billed: credit first, then an AD_SPEND ledger entry.
+model AdClick {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  campaignId String    @map("campaign_id") @db.Uuid
+  productId  String    @map("product_id") @db.Uuid
+  sellerId   String    @map("seller_id") @db.Uuid
+  placement  String
+  costCents  Int       @map("cost_cents")
+  /// Who clicked, for repeat-click checks; cleared after 90 days.
+  userId     String?   @map("user_id") @db.Uuid
+  visitorId  String?   @map("visitor_id")
+  billedAt   DateTime? @map("billed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  seller   Seller     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+
+  @@index([sellerId, billedAt])
+  @@index([campaignId, productId, createdAt])
+  @@index([createdAt])
+  @@map("ad_clicks")
+}
+
+/// Per campaign, product and UTC day: how often it was shown, opened and what it cost.
+model AdDailyStat {
+  campaignId  String   @map("campaign_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  day         DateTime @db.Date
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  spendCents  Int      @default(0) @map("spend_cents")
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId, day])
+  @@index([day])
+  @@map("ad_daily_stats")
 }

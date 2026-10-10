@@ -10,6 +10,7 @@ import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
+import { visitorId } from '@/lib/visitor';
 import { PressableLink } from './PressableLink';
 import { Price } from './Price';
 import { Stars } from './Stars';
@@ -20,10 +21,18 @@ import { Text } from './ui';
  * heart, brand, title, rating, price and "Add to cart" (single-option products) or
  * "Choose options".
  */
-export function ProductCard({ product }: { product: Card }) {
+export function ProductCard({
+  product,
+  adToken,
+}: {
+  product: Card;
+  /** A sponsored product (p10-01): labelled, and opening it records the click. */
+  adToken?: string;
+}) {
   const p = usePalette();
   const t = useT('appShop');
   const tp = useT('product');
+  const ta = useT('ads');
   const { percent } = useFormatters();
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
@@ -44,7 +53,17 @@ export function ProductCard({ product }: { product: Card }) {
         href={`/p/${product.slug}`}
         accessibilityRole="link"
         accessibilityLabel={
-          product.inStock ? product.title : t('itemSoldOut', { title: product.title })
+          adToken
+            ? ta('sponsoredItem', { title: product.title })
+            : product.inStock
+              ? product.title
+              : t('itemSoldOut', { title: product.title })
+        }
+        // Best-effort: the product opens whether or not the click is recorded.
+        onPress={
+          adToken
+            ? () => void visitorId().then((id) => api.ads.click(adToken, id).catch(() => undefined))
+            : undefined
         }
         style={({ pressed }) => [styles.link, { opacity: pressed ? 0.85 : 1 }]}
       >
@@ -65,6 +84,13 @@ export function ProductCard({ product }: { product: Card }) {
           )}
         </View>
         <View style={styles.body}>
+          {adToken ? (
+            <View style={[styles.sponsored, { borderColor: p.line }]}>
+              <Text variant="small" muted style={{ fontSize: 11, fontFamily: fonts.bodyBold }}>
+                {ta('sponsored')}
+              </Text>
+            </View>
+          ) : null}
           {product.brand ? (
             <Text variant="label" muted numberOfLines={1}>
               {product.brand.name}
@@ -205,6 +231,12 @@ const styles = StyleSheet.create({
   imageWrap: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   body: { padding: space.md, gap: 4 },
+  sponsored: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+  },
   actions: { paddingHorizontal: space.md, paddingBottom: space.md },
   badge: {
     position: 'absolute',

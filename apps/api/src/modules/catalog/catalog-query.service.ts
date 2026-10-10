@@ -321,7 +321,7 @@ export class CatalogQueryService {
    * Ranks products for a search box query. With the search index ready, keyword and semantic
    * results are merged (ADR-0009); otherwise, and as a fallback, the original full-text search.
    */
-  private async searchRank(q: string, status?: string): Promise<Map<string, number>> {
+  async searchRank(q: string, status?: string): Promise<Map<string, number>> {
     if (
       this.config.get('SEARCH_MODE', { infer: true }) === 'hybrid' &&
       (await this.search.isReady())
@@ -387,7 +387,7 @@ export class CatalogQueryService {
     return new Map(rows.map((row) => [row.id, row.rank]));
   }
 
-  private async categoryAndDescendantIds(slug: string): Promise<string[]> {
+  async categoryAndDescendantIds(slug: string): Promise<string[]> {
     const categories = await this.prisma.category.findMany({
       select: { id: true, slug: true, parentId: true },
     });

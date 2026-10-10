@@ -1,4 +1,4 @@
-import type { ProductCard as Card } from '@nixzora/validation';
+import type { ProductCard as Card, SponsoredProduct } from '@nixzora/validation';
 import { ScrollView, View } from 'react-native';
 import { space } from '@/lib/theme';
 import { ProductCard } from './ProductCard';
@@ -12,14 +12,19 @@ const CARD_WIDTH = 168;
  */
 export function ProductRail({
   title,
-  products,
+  products = [],
+  sponsored,
   inset = space.lg,
 }: {
   title: string;
-  products: Card[];
+  products?: Card[];
+  /** Ads (p10-01): each card is labelled and records its click. */
+  sponsored?: SponsoredProduct[];
   inset?: number;
 }) {
-  if (!products.length) return null;
+  const items: { product: Card; token?: string }[] =
+    sponsored ?? products.map((product) => ({ product }));
+  if (!items.length) return null;
   return (
     <View style={{ gap: space.sm }} accessibilityRole="list" accessibilityLabel={title}>
       <Text variant="heading">{title}</Text>
@@ -31,9 +36,9 @@ export function ProductRail({
         style={{ marginHorizontal: -inset }}
         contentContainerStyle={{ paddingHorizontal: inset, gap: space.md }}
       >
-        {products.map((product) => (
-          <View key={product.id} style={{ width: CARD_WIDTH }}>
-            <ProductCard product={product} />
+        {items.map((item) => (
+          <View key={item.product.id} style={{ width: CARD_WIDTH }}>
+            <ProductCard product={item.product} adToken={item.token} />
           </View>
         ))}
       </ScrollView>

@@ -16,6 +16,11 @@ export const AssistantChatRequestSchema = z.object({
     .refine((messages) => messages[messages.length - 1]?.role === 'user', {
       message: 'The last message must be from the shopper',
     }),
+  /** A guest's visitor id: what they ask for shapes their home page picks (p10-02). */
+  visitorId: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{16,64}$/)
+    .optional(),
 });
 export type AssistantChatRequest = z.infer<typeof AssistantChatRequestSchema>;
 

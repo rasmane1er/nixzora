@@ -48,7 +48,7 @@ export default async function PrivacyPage() {
       <ul>
         <li>{t('privacyUseOrders')}</li>
         <li>{t('privacyUseAccount')}</li>
-        <li>{t('privacyUseRecommend')}</li>
+        <li>{rich(t('privacyUseRecommend'), TAGS)}</li>
         <li>{rich(t('privacyUseMarketing'), TAGS)}</li>
         <li>{t('privacyUseLegal')}</li>
       </ul>

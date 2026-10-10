@@ -36,9 +36,11 @@ export class WishlistService {
     if (!product) throw new NotFoundException('That product is not available.');
     const count = await this.prisma.wishlistItem.count({ where: { userId } });
     if (count >= MAX_ITEMS) return;
+    // The price when saved, so a later drop can be pointed out ("Now cheaper").
+    const [card] = await this.catalog.cardsByIds([productId]);
     await this.prisma.wishlistItem.upsert({
       where: { userId_productId: { userId, productId } },
-      create: { userId, productId },
+      create: { userId, productId, priceCentsAtSave: card?.priceFromCents ?? null },
       update: {},
     });
   }

@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Price } from '@/components/Price';
 import { Banner, Button, Card, Row, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { visitorId } from '@/lib/visitor';
 import { useFormatters } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
@@ -257,7 +258,8 @@ export default function AssistantScreen() {
   const handled = useRef<string | null>(null);
 
   const chat = useMutation({
-    mutationFn: (messages: AssistantMessage[]) => api.assistant.chat(messages),
+    mutationFn: async (messages: AssistantMessage[]) =>
+      api.assistant.chat(messages, await visitorId().catch(() => undefined)),
     onSuccess: (response) =>
       setTurns((current) => [...current, { role: 'assistant', content: response.reply, response }]),
   });

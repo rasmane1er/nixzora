@@ -15,6 +15,7 @@ import { api, ApiError, errorMessage } from '@/lib/api';
 import { cookies } from 'next/headers';
 import { getT } from '@/lib/i18n';
 import { THEME_COOKIE, clearSession } from '@/lib/session';
+import { visitorId } from '@/lib/visitor';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -227,9 +228,23 @@ export async function savePreferences(form: FormData): Promise<void> {
         body: {
           marketingEmails: form.get('marketingEmails') === 'on',
           reviewRequests: form.get('reviewRequests') === 'on',
+          personalizedPicks: form.get('personalizedPicks') === 'on',
         },
       }),
     (await getT('account'))('preferencesSaved'),
+  );
+}
+
+/** Forgets product views and searches (this account and this browser), for personalized picks. */
+export async function clearShoppingHistory(): Promise<void> {
+  const visitor = await visitorId();
+  await perform(
+    '/account/preferences',
+    () =>
+      api(`/me/shopping-history${visitor ? `?visitorId=${encodeURIComponent(visitor)}` : ''}`, {
+        method: 'DELETE',
+      }),
+    (await getT('ads'))('historyCleared'),
   );
 }
 

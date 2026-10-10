@@ -67,7 +67,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Payments</b>: card details go directly to our payment processor, Stripe. We keep only the payment status, card brand and last four digits.',
     privacyCollectActivity:
-      '<b>Shopping activity</b>: your cart, saved products, the products you view, reviews you write and messages you send to the shopping assistant. Before you sign in, product views are tied to a random id stored in your browser or the app, not to you.',
+      '<b>Shopping activity</b>: your cart, saved products, the products you view, what you search for, reviews you write and messages you send to the shopping assistant. Before you sign in, product views and searches are tied to a random id stored in your browser or the app, not to you.',
     privacyCollectDevice:
       '<b>Device and security data</b>: IP address, browser or device type, sign-in history and, in the app, a push-notification token if you allow notifications.',
     privacyUseTitle: 'Why we use it',
@@ -76,7 +76,7 @@ export const legal = defineMessages({
     privacyUseAccount:
       'To run your account and keep it secure (sign-in, two-step verification, fraud checks).',
     privacyUseRecommend:
-      'To answer shopping questions and recommend products from our catalog ("similar products", "recommended for you"). "Customers also viewed" only shows products several different shoppers looked at, never one person\'s browsing.',
+      'To answer shopping questions and recommend products from our catalog ("similar products", "recommended for you", "because you searched for…", "goes with your cart"). "Customers also viewed" only shows products several different shoppers looked at, never one person\'s browsing. You can turn personalized picks off, or clear your shopping history, in <preferences>your preferences</preferences>. Sponsored products are ads that sellers pay for, always labelled "Sponsored"; we choose them from the page you are on and your activity on NIXZORA only, and sellers never receive your data from them.',
     privacyUseLegal: 'To meet tax, accounting and legal obligations.',
     privacyUseMarketing:
       'To email you offers, only if you opted in. Turn them off at any time in <preferences>your preferences</preferences>.',
@@ -100,7 +100,7 @@ export const legal = defineMessages({
       'We use only the cookies the store needs to work: keeping you signed in, remembering your cart and protecting sign-in. We do not use advertising or cross-site tracking cookies.',
     privacyRetentionTitle: 'How long we keep it',
     privacyRetentionBody:
-      'Account data stays while your account is open. Order and payment records are kept for as long as tax and accounting law requires (generally seven years), without a sign-in once you close your account. Product views are deleted after 180 days. Security logs are kept for up to one year.',
+      'Account data stays while your account is open. Order and payment records are kept for as long as tax and accounting law requires (generally seven years), without a sign-in once you close your account. Product views and searches are deleted after 180 days. Security logs are kept for up to one year.',
     privacyChoicesTitle: 'Your choices',
     privacyChoicesUpdate: 'See and update your details in <account>your account</account>.',
     privacyChoicesClose:
@@ -217,7 +217,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Paiements</b> : les données de carte sont transmises directement à notre prestataire de paiement, Stripe. Nous ne conservons que le statut du paiement, la marque de la carte et ses quatre derniers chiffres.',
     privacyCollectActivity:
-      '<b>Activité d’achat</b> : votre panier, les produits enregistrés, les produits que vous consultez, les avis que vous rédigez et les messages que vous envoyez à l’assistant d’achat. Avant votre connexion, les consultations de produits sont associées à un identifiant aléatoire stocké dans votre navigateur ou l’application, et non à vous.',
+      '<b>Activité d’achat</b> : votre panier, les produits enregistrés, les produits que vous consultez, ce que vous recherchez, les avis que vous rédigez et les messages que vous envoyez à l’assistant d’achat. Avant votre connexion, les consultations et les recherches sont associées à un identifiant aléatoire stocké dans votre navigateur ou l’application, et non à vous.',
     privacyCollectDevice:
       '<b>Données d’appareil et de sécurité</b> : adresse IP, type de navigateur ou d’appareil, historique de connexion et, dans l’application, un jeton de notification push si vous autorisez les notifications.',
     privacyUseTitle: 'Pourquoi nous les utilisons',
@@ -226,7 +226,7 @@ export const legal = defineMessages({
     privacyUseAccount:
       'Pour gérer votre compte et le sécuriser (connexion, vérification en deux étapes, contrôles antifraude).',
     privacyUseRecommend:
-      'Pour répondre aux questions d’achat et recommander des produits de notre catalogue (« produits similaires », « recommandés pour vous »). « Les clients ont aussi consulté » ne montre que des produits consultés par plusieurs clients différents, jamais la navigation d’une seule personne.',
+      'Pour répondre aux questions d’achat et recommander des produits de notre catalogue (« produits similaires », « recommandés pour vous »). « Les clients ont aussi consulté » ne montre que des produits consultés par plusieurs clients différents, jamais la navigation d’une seule personne. Vous pouvez désactiver les suggestions personnalisées ou effacer votre historique dans <preferences>vos préférences</preferences>. Les produits sponsorisés sont des annonces payées par les vendeurs, toujours marquées « Sponsorisé » ; nous les choisissons uniquement selon la page consultée et votre activité sur NIXZORA, et les vendeurs ne reçoivent jamais vos données par ce biais.',
     privacyUseLegal: 'Pour respecter nos obligations fiscales, comptables et légales.',
     privacyUseMarketing:
       'Pour vous envoyer des offres par e-mail, uniquement si vous l’avez accepté. Désactivez-les à tout moment dans <preferences>vos préférences</preferences>.',
@@ -252,7 +252,7 @@ export const legal = defineMessages({
       'Nous utilisons uniquement les cookies nécessaires au fonctionnement de la boutique : vous garder connecté, mémoriser votre panier et protéger la connexion. Nous n’utilisons pas de cookies publicitaires ni de suivi intersites.',
     privacyRetentionTitle: 'Durée de conservation',
     privacyRetentionBody:
-      'Les données du compte sont conservées tant que votre compte est ouvert. Les enregistrements de commandes et de paiements sont conservés aussi longtemps que l’exige la législation fiscale et comptable (généralement sept ans), sans possibilité de connexion une fois votre compte fermé. Les consultations de produits sont supprimées au bout de 180 jours. Les journaux de sécurité sont conservés jusqu’à un an.',
+      'Les données du compte sont conservées tant que votre compte est ouvert. Les enregistrements de commandes et de paiements sont conservés aussi longtemps que l’exige la législation fiscale et comptable (généralement sept ans), sans possibilité de connexion une fois votre compte fermé. Les consultations de produits et les recherches sont supprimées au bout de 180 jours. Les journaux de sécurité sont conservés jusqu’à un an.',
     privacyChoicesTitle: 'Vos choix',
     privacyChoicesUpdate:
       'Consultez et mettez à jour vos informations dans <account>votre compte</account>.',
@@ -368,7 +368,7 @@ export const legal = defineMessages({
     privacyCollectPayments:
       '<b>Pagos</b>: los datos de la tarjeta van directamente a nuestro procesador de pagos, Stripe. Solo guardamos el estado del pago, la marca de la tarjeta y los últimos cuatro dígitos.',
     privacyCollectActivity:
-      '<b>Actividad de compra</b>: tu carrito, los productos guardados, los productos que ves, las reseñas que escribes y los mensajes que envías al asistente de compras. Antes de que inicies sesión, las visitas a productos se asocian a un identificador aleatorio guardado en tu navegador o en la app, no a ti.',
+      '<b>Actividad de compra</b>: tu carrito, los productos guardados, los productos que ves, lo que buscas, las reseñas que escribes y los mensajes que envías al asistente de compras. Antes de que inicies sesión, las visitas y las búsquedas se asocian a un identificador aleatorio guardado en tu navegador o en la app, no a ti.',
     privacyCollectDevice:
       '<b>Datos del dispositivo y de seguridad</b>: dirección IP, tipo de navegador o dispositivo, historial de inicios de sesión y, en la app, un token de notificaciones push si permites las notificaciones.',
     privacyUseTitle: 'Para qué lo usamos',
@@ -377,7 +377,7 @@ export const legal = defineMessages({
     privacyUseAccount:
       'Para administrar tu cuenta y mantenerla segura (inicio de sesión, verificación en dos pasos, controles contra fraude).',
     privacyUseRecommend:
-      'Para responder preguntas de compra y recomendar productos de nuestro catálogo (“productos similares”, “recomendados para ti”). “Otros clientes también vieron” solo muestra productos que vieron varios compradores distintos, nunca la navegación de una sola persona.',
+      'Para responder preguntas de compra y recomendar productos de nuestro catálogo (“productos similares”, “recomendados para ti”). “Otros clientes también vieron” solo muestra productos que vieron varios compradores distintos, nunca la navegación de una sola persona. Puedes desactivar las sugerencias personalizadas o borrar tu historial en <preferences>tus preferencias</preferences>. Los productos patrocinados son anuncios que pagan los vendedores, siempre marcados como “Patrocinado”; los elegimos solo según la página en la que estás y tu actividad en NIXZORA, y los vendedores nunca reciben tus datos a través de ellos.',
     privacyUseLegal: 'Para cumplir obligaciones fiscales, contables y legales.',
     privacyUseMarketing:
       'Para enviarte ofertas por correo, solo si lo aceptaste. Desactívalas cuando quieras en <preferences>tus preferencias</preferences>.',
@@ -402,7 +402,7 @@ export const legal = defineMessages({
       'Solo usamos las cookies que la tienda necesita para funcionar: mantener tu sesión iniciada, recordar tu carrito y proteger el inicio de sesión. No usamos cookies publicitarias ni de seguimiento entre sitios.',
     privacyRetentionTitle: 'Cuánto tiempo lo conservamos',
     privacyRetentionBody:
-      'Los datos de la cuenta se conservan mientras tu cuenta esté abierta. Los registros de pedidos y pagos se conservan durante el tiempo que exija la ley fiscal y contable (generalmente siete años), sin acceso mediante inicio de sesión una vez que cierras tu cuenta. Las visitas a productos se eliminan después de 180 días. Los registros de seguridad se conservan hasta un año.',
+      'Los datos de la cuenta se conservan mientras tu cuenta esté abierta. Los registros de pedidos y pagos se conservan durante el tiempo que exija la ley fiscal y contable (generalmente siete años), sin acceso mediante inicio de sesión una vez que cierras tu cuenta. Las visitas a productos y las búsquedas se eliminan después de 180 días. Los registros de seguridad se conservan hasta un año.',
     privacyChoicesTitle: 'Tus opciones',
     privacyChoicesUpdate: 'Consulta y actualiza tus datos en <account>tu cuenta</account>.',
     privacyChoicesClose:

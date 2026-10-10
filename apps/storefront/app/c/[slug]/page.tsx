@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { filtersFrom, ProductListing, toApiQuery } from '@/components/ProductListing';
+import { sponsored } from '@/lib/ads';
 import { catalog } from '@/lib/api';
 import { findCategory } from '@/lib/categories';
 import { departmentName, getT } from '@/lib/i18n';
@@ -32,11 +33,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const found = await load(slug);
   if (!found) notFound();
   const filters = filtersFrom(await searchParams);
-  const [result, brands] = await Promise.all([
+  const firstPage = !filters.page || filters.page === '1';
+  const [result, brands, ads] = await Promise.all([
     catalog
       .products(toApiQuery({ ...filters, q: undefined }, { category: slug }))
       .catch(() => null),
     catalog.brands().catch(() => []),
+    firstPage ? sponsored({ placement: 'category', category: slug }) : [],
   ]);
   const t = await getT('catalog');
   const trailNames = await Promise.all(found.trail.map((node) => departmentName(node)));
@@ -74,6 +77,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         filters={{ ...filters, category: slug }}
         result={result ?? { items: [], page: 1, pageSize: 24, total: 0, totalPages: 1 }}
         brands={brands}
+        sponsored={ads}
       />
     </div>
   );

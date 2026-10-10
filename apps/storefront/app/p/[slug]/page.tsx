@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ProductRail } from '@/components/ProductRail';
+import { sponsored } from '@/lib/ads';
 import { SellerRating } from '@/components/SellerRating';
 import { ReviewInsights } from '@/components/ReviewInsights';
 import { Stars } from '@/components/Stars';
@@ -57,7 +58,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
-  const [reviews, wishIds, myReview, related, insights] = await Promise.all([
+  const [reviews, wishIds, myReview, related, insights, ads] = await Promise.all([
     api<ReviewPage>(`/catalog/products/${slug}/reviews`, { auth: false, revalidate: 30 }).catch(
       () => null,
     ),
@@ -81,9 +82,11 @@ export default async function ProductPage({ params }: Props) {
     )
       .then((res) => res.insights)
       .catch(() => null),
+    sponsored({ placement: 'product', product: slug }),
   ]);
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
+  const a = await getT('ads');
   const p = await getT('product');
   const c = await getT('common');
   const f = await getFormat();
@@ -287,6 +290,7 @@ export default async function ProductPage({ params }: Props) {
         title={t('oftenBoughtTogether')}
         products={related.boughtTogether}
       />
+      <ProductRail id="sponsored" title={a('sponsoredRelated')} sponsored={ads} />
       <ProductRail id="similar" title={t('similarProducts')} products={related.similar} />
       <ProductRail id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />
       <ViewTracker productId={product.id} />

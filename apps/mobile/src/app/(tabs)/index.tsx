@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { PressableLink } from '@/components/PressableLink';
+import { smartRowTitle } from '@nixzora/i18n';
 import { departmentArtPath, type CategoryNode } from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
@@ -37,6 +38,7 @@ export default function HomeScreen() {
   const tc = useT('common');
   const th = useT('home');
   const tp = useT('product');
+  const ta = useT('ads');
   const { width, columns } = useLayout();
   const cardWidth = (width - space.lg * 2 - space.md * (columns - 1)) / columns;
   const { departmentName } = useFormatters();
@@ -50,6 +52,11 @@ export default function HomeScreen() {
   const picks = useQuery({
     queryKey: ['recommendations', status],
     queryFn: async () => api.recommendations.forYou(await visitorId()),
+    staleTime: 60_000,
+  });
+  const ads = useQuery({
+    queryKey: ['ads', 'home', status],
+    queryFn: async () => api.ads.forPage({ placement: 'home' }, await visitorId()),
     staleTime: 60_000,
   });
   const departments = categories.data ?? [];
@@ -192,6 +199,14 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
+      {(picks.data?.rows ?? []).map((row, i) => (
+        <ProductRail
+          key={`${row.kind}-${i}`}
+          title={smartRowTitle(row, ta)}
+          products={row.products}
+        />
+      ))}
+
       {featured.length ? (
         <View style={{ gap: space.sm }} accessibilityRole="list">
           <View style={styles.sectionHead}>
@@ -213,6 +228,7 @@ export default function HomeScreen() {
           </View>
         </View>
       ) : null}
+      <ProductRail title={ta('sponsoredHome')} sponsored={ads.data?.ads ?? []} />
       <ProductRail title={t('recentlyViewed')} products={picks.data?.recentlyViewed ?? []} />
 
       {products.error && !products.data ? (
@@ -233,6 +249,7 @@ export default function HomeScreen() {
           void products.refetch();
           void categories.refetch();
           void picks.refetch();
+          void ads.refetch();
         }}
         empty={
           products.isLoading ? undefined : (

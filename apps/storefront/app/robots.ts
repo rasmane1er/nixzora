@@ -4,7 +4,11 @@ import { SITE_URL } from '@/lib/params';
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: '*', allow: '/', disallow: ['/account', '/cart', '/checkout', '/orders'] },
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/account', '/cart', '/checkout', '/orders', '/r/'],
+      },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

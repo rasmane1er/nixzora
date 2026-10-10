@@ -1209,6 +1209,29 @@ async function main(): Promise<void> {
     update: { isPublic: true },
   });
 
+  // Sponsored products demo (p10-01): the demo seller gets $50 of ad credit, once, and one
+  // campaign promoting its listings. Credit is NIXZORA's promotion, never paid out.
+  {
+    const sellerId = sellerIds.get('brightline-audio')!;
+    const existing = await prisma.adCampaign.findFirst({ where: { sellerId } });
+    if (!existing) {
+      const listings = await prisma.product.findMany({
+        where: { sellerId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      await prisma.seller.update({ where: { id: sellerId }, data: { adCreditCents: 5000 } });
+      await prisma.adCampaign.create({
+        data: {
+          sellerId,
+          name: 'Brightline speakers and headphones',
+          dailyBudgetCents: 1000,
+          bidCents: 60,
+          products: { create: listings.map((listing) => ({ productId: listing.id })) },
+        },
+      });
+    }
+  }
+
   const variantCount = [...products, ...moreProducts].reduce(
     (sum, product) => sum + product.variants.length,
     0,

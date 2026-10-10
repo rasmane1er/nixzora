@@ -251,7 +251,7 @@ export type SellerBalance = {
 
 export type SellerLedgerEntryView = {
   id: string;
-  type: 'SALE' | 'REFUND' | 'PAYOUT' | 'ADJUSTMENT';
+  type: 'SALE' | 'REFUND' | 'PAYOUT' | 'ADJUSTMENT' | 'AD_SPEND';
   amountCents: number;
   description: string;
   orderNumber: string | null;

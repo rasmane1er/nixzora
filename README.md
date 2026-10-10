@@ -10,6 +10,7 @@ This repository is a monorepo for the web storefront, the iOS and Android app, t
 | --------------- | ------------------------------------------------------------------------------------------- |
 | **Status**      | Phase 8 · Scale and hardening: load-tested, fraud signals, security review, DR drill        |
 | **Departments** | Electronics, clothing & shoes, home & kitchen, beauty & personal care, sports & outdoors    |
+| **Shopping**    | Smart picks from views, searches, cart, saves and orders; sponsored products paid per click |
 | **Case study**  | [How NIXZORA was built, in numbers](docs/case-study.md) (with demo stills and video script) |
 
 ## Stack

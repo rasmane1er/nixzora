@@ -20,6 +20,11 @@ export const AccountPreferencesSchema = z.object({
   marketingEmails: z.boolean(),
   /** An email after delivery asking how the product is. */
   reviewRequests: z.boolean(),
+  /**
+   * Picks based on what the customer views, searches, saves, buys and tells the assistant. On by
+   * default; turning it off also stops recording those signals. Optional on save (older apps).
+   */
+  personalizedPicks: z.boolean().optional(),
 });
 
 export const ORDER_FILTERS = ['all', 'open', 'delivered', 'cancelled', 'returns'] as const;

@@ -158,17 +158,25 @@ export class AccountHubService {
   async preferences(userId: string): Promise<AccountPreferences> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { marketingEmails: true, reviewRequests: true },
+      select: { marketingEmails: true, reviewRequests: true, personalizedPicks: true },
     });
     return user;
   }
 
   async updatePreferences(userId: string, input: AccountPreferences): Promise<AccountPreferences> {
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: input,
-      select: { marketingEmails: true, reviewRequests: true },
+      select: { marketingEmails: true, reviewRequests: true, personalizedPicks: true },
     });
+    // Turning personalized picks off also forgets what was recorded for them (p10-02).
+    if (input.personalizedPicks === false) {
+      await this.prisma.$transaction([
+        this.prisma.productEvent.deleteMany({ where: { userId } }),
+        this.prisma.shopperInterest.deleteMany({ where: { userId } }),
+      ]);
+    }
+    return updated;
   }
 
   async overview(userId: string): Promise<AccountOverview> {
@@ -336,6 +344,7 @@ export class AccountHubService {
         orders: { include: { items: true, returns: true }, orderBy: { createdAt: 'desc' } },
         reviews: { include: { product: { select: { title: true, slug: true } } } },
         wishlist: { include: { product: { select: { title: true, slug: true } } } },
+        interests: { orderBy: { updatedAt: 'desc' }, take: 500 },
         identities: { select: { provider: true, createdAt: true } },
         sessions: {
           where: { revokedAt: null, expiresAt: { gt: new Date() } },
@@ -354,7 +363,11 @@ export class AccountHubService {
         memberSince: user.createdAt.toISOString(),
         twoStepVerification: user.mfaEnabled,
       },
-      preferences: { marketingEmails: user.marketingEmails, reviewRequests: user.reviewRequests },
+      preferences: {
+        marketingEmails: user.marketingEmails,
+        reviewRequests: user.reviewRequests,
+        personalizedPicks: user.personalizedPicks,
+      },
       signInWith: user.identities.map((i) => ({
         provider: i.provider.toLowerCase(),
         linkedAt: i.createdAt.toISOString(),
@@ -402,6 +415,12 @@ export class AccountHubService {
         createdAt: r.createdAt,
       })),
       wishlist: user.wishlist.map((w) => ({ product: w.product.title, savedAt: w.createdAt })),
+      // Searches and needs told to the assistant, kept for personalized picks (p10-02).
+      interests: user.interests.map((i) => ({
+        text: i.text,
+        source: i.source === 'ASSISTANT' ? 'assistant' : 'search',
+        lastUsedAt: i.updatedAt,
+      })),
     };
   }
 

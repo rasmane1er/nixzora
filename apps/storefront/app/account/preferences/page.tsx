@@ -4,7 +4,7 @@ import { AccountHeader, Notices } from '@/components/AccountHeader';
 import { accountApi } from '@/lib/account';
 import { getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
-import { savePreferences } from '../hub-actions';
+import { clearShoppingHistory, savePreferences } from '../hub-actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('accountActivity');
@@ -13,9 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PreferencesPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const [prefs, t] = await Promise.all([
+  const [prefs, t, a] = await Promise.all([
     accountApi<AccountPreferences>('/me/preferences', '/account/preferences'),
     getT('accountActivity'),
+    getT('ads'),
   ]);
 
   return (
@@ -49,12 +50,37 @@ export default async function PreferencesPage({ searchParams }: { searchParams: 
             </span>
           </label>
         </fieldset>
+        <fieldset className="pref-list">
+          <legend className="sr-only">{a('prefPicks')}</legend>
+          <label className="pref">
+            <input
+              type="checkbox"
+              name="personalizedPicks"
+              defaultChecked={prefs.personalizedPicks ?? true}
+            />
+            <span className="stack" style={{ gap: 2 }}>
+              <strong>{a('prefPicks')}</strong>
+              <span className="muted">{a('prefPicksHint')}</span>
+            </span>
+          </label>
+        </fieldset>
         <div>
           <button className="btn btn--primary" type="submit">
             {t('savePreferences')}
           </button>
         </div>
         <p className="hint">{t('pushHint')}</p>
+      </form>
+      <form action={clearShoppingHistory} className="card form" style={{ maxWidth: 720 }}>
+        <div className="stack" style={{ gap: 4 }}>
+          <strong>{a('clearHistory')}</strong>
+          <span className="muted">{a('clearHistoryHint')}</span>
+        </div>
+        <div>
+          <button className="btn btn--secondary" type="submit">
+            {a('clearHistory')}
+          </button>
+        </div>
       </form>
     </div>
   );

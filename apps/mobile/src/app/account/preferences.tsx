@@ -3,16 +3,25 @@ import type { AccountPreferences } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Platform, Switch, View } from 'react-native';
 import { MenuList } from '@/components/MenuList';
-import { Banner, Card, Divider, Row, Screen, Text } from '@/components/ui';
+import { Banner, Button, Card, Divider, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
 import { space } from '@/lib/theme';
+import { visitorId } from '@/lib/visitor';
 
-/** Which emails NIXZORA sends (push lives in Settings). Order and security emails are always on. */
+/**
+ * Which emails NIXZORA sends (push lives in Settings; order and security emails are always on),
+ * and personalized picks (p10-02), with a way to clear the history behind them.
+ */
 export default function PreferencesScreen() {
   const client = useQueryClient();
   const t = useT('appAccount');
+  const a = useT('ads');
+  const clear = useMutation({
+    mutationFn: async () => api.recommendations.clearHistory(await visitorId()),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['recommendations'] }),
+  });
   const prefs = useQuery({ queryKey: keys.preferences, queryFn: () => api.me.preferences() });
   const save = useMutation({
     mutationFn: (next: AccountPreferences) => api.me.setPreferences(next),
@@ -66,6 +75,39 @@ export default function PreferencesScreen() {
             accessibilityLabel={t('prefsDealsA11y')}
           />,
         )}
+      </Card>
+      <Card>
+        {row(
+          a('prefPicks'),
+          a('prefPicksHint'),
+          <Switch
+            value={current?.personalizedPicks ?? true}
+            disabled={!current}
+            onValueChange={(value) => {
+              toggle('personalizedPicks')(value);
+              void client.invalidateQueries({ queryKey: ['recommendations'] });
+            }}
+            accessibilityLabel={a('prefPicks')}
+          />,
+        )}
+        <Divider />
+        <View style={{ gap: space.sm, paddingVertical: space.sm }}>
+          <Text>{a('clearHistory')}</Text>
+          <Text variant="small" muted>
+            {a('clearHistoryHint')}
+          </Text>
+          {clear.isSuccess ? (
+            <Banner tone="ok">{a('historyCleared')}</Banner>
+          ) : clear.error ? (
+            <Banner tone="error">{errorMessage(clear.error)}</Banner>
+          ) : null}
+          <Button
+            title={a('clearHistory')}
+            tone="ghost"
+            loading={clear.isPending}
+            onPress={() => clear.mutate()}
+          />
+        </View>
       </Card>
       {Platform.OS !== 'web' ? (
         <MenuList

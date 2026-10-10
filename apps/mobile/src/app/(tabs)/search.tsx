@@ -2,21 +2,26 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { PressableLink } from '@/components/PressableLink';
 import { errorMessage } from '@nixzora/api-client';
 import { useLocalSearchParams, router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProductGrid } from '@/components/ProductGrid';
+import { ProductRail } from '@/components/ProductRail';
 import { type Sort, SortChips } from '@/components/SortChips';
 import { Banner, EmptyState, Text } from '@/components/ui';
 import { useFormatters } from '@/lib/format';
+import { api } from '@/lib/api';
 import { useCategories, useProductList } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
+import { visitorId } from '@/lib/visitor';
 
 export default function SearchScreen() {
   const p = usePalette();
   const t = useT('appShop');
   const tc = useT('common');
+  const ta = useT('ads');
   const { departmentName } = useFormatters();
   const params = useLocalSearchParams<{ q?: string }>();
   const [text, setText] = useState(params.q ?? '');
@@ -43,6 +48,22 @@ export default function SearchScreen() {
   const products = results.data?.pages.flatMap((page) => page.items) ?? [];
   const total = results.data?.pages[0]?.total ?? 0;
   const searching = q.length > 0;
+  const ads = useQuery({
+    queryKey: ['ads', 'search', q],
+    queryFn: async () => api.ads.forPage({ placement: 'search', q }, await visitorId()),
+    enabled: searching,
+    staleTime: 60_000,
+  });
+
+  // A search the shopper settled on (not every keystroke) shapes their picks (p10-02).
+  useEffect(() => {
+    if (q.length < 2) return;
+    const timer = setTimeout(
+      () => void visitorId().then((id) => api.recommendations.search(q, id).catch(() => undefined)),
+      1500,
+    );
+    return () => clearTimeout(timer);
+  }, [q]);
 
   const header = (
     <View style={{ gap: space.md, marginBottom: space.sm }}>
@@ -89,6 +110,9 @@ export default function SearchScreen() {
         <Text variant="small" muted>
           {t('resultsFor', { count: total, q })}
         </Text>
+      ) : null}
+      {searching && total > 0 ? (
+        <ProductRail title={ta('sponsoredResults')} sponsored={ads.data?.ads ?? []} />
       ) : null}
       {!searching && categories.data?.length ? (
         <View style={{ gap: space.sm }}>

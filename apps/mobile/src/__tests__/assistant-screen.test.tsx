@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 jest.mock('@/lib/api', () => ({
   api: { assistant: { chat: jest.fn() }, cart: { add: jest.fn() } },
 }));
+jest.mock('@/lib/visitor', () => ({ visitorId: async () => 'visitor0123456789abcdef' }));
 jest.mock('expo-haptics', () => ({
   notificationAsync: jest.fn(),
   NotificationFeedbackType: { Success: 'success', Error: 'error' },
@@ -82,7 +83,10 @@ describe('Assistant screen', () => {
     );
     fireEvent.press(screen.getByLabelText('Send'));
     await waitFor(() => expect(screen.getByText('Kestrel 14 Pro developer laptop')).toBeTruthy());
-    expect(chat).toHaveBeenCalledWith([{ role: 'user', content: 'quiet laptop under $1,500' }]);
+    expect(chat).toHaveBeenCalledWith(
+      [{ role: 'user', content: 'quiet laptop under $1,500' }],
+      'visitor0123456789abcdef',
+    );
     expect(screen.getByText('Best match')).toBeTruthy();
     expect(screen.getByText('Up to $1,500')).toBeTruthy();
   });

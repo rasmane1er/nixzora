@@ -174,3 +174,41 @@ export function specSearchWords(key: string): string {
  */
 export const OPTION_NAMES = ['color', 'size', 'memory', 'storage', 'pack', 'switches'] as const;
 export type OptionName = (typeof OPTION_NAMES)[number];
+
+/**
+ * What goes with what, by category: someone who bought (or is about to buy) a laptop may want a
+ * mouse, a keyboard or headphones. Used for "Goes with your cart" and "For your <product>"
+ * picks; the first categories listed come first.
+ */
+export const COMPLEMENTS: Readonly<Partial<Record<DepartmentSlug, readonly DepartmentSlug[]>>> = {
+  laptops: ['mice', 'keyboards', 'monitors', 'headphones'],
+  desktops: ['monitors', 'keyboards', 'mice', 'speakers'],
+  monitors: ['keyboards', 'mice', 'speakers'],
+  keyboards: ['mice', 'monitors'],
+  mice: ['keyboards'],
+  phones: ['headphones', 'wearables', 'speakers'],
+  headphones: ['phones', 'speakers'],
+  speakers: ['smart-home', 'headphones'],
+  'smart-home': ['speakers'],
+  gaming: ['headphones', 'monitors'],
+  wearables: ['phones', 'headphones', 'fitness'],
+  tops: ['outerwear', 'shoes'],
+  outerwear: ['tops', 'outdoor', 'shoes'],
+  shoes: ['tops', 'fitness'],
+  kitchen: ['home-living'],
+  'home-living': ['kitchen'],
+  skincare: ['hair-care', 'grooming'],
+  'hair-care': ['skincare'],
+  grooming: ['skincare'],
+  fitness: ['shoes', 'wearables', 'outdoor'],
+  outdoor: ['outerwear', 'fitness'],
+};
+
+/**
+ * Categories of things that run out, with the usual days between purchases. "Time to restock"
+ * suggests an item once most of that time has passed since it was last ordered. Durable goods
+ * (a hair dryer, a skillet) are never listed here.
+ */
+export const REPLENISH_DAYS: Readonly<Partial<Record<DepartmentSlug, number>>> = {
+  skincare: 45,
+};

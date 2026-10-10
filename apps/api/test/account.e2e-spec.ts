@@ -203,7 +203,9 @@ describe('Your Account (e2e)', () => {
     expect((await http().get('/api/v1/me/preferences').set(bearer(token))).body).toEqual({
       marketingEmails: false,
       reviewRequests: true,
+      personalizedPicks: true,
     });
+    // Older apps send only the email choices; personalized picks stay as they were.
     await http()
       .put('/api/v1/me/preferences')
       .set(bearer(token))
@@ -212,6 +214,7 @@ describe('Your Account (e2e)', () => {
     expect((await http().get('/api/v1/me/preferences').set(bearer(token))).body).toEqual({
       marketingEmails: true,
       reviewRequests: false,
+      personalizedPicks: true,
     });
   });
 

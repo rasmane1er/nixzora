@@ -231,6 +231,7 @@ export default function ProductScreen() {
   const t = useT('appShop');
   const tp = useT('productPage');
   const tc = useT('common');
+  const ta = useT('ads');
   const { attributeLabel, optionName, rating } = useFormatters();
   const layout = useLayout();
   // Side by side, the photos take a bit over half of the page (up to 760pt).
@@ -254,6 +255,13 @@ export default function ProductScreen() {
   const related = useQuery({
     queryKey: ['catalog', 'related', slug],
     queryFn: () => api.catalog.related(slug),
+    enabled: !!product.data,
+    staleTime: 5 * 60_000,
+  });
+  const sponsored = useQuery({
+    queryKey: ['ads', 'product', slug],
+    queryFn: async () =>
+      api.ads.forPage({ placement: 'product', product: slug }, await visitorId()),
     enabled: !!product.data,
     staleTime: 5 * 60_000,
   });
@@ -581,6 +589,7 @@ export default function ProductScreen() {
               title={tp('oftenBoughtTogether')}
               products={related.data?.boughtTogether ?? []}
             />
+            <ProductRail title={ta('sponsoredRelated')} sponsored={sponsored.data?.ads ?? []} />
             <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
             <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
           </View>

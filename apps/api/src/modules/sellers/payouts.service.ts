@@ -12,6 +12,7 @@ import { formatters, translator } from '@nixzora/i18n';
 import { type PagedResult, type PayoutView, pagedResult } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Payout, Prisma } from '../../generated/prisma/client';
+import { settleAdSpend } from '../advertising/ad-billing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
@@ -117,6 +118,9 @@ export class PayoutsService implements OnModuleInit, OnModuleDestroy {
         'The store verified with another payout provider. Ask it to update its payout details.',
       );
     }
+
+    // Ad clicks so far come out of this payout, not the next one (p10-01).
+    await settleAdSpend(this.prisma, sellerId);
 
     // Fraud signals (ADR-0024): a store under review is not paid, by the timer or by staff.
     const due = await this.prisma.sellerLedgerEntry.aggregate({

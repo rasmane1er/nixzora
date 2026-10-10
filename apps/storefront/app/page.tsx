@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { smartRowTitle } from '@nixzora/i18n';
 import { type Recommendations } from '@nixzora/validation';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductRail } from '@/components/ProductRail';
+import { sponsored } from '@/lib/ads';
 import { api, catalog } from '@/lib/api';
 import { countProducts } from '@/lib/categories';
 import { departmentImage } from '@/lib/departments';
@@ -10,16 +12,20 @@ import { visitorId } from '@/lib/visitor';
 
 export default async function HomePage() {
   const visitor = await visitorId();
-  const [categories, newest, picks] = await Promise.all([
+  const [categories, newest, picks, ads] = await Promise.all([
     catalog.categories().catch(() => []),
     catalog.products('?sort=newest&pageSize=8&inStock=true').catch(() => null),
+    // With the guest cart id, so "Goes with your cart" works before sign-in.
     api<Recommendations>(
       `/recommendations${visitor ? `?visitorId=${encodeURIComponent(visitor)}` : ''}`,
+      { cart: true },
     ).catch(() => null),
+    sponsored({ placement: 'home' }),
   ]);
-  const [t, p, names] = await Promise.all([
+  const [t, p, a, names] = await Promise.all([
     getT('home'),
     getT('product'),
+    getT('ads'),
     Promise.all(categories.map((category) => departmentName(category))),
   ]);
   const prompts = [t('prompt1'), t('prompt2'), t('prompt3'), t('prompt4')];
@@ -116,6 +122,15 @@ export default async function HomePage() {
         </section>
       ) : null}
 
+      {(picks?.rows ?? []).map((row, i) => (
+        <ProductRail
+          key={`${row.kind}-${i}`}
+          id={`picks-${i}`}
+          title={smartRowTitle(row, a)}
+          products={row.products}
+        />
+      ))}
+
       {featured.length ? (
         <section className="section" aria-labelledby="featured">
           <div className="section-head">
@@ -131,6 +146,8 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      <ProductRail id="sponsored" title={a('sponsoredHome')} sponsored={ads} />
 
       {picks ? (
         <ProductRail id="recent" title={t('recentlyViewed')} products={picks.recentlyViewed} />

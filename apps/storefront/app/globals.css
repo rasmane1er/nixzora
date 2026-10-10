@@ -516,6 +516,31 @@ input[type='checkbox'] {
   display: grid;
   gap: 4px;
 }
+/* Sponsored products (p10-01): labelled in text, never by color alone. */
+.product-card__sponsored {
+  justify-self: start;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 6px;
+  line-height: 18px;
+}
+.about-ads {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.about-ads summary {
+  cursor: pointer;
+  color: var(--muted);
+  width: max-content;
+}
+.about-ads p {
+  margin: 6px 0 0;
+  max-width: 62ch;
+}
 .product-card__brand {
   font-size: 12px;
   color: var(--muted);
@@ -1728,9 +1753,97 @@ table.plain th {
   color: var(--warn-fg);
 }
 .pill--seller-suspended,
-.pill--seller-rejected {
+.pill--seller-rejected,
+.pill--ad-suspended {
   background: var(--err-bg);
   color: var(--err-fg);
+}
+.pill--ad-active {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.pill--ad-paused {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+/* Seller portal: Ads (p10-01) */
+.ad-campaigns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.ad-campaign {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.ad-campaign:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.ad-campaign__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.ad-campaign__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 0;
+  font-size: 14px;
+}
+.ad-campaign__stats dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.ad-campaign__stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ad-campaign__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ad-campaign__actions form {
+  display: inline-flex;
+}
+.ad-campaign__actions details[open] {
+  flex: 1 1 100%;
+}
+.ad-campaign__actions summary {
+  list-style: none;
+  width: max-content;
+}
+.ad-products {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow: auto;
+}
+.ad-products legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.ad-product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 400;
+}
+.ad-product img {
+  border-radius: 4px;
+  object-fit: cover;
 }
 .two-col-sell {
   display: grid;

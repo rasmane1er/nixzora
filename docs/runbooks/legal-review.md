@@ -37,6 +37,15 @@ what they cannot decide on their own. Nothing here is legal advice.
    buttons and the rating stars were below WCAG AA contrast and were fixed. A full audit by a
    specialist, with screen readers, is still to do; the lawyer may also want an accessibility
    statement page.
+8. **Sponsored products and personalized picks (Oct 2026).** Sellers can pay per click to show
+   their listings, labelled "Sponsored", in search, category, product and home pages; ads are
+   chosen from the page and the shopper's own NIXZORA activity (views, searches, cart, saved
+   items, orders, assistant requests), never from other sites, and sellers get no shopper data.
+   Customers can turn personalized picks off (which also deletes that history) or clear their
+   history. Confirm the FTC labelling is enough, whether this first-party ad targeting counts as
+   "sharing" or "targeted advertising" under CCPA/CPRA and other state laws, and add ad terms to
+   the seller agreement (pricing per click, budgets, ad credit never paid out, removal of ads
+   that break the rules).
 
 ## Sales tax (tax adviser)
 

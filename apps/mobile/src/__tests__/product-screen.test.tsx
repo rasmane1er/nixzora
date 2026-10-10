@@ -13,6 +13,7 @@ jest.mock('@/lib/api', () => ({
       reviews: jest.fn(),
     },
     recommendations: { view: jest.fn(async () => undefined) },
+    ads: { forPage: jest.fn(async () => ({ ads: [] })), click: jest.fn() },
     cart: { add: jest.fn() },
     wishlist: { ids: jest.fn(async () => []), list: jest.fn(async () => ({ items: [] })) },
   },

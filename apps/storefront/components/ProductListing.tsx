@@ -1,6 +1,11 @@
-import { type PagedResult, type ProductCard as Card } from '@nixzora/validation';
+import {
+  type PagedResult,
+  type ProductCard as Card,
+  type SponsoredProduct,
+} from '@nixzora/validation';
 import Link from 'next/link';
 import { getT } from '@/lib/i18n';
+import { AboutAds } from './AboutAds';
 import { ProductCard } from './ProductCard';
 
 export type ListingFilters = {
@@ -28,11 +33,14 @@ export async function ProductListing({
   filters,
   result,
   brands,
+  sponsored = [],
 }: {
   base: string;
   filters: ListingFilters;
   result: PagedResult<Card>;
   brands: { slug: string; name: string }[];
+  /** Sponsored products shown first in the grid. */
+  sponsored?: SponsoredProduct[];
 }) {
   const t = await getT('catalog');
   const p = await getT('product');
@@ -111,12 +119,17 @@ export async function ProductListing({
         <div className="listing__bar">
           <span className="muted">{p('products', { count: result.total })}</span>
         </div>
+        {/* Sponsored products (p10-01) lead the grid, each labelled; only with real results. */}
+        {sponsored.length && result.items.length ? <AboutAds /> : null}
         {result.items.length === 0 ? (
           <div className="empty card">
             <p>{t('noResults')}</p>
           </div>
         ) : (
           <div className="grid">
+            {sponsored.map((ad) => (
+              <ProductCard key={`ad-${ad.product.id}`} product={ad.product} adToken={ad.token} />
+            ))}
             {result.items.map((product, i) => (
               <ProductCard key={product.id} product={product} priority={i < 4} />
             ))}

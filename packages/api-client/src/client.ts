@@ -1,4 +1,7 @@
 import type {
+  AdClickResult,
+  AdPlacement,
+  SponsoredProducts,
   DeviceSignInCredential,
   DeviceSignInEnableRequest,
   DeviceSignInRequest,
@@ -264,19 +267,41 @@ export function createApiClient(options: ClientOptions) {
       /** Records that this shopper opened a product page (signed in, or by visitor id). */
       view: (productId: string, visitorId?: string) =>
         request<void>('POST', '/events/views', { body: { productId, visitorId } }),
-      /** Picks from viewing history, or popular products. */
+      /** Picks from viewing history (and smart rows), or popular products. */
       forYou: (visitorId?: string) =>
         request<Recommendations>('GET', '/recommendations', {
+          query: visitorId ? { visitorId } : {},
+          cart: true,
+        }),
+      /** Records a search, for "Because you searched for…" picks. */
+      search: (q: string, visitorId?: string) =>
+        request<void>('POST', '/events/searches', { body: { q, visitorId } }),
+      /** Forgets this account's (and this device's) views and searches. */
+      clearHistory: (visitorId?: string) =>
+        request<void>('DELETE', '/me/shopping-history', {
           query: visitorId ? { visitorId } : {},
         }),
     },
 
+    ads: {
+      /** Sponsored products for a page; often none. */
+      forPage: (
+        query: { placement: AdPlacement; q?: string; category?: string; product?: string },
+        visitorId?: string,
+      ) =>
+        request<SponsoredProducts>('GET', '/ads', {
+          query: { ...query, ...(visitorId ? { visitorId } : {}) },
+        }),
+      /** The shopper opened an ad: records the click, returns the product to open. */
+      click: (token: string, visitorId?: string) =>
+        request<AdClickResult>('POST', '/ads/clicks', { body: { token, visitorId } }),
+    },
+
     assistant: {
       /** The AI shopping assistant: products and prices in the answer come from the catalog. */
-      chat: (messages: AssistantMessage[]) =>
+      chat: (messages: AssistantMessage[], visitorId?: string) =>
         request<AssistantChatResponse>('POST', '/assistant/chat', {
-          body: { messages },
-          auth: 'none',
+          body: { messages, ...(visitorId ? { visitorId } : {}) },
         }),
     },
 
