@@ -126,7 +126,7 @@ export default function HomeScreen() {
         </View>
         <View>
           <Image
-            source={require('../../../assets/home/hero-desk.webp')}
+            source={require('../../../assets/home/hero-home.webp')}
             alt={th('heroImageAlt')}
             style={styles.heroImage}
             contentFit="cover"
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: 10,
   },
-  heroImage: { width: '100%', aspectRatio: 16 / 10 },
+  heroImage: { width: '100%', aspectRatio: 16 / 9 },
   delivery: {
     position: 'absolute',
     left: space.md,

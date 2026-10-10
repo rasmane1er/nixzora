@@ -3199,6 +3199,10 @@ td.neg {
   object-position: 70% center;
   pointer-events: none;
 }
+/* The home picture has its own words near the top right: keep them in frame. */
+.hero__art--home {
+  object-position: 70% 18%;
+}
 /* Keep the text readable over the picture. */
 .hero::before {
   content: '';

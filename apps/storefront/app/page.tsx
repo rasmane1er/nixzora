@@ -40,8 +40,8 @@ export default async function HomePage() {
       <section className="hero" aria-labelledby="hero-title">
         {/* eslint-disable-next-line @next/next/no-img-element -- decorative, sized by CSS */}
         <img
-          className="hero__art"
-          src="/home/hero-desk.webp"
+          className="hero__art hero__art--home"
+          src="/home/hero-home.webp"
           alt={t('heroImageAlt')}
           width={1600}
           height={900}
