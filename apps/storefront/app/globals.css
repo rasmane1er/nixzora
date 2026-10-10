@@ -4800,3 +4800,20 @@ td.neg {
     width: 14px;
   }
 }
+
+/* ───── Card social proof and delivery date (p10-17) ───── */
+.card-bought {
+  font-size: 13px;
+  color: var(--muted);
+}
+.card-delivery {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.card-delivery strong {
+  font-weight: 700;
+}
+.card-delivery .plus-chip {
+  font-size: 11px;
+  margin-right: 2px;
+}

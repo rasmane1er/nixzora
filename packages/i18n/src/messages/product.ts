@@ -3,6 +3,12 @@ import { defineMessages } from '../define';
 /** Product cards, rails and prices, shared by the catalog pages. */
 export const product = defineMessages({
   en: {
+    boughtPastMonth: '{count}+ bought in past month',
+    deliveryFree: 'FREE delivery {date}',
+    deliveryPaid: 'Delivery {date}',
+    deliveryTomorrow: 'Tomorrow, {date}',
+    deliveryBy: 'by {date}',
+    deliveryPlus: 'FREE 2-day delivery {date}',
     from: 'From',
     was: 'was',
     inStock: 'In stock',
@@ -25,6 +31,12 @@ export const product = defineMessages({
     signInToSave: 'Sign in to save products',
   },
   fr: {
+    boughtPastMonth: '{count}+ achetés le mois dernier',
+    deliveryFree: 'Livraison GRATUITE {date}',
+    deliveryPaid: 'Livraison {date}',
+    deliveryTomorrow: 'demain, {date}',
+    deliveryBy: 'd’ici le {date}',
+    deliveryPlus: 'Livraison GRATUITE en 2 jours {date}',
     from: 'À partir de',
     was: 'au lieu de',
     inStock: 'En stock',
@@ -47,6 +59,12 @@ export const product = defineMessages({
     signInToSave: 'Connectez-vous pour enregistrer des produits',
   },
   es: {
+    boughtPastMonth: '{count}+ comprados el mes pasado',
+    deliveryFree: 'Envío GRATIS {date}',
+    deliveryPaid: 'Entrega {date}',
+    deliveryTomorrow: 'mañana, {date}',
+    deliveryBy: 'antes del {date}',
+    deliveryPlus: 'Envío GRATIS en 2 días {date}',
     from: 'Desde',
     was: 'antes',
     inStock: 'Disponible',

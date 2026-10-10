@@ -542,6 +542,8 @@ model OrderItem {
 
   @@index([orderId])
   @@index([sellerId])
+  /// "Bought in past month" and "bought together" look items up by variant (p10-17).
+  @@index([variantId])
   @@map("order_items")
 }
 

@@ -1,4 +1,10 @@
-import { type Image, type ProductCard, type Variant } from '@nixzora/validation';
+import {
+  deliveryWindow,
+  type Image,
+  OWN_HANDLING_DAYS,
+  type ProductCard,
+  type Variant,
+} from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 
 /** The relations every product card and detail view needs, loaded in one query. */
@@ -71,5 +77,8 @@ export function toCard(
     inStock: active.some((variant) => availableOf(variant.inventory) > 0),
     image: firstImage ? toImage(firstImage, publicUrl) : null,
     defaultVariantId: active.length === 1 ? active[0]!.id : null,
+    // When it arrives if ordered now (p10-17): the store's handling time, or NIXZORA's.
+    delivery: deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
+    shipsFromNixzora: !product.sellerId,
   };
 }

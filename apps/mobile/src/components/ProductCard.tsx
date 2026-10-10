@@ -11,6 +11,7 @@ import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
+import { BoughtLine, DeliveryLine } from './CardExtras';
 import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
 import { PLUS_ACCENT, PlusPriceText } from './PlusNote';
 import { PressableLink } from './PressableLink';
@@ -111,6 +112,7 @@ export function ProductCard({
           {rating?.average != null && rating.count ? (
             <Stars average={rating.average} count={rating.count} />
           ) : null}
+          <BoughtLine product={product} />
           <Price
             cents={product.priceFromCents}
             compareAtCents={product.compareAtCents}
@@ -124,6 +126,7 @@ export function ProductCard({
             />
           ) : null}
           {product.deal ? <DealTimer deal={product.deal} /> : null}
+          <DeliveryLine product={product} />
           {!product.inStock ? (
             <Text variant="small" tone="error">
               {tp('soldOut')}

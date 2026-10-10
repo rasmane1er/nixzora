@@ -9,6 +9,7 @@ import {
   SUBSCRIBE_PERCENT,
   SUBSCRIPTION_INTERVALS,
   type Variant,
+  twoDayWindow,
 } from '@nixzora/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -32,6 +33,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoughtTogether } from '@/components/BoughtTogether';
 import { BundleOfferCard } from '@/components/BundleOfferCard';
+import { BoughtLine } from '@/components/CardExtras';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
 import { ProductQuestions } from '@/components/ProductQuestions';
@@ -51,7 +53,7 @@ import { WEB_URL } from '@/lib/config';
 import { useFormatters } from '@/lib/format';
 import { t as translate, useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
-import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
+import { useCartMutation, usePlusMember, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
 import { cardBrand } from '@nixzora/i18n';
 import { useSession } from '@/lib/session';
@@ -305,6 +307,7 @@ export default function ProductScreen() {
   const l = useT('lists');
   const dealLabel = useDealLabel();
   const tpl = useT('plus');
+  const member = usePlusMember();
   // Buy now (p10-05): its own one-item cart, then straight to checkout.
   const w = useT('wallet');
   // 1-click (p10-09): the default saved card and address, when both exist.
@@ -501,6 +504,7 @@ export default function ProductScreen() {
               </Text>
             </View>
 
+            <BoughtLine product={item} />
             {item.deal ? (
               <View style={{ gap: space.xs }}>
                 <View
@@ -631,7 +635,10 @@ export default function ProductScreen() {
             <Text variant="small" tone={stock.tone}>
               {stock.text}
             </Text>
-            <DeliveryPromise window={item.delivery} />
+            <DeliveryPromise
+              window={member && !item.seller ? twoDayWindow(new Date()) : item.delivery}
+              twoDay={member && !item.seller}
+            />
             {item.seller ? null : (
               // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
               <Pressable

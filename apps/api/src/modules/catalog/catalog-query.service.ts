@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   type AdminProductListQuery,
+  boughtStep,
   type CategoryNode,
   deliveryWindow,
   type Facet,
@@ -33,6 +34,9 @@ import {
   toImage,
   toVariant,
 } from './catalog-mappers';
+
+/** Orders that count as bought (paid, whatever happened next, short of a full cancellation). */
+const BOUGHT_STATUSES = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'];
 
 /** Most search hits ranked for one query (the full-text fallback); filters and paging are in SQL. */
 const MAX_CANDIDATES = 2000;
@@ -614,7 +618,8 @@ export class CatalogQueryService {
   private async withRatings<C extends ProductCard>(cards: C[]): Promise<C[]> {
     if (!cards.length) return cards;
     const ids = cards.map((card) => card.id);
-    const [rows, deals] = await Promise.all([
+    const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
+    const [rows, deals, bought] = await Promise.all([
       this.prisma.review.groupBy({
         by: ['productId'],
         where: { productId: { in: ids }, status: 'APPROVED' },
@@ -633,7 +638,18 @@ export class CatalogQueryService {
           audience: true,
         },
       }),
+      // Units in paid orders over the last 30 days (p10-17), for "50+ bought in past month".
+      this.prisma.$queryRaw<{ id: string; units: bigint }[]>`
+        SELECT v.product_id::text AS id, SUM(i.quantity) AS units
+        FROM order_items i
+        JOIN orders o ON o.id = i.order_id
+        JOIN product_variants v ON v.id = i.variant_id
+        WHERE v.product_id = ANY(${ids}::uuid[])
+          AND o.placed_at > now() - interval '30 days'
+          AND o.status::text = ANY(${BOUGHT_STATUSES})
+        GROUP BY v.product_id`,
     ]);
+    const boughtById = new Map(bought.map((row) => [row.id, Number(row.units)]));
     const byId = new Map(rows.map((row) => [row.productId, row]));
     const dealById = new Map(deals.map((deal) => [deal.productId, deal]));
     return cards.map((card) => {
@@ -642,6 +658,8 @@ export class CatalogQueryService {
       const deal = dealById.get(card.id);
       return {
         ...card,
+        boughtPastMonth: boughtStep(boughtById.get(card.id) ?? 0),
+        freeDelivery: card.priceFromCents >= threshold,
         ...(deal
           ? {
               deal: {

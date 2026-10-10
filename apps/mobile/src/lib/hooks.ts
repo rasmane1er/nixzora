@@ -68,3 +68,15 @@ export function useCategories() {
     staleTime: 10 * 60_000,
   });
 }
+
+/** Whether the shopper has NIXZORA Plus benefits now (p10-15); shared with the Plus screen. */
+export function usePlusMember(): boolean {
+  const { status } = useSession();
+  const mine = useQuery({
+    queryKey: ['plus'],
+    queryFn: () => api.account.plus(),
+    enabled: status === 'signedIn',
+    staleTime: 5 * 60_000,
+  });
+  return status === 'signedIn' && Boolean(mine.data?.membership?.active);
+}

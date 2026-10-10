@@ -1,9 +1,10 @@
-import { type ProductCard as Card } from '@nixzora/validation';
-import { INTL_LOCALE } from '@nixzora/i18n';
+import { type ProductCard as Card, twoDayWindow } from '@nixzora/validation';
+import { deliveryDay, INTL_LOCALE, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { adHref } from '@/lib/ads';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
+import { isPlusMember } from '@/lib/plus';
 import { wishedIds } from '@/lib/wishlist';
 import { CardAdd, CardHeart } from './CardActions';
 import { DealTimer } from './DealTimer';
@@ -43,7 +44,7 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, locale, f, wishlist] = await Promise.all([
+  const [t, a, d, pl, locale, f, wishlist, member] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
@@ -51,7 +52,34 @@ export async function ProductCard({
     getLocale(),
     getFormat(),
     wishedIds(),
+    isPlusMember(),
   ]);
+  // "Arrives …" (p10-17): Plus members get NIXZORA's own items in 2 days, free.
+  const twoDay = member && product.shipsFromNixzora === true;
+  const window = product.inStock ? (twoDay ? twoDayWindow(new Date()) : product.delivery) : null;
+  const deliveryText = (() => {
+    if (!window) return null;
+    const day = deliveryDay(window.latest, locale);
+    const when = day.tomorrow
+      ? t('deliveryTomorrow', { date: day.text })
+      : window.earliest === window.latest
+        ? day.text
+        : t('deliveryBy', { date: day.text });
+    const key = twoDay
+      ? 'deliveryPlus'
+      : member || product.freeDelivery
+        ? 'deliveryFree'
+        : 'deliveryPaid';
+    return rich(t(key, { date: `<b>${when}</b>` }), {
+      b: (chunk) => <strong key="when">{chunk}</strong>,
+    });
+  })();
+  const bought =
+    product.boughtPastMonth != null
+      ? new Intl.NumberFormat(INTL_LOCALE[locale], { notation: 'compact' }).format(
+          product.boughtPastMonth,
+        )
+      : null;
   const wished = wishlist.has(product.id);
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
@@ -112,6 +140,9 @@ export async function ProductCard({
             <span className="muted">{t('reviewCount', { count: rating.count })}</span>
           </span>
         ) : null}
+        {bought ? (
+          <span className="card-bought">{t('boughtPastMonth', { count: bought })}</span>
+        ) : null}
         <Price
           cents={product.priceFromCents}
           compareAtCents={product.compareAtCents}
@@ -136,9 +167,15 @@ export async function ProductCard({
             initialNow={renderedAt()}
           />
         ) : null}
-        <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
-          {product.inStock ? t('inStock') : t('soldOut')}
-        </span>
+        {deliveryText ? (
+          <span className="card-delivery">
+            {twoDay ? <span className="plus-chip">{pl('badge')}</span> : null} {deliveryText}
+          </span>
+        ) : (
+          <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
+            {product.inStock ? t('inStock') : t('soldOut')}
+          </span>
+        )}
       </div>
     </>
   );

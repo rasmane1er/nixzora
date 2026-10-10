@@ -7,6 +7,7 @@ import {
   type RelatedProducts,
   type ReviewInsights as Insights,
   type ReviewPage,
+  twoDayWindow,
 } from '@nixzora/validation';
 import { cardBrand, INTL_LOCALE, rich, specLabel as sharedSpecLabel } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
@@ -214,6 +215,15 @@ export default async function ProductPage({ params }: Props) {
                 </span>
               </a>
             ) : null}
+            {product.boughtPastMonth ? (
+              <span className="card-bought">
+                {p('boughtPastMonth', {
+                  count: new Intl.NumberFormat(INTL_LOCALE[locale], {
+                    notation: 'compact',
+                  }).format(product.boughtPastMonth),
+                })}
+              </span>
+            ) : null}
             <Price
               cents={product.priceFromCents}
               compareAtCents={product.compareAtCents}
@@ -256,7 +266,10 @@ export default async function ProductPage({ params }: Props) {
               />
             </div>
           ) : null}
-          <DeliveryPromise window={product.delivery} />
+          <DeliveryPromise
+            window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}
+            twoDay={member && !product.seller}
+          />
           {product.seller ? null : (
             // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
             <p className="plus-note">

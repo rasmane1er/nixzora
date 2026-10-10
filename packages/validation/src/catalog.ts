@@ -271,7 +271,31 @@ export const ProductCardSchema = z.object({
       plusOnly: z.boolean().optional(),
     })
     .optional(),
+  /**
+   * Social proof (p10-17): units bought in the last 30 days, rounded down to a step shoppers
+   * read at a glance (10, 20, 50, 100, 200…). Absent below 10, so slow sellers aren't exposed.
+   */
+  boughtPastMonth: z.number().int().nullable().optional(),
+  /** When it arrives if ordered now, with standard shipping (p10-17). */
+  delivery: z.object({ earliest: z.string(), latest: z.string() }).nullable().optional(),
+  /** Shipping is free at this price (over the free-shipping line). */
+  freeDelivery: z.boolean().optional(),
+  /** NIXZORA ships it: Plus members get it in 2 days (p10-15). */
+  shipsFromNixzora: z.boolean().optional(),
 });
+
+/**
+ * The "50+ bought in past month" step for a unit count (p10-17): null below 10, then the
+ * largest of 10, 20, 50, 100, 200… (1, 2, 5 at each power of ten) not above it.
+ */
+export function boughtStep(units: number): number | null {
+  if (!Number.isFinite(units) || units < 10) return null;
+  let best = 10;
+  for (let power = 10; power <= units; power *= 10) {
+    for (const m of [1, 2, 5]) if (m * power <= units) best = m * power;
+  }
+  return best;
+}
 
 export const VariantSchema = z.object({
   id: z.uuid(),

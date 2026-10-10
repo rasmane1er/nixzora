@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { ROLE_KEYS, RoleGrantSchema } from './admin';
 import {
   BarcodeSchema,
+  boughtStep,
   InventoryAdjustSchema,
   pagedResult,
   isValidGtin,
@@ -73,4 +74,14 @@ test('pagedResult counts pages and keeps one page for an empty list', () => {
 test('role keys and the role grant schema agree', () => {
   for (const roleKey of ROLE_KEYS) assert.ok(RoleGrantSchema.safeParse({ roleKey }).success);
   assert.equal(RoleGrantSchema.safeParse({ roleKey: 'owner' }).success, false);
+});
+
+test('bought-in-past-month steps hide small counts and round down', () => {
+  assert.equal(boughtStep(9), null);
+  assert.equal(boughtStep(10), 10);
+  assert.equal(boughtStep(19), 10);
+  assert.equal(boughtStep(57), 50);
+  assert.equal(boughtStep(199), 100);
+  assert.equal(boughtStep(4_999), 2_000);
+  assert.equal(boughtStep(12_000), 10_000);
 });
