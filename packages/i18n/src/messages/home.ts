@@ -32,7 +32,7 @@ export const home = defineMessages({
     deliveryTitle: 'Fast, tracked delivery',
     deliveryBody: 'Free over $99 · 30-day returns',
     heroImageAlt:
-      'Headphones, sneakers, a laptop, a phone, a smartwatch, a hoodie, a backpack, a water bottle, skincare, sunglasses, a wallet, earbuds, a speaker and a yoga mat on a wooden table, with the words “Everything you need in one place. Shop smarter. Live better.”',
+      'Headphones, sneakers, a laptop, a phone, a smartwatch, a hoodie, a backpack, a water bottle, skincare, sunglasses, a wallet, earbuds, a speaker and a yoga mat on a wooden table, each with the NIXZORA logo, and the words “Everything you need in one place. Shop smarter. Live better.”',
   },
   fr: {
     eyebrow: 'Le commerce porté par l’IA',
@@ -66,7 +66,7 @@ export const home = defineMessages({
     deliveryTitle: 'Livraison rapide et suivie',
     deliveryBody: 'Offerte dès 99 $ · retours sous 30 jours',
     heroImageAlt:
-      'Un casque, des baskets, un ordinateur portable, un téléphone, une montre connectée, un sweat, un sac à dos, une gourde, des soins, des lunettes de soleil, un portefeuille, des écouteurs, une enceinte et un tapis de yoga sur une table en bois, avec les mots « Everything you need in one place. Shop smarter. Live better. »',
+      'Un casque, des baskets, un ordinateur portable, un téléphone, une montre connectée, un sweat, un sac à dos, une gourde, des soins, des lunettes de soleil, un portefeuille, des écouteurs, une enceinte et un tapis de yoga sur une table en bois, chacun avec le logo NIXZORA, et les mots « Everything you need in one place. Shop smarter. Live better. »',
   },
   es: {
     eyebrow: 'Comercio impulsado por IA',
@@ -100,6 +100,6 @@ export const home = defineMessages({
     deliveryTitle: 'Envío rápido y con rastreo',
     deliveryBody: 'Gratis desde $99 · devoluciones en 30 días',
     heroImageAlt:
-      'Audífonos, tenis, una laptop, un teléfono, un reloj inteligente, una sudadera, una mochila, una botella, productos de cuidado de la piel, lentes de sol, una cartera, auriculares, una bocina y un tapete de yoga sobre una mesa de madera, con las palabras «Everything you need in one place. Shop smarter. Live better.»',
+      'Audífonos, tenis, una laptop, un teléfono, un reloj inteligente, una sudadera, una mochila, una botella, productos de cuidado de la piel, lentes de sol, una cartera, auriculares, una bocina y un tapete de yoga sobre una mesa de madera, cada uno con el logo de NIXZORA, y las palabras «Everything you need in one place. Shop smarter. Live better.»',
   },
 });
