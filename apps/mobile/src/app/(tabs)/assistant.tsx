@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BoughtLine, DeliveryLine } from '@/components/CardExtras';
 import { Price } from '@/components/Price';
 import { Banner, Button, Card, Row, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -173,6 +174,8 @@ function Answer({
                 cents={pick.product.priceFromCents}
                 compareAtCents={pick.product.compareAtCents}
               />
+              <BoughtLine product={pick.product} />
+              <DeliveryLine product={pick.product} />
               <Text variant="small" muted numberOfLines={2}>
                 {pick.reason}
               </Text>

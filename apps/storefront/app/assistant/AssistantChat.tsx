@@ -5,6 +5,7 @@ import { INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { CardSignals } from '@/components/CardSignals';
 import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../cart/actions';
 import { askAssistant } from './actions';
@@ -139,6 +140,7 @@ function Answer({
                   locale={INTL_LOCALE[locale]}
                   wasLabel={p('was')}
                 />
+                <CardSignals product={pick.product} />
                 <p className="pick__reason">{pick.reason}</p>
                 {pick.matched.length ? (
                   <ul className="pick__matched" aria-label={t('matches')}>
