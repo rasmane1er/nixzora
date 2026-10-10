@@ -285,6 +285,8 @@ export const VariantSchema = z.object({
 });
 
 export const ProductDetailSchema = ProductCardSchema.extend({
+  /** Subscribe & Save is offered on this product (p10-11). */
+  subscribable: z.boolean().optional(),
   rating: z
     .object({ average: z.number().nullable(), count: z.number().int() })
     .default({ average: null, count: 0 }),

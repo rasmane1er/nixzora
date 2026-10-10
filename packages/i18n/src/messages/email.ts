@@ -146,6 +146,20 @@ export const email = defineMessages({
     giftCard_subject: '{sender} sent you a {amount} NIXZORA gift card',
     giftCard_text:
       'Hi {recipient},\n\n{sender} sent you a NIXZORA gift card worth {amount}.\n{message}\nYour code: {code}\n\nTo use it, sign in and add the code under Your account › Gift cards: {link}\nThe balance is spent first at checkout. It never expires and has no fees.\n\nKeep this code private: anyone who has it can add the money to their account.\n',
+    sub_failed_subject: 'We couldn’t charge your Subscribe & Save delivery',
+    sub_failed_text:
+      'Hi,\n\nWe couldn’t charge your card for Subscribe & Save order {number} ({items}).\n{problem}\n\nPay for it here to send it on its way: {payLink}\nOr choose another card for your subscriptions: {subsLink}\n',
+    sub_created_subject: 'You subscribed to {item}',
+    sub_created_text:
+      'You subscribed to {item}: {quantity} every {interval}, at {percent} off (10% when 3 or more subscriptions arrive together).\n\nWe charge {card} for each delivery until you cancel. Your next one is planned for {date}.\n\nChange, skip or cancel any time: {subsLink}\n',
+    sub_paused_subject: 'Your Subscribe & Save deliveries are paused',
+    sub_paused_text:
+      'After {count} declined charges in a row we paused: {items}.\n\nUpdate your card and resume them here: {subsLink}\n',
+    sub_skipped_subject: 'Your Subscribe & Save delivery was skipped',
+    sub_skipped_text:
+      'We couldn’t order {items} today: {reason}\nThe next delivery is planned for {date}.\n\nManage your subscriptions: {subsLink}\n',
+    push_subFailed_title: 'Payment needed',
+    push_subFailed_body: 'Your Subscribe & Save order {number} couldn’t be charged.',
     giftCard_sent_subject: 'Your gift card for {recipient} is on its way',
     giftCard_sent_text:
       'We emailed your {amount} NIXZORA gift card to {recipient} ({email}).\n\nOrder {number}: {orderLink}\n',
@@ -293,6 +307,20 @@ export const email = defineMessages({
     giftCard_subject: '{sender} vous offre une carte cadeau NIXZORA de {amount}',
     giftCard_text:
       'Bonjour {recipient},\n\n{sender} vous offre une carte cadeau NIXZORA d’une valeur de {amount}.\n{message}\nVotre code : {code}\n\nPour l’utiliser, connectez-vous et ajoutez le code dans Votre compte › Cartes cadeaux : {link}\nLe solde est utilisé en premier au paiement. Il n’expire jamais et n’a aucun frais.\n\nGardez ce code pour vous : toute personne qui le possède peut ajouter cet argent à son compte.\n',
+    sub_failed_subject: 'Nous n’avons pas pu débiter votre livraison Abonnez-vous et économisez',
+    sub_failed_text:
+      'Bonjour,\n\nNous n’avons pas pu débiter votre carte pour la commande Abonnez-vous et économisez {number} ({items}).\n{problem}\n\nPayez-la ici pour qu’elle parte : {payLink}\nOu choisissez une autre carte pour vos abonnements : {subsLink}\n',
+    sub_created_subject: 'Vous êtes abonné à {item}',
+    sub_created_text:
+      'Vous êtes abonné à {item} : {quantity} tous les {interval}, avec {percent} de réduction (10 % quand 3 abonnements ou plus arrivent ensemble).\n\nNous débitons {card} à chaque livraison jusqu’à ce que vous annuliez. La prochaine est prévue le {date}.\n\nModifiez, sautez ou annulez à tout moment : {subsLink}\n',
+    sub_paused_subject: 'Vos livraisons Abonnez-vous et économisez sont en pause',
+    sub_paused_text:
+      'Après {count} refus de paiement d’affilée, nous avons mis en pause : {items}.\n\nMettez à jour votre carte et relancez-les ici : {subsLink}\n',
+    sub_skipped_subject: 'Votre livraison Abonnez-vous et économisez a été sautée',
+    sub_skipped_text:
+      'Nous n’avons pas pu commander {items} aujourd’hui : {reason}\nLa prochaine livraison est prévue le {date}.\n\nGérez vos abonnements : {subsLink}\n',
+    push_subFailed_title: 'Paiement nécessaire',
+    push_subFailed_body: 'Votre commande d’abonnement {number} n’a pas pu être débitée.',
     giftCard_sent_subject: 'Votre carte cadeau pour {recipient} est en route',
     giftCard_sent_text:
       'Nous avons envoyé votre carte cadeau NIXZORA de {amount} à {recipient} ({email}).\n\nCommande {number} : {orderLink}\n',
@@ -437,6 +465,20 @@ export const email = defineMessages({
     giftCard_subject: '{sender} te envió una tarjeta de regalo NIXZORA de {amount}',
     giftCard_text:
       'Hola {recipient}:\n\n{sender} te envió una tarjeta de regalo NIXZORA por {amount}.\n{message}\nTu código: {code}\n\nPara usarla, inicia sesión y agrega el código en Tu cuenta › Tarjetas de regalo: {link}\nEl saldo se usa primero al pagar. Nunca vence y no tiene cargos.\n\nNo compartas este código: cualquiera que lo tenga puede agregar el dinero a su cuenta.\n',
+    sub_failed_subject: 'No pudimos cobrar tu entrega de Suscríbete y ahorra',
+    sub_failed_text:
+      'Hola:\n\nNo pudimos cobrar tu tarjeta para el pedido de Suscríbete y ahorra {number} ({items}).\n{problem}\n\nPágalo aquí para que salga: {payLink}\nO elige otra tarjeta para tus suscripciones: {subsLink}\n',
+    sub_created_subject: 'Te suscribiste a {item}',
+    sub_created_text:
+      'Te suscribiste a {item}: {quantity} cada {interval}, con {percent} de descuento (10 % cuando llegan juntas 3 suscripciones o más).\n\nCobramos a {card} en cada entrega hasta que canceles. La próxima está prevista para el {date}.\n\nCambia, salta o cancela cuando quieras: {subsLink}\n',
+    sub_paused_subject: 'Tus entregas de Suscríbete y ahorra están en pausa',
+    sub_paused_text:
+      'Después de {count} cobros rechazados seguidos pausamos: {items}.\n\nActualiza tu tarjeta y reanúdalas aquí: {subsLink}\n',
+    sub_skipped_subject: 'Se saltó tu entrega de Suscríbete y ahorra',
+    sub_skipped_text:
+      'Hoy no pudimos pedir {items}: {reason}\nLa próxima entrega está prevista para el {date}.\n\nAdministra tus suscripciones: {subsLink}\n',
+    push_subFailed_title: 'Pago pendiente',
+    push_subFailed_body: 'No pudimos cobrar tu pedido de suscripción {number}.',
     giftCard_sent_subject: 'Tu tarjeta de regalo para {recipient} va en camino',
     giftCard_sent_text:
       'Enviamos tu tarjeta de regalo NIXZORA de {amount} a {recipient} ({email}).\n\nPedido {number}: {orderLink}\n',

@@ -56,15 +56,23 @@ export class CartService {
    * (or empties) everything else in the shopper's cart. The id is a secret, like a guest cart's.
    */
   async buyNow(variantId: string, quantity: number): Promise<Cart> {
-    await this.assertSellable(variantId);
+    return this.buyNowMany([{ variantId, quantity }]);
+  }
+
+  /** A Buy now cart with several lines (a Subscribe & Save delivery, p10-11). */
+  async buyNowMany(lines: { variantId: string; quantity: number }[]): Promise<Cart> {
+    for (const line of lines) await this.assertSellable(line.variantId);
     const owner = { buyNowId: CartService.newGuestId() };
     const key = this.key(owner);
+    const fields: Record<string, number> = {};
+    for (const line of lines) {
+      fields[line.variantId] = Math.min(
+        MAX_QUANTITY,
+        (fields[line.variantId] ?? 0) + line.quantity,
+      );
+    }
     await this.run(() =>
-      this.redis.client
-        .multi()
-        .hset(key, variantId, Math.min(MAX_QUANTITY, quantity))
-        .expire(key, BUY_NOW_TTL_SECONDS)
-        .exec(),
+      this.redis.client.multi().hset(key, fields).expire(key, BUY_NOW_TTL_SECONDS).exec(),
     );
     return this.view(owner);
   }

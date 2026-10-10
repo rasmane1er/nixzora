@@ -99,5 +99,6 @@ export function toListingRow(
     status: product.status,
     reviewNote: product.reviewNote,
     updatedAt: product.updatedAt.toISOString(),
+    subscribable: product.subscribable,
   };
 }

@@ -371,3 +371,16 @@ export async function deletePhoto(productId: string, imageId: string): Promise<R
     return await failure(error);
   }
 }
+
+/** Subscribe & Save on one listing (p10-11): the store funds the discount. */
+export async function setSubscribable(form: FormData): Promise<void> {
+  const id = String(form.get('productId') ?? '');
+  const allowed = form.get('allowed') === 'true';
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  try {
+    await api(`/seller/products/${id}/subscribable`, { method: 'POST', body: { allowed } });
+  } catch (error) {
+    redirect(`/sell/listings?error=${encodeURIComponent(errorMessage(error))}`);
+  }
+  revalidatePath('/sell/listings');
+}

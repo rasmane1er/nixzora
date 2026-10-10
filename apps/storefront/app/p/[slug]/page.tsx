@@ -224,6 +224,7 @@ export default async function ProductPage({ params }: Props) {
           <AddToCart
             variants={product.variants}
             slug={product.slug}
+            subscribe={product.subscribable ? { signedIn, ready: Boolean(oneClick) } : null}
             oneClick={
               oneClick
                 ? {

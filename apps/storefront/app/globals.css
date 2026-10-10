@@ -4286,3 +4286,53 @@ td.neg {
 .gift-lines .pill {
   margin-left: 6px;
 }
+
+/* ───────────── Subscribe & Save (p10-11) ───────────── */
+.subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.subs__item {
+  display: grid;
+  gap: 14px;
+}
+.subs__head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.subs__head img {
+  border-radius: 10px;
+  object-fit: cover;
+  flex: none;
+}
+.subs__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.subs__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.subscribe-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.subscribe-box__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.subscribe-box .muted {
+  font-size: 13px;
+}

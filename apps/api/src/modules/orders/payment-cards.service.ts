@@ -127,15 +127,18 @@ export class PaymentCardsService {
       .detachCard(card.providerMethodId)
       .catch((error: Error) => this.logger.warn(`Detaching a card failed: ${error.message}`));
     await this.prisma.paymentCard.delete({ where: { id } });
-    if (card.isDefault) {
-      const next = await this.prisma.paymentCard.findFirst({
-        where: { userId, provider: this.gateway.name },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (next) {
-        await this.prisma.paymentCard.update({ where: { id: next.id }, data: { isDefault: true } });
-      }
+    const next = await this.prisma.paymentCard.findFirst({
+      where: { userId, provider: this.gateway.name },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+    if (card.isDefault && next) {
+      await this.prisma.paymentCard.update({ where: { id: next.id }, data: { isDefault: true } });
     }
+    // Subscribe & Save (p10-11) moves to the default card, or pauses when none is left.
+    await this.prisma.subscription.updateMany({
+      where: { userId, paymentCardId: id, status: { not: 'CANCELLED' } },
+      data: next ? { paymentCardId: next.id } : { status: 'PAUSED', paymentCardId: null },
+    });
     await this.audit.record({
       action: 'payments.card.removed',
       actorId: userId,

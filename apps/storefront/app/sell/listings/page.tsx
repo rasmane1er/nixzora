@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { departmentName, getFormat, getT } from '@/lib/i18n';
 import { param, query, type SearchParams } from '@/lib/params';
 import { requireSeller } from '@/lib/sell';
+import { setSubscribable } from '../actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT('sellerTools');
@@ -27,6 +28,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
   const result = await api<PagedResult<SellerProductRow>>(
     `/seller/products${query({ status, page })}`,
   );
+  const sb = await getT('subscribe');
   const [t, f, categoryNames] = await Promise.all([
     getT('sellerTools'),
     getFormat(),
@@ -76,6 +78,9 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                   <th>{t('colStatus')}</th>
                   <th className="num">{t('colPrice')}</th>
                   <th className="num">{t('colStock')}</th>
+                  <th>
+                    <span title={sb('sellerToggleHint')}>{sb('sellerToggle')}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -109,6 +114,22 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                     </td>
                     <td className="num">{f.money(row.priceFromCents, row.currency)}</td>
                     <td className="num">{row.inStock ? t('inStock') : t('outOfStock')}</td>
+                    <td>
+                      <form action={setSubscribable} className="inline-toggle">
+                        <input type="hidden" name="productId" value={row.id} />
+                        <input
+                          type="hidden"
+                          name="allowed"
+                          value={row.subscribable ? 'false' : 'true'}
+                        />
+                        <span className="muted" style={{ fontSize: 13 }}>
+                          {row.subscribable ? sb('sellerOn') : sb('sellerOff')}
+                        </span>{' '}
+                        <button className="btn btn--link" type="submit">
+                          {row.subscribable ? sb('sellerTurnOff') : sb('sellerTurnOn')}
+                        </button>
+                      </form>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -124,6 +124,8 @@ export const SellerProductRowSchema = ProductCardSchema.extend({
   status: ProductStatusSchema,
   reviewNote: z.string().nullable(),
   updatedAt: z.iso.datetime(),
+  /** Subscribe & Save is offered on this listing (p10-11). */
+  subscribable: z.boolean().optional(),
 });
 
 // ───────────── Bulk listing import (p7-03) ─────────────

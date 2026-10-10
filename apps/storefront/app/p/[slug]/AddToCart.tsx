@@ -1,23 +1,35 @@
 'use client';
 
 import { optionLabel } from '@nixzora/i18n';
-import { optionAxes, optionState, pickVariant, type Variant } from '@nixzora/validation';
+import {
+  optionAxes,
+  optionState,
+  pickVariant,
+  SUBSCRIBE_BULK_PERCENT,
+  SUBSCRIBE_PERCENT,
+  SUBSCRIPTION_INTERVALS,
+  type Variant,
+} from '@nixzora/validation';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../../cart/actions';
 import { buyNow, oneClickBuy } from '../../checkout/actions';
+import { subscribeTo } from '../../account/subscriptions/actions';
 
 /** Variant picker + quantity + add to cart. Prices shown here are display only; the server re-prices. */
 export function AddToCart({
   variants,
   slug,
   oneClick,
+  subscribe,
 }: {
   variants: Variant[];
   slug: string;
   /** 1-click is set up (p10-09): what it will use, for the note under the button. */
   oneClick?: { shipTo: string; card: string } | null;
+  /** Subscribe & Save is offered (p10-11); `ready` when a saved card and address exist. */
+  subscribe?: { signedIn: boolean; ready: boolean } | null;
 }) {
   const buyable = variants.filter((variant) => variant.isActive);
   const firstInStock = buyable.find((variant) => variant.available > 0) ?? buyable[0];
@@ -33,6 +45,9 @@ export function AddToCart({
   const [buying, startBuying] = useTransition();
   const l = useT('lists');
   const w = useT('wallet');
+  const sub = useT('subscribe');
+  const [interval, setInterval_] = useState(30);
+  const [subscribing, startSubscribing] = useTransition();
   const selected = useMemo(() => buyable.find((v) => v.id === selectedId), [buyable, selectedId]);
 
   if (!selected) return <p className="banner banner--info">{t('unavailable')}</p>;
@@ -52,6 +67,15 @@ export function AddToCart({
       setStatus(
         result.ok ? { kind: 'ok', text: t('addedToCart') } : { kind: 'error', text: result.error },
       );
+    });
+  }
+
+  function subscribeNow() {
+    if (!selected) return;
+    setStatus(null);
+    startSubscribing(async () => {
+      const result = await subscribeTo(selected.id, quantity, interval, slug);
+      setStatus({ kind: 'error', text: result.error });
     });
   }
 
@@ -186,6 +210,51 @@ export function AddToCart({
             {buying ? l('buyingNow') : l('buyNow')}
           </button>
         )
+      ) : null}
+      {subscribe && max > 0 ? (
+        <div className="subscribe-box">
+          <strong>{sub('subscribeSave', { percent: f.percent(SUBSCRIBE_PERCENT / 100) })}</strong>
+          <span className="muted">
+            {sub('bulkHint', { percent: f.percent(SUBSCRIBE_BULK_PERCENT / 100) })}
+          </span>
+          {!subscribe.signedIn ? (
+            <Link href={`/account/login?next=/p/${slug}`}>{sub('signIn')}</Link>
+          ) : !subscribe.ready ? (
+            <span className="muted">{sub('needsSetup')}</span>
+          ) : (
+            <div className="subscribe-box__row">
+              <label>
+                {sub('every')}
+                <select value={interval} onChange={(e) => setInterval_(Number(e.target.value))}>
+                  {SUBSCRIPTION_INTERVALS.map((days) => (
+                    <option key={days} value={days}>
+                      {sub(`interval_${days}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="btn btn--secondary"
+                type="button"
+                onClick={subscribeNow}
+                disabled={subscribing || buying || pending}
+              >
+                {subscribing
+                  ? sub('subscribing')
+                  : sub('subscribe', {
+                      price: f.money(
+                        Math.round((selected.priceCents * (100 - SUBSCRIBE_PERCENT)) / 100) *
+                          quantity,
+                        selected.currency,
+                      ),
+                    })}
+              </button>
+              <span className="muted" style={{ flexBasis: '100%' }}>
+                {sub('autoRenew')}
+              </span>
+            </div>
+          )}
+        </div>
       ) : null}
       <span
         className={`stock${selected.available === 0 ? ' stock--out' : selected.available <= 5 ? ' stock--low' : ''}`}

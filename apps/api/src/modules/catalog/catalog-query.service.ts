@@ -249,6 +249,8 @@ export class CatalogQueryService {
     const inStock = detail.variants.some((v) => v.isActive && v.available > 0);
     return {
       ...detail,
+      // Subscribe & Save (p10-11): NIXZORA's own products, and listings whose store allows it.
+      subscribable: product.sellerId === null || product.subscribable,
       delivery: inStock
         ? deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS)
         : null,

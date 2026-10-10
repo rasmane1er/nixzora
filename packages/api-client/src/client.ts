@@ -1,4 +1,7 @@
 import type {
+  SubscribeResult,
+  SubscriptionUpdate,
+  SubscriptionView,
   GiftBalanceView,
   PaymentCardView,
   DealListQuery,
@@ -506,6 +509,13 @@ export function createApiClient(options: ClientOptions) {
         request<PaymentCardView[]>('POST', `/me/payment-cards/${enc(id)}/default`),
       removeCard: (id: string) =>
         request<PaymentCardView[]>('DELETE', `/me/payment-cards/${enc(id)}`),
+      /** Subscribe & Save (p10-11). Subscribing orders the first delivery at once. */
+      subscriptions: () => request<SubscriptionView[]>('GET', '/me/subscriptions'),
+      subscribe: (body: { variantId: string; quantity: number; intervalDays: number }) =>
+        request<SubscribeResult>('POST', '/me/subscriptions', { body }),
+      updateSubscription: (id: string, body: SubscriptionUpdate) =>
+        request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
+      cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
       /** Gift card balance (p10-10): what's left, and what was added and spent. */
       giftBalance: () => request<GiftBalanceView>('GET', '/me/gift-cards'),
       redeemGiftCard: (code: string) =>

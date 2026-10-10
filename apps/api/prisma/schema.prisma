@@ -79,6 +79,7 @@ model User {
   lists              ShoppingList[]
   paymentCards       PaymentCard[]
   giftEntries        GiftBalanceEntry[]
+  subscriptions      Subscription[]
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -320,21 +321,24 @@ model Brand {
 }
 
 model Product {
-  id          String        @id @default(uuid(7)) @db.Uuid
-  slug        String        @unique
-  title       String
-  description String
-  status      ProductStatus @default(DRAFT)
-  categoryId  String        @map("category_id") @db.Uuid
-  brandId     String?       @map("brand_id") @db.Uuid
+  id           String        @id @default(uuid(7)) @db.Uuid
+  slug         String        @unique
+  title        String
+  description  String
+  status       ProductStatus @default(DRAFT)
+  categoryId   String        @map("category_id") @db.Uuid
+  brandId      String?       @map("brand_id") @db.Uuid
   /// Normalized specs, e.g. {"ram_gb": 32, "storage_gb": 1024, "battery_hours": 18}
-  attributes  Json          @default("{}")
+  attributes   Json          @default("{}")
   /// Marketplace seller; null means NIXZORA sells it (first party).
-  sellerId    String?       @map("seller_id") @db.Uuid
+  sellerId     String?       @map("seller_id") @db.Uuid
   /// Why staff sent a seller's listing back, shown to the seller.
-  reviewNote  String?       @map("review_note")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  reviewNote   String?       @map("review_note")
+  /// A store lets customers Subscribe & Save on this listing and funds the discount (p10-11).
+  /// NIXZORA's own products always qualify.
+  subscribable Boolean       @default(false)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   seller        Seller?             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   category      Category            @relation(fields: [categoryId], references: [id])
@@ -349,6 +353,7 @@ model Product {
   alerts        ProductAlert[]
   deals         Deal[]
   listItems     ShoppingListItem[]
+  subscriptions Subscription[]
   reviewInsight ReviewInsight?
   searchDoc     ProductSearchDoc?
 
@@ -507,6 +512,8 @@ model OrderItem {
   totalCents     Int     @map("total_cents")
   /// Marketplace seller of this line at the time of purchase; null for NIXZORA's own items.
   sellerId       String? @map("seller_id") @db.Uuid
+  /// The Subscribe & Save subscription that ordered this line (p10-11).
+  subscriptionId String? @map("subscription_id") @db.Uuid
 
   order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
@@ -580,6 +587,41 @@ model GiftCard {
   @@index([orderId])
   @@index([recipientEmail])
   @@map("gift_cards")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+/// Subscribe & Save (p10-11): one product, delivered every few weeks, charged to a saved card
+/// at a discount. Deliveries due the same day go out as one order.
+model Subscription {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  userId          String             @map("user_id") @db.Uuid
+  productId       String             @map("product_id") @db.Uuid
+  variantId       String             @map("variant_id") @db.Uuid
+  quantity        Int
+  intervalDays    Int                @map("interval_days")
+  nextOrderAt     DateTime           @map("next_order_at")
+  status          SubscriptionStatus @default(ACTIVE)
+  /// Where deliveries go (a snapshot, changed from the subscriptions page).
+  shippingAddress Json               @map("shipping_address")
+  /// The saved card charged (p10-09); deliveries pause if it is removed.
+  paymentCardId   String?            @map("payment_card_id") @db.Uuid
+  /// Charges that failed in a row; three pause the subscription.
+  failures        Int                @default(0)
+  lastOrderId     String?            @map("last_order_id") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextOrderAt])
+  @@index([userId])
+  @@map("subscriptions")
 }
 
 /// The gift card balance ledger (p10-10): the balance is the sum of a customer's entries.

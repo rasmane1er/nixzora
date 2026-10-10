@@ -34,6 +34,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../audit/audit.service';
 import { type CartOwner, CartService } from '../cart/cart.service';
+import { PricingService } from '../cart/pricing.service';
 import { giftBalance, releaseGiftBalance, spendGiftBalance } from './gift-ledger';
 import { PaymentCardsService } from './payment-cards.service';
 import { type AuthUser } from '../identity/auth-user';
@@ -75,6 +76,15 @@ const SWEEP_MS = 10 * 60_000;
  * provider's signed webhook says so; the same transaction takes the units out of stock and
  * writes an outbox event (receipt email). Duplicate webhooks are ignored.
  */
+/** A Subscribe & Save delivery (p10-11), placed by the subscriptions sweep. */
+export type SubscriptionCheckout = {
+  percentOff: number;
+  /** variantId → the subscription it is for, recorded on each order line. */
+  byVariant: Map<string, string>;
+  /** Charged while the customer is away (every delivery after the first). */
+  offSession: boolean;
+};
+
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OrdersService.name);
@@ -91,6 +101,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     private readonly refunds: RefundsService,
     private readonly risk: RiskService,
     private readonly cards: PaymentCardsService,
+    private readonly pricing: PricingService,
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGateway,
   ) {}
 
@@ -119,6 +130,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     user: AuthUser | undefined,
     meta: RequestMeta,
     locale: Locale = DEFAULT_LOCALE,
+    /** Subscribe & Save deliveries (p10-11): never from the public API. */
+    subscription?: SubscriptionCheckout,
   ): Promise<CheckoutResponse> {
     if (user && !user.permissions.includes('orders.create')) {
       throw new ConflictException('This account cannot place orders.');
@@ -132,7 +145,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           : null;
     if (!owner) throw new BadRequestException('Your cart is empty.');
 
-    const cart = await this.carts.view(owner, input.shippingAddress.region);
+    const cart = this.subscribed(
+      await this.carts.view(owner, input.shippingAddress.region),
+      subscription,
+      input.shippingAddress.region,
+    );
     if (!cart.lines.length) throw new BadRequestException('Your cart is empty.');
     const problems = cart.lines.filter((line) => line.problem);
     if (problems.length) {
@@ -208,6 +225,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         cart.coupon && !cart.coupon.problem ? cart.coupon.code : null,
         locale,
         assessment,
+        subscription?.byVariant,
       );
     } catch (error) {
       await this.inventory.release(holds);
@@ -222,7 +240,32 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       meta,
       saveAddress: user && input.saveAddress ? input.shippingAddress : null,
       totals: cart.totals,
+      offSession: subscription?.offSession ?? false,
     });
+  }
+
+  /**
+   * Subscribe & Save prices (p10-11): every line at the delivery's discount, rounded to the cent;
+   * shipping and tax recomputed on the lower total. The store selling it funds the discount
+   * (its earnings come from the line totals).
+   */
+  private subscribed(
+    cart: Awaited<ReturnType<CartService['view']>>,
+    subscription: SubscriptionCheckout | undefined,
+    region: string,
+  ): Awaited<ReturnType<CartService['view']>> {
+    if (!subscription) return cart;
+    const lines = cart.lines.map((line) => {
+      const unit = Math.round((line.unitPriceCents * (100 - subscription.percentOff)) / 100);
+      return {
+        ...line,
+        compareAtCents: line.unitPriceCents,
+        unitPriceCents: unit,
+        lineTotalCents: unit * line.quantity,
+      };
+    });
+    const subtotal = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+    return { ...cart, lines, coupon: null, totals: this.pricing.totals(subtotal, region) };
   }
 
   /**
@@ -241,6 +284,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       meta: RequestMeta;
       saveAddress?: CheckoutRequest['shippingAddress'] | null;
       totals: Totals;
+      /** The customer is not there (Subscribe & Save): no 3-D Secure possible. */
+      offSession?: boolean;
     },
   ): Promise<CheckoutResponse> {
     const { card, saveCard } = options;
@@ -281,6 +326,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           customerId,
           saveCard,
           paymentMethodId: card?.providerMethodId ?? null,
+          offSession: options.offSession ?? false,
         });
         await this.prisma.payment.create({
           data: {
@@ -413,6 +459,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     couponCode: string | null,
     language: Locale,
     assessment: CheckoutAssessment | null,
+    subscriptionByVariant?: Map<string, string>,
   ): Promise<OrderRow> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -462,6 +509,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                   quantity: line.quantity,
                   totalCents: line.lineTotalCents,
                   sellerId: owners.get(line.productId) ?? null,
+                  subscriptionId: subscriptionByVariant?.get(line.variantId) ?? null,
                 })),
               },
             },

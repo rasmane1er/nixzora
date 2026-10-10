@@ -5,6 +5,9 @@ import {
   optionState,
   pickVariant,
   type ProductDetail,
+  SUBSCRIBE_BULK_PERCENT,
+  SUBSCRIBE_PERCENT,
+  SUBSCRIPTION_INTERVALS,
   type Variant,
 } from '@nixzora/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -31,6 +34,7 @@ import { BoughtTogether } from '@/components/BoughtTogether';
 import { DeliveryPromise } from '@/components/Delivery';
 import { ProductQuestions } from '@/components/ProductQuestions';
 import { AddToListButton } from '@/components/AddToListButton';
+import { Chips } from '@/components/Chips';
 import { DealTimer, DEAL_RED, useDealLabel } from '@/components/DealTimer';
 import { StockAlertButton } from '@/components/StockAlertButton';
 import { Price } from '@/components/Price';
@@ -239,7 +243,7 @@ export default function ProductScreen() {
   const tp = useT('productPage');
   const tc = useT('common');
   const ta = useT('ads');
-  const { attributeLabel, optionName, rating } = useFormatters();
+  const { attributeLabel, optionName, rating, percent, money } = useFormatters();
   const layout = useLayout();
   // Side by side, the photos take a bit over half of the page (up to 760pt).
   const galleryWidth = layout.wide
@@ -335,6 +339,22 @@ export default function ProductScreen() {
         pathname: '/orders/[number]',
         params: { number: response.orderNumber, token: response.accessToken, placed: '1' },
       });
+    },
+  });
+  const ts = useT('subscribe');
+  const [subInterval, setSubInterval] = useState<string>('30');
+  // Subscribe & Save (p10-11): the first delivery is ordered at once, on the saved card.
+  const subscribeNow = useMutation({
+    mutationFn: ({ variantId, qty }: { variantId: string; qty: number }) =>
+      api.account.subscribe({ variantId, quantity: qty, intervalDays: Number(subInterval) }),
+    onSuccess: (result) => {
+      const order = result.order;
+      if (order?.paid) {
+        router.push({
+          pathname: '/orders/[number]',
+          params: { number: order.orderNumber, token: order.accessToken, placed: '1' },
+        });
+      }
     },
   });
   const buyNow = useMutation({
@@ -638,6 +658,62 @@ export default function ProductScreen() {
                 loading={buyNow.isPending}
                 onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
               />
+            ) : null}
+            {item.subscribable && canBuy ? (
+              <Card style={{ gap: space.sm }}>
+                <Text style={{ fontFamily: fonts.bodyBold }}>
+                  {ts('subscribeSave', { percent: percent(SUBSCRIBE_PERCENT / 100) })}
+                </Text>
+                <Text variant="small" muted>
+                  {ts('bulkHint', { percent: percent(SUBSCRIBE_BULK_PERCENT / 100) })}
+                </Text>
+                {status !== 'signedIn' ? (
+                  <Button
+                    title={ts('signIn')}
+                    tone="ghost"
+                    onPress={() => router.push('/sign-in')}
+                  />
+                ) : !oneClickCard || !oneClickAddress ? (
+                  <Text variant="small" muted>
+                    {ts('needsSetup')}
+                  </Text>
+                ) : (
+                  <>
+                    <Text variant="small">{ts('every')}</Text>
+                    <Chips<string>
+                      value={subInterval}
+                      onChange={setSubInterval}
+                      options={SUBSCRIPTION_INTERVALS.map((days) => ({
+                        value: String(days),
+                        label: ts(`interval_${days}`),
+                      }))}
+                    />
+                    <Button
+                      title={ts('subscribe', {
+                        price: money(
+                          Math.round((variant.priceCents * (100 - SUBSCRIBE_PERCENT)) / 100) *
+                            quantity,
+                          variant.currency,
+                        ),
+                      })}
+                      tone="secondary"
+                      loading={subscribeNow.isPending}
+                      onPress={() => subscribeNow.mutate({ variantId: variant.id, qty: quantity })}
+                    />
+                    <Text variant="small" muted>
+                      {ts('autoRenew')}
+                    </Text>
+                  </>
+                )}
+                {subscribeNow.error ? (
+                  <Banner tone="error">{errorMessage(subscribeNow.error)}</Banner>
+                ) : null}
+                {subscribeNow.data?.order && !subscribeNow.data.order.paid ? (
+                  <Banner tone="warn">
+                    {subscribeNow.data.order.paymentProblem ?? ts('firstNeedsPayment')}
+                  </Banner>
+                ) : null}
+              </Card>
             ) : null}
             <AddToListButton productId={item.id} />
             {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
