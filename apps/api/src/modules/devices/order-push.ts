@@ -75,9 +75,9 @@ export class OrderPush implements OnModuleInit {
   ): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { number: true, userId: true, user: { select: { language: true } } },
+      select: { number: true, userId: true, kind: true, user: { select: { language: true } } },
     });
-    if (!order?.userId) return;
+    if (!order?.userId || order.kind === 'PLUS') return;
     const locale = toLocale(order.user?.language);
     await this.push.sendToUser(order.userId, {
       ...copy(translator(locale)('email'), formatters(locale).money, order.number, payload),

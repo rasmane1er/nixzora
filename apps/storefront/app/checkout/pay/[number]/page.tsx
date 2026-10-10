@@ -43,6 +43,7 @@ export default async function PayPage({ params, searchParams }: Props) {
   const returnPath = `/orders/${number}${qs || '?'}`;
   const t = await getT('checkout');
   const to = await getT('order');
+  const pl = await getT('plus');
 
   return (
     <div className="wrap section">
@@ -57,7 +58,7 @@ export default async function PayPage({ params, searchParams }: Props) {
           ) : null}
           <PayForm session={session} returnPath={returnPath} />
           <p className="muted" style={{ fontSize: 13 }}>
-            {t('heldNotice')}
+            {order.kind === 'PLUS' ? pl('newCardNote') : t('heldNotice')}
           </p>
         </section>
         <aside className="card summary" aria-label={to('orderSummary')}>
@@ -67,6 +68,11 @@ export default async function PayPage({ params, searchParams }: Props) {
           <div className="stack" style={{ gap: 4 }}>
             {order.kind === 'GIFT_CARD' ? (
               <GiftCardLines order={order} />
+            ) : order.kind === 'PLUS' ? (
+              <>
+                <strong>{pl('orderTitle')}</strong>
+                <span className="muted">{pl('orderNote')}</span>
+              </>
             ) : (
               <>
                 <strong>{to('shippingTo')}</strong>

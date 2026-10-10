@@ -28,14 +28,16 @@ export class FakeShippingGateway implements ShippingGateway {
     from: ShipAddress;
     to: ShipAddress;
     parcel: Parcel;
+    /** NIXZORA Plus 2-day parcels (p10-15): only rates that arrive within this many days. */
+    maxDeliveryDays?: number;
   }): Promise<Label> {
     const digits = Array.from({ length: 18 }, () => randomInt(10)).join('');
     return {
       carrier: 'USPS',
-      service: 'GroundAdvantage',
+      service: input.maxDeliveryDays ? 'Priority' : 'GroundAdvantage',
       trackingNumber: `9400${digits}`,
       labelUrl: `${this.apiPublicUrl}/api/v1/shipping/test-labels/${encodeURIComponent(input.reference)}?sig=${this.signature(input.reference)}`,
-      postageCents: 800 + Math.round(input.parcel.weightOz * 5),
+      postageCents: (input.maxDeliveryDays ? 1100 : 800) + Math.round(input.parcel.weightOz * 5),
     };
   }
 

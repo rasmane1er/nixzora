@@ -78,6 +78,8 @@ export class LabelsService {
         email: order.email,
       },
       parcel,
+      // NIXZORA Plus (p10-15): members' NIXZORA parcels go 2-day.
+      ...(order.shippingSpeed === 'TWO_DAY' ? { maxDeliveryDays: 2 } : {}),
     });
 
     const now = new Date();

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addBusinessDays, deliveryWindow } from './delivery';
+import { addBusinessDays, deliveryWindow, twoDayWindow } from './delivery';
 
 test('skips weekends and fixed holidays', () => {
   assert.equal(addBusinessDays('2026-10-09', 1), '2026-10-12'); // Fri → Mon
@@ -18,5 +18,18 @@ test('orders before 2 pm Eastern start the same business day', () => {
   assert.deepEqual(deliveryWindow(new Date('2026-10-13T19:00:00Z'), 1), {
     earliest: '2026-10-19',
     latest: '2026-10-22',
+  });
+});
+
+test('Plus 2-day delivery: out the same business day before the cutoff, there within 2', () => {
+  // Tuesday 10:00 Eastern → ships Tuesday → Wednesday to Thursday.
+  assert.deepEqual(twoDayWindow(new Date('2026-10-13T14:00:00Z')), {
+    earliest: '2026-10-14',
+    latest: '2026-10-15',
+  });
+  // Friday 4 pm Eastern → ships Monday → Tuesday to Wednesday.
+  assert.deepEqual(twoDayWindow(new Date('2026-10-16T20:00:00Z')), {
+    earliest: '2026-10-20',
+    latest: '2026-10-21',
   });
 });

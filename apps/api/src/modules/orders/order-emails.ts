@@ -77,6 +77,8 @@ export class OrderEmails implements OnModuleInit {
       include: orderInclude,
     });
     if (!order) return;
+    // A Plus fee (p10-15) gets the membership's own emails instead.
+    if (order.kind === 'PLUS') return;
     const view = toOrderView(order);
     const link = this.link(order);
     const locale = await this.locale(order);

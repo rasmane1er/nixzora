@@ -9,7 +9,13 @@ import {
   type TrackingEvent,
 } from './shipping-gateway';
 
-type Rate = { id: string; carrier: string; service: string; rate: string };
+type Rate = {
+  id: string;
+  carrier: string;
+  service: string;
+  rate: string;
+  delivery_days?: number | null;
+};
 
 /** EasyPost tracking statuses → the steps the order page shows. */
 const STEP: Record<string, TrackingDetail['status']> = {
@@ -59,6 +65,8 @@ export class EasyPostGateway implements ShippingGateway {
     from: ShipAddress;
     to: ShipAddress;
     parcel: Parcel;
+    /** NIXZORA Plus 2-day parcels (p10-15): only rates that arrive within this many days. */
+    maxDeliveryDays?: number;
   }): Promise<Label> {
     const shipment = await this.call<{ id: string; rates: Rate[] }>('/shipments', {
       shipment: {
@@ -73,7 +81,17 @@ export class EasyPostGateway implements ShippingGateway {
         },
       },
     });
-    const cheapest = [...shipment.rates].sort((a, b) => Number(a.rate) - Number(b.rate))[0];
+    const max = input.maxDeliveryDays;
+    // For a 2-day promise: the cheapest rate that makes it, else the fastest there is.
+    const fast = max
+      ? shipment.rates.filter((r) => r.delivery_days != null && r.delivery_days <= max)
+      : shipment.rates;
+    const cheapest = fast.length
+      ? [...fast].sort((a, b) => Number(a.rate) - Number(b.rate))[0]
+      : [...shipment.rates].sort(
+          (a, b) =>
+            (a.delivery_days ?? 99) - (b.delivery_days ?? 99) || Number(a.rate) - Number(b.rate),
+        )[0];
     if (!cheapest)
       throw new BadGatewayException('No shipping rates are available for this address.');
     const bought = await this.call<{

@@ -20,11 +20,15 @@ export function remaining(ms: number): string {
 /** The badge text: "Lightning deal · 30% off". */
 export function useDealLabel() {
   const t = useT('deals');
+  const pl = useT('plus');
   const { percent } = useFormatters();
   return (deal: NonNullable<ProductCard['deal']>) =>
-    `${t(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${t('percentOff', {
-      percent: percent(deal.percentOff / 100),
-    })}`;
+    `${deal.plusOnly ? pl('plusPrice') : t(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${t(
+      'percentOff',
+      {
+        percent: percent(deal.percentOff / 100),
+      },
+    )}`;
 }
 
 /** A live deal's countdown and, for limited lightning deals, how much is claimed (p10-07). */

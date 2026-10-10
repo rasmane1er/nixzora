@@ -49,8 +49,9 @@ export function returnableUntil(order: {
   deliveredAt: Date | null;
   kind?: string;
 }): string | null {
-  // Gift cards (p10-10) aren't returned: an unredeemed one can be refunded by support.
-  if (order.kind === 'GIFT_CARD') return null;
+  // Gift cards (p10-10) aren't returned: an unredeemed one can be refunded by support. Nor is
+  // a Plus fee (p10-15): leaving ends renewals, and support can refund it.
+  if (order.kind === 'GIFT_CARD' || order.kind === 'PLUS') return null;
   if (!order.deliveredAt || !['DELIVERED', 'PARTIALLY_REFUNDED'].includes(order.status))
     return null;
   const until = new Date(order.deliveredAt.getTime() + RETURN_WINDOW_MS);
@@ -173,6 +174,8 @@ export function toOrderView(order: OrderRow): OrderView {
     returnableUntil: returnableUntil(order),
     cancellableUntil: cancellableUntil(order),
     kind: order.kind ?? 'GOODS',
+    shippingSpeed: order.shippingSpeed ?? 'STANDARD',
+    plusSavingsCents: order.plusSavingsCents ?? 0,
     giftBalanceCents: order.giftBalanceCents ?? 0,
     // Optional so rows loaded without the gift cards (older fixtures) still map.
     giftCards: (order.giftCards ?? []).map((card) => ({

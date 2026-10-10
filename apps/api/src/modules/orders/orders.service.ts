@@ -146,7 +146,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (!owner) throw new BadRequestException('Your cart is empty.');
 
     const cart = this.subscribed(
-      await this.carts.view(owner, input.shippingAddress.region),
+      await this.carts.view(owner, input.shippingAddress.region, user?.id),
       subscription,
       input.shippingAddress.region,
     );
@@ -265,7 +265,17 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       };
     });
     const subtotal = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    return { ...cart, lines, coupon: null, totals: this.pricing.totals(subtotal, region) };
+    // A Plus member's shipping stays free (p10-15).
+    const plus = {
+      member: cart.totals.shippingWaivedCents !== undefined,
+      twoDay: cart.totals.shippingSpeed === 'TWO_DAY',
+    };
+    return {
+      ...cart,
+      lines,
+      coupon: null,
+      totals: this.pricing.totals(subtotal, region, 0, 'USD', plus),
+    };
   }
 
   /**
@@ -497,6 +507,19 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               shippingCents: totals.shippingCents,
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,
+              // NIXZORA Plus (p10-15): what membership changed on this order.
+              shippingSpeed: totals.shippingSpeed ?? 'STANDARD',
+              shippingWaivedCents: totals.shippingWaivedCents ?? 0,
+              plusSavingsCents:
+                (totals.shippingWaivedCents ?? 0) +
+                lines.reduce(
+                  (sum, line) =>
+                    sum +
+                    (line.regularPriceCents
+                      ? (line.regularPriceCents - line.unitPriceCents) * line.quantity
+                      : 0),
+                  0,
+                ),
               shippingAddress: input.shippingAddress as Prisma.InputJsonObject,
               riskHold: assessment?.decision === 'REVIEW' && assessment.enforced,
               items: {

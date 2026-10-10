@@ -32,6 +32,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoughtTogether } from '@/components/BoughtTogether';
 import { DeliveryPromise } from '@/components/Delivery';
+import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
 import { ProductQuestions } from '@/components/ProductQuestions';
 import { AddToListButton } from '@/components/AddToListButton';
 import { Chips } from '@/components/Chips';
@@ -295,6 +296,7 @@ export default function ProductScreen() {
   );
   const l = useT('lists');
   const dealLabel = useDealLabel();
+  const tpl = useT('plus');
   // Buy now (p10-05): its own one-item cart, then straight to checkout.
   const w = useT('wallet');
   // 1-click (p10-09): the default saved card and address, when both exist.
@@ -493,11 +495,22 @@ export default function ProductScreen() {
 
             {item.deal ? (
               <View style={{ gap: space.xs }}>
-                <View style={[styles.dealBadge, { backgroundColor: DEAL_RED }]}>
+                <View
+                  style={[
+                    styles.dealBadge,
+                    { backgroundColor: item.deal.plusOnly ? PLUS_ACCENT : DEAL_RED },
+                  ]}
+                >
                   <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
                     {dealLabel(item.deal)}
                   </Text>
                 </View>
+                {item.deal.plusOnly ? (
+                  <PlusPriceText
+                    priceCents={item.priceFromCents}
+                    percentOff={item.deal.percentOff}
+                  />
+                ) : null}
                 <DealTimer deal={item.deal} />
               </View>
             ) : null}
@@ -611,6 +624,19 @@ export default function ProductScreen() {
               {stock.text}
             </Text>
             <DeliveryPromise window={item.delivery} />
+            {item.seller ? null : (
+              // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/plus')}
+                style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}
+              >
+                <PlusChip />
+                <Text variant="small" style={{ flexShrink: 1 }}>
+                  {tpl('twoDayWithPlus')}
+                </Text>
+              </Pressable>
+            )}
 
             {canBuy ? (
               <Row style={{ gap: space.lg }}>

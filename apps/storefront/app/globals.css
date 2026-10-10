@@ -4,15 +4,22 @@
   --header-h: 64px;
   /* Pages use the full screen width; only the side gutter scales with it. */
   --gutter: clamp(16px, 3vw, 56px);
+  /* NIXZORA Plus (p10-15): its own accent, so member perks read at a glance. */
+  --plus: #3d2db8;
+  --plus-soft: #ecebff;
 }
 /* Dark: follows the system unless the visitor chose a theme (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --hero-bg: #15223a;
+    --plus: #b4a9ff;
+    --plus-soft: #24204a;
   }
 }
 :root[data-theme='dark'] {
   --hero-bg: #15223a;
+  --plus: #b4a9ff;
+  --plus-soft: #24204a;
 }
 
 * {
@@ -4553,4 +4560,143 @@ td.neg {
 }
 .photo-drop .hint {
   margin: 0;
+}
+
+/* ───── NIXZORA Plus (p10-15) ───── */
+.cat-nav .cat-nav__plus {
+  font-weight: 600;
+  color: var(--plus);
+}
+.plus-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #3d2db8;
+  letter-spacing: 0.02em;
+}
+.card-badge--plus {
+  background: #3d2db8;
+}
+.plus-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--plus);
+}
+.plus-free {
+  font-weight: 600;
+  color: var(--plus);
+}
+.plus-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: var(--plus-soft);
+}
+.plus-note a {
+  font-weight: 600;
+  color: var(--plus);
+}
+.plus-line {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.plus-hero {
+  color: #fff;
+  padding: clamp(32px, 6vw, 72px) 0;
+  background:
+    radial-gradient(circle at 85% 15%, rgb(150 130 255 / 0.55), transparent 45%),
+    linear-gradient(135deg, #0b1220 0%, #1d1650 55%, #3d2db8 120%);
+}
+.plus-hero h1 {
+  margin: 0;
+  max-width: 720px;
+  font-size: clamp(28px, 4.5vw, 48px);
+  line-height: 1.1;
+}
+.plus-hero p {
+  margin: 0;
+  max-width: 620px;
+  color: #d9dcf2;
+  font-size: 18px;
+}
+.plus-hero__mark {
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: 0.12em;
+  font-size: 15px;
+}
+.plus-hero__mark b {
+  color: #c9c0ff;
+}
+.plus-benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.plus-benefits li {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.plus-benefits svg {
+  color: var(--plus);
+}
+.plus-plans {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  max-width: 640px;
+}
+.plus-plan {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  cursor: pointer;
+}
+.plus-plan:has(input:checked) {
+  border-color: var(--plus);
+  box-shadow: 0 0 0 2px var(--plus);
+}
+.plus-plan input {
+  grid-row: span 3;
+  accent-color: var(--plus);
+}
+.plus-plan__name {
+  font-weight: 700;
+}
+.plus-plan__price {
+  font-size: 20px;
+  font-weight: 700;
+}
+.plus-plan__save {
+  font-size: 13px;
+  color: var(--plus);
+  font-weight: 600;
+}
+.plus-terms {
+  max-width: 640px;
+  margin: 0;
+}
+.plus-cta {
+  justify-self: start;
+}
+.plus-status__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.plus-saved {
+  color: var(--plus);
 }

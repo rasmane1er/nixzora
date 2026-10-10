@@ -43,10 +43,11 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, locale, f, wishlist] = await Promise.all([
+  const [t, a, d, pl, locale, f, wishlist] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
+    getT('plus'),
     getLocale(),
     getFormat(),
     wishedIds(),
@@ -55,12 +56,17 @@ export async function ProductCard({
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
   const deal = product.deal;
+  // A member-only deal (p10-15) leaves the price as listed and shows the member price.
+  const plusOnly = deal?.plusOnly === true;
   const badge = deal
     ? {
-        kind: 'deal',
-        text: `${d(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${d('percentOff', {
-          percent: f.percent(deal.percentOff / 100),
-        })}`,
+        kind: plusOnly ? 'plus' : 'deal',
+        text: `${plusOnly ? pl('plusPrice') : d(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${d(
+          'percentOff',
+          {
+            percent: f.percent(deal.percentOff / 100),
+          },
+        )}`,
       }
     : onSale
       ? {
@@ -114,6 +120,15 @@ export async function ProductCard({
           locale={INTL_LOCALE[locale]}
           wasLabel={t('was')}
         />
+        {deal && plusOnly ? (
+          <span className="plus-price">
+            {pl('memberPrice', {
+              price: f.money(
+                Math.max(1, Math.round((product.priceFromCents * (100 - deal.percentOff)) / 100)),
+              ),
+            })}
+          </span>
+        ) : null}
         {deal ? (
           <DealTimer
             endsAt={deal.endsAt}

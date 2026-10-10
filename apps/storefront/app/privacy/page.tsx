@@ -32,7 +32,7 @@ export default async function PrivacyPage() {
   const t = await getT('legal');
   const email = { email: CONTACT_EMAIL };
   return (
-    <LegalPage title={t('privacyTitle')} updated="2026-10-10" translationNote>
+    <LegalPage title={t('privacyTitle')} updated="2026-10-13" translationNote>
       <p>{t('privacyIntro')}</p>
 
       <h2>{t('privacyCollectTitle')}</h2>

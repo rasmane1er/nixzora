@@ -14,8 +14,10 @@ import {
   type DealListQuery,
   type DealsPage,
   type DealView,
+  PLUS_EARLY_ACCESS_MINUTES,
 } from '@nixzora/validation';
 import { runsBackgroundJobs } from '../../common/background-jobs';
+import { dealPrice } from './deal-price';
 import { type Env } from '../../config/env';
 import { type Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -44,9 +46,20 @@ type DealRow = Prisma.DealGetPayload<{ include: typeof dealInclude }>;
 type Originals = Record<string, [number, number | null]>;
 
 /** The deal price: whole cents, never below one. */
-export function dealPrice(priceCents: number, percentOff: number): number {
-  return Math.max(1, Math.round((priceCents * (100 - percentOff)) / 100));
+/** Plus members can buy this scheduled lightning deal now (30 minutes early, p10-15). */
+export function inEarlyAccess(
+  deal: { kind: string; audience: string; startsAt: Date },
+  now = new Date(),
+): boolean {
+  return (
+    deal.kind === 'LIGHTNING' &&
+    deal.audience === 'EVERYONE' &&
+    deal.startsAt.getTime() > now.getTime() &&
+    deal.startsAt.getTime() - now.getTime() <= PLUS_EARLY_ACCESS_MINUTES * 60_000
+  );
 }
+
+export { dealPrice };
 
 /**
  * Deals (p10-07). Every minute, due deals go live (each variant's price drops by the percentage
@@ -113,6 +126,7 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
         startsAt: new Date(input.startsAt),
         endsAt: new Date(input.endsAt),
         quantity: input.quantity ?? null,
+        audience: input.audience ?? 'EVERYONE',
         sellerId,
         createdById: actor.user.id,
       },
@@ -123,7 +137,12 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
       'deals.deal.created',
       'deal',
       deal.id,
-      { productId: product.id, percentOff: input.percentOff, kind: input.kind },
+      {
+        productId: product.id,
+        percentOff: input.percentOff,
+        kind: input.kind,
+        audience: input.audience ?? 'EVERYONE',
+      },
     );
     // A deal starting now goes live at once rather than at the next minute.
     if (deal.startsAt.getTime() <= Date.now()) await this.tick();
@@ -185,7 +204,13 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
         },
         orderBy: { startsAt: 'asc' },
         take: 12,
-        select: { productId: true, startsAt: true, percentOff: true, kind: true },
+        select: {
+          productId: true,
+          startsAt: true,
+          percentOff: true,
+          kind: true,
+          audience: true,
+        },
       }),
     ]);
     const liveCards = await this.catalog.cardsByIds(live.map((d) => d.productId));
@@ -203,6 +228,7 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
                 startsAt: d.startsAt.toISOString(),
                 percentOff: d.percentOff,
                 kind: d.kind,
+                earlyAccess: inEarlyAccess(d, now),
               },
             ]
           : [];
@@ -252,7 +278,8 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
       if (product?.status !== 'ACTIVE' || busy) return false;
 
       const originals: Originals = {};
-      for (const variant of product.variants) {
+      // Member-only deals (p10-15) leave the listed price alone: members pay less at the cart.
+      for (const variant of deal.audience === 'PLUS' ? [] : product.variants) {
         originals[variant.id] = [variant.priceCents, variant.compareAtCents];
         await tx.productVariant.update({
           where: { id: variant.id },
@@ -301,15 +328,34 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
       if (!item.variant) continue;
       units.set(item.variant.productId, (units.get(item.variant.productId) ?? 0) + item.quantity);
     }
+    const now = new Date();
     for (const [productId, quantity] of units) {
-      const deal = await this.prisma.deal.findFirst({ where: { productId, status: 'LIVE' } });
+      // A live deal, or a lightning deal Plus members are buying early (p10-15).
+      const deal =
+        (await this.prisma.deal.findFirst({ where: { productId, status: 'LIVE' } })) ??
+        (await this.prisma.deal.findFirst({
+          where: {
+            productId,
+            status: 'SCHEDULED',
+            kind: 'LIGHTNING',
+            audience: 'EVERYONE',
+            startsAt: { lte: new Date(now.getTime() + PLUS_EARLY_ACCESS_MINUTES * 60_000) },
+          },
+        }));
       if (!deal) continue;
       const updated = await this.prisma.deal.update({
         where: { id: deal.id },
         data: { claimed: { increment: quantity } },
       });
       if (updated.quantity !== null && updated.claimed >= updated.quantity) {
-        await this.end(deal.id, 'ENDED');
+        if (updated.status === 'LIVE') await this.end(deal.id, 'ENDED');
+        else {
+          // Sold out to members before it opened to everyone.
+          await this.prisma.deal.updateMany({
+            where: { id: deal.id, status: 'SCHEDULED' },
+            data: { status: 'ENDED' },
+          });
+        }
       }
     }
   }
@@ -337,6 +383,7 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
       quantity: row.quantity,
       claimed: row.claimed,
       status: row.status,
+      audience: row.audience,
       product: {
         id: row.product.id,
         slug: row.product.slug,

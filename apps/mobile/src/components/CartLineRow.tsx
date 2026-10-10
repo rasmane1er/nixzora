@@ -6,6 +6,7 @@ import { optionsText, useFormatters } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 import { QuantityStepper } from './QuantityStepper';
+import { PlusChip } from './PlusNote';
 import { Text } from './ui';
 
 export function CartLineRow({
@@ -21,6 +22,7 @@ export function CartLineRow({
   const { money } = useFormatters();
   const t = useT('appShop');
   const tc = useT('cart');
+  const tpl = useT('plus');
   const options = optionsText(line.options);
   return (
     <View style={styles.row}>
@@ -44,6 +46,13 @@ export function CartLineRow({
         <Text variant="small" muted>
           {line.variantTitle || options}
         </Text>
+        {line.regularPriceCents ? (
+          <PlusChip
+            label={`${tpl('plusPrice')} · −${money(
+              (line.regularPriceCents - line.unitPriceCents) * line.quantity,
+            )}`}
+          />
+        ) : null}
         {line.problem === 'UNAVAILABLE' ? (
           <Text variant="small" tone="error">
             {t('lineUnavailable')}

@@ -63,7 +63,7 @@ export const legal = defineMessages({
     privacyCollectAccount:
       '<b>Account details</b>: your email, name and, if you set one, a password (stored only as a salted hash). If you sign in with Google or Apple we receive your email address, your name (Apple shares it only the first time) and an account identifier from that provider. We never receive your Google or Apple password.',
     privacyCollectOrders:
-      '<b>Orders</b>: items, prices, shipping and billing addresses, phone number and order history.',
+      '<b>Orders</b>: items, prices, shipping and billing addresses, phone number and order history, and your NIXZORA Plus membership (plan, renewal dates and fees) if you join.',
     privacyCollectPayments:
       '<b>Payments</b>: card details go directly to our payment processor, Stripe. We keep only the payment status, card brand and last four digits. If you choose to save a card for 1-click, Stripe keeps it on your account and we keep its brand, last four digits and expiry date; remove it any time under Payment methods.',
     privacyCollectActivity:
@@ -88,7 +88,7 @@ export const legal = defineMessages({
     privacyShareSignIn: 'Google and Apple (only if you choose to sign in with them)',
     privacySharePush: 'Expo, Apple and Google push services (app notifications, if you allow them)',
     privacyShareAi:
-      'AI providers (Anthropic, Voyage AI) when the shopping assistant uses them: only the text of your assistant conversation is sent, never your account, address or order details',
+      'AI providers (Anthropic, Voyage AI) when the shopping assistant or search by photo uses them: only the text of your assistant conversation, or a reduced copy of the photo you search with, is sent, never your account, address or order details. Photos you search with are not stored',
     privacyShareCarriers: 'Shipping carriers (your name and delivery address)',
     privacyShareSellers:
       'Marketplace stores you buy from (your name, delivery address and the items they ship; never your email, phone or card)',
@@ -213,7 +213,7 @@ export const legal = defineMessages({
     privacyCollectAccount:
       '<b>Informations de compte</b> : votre e-mail, votre nom et, si vous en définissez un, un mot de passe (stocké uniquement sous forme de hachage salé). Si vous vous connectez avec Google ou Apple, nous recevons votre adresse e-mail, votre nom (Apple ne le transmet que la première fois) et un identifiant de compte de ce fournisseur. Nous ne recevons jamais votre mot de passe Google ou Apple.',
     privacyCollectOrders:
-      '<b>Commandes</b> : articles, prix, adresses de livraison et de facturation, numéro de téléphone et historique des commandes.',
+      '<b>Commandes</b> : articles, prix, adresses de livraison et de facturation, numéro de téléphone et historique des commandes, ainsi que votre abonnement NIXZORA Plus (formule, dates de renouvellement et cotisations) si vous vous abonnez.',
     privacyCollectPayments:
       '<b>Paiements</b> : les données de carte sont transmises directement à notre prestataire de paiement, Stripe. Nous ne conservons que le statut du paiement, la marque de la carte et ses quatre derniers chiffres. Si vous enregistrez une carte pour l’achat en 1 clic, Stripe la conserve pour votre compte et nous gardons sa marque, ses quatre derniers chiffres et sa date d’expiration ; supprimez-la à tout moment dans Moyens de paiement.',
     privacyCollectActivity:
@@ -240,7 +240,7 @@ export const legal = defineMessages({
     privacySharePush:
       'Les services push d’Expo, Apple et Google (notifications de l’application, si vous les autorisez)',
     privacyShareAi:
-      'Des fournisseurs d’IA (Anthropic, Voyage AI) lorsque l’assistant d’achat y fait appel : seul le texte de votre conversation avec l’assistant est transmis, jamais les informations de votre compte, votre adresse ou vos commandes',
+      'Des fournisseurs d’IA (Anthropic, Voyage AI) lorsque l’assistant d’achat ou la recherche par photo y font appel : seul le texte de votre conversation avec l’assistant, ou une copie réduite de la photo recherchée, est transmis, jamais les informations de votre compte, votre adresse ou vos commandes. Les photos recherchées ne sont pas conservées',
     privacyShareCarriers: 'Les transporteurs (votre nom et votre adresse de livraison)',
     privacyShareSellers:
       'Les boutiques du marketplace chez qui vous achetez (votre nom, votre adresse de livraison et les articles qu’elles expédient ; jamais votre e-mail, votre téléphone ni votre carte)',
@@ -364,7 +364,7 @@ export const legal = defineMessages({
     privacyCollectAccount:
       '<b>Datos de la cuenta</b>: tu correo electrónico, tu nombre y, si defines una, una contraseña (almacenada solo como hash con sal). Si inicias sesión con Google o Apple, recibimos tu dirección de correo electrónico, tu nombre (Apple solo lo comparte la primera vez) y un identificador de cuenta de ese proveedor. Nunca recibimos tu contraseña de Google o Apple.',
     privacyCollectOrders:
-      '<b>Pedidos</b>: artículos, precios, direcciones de envío y facturación, número de teléfono e historial de pedidos.',
+      '<b>Pedidos</b>: artículos, precios, direcciones de envío y facturación, número de teléfono e historial de pedidos, y tu membresía NIXZORA Plus (plan, fechas de renovación y cuotas) si te unes.',
     privacyCollectPayments:
       '<b>Pagos</b>: los datos de la tarjeta van directamente a nuestro procesador de pagos, Stripe. Solo guardamos el estado del pago, la marca de la tarjeta y los últimos cuatro dígitos. Si eliges guardar una tarjeta para comprar en 1 clic, Stripe la guarda en tu cuenta y nosotros guardamos su marca, los últimos cuatro dígitos y la fecha de vencimiento; quítala cuando quieras en Métodos de pago.',
     privacyCollectActivity:
@@ -390,7 +390,7 @@ export const legal = defineMessages({
     privacySharePush:
       'Los servicios push de Expo, Apple y Google (notificaciones de la app, si las permites)',
     privacyShareAi:
-      'Proveedores de IA (Anthropic, Voyage AI) cuando el asistente de compras los usa: solo se envía el texto de tu conversación con el asistente, nunca los datos de tu cuenta, tu dirección ni tus pedidos',
+      'Proveedores de IA (Anthropic, Voyage AI) cuando el asistente de compras o la búsqueda por foto los usan: solo se envía el texto de tu conversación con el asistente, o una copia reducida de la foto que buscas, nunca los datos de tu cuenta, tu dirección ni tus pedidos. Las fotos que buscas no se guardan',
     privacyShareCarriers: 'Empresas de paquetería (tu nombre y dirección de entrega)',
     privacyShareSellers:
       'Las tiendas del marketplace a las que compras (tu nombre, dirección de entrega y los artículos que envían; nunca tu correo, teléfono ni tarjeta)',

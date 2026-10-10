@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { api, currentCart } from '@/lib/api';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
+import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/PlusNotes';
 import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { accessToken } from '@/lib/session';
@@ -73,6 +74,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
                 <span>
                   {line.quantity} × {line.productTitle}
                   <span className="muted"> · {line.variantTitle}</span>
+                  <PlusLineTag line={line} />
                 </span>
                 <span>{f.money(line.lineTotalCents)}</span>
               </li>
@@ -88,11 +90,14 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
               </>
             ) : null}
             <dt>{to('shipping')}</dt>
-            <dd>{t.shippingCents ? f.money(t.shippingCents) : to('free')}</dd>
+            <dd>
+              <ShippingAmount totals={t} />
+            </dd>
             <dt>{to('tax')}</dt>
             <dd className="muted">{tc('nextStep')}</dd>
           </dl>
-          <DeliveryPromise window={cart.delivery} />
+          <PlusShippingNote totals={t} signedIn={signedIn} />
+          <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
           {buyNowId ? (
             <Link href={back} className="muted" style={{ fontSize: 14 }}>
               {l('backToProduct')}

@@ -630,6 +630,7 @@ export class CatalogQueryService {
           endsAt: true,
           quantity: true,
           claimed: true,
+          audience: true,
         },
       }),
     ]);
@@ -650,6 +651,7 @@ export class CatalogQueryService {
                 claimedPercent: deal.quantity
                   ? Math.min(100, Math.round((deal.claimed / deal.quantity) * 100))
                   : null,
+                ...(deal.audience === 'PLUS' ? { plusOnly: true } : {}),
               },
             }
           : {}),

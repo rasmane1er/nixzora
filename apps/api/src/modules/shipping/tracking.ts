@@ -1,6 +1,7 @@
 import {
   deliveryWindow,
   deliveryWindowFromShipment,
+  twoDayWindow,
   type DeliveryWindow,
   type OrderView,
   OWN_HANDLING_DAYS,
@@ -99,12 +100,17 @@ export async function withTracking(
     deliveredAt: Date | null;
     cancelled: boolean;
     handlingDays: number;
+    twoDay?: boolean;
   }): DeliveryWindow | null => {
     if (part.deliveredAt || part.cancelled || !order.placedAt) return null;
     const carrier = trackers.find((t) => t.trackingNumber === part.trackingNumber);
     if (carrier?.estimatedDeliveryAt) {
       const day = easternDay(carrier.estimatedDeliveryAt);
       return { earliest: day, latest: day };
+    }
+    if (part.twoDay) {
+      // NIXZORA Plus 2-day (p10-15): two business days from the order, or from shipping.
+      return part.shippedAt ? twoDayWindow(part.shippedAt) : twoDayWindow(order.placedAt);
     }
     if (part.shippedAt) return deliveryWindowFromShipment(part.shippedAt);
     return deliveryWindow(order.placedAt, part.handlingDays);
@@ -118,6 +124,7 @@ export async function withTracking(
         deliveredAt: order.deliveredAt,
         cancelled: !!order.cancelledAt,
         handlingDays: OWN_HANDLING_DAYS,
+        twoDay: order.shippingSpeed === 'TWO_DAY',
       })
     : null;
   let overall = own;

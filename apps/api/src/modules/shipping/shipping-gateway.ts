@@ -45,12 +45,14 @@ export type TrackingEvent = {
 
 export interface ShippingGateway {
   readonly name: 'EASYPOST' | 'FAKE' | 'NONE';
-  /** Buys the cheapest rate for the parcel and returns a printable label. */
+  /** Buys the cheapest rate for the parcel (fast enough, for 2-day) and returns a label. */
   buyLabel(input: {
     reference: string;
     from: ShipAddress;
     to: ShipAddress;
     parcel: Parcel;
+    /** NIXZORA Plus 2-day parcels (p10-15): only rates that arrive within this many days. */
+    maxDeliveryDays?: number;
   }): Promise<Label>;
   /**
    * Asks the carrier to report on a tracking number someone else bought (a seller's own label).

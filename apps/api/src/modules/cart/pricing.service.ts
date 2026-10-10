@@ -20,12 +20,15 @@ export class PricingService {
     region?: string | null,
     discountCents = 0,
     currency = 'USD',
+    /** NIXZORA Plus (p10-15): shipping is free for members, and NIXZORA's items go 2-day. */
+    plus: { member: boolean; twoDay?: boolean } = { member: false },
   ): Totals {
     const flat = this.config.get('SHIPPING_FLAT_CENTS', { infer: true });
     const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
     const discount = Math.min(Math.max(0, discountCents), subtotalCents);
     const goods = subtotalCents - discount;
-    const shippingCents = subtotalCents === 0 || goods >= threshold ? 0 : flat;
+    const standardCents = subtotalCents === 0 || goods >= threshold ? 0 : flat;
+    const shippingCents = plus.member ? 0 : standardCents;
     const rateBps = region ? (this.config.get('TAX_RATES_BPS', { infer: true })[region] ?? 0) : 0;
     // Tax on goods only; round half up to the cent.
     const taxCents = Math.round((goods * rateBps) / 10_000);
@@ -36,7 +39,17 @@ export class PricingService {
       shippingCents,
       taxCents,
       totalCents: goods + shippingCents + taxCents,
-      freeShippingRemainingCents: subtotalCents === 0 ? threshold : Math.max(0, threshold - goods),
+      freeShippingRemainingCents: plus.member
+        ? 0
+        : subtotalCents === 0
+          ? threshold
+          : Math.max(0, threshold - goods),
+      ...(plus.member
+        ? {
+            shippingWaivedCents: standardCents,
+            shippingSpeed: plus.twoDay ? ('TWO_DAY' as const) : ('STANDARD' as const),
+          }
+        : {}),
     };
   }
 }

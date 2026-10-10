@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { currentCart } from '@/lib/api';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
+import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/PlusNotes';
+import { isSignedIn } from '@/lib/session';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { applyCoupon, removeCoupon, updateLine } from './actions';
@@ -42,6 +44,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   }
 
   const blocked = cart.lines.some((line) => line.problem);
+  const signedIn = await isSignedIn();
   const t = cart.totals;
   const threshold = t.subtotalCents + t.freeShippingRemainingCents;
 
@@ -72,6 +75,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                   {line.productTitle}
                 </Link>
                 <div className="muted">{line.variantTitle}</div>
+                <PlusLineTag line={line} />
                 {line.problem === 'UNAVAILABLE' ? (
                   <p className="field-error">{tc('unavailable')}</p>
                 ) : line.problem === 'INSUFFICIENT_STOCK' ? (
@@ -148,7 +152,9 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               </>
             ) : null}
             <dt>{to('shipping')}</dt>
-            <dd>{t.shippingCents ? f.money(t.shippingCents) : to('free')}</dd>
+            <dd>
+              <ShippingAmount totals={t} />
+            </dd>
             <dt>{to('tax')}</dt>
             <dd className="muted">{tc('atCheckout')}</dd>
             <dt className="total">{tc('estimatedTotal')}</dt>
@@ -184,7 +190,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               </button>
             </form>
           )}
-          {t.freeShippingRemainingCents > 0 ? (
+          {t.shippingWaivedCents !== undefined ? null : t.freeShippingRemainingCents > 0 ? (
             <div className="free-ship">
               <progress
                 value={t.subtotalCents}
@@ -198,7 +204,8 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           ) : (
             <p className="free-ship">{tc('gotFreeShipping')}</p>
           )}
-          <DeliveryPromise window={cart.delivery} />
+          <PlusShippingNote totals={t} signedIn={signedIn} />
+          <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
           {blocked || cart.coupon?.problem ? (
             <p className="banner banner--info">{blocked ? tc('fixItems') : tc('removeCode')}</p>
           ) : (

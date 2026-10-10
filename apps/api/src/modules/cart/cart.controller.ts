@@ -144,12 +144,13 @@ export class CartController {
   @OptionalAuth()
   @ApiQuery({ name: 'region', required: false, description: 'US state, to estimate tax' })
   buyNowCart(
+    @MaybeUser() user: AuthUser | undefined,
     @Param('id') id: string,
     @Query(new ZodValidationPipe(RegionQuery)) query: z.infer<typeof RegionQuery>,
   ): Promise<Cart> {
     const parsed = CartIdSchema.safeParse(id);
     if (!parsed.success) throw new BadRequestException('That cart id is not valid.');
-    return this.carts.view({ buyNowId: parsed.data }, query.region);
+    return this.carts.view({ buyNowId: parsed.data }, query.region, user?.id);
   }
 
   /** Call right after sign-in so nothing a guest added is lost. */

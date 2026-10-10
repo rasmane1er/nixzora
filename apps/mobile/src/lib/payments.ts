@@ -14,7 +14,8 @@ import { APP_VARIANT, MERCHANT_ID } from './config';
 export type PayResult =
   { outcome: 'paid' } | { outcome: 'canceled' } | { outcome: 'failed'; message: string };
 
-export type Payer = { email: string; address: Address };
+/** Who pays; no address for things that don't ship (a Plus membership, p10-15). */
+export type Payer = { email: string; address?: Address | null };
 
 /** Return address for bank (3-D Secure) pages opened during payment. */
 const RETURN_URL = Linking.createURL('stripe-redirect');
@@ -41,19 +42,21 @@ export async function pay(session: PaymentSession, payer: Payer): Promise<PayRes
     merchantDisplayName: 'NIXZORA',
     paymentIntentClientSecret: session.clientSecret,
     returnURL: RETURN_URL,
-    defaultBillingDetails: {
-      email: payer.email,
-      name: address.fullName,
-      phone: address.phone,
-      address: {
-        line1: address.line1,
-        line2: address.line2,
-        city: address.city,
-        state: address.region,
-        postalCode: address.postalCode,
-        country: address.country,
-      },
-    },
+    defaultBillingDetails: address
+      ? {
+          email: payer.email,
+          name: address.fullName,
+          phone: address.phone,
+          address: {
+            line1: address.line1,
+            line2: address.line2,
+            city: address.city,
+            state: address.region,
+            postalCode: address.postalCode,
+            country: address.country,
+          },
+        }
+      : { email: payer.email },
     applePay: { merchantCountryCode: 'US' },
     googlePay: {
       merchantCountryCode: 'US',

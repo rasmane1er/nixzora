@@ -71,6 +71,17 @@ export function deliveryWindow(at: Date, handlingDays: number): DeliveryWindow {
   };
 }
 
+/**
+ * NIXZORA Plus 2-day delivery (p10-15) for items NIXZORA ships: out the same business day when
+ * ordered before the cutoff, at the door within 2 business days of that.
+ */
+export function twoDayWindow(at: Date): DeliveryWindow {
+  const { day, hour } = eastern(at);
+  const start = hour >= CUTOFF_HOUR_EASTERN || !isBusinessDay(day) ? addDays(day, 1) : day;
+  const shipped = addBusinessDays(start, 0);
+  return { earliest: addBusinessDays(shipped, 1), latest: addBusinessDays(shipped, 2) };
+}
+
 /** After shipping: transit only, counted from the ship date. */
 export function deliveryWindowFromShipment(shippedAt: Date): DeliveryWindow {
   const { day } = eastern(shippedAt);

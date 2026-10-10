@@ -3,7 +3,14 @@ import { type DeliveryWindow } from '@nixzora/validation';
 import { getLocale, getT } from '@/lib/i18n';
 
 /** "Arrives Thu, Oct 15 – Tue, Oct 20" with how it is worked out (p10-04). */
-export async function DeliveryPromise({ window }: { window: DeliveryWindow | null | undefined }) {
+export async function DeliveryPromise({
+  window,
+  twoDay = false,
+}: {
+  window: DeliveryWindow | null | undefined;
+  /** NIXZORA Plus 2-day delivery (p10-15). */
+  twoDay?: boolean;
+}) {
   if (!window) return null;
   const [d, locale] = await Promise.all([getT('delivery'), getLocale()]);
   return (
@@ -19,7 +26,7 @@ export async function DeliveryPromise({ window }: { window: DeliveryWindow | nul
       </svg>
       <span>
         <strong>{d('arrives', { range: deliveryRange(window, locale) })}</strong>
-        <span className="muted">{d('arrivesHint')}</span>
+        <span className="muted">{d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}</span>
       </span>
     </p>
   );

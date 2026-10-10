@@ -5,6 +5,8 @@ export const delivery = defineMessages({
   en: {
     arrives: 'Arrives {range}',
     arrivesHint: 'If you order today before 2 pm ET. Business days, standard shipping.',
+    arrivesHintTwoDay:
+      'If you order today before 2 pm ET. Business days, NIXZORA Plus 2-day delivery.',
     expected: 'Expected {range}',
     trackingTitle: 'Tracking',
     noScans: 'No carrier scans yet. They appear here once the carrier has the parcel.',
@@ -19,6 +21,8 @@ export const delivery = defineMessages({
     arrives: 'Livraison {range}',
     arrivesHint:
       'Pour une commande passée aujourd’hui avant 14 h (heure de l’Est). Jours ouvrés, livraison standard.',
+    arrivesHintTwoDay:
+      'Pour une commande passée aujourd’hui avant 14 h (heure de l’Est). Jours ouvrés, livraison NIXZORA Plus en 2 jours.',
     expected: 'Livraison prévue {range}',
     trackingTitle: 'Suivi',
     noScans:
@@ -33,6 +37,8 @@ export const delivery = defineMessages({
   es: {
     arrives: 'Llega {range}',
     arrivesHint: 'Si pides hoy antes de las 2 p. m. (hora del Este). Días hábiles, envío estándar.',
+    arrivesHintTwoDay:
+      'Si pides hoy antes de las 2 p. m. (hora del Este). Días hábiles, envío NIXZORA Plus en 2 días.',
     expected: 'Llegada prevista {range}',
     trackingTitle: 'Seguimiento',
     noScans: 'Aún no hay escaneos del transportista. Aparecerán aquí cuando tenga el paquete.',

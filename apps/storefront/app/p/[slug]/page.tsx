@@ -1,4 +1,5 @@
 import {
+  type MyPlus,
   type ProductAlertRef,
   type QuestionPage,
   type ProductDetail,
@@ -71,6 +72,12 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await load(slug);
   const signedIn = await isSignedIn();
+  // NIXZORA Plus (p10-15): members see their 2-day promise; everyone else, the offer.
+  const member = signedIn
+    ? await api<MyPlus>('/me/plus')
+        .then((mine) => Boolean(mine.membership?.active))
+        .catch(() => false)
+    : false;
   const inStock = product.variants.some((v) => v.isActive && v.available > 0);
   const [reviews, wishIds, myReview, related, insights, ads, questions, alerts] = await Promise.all(
     [
@@ -115,6 +122,7 @@ export default async function ProductPage({ params }: Props) {
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
   const d = await getT('deals');
+  const pl = await getT('plus');
   const w = await getT('wallet');
   const ib = await getT('inbox');
   const cmp = await getT('compare');
@@ -210,10 +218,28 @@ export default async function ProductPage({ params }: Props) {
           </div>
           {product.deal ? (
             <div className="pdp-deal">
-              <span className="card-badge card-badge--deal pdp-deal__badge">
-                {d(product.deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} ·{' '}
-                {d('percentOff', { percent: f.percent(product.deal.percentOff / 100) })}
+              <span
+                className={`card-badge card-badge--${product.deal.plusOnly ? 'plus' : 'deal'} pdp-deal__badge`}
+              >
+                {product.deal.plusOnly
+                  ? pl('plusPrice')
+                  : d(product.deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')}{' '}
+                · {d('percentOff', { percent: f.percent(product.deal.percentOff / 100) })}
               </span>
+              {product.deal.plusOnly ? (
+                <span className="plus-price">
+                  {pl('memberPrice', {
+                    price: f.money(
+                      Math.max(
+                        1,
+                        Math.round(
+                          (product.priceFromCents * (100 - product.deal.percentOff)) / 100,
+                        ),
+                      ),
+                    ),
+                  })}
+                </span>
+              ) : null}
               <DealTimer
                 endsAt={product.deal.endsAt}
                 claimedPercent={
@@ -224,6 +250,18 @@ export default async function ProductPage({ params }: Props) {
             </div>
           ) : null}
           <DeliveryPromise window={product.delivery} />
+          {product.seller ? null : (
+            // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
+            <p className="plus-note">
+              <span className="plus-chip">{pl('badge')}</span> {pl('twoDayWithPlus')}
+              {member ? null : (
+                <>
+                  {' '}
+                  <Link href="/plus">{pl('upsellCta')}</Link>
+                </>
+              )}
+            </p>
+          )}
           <AddToCart
             variants={product.variants}
             slug={product.slug}

@@ -56,6 +56,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
   const t = await getT('order');
   const w = await getT('wallet');
+  const pl = await getT('plus');
   const f = await getFormat();
   const placed = param(search, 'placed') === '1';
   const notice = param(search, 'notice');
@@ -131,6 +132,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
       ) : null}
 
       {order.kind !== 'GIFT_CARD' &&
+      order.kind !== 'PLUS' &&
       order.status !== 'PENDING_PAYMENT' &&
       order.status !== 'CANCELLED' ? (
         <section className="card stack">
@@ -202,6 +204,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <section className="card stack">
           {order.kind === 'GIFT_CARD' ? (
             <GiftCardLines order={order} />
+          ) : order.kind === 'PLUS' ? (
+            <>
+              <h2>{pl('orderTitle')}</h2>
+              <p className="muted">{pl('orderNote')}</p>
+              <Link href="/account/plus">{pl('manage')}</Link>
+            </>
           ) : (
             <>
               <h2>{t('shippingTo')}</h2>

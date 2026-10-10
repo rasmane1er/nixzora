@@ -8,7 +8,14 @@ import { brand, fonts, space, usePalette } from '@/lib/theme';
 import { Text } from './ui';
 
 /** "Arrives Thu, Oct 15 – Tue, Oct 20" (p10-04), shared rule with the website. */
-export function DeliveryPromise({ window }: { window: DeliveryWindow | null | undefined }) {
+export function DeliveryPromise({
+  window,
+  twoDay = false,
+}: {
+  window: DeliveryWindow | null | undefined;
+  /** NIXZORA Plus 2-day delivery (p10-15). */
+  twoDay?: boolean;
+}) {
   const p = usePalette();
   const d = useT('delivery');
   const locale = useLocale();
@@ -21,7 +28,7 @@ export function DeliveryPromise({ window }: { window: DeliveryWindow | null | un
           {d('arrives', { range: deliveryRange(window, locale) })}
         </Text>
         <Text variant="small" muted>
-          {d('arrivesHint')}
+          {d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}
         </Text>
       </View>
     </View>

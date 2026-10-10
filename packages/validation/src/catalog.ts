@@ -267,6 +267,8 @@ export const ProductCardSchema = z.object({
       percentOff: z.number().int(),
       endsAt: z.string(),
       claimedPercent: z.number().int().nullable(),
+      /** NIXZORA Plus members only (p10-15): the card shows the member price beside the price. */
+      plusOnly: z.boolean().optional(),
     })
     .optional(),
 });

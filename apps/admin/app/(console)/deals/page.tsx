@@ -70,6 +70,13 @@ export default async function DealsPage({ searchParams }: { searchParams: Search
               </select>
             </label>
             <label>
+              {t('audience')}
+              <select name="audience" defaultValue="EVERYONE">
+                <option value="EVERYONE">{t('audience_EVERYONE')}</option>
+                <option value="PLUS">{t('audience_PLUS')}</option>
+              </select>
+            </label>
+            <label>
               {t('kind')}
               <select name="kind" defaultValue="DAY">
                 <option value="DAY">{t('kind_DAY')}</option>
@@ -134,6 +141,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Search
                     <td>
                       {t(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} ·{' '}
                       {t('percentOff', { percent: f.percent(deal.percentOff / 100) })}
+                      {deal.audience === 'PLUS' ? ` · ${t('audience_PLUS')}` : null}
                     </td>
                     <td>
                       {t('when', {

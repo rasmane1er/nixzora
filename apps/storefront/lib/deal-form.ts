@@ -1,4 +1,4 @@
-import { DEAL_KINDS, type DealCreate } from '@nixzora/validation';
+import { DEAL_AUDIENCES, DEAL_KINDS, type DealCreate } from '@nixzora/validation';
 
 const LOCAL = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
@@ -20,11 +20,16 @@ export function dealFromForm(form: FormData): Partial<DealCreate> & { problem?: 
     ? (String(form.get('kind')) as DealCreate['kind'])
     : 'DAY';
   const quantity = String(form.get('quantity') ?? '').trim();
+  // NIXZORA Plus (p10-15): a member-only price, or everyone's.
+  const audience = (DEAL_AUDIENCES as readonly string[]).includes(String(form.get('audience')))
+    ? (String(form.get('audience')) as DealCreate['audience'])
+    : 'EVERYONE';
   return {
     productId: String(form.get('productId') ?? ''),
     kind,
     percentOff: Number(form.get('percentOff')),
     ...(startsAt && endsAt ? { startsAt, endsAt } : { problem: 'times' as const }),
     quantity: quantity ? Number(quantity) : null,
+    audience,
   };
 }

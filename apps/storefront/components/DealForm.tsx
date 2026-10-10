@@ -30,6 +30,13 @@ export async function DealForm({
           </select>
         </label>
         <label>
+          {t('audience')}
+          <select name="audience" defaultValue="EVERYONE">
+            <option value="EVERYONE">{t('audience_EVERYONE')}</option>
+            <option value="PLUS">{t('audience_PLUS')}</option>
+          </select>
+        </label>
+        <label>
           {t('kind')}
           <select name="kind" defaultValue="DAY">
             <option value="DAY">{t('kind_DAY')}</option>

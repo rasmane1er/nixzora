@@ -136,6 +136,8 @@ export type CartLine = {
   available: number;
   /** Set when the line cannot be bought as is (sold out, fewer left, or removed). */
   problem: 'UNAVAILABLE' | 'INSUFFICIENT_STOCK' | null;
+  /** NIXZORA Plus (p10-15): the everyone price, when a member price applies to this line. */
+  regularPriceCents?: number;
 };
 
 export type Totals = {
@@ -148,6 +150,10 @@ export type Totals = {
   totalCents: number;
   /** Spend this much more for free shipping (0 when already free). */
   freeShippingRemainingCents: number;
+  /** NIXZORA Plus (p10-15): shipping the member doesn't pay (shown as "FREE with Plus"). */
+  shippingWaivedCents?: number;
+  /** NIXZORA Plus: 2-day delivery for NIXZORA's own items. */
+  shippingSpeed?: 'STANDARD' | 'TWO_DAY';
 };
 
 export type Cart = {
@@ -306,8 +312,11 @@ export type OrderView = {
   returnableUntil: string | null;
   /** Until when the customer can still cancel it themselves (paid, not being packed yet). */
   cancellableUntil?: string | null;
-  /** Goods to ship, or e-gift cards sent by email (p10-10). */
-  kind?: 'GOODS' | 'GIFT_CARD';
+  /** Goods to ship, e-gift cards sent by email (p10-10), or a NIXZORA Plus fee (p10-15). */
+  kind?: 'GOODS' | 'GIFT_CARD' | 'PLUS';
+  /** NIXZORA Plus: NIXZORA's own parcel ships 2-day, and what Plus saved on this order. */
+  shippingSpeed?: 'STANDARD' | 'TWO_DAY';
+  plusSavingsCents?: number;
   /** Part of the total paid from the gift card balance. */
   giftBalanceCents?: number;
   /** The gift cards bought with this order. */

@@ -139,6 +139,11 @@ export class PaymentCardsService {
       where: { userId, paymentCardId: id, status: { not: 'CANCELLED' } },
       data: next ? { paymentCardId: next.id } : { status: 'PAUSED', paymentCardId: null },
     });
+    // NIXZORA Plus (p10-15) renews on the default card from now on.
+    await this.prisma.plusMembership.updateMany({
+      where: { userId, paymentCardId: id },
+      data: { paymentCardId: null },
+    });
     await this.audit.record({
       action: 'payments.card.removed',
       actorId: userId,

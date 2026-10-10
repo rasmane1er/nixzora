@@ -40,6 +40,7 @@ export async function DealTable({
               <td>
                 {t(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} ·{' '}
                 {t('percentOff', { percent: f.percent(deal.percentOff / 100) })}
+                {deal.audience === 'PLUS' ? ` · ${t('audience_PLUS')}` : null}
               </td>
               <td>
                 {t('when', { start: f.dateTime(deal.startsAt), end: f.dateTime(deal.endsAt) })}

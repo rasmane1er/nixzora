@@ -20,6 +20,8 @@ type SplitOrder = {
   number: string;
   subtotalCents: number;
   shippingCents: number;
+  /** Shipping a Plus member did not pay (p10-15): NIXZORA pays sellers their share of it. */
+  shippingWaivedCents?: number;
   items: { sellerId: string | null; totalCents: number }[];
 };
 
@@ -38,8 +40,9 @@ export async function splitBySeller(tx: Tx, order: SplitOrder): Promise<number> 
   let created = 0;
   for (const seller of sellers) {
     const itemsCents = bySeller.get(seller.id)!;
+    const shipping = order.shippingCents + (order.shippingWaivedCents ?? 0);
     const shippingCents = order.subtotalCents
-      ? Math.round((order.shippingCents * itemsCents) / order.subtotalCents)
+      ? Math.round((shipping * itemsCents) / order.subtotalCents)
       : 0;
     const commissionCents = commissionOf(itemsCents, seller.commissionBps);
     const existing = await tx.sellerOrder.findUnique({

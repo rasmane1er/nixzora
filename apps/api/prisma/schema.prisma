@@ -81,6 +81,7 @@ model User {
   giftEntries        GiftBalanceEntry[]
   subscriptions      Subscription[]
   conversations      Conversation[]
+  plusMembership     PlusMembership?
   sellerMembership   SellerMember?
   supportRequests    SupportRequest[]
   sellerApplication  SellerApplicationDraft?
@@ -450,45 +451,53 @@ enum OrderStatus {
 }
 
 model Order {
-  id               String      @id @default(uuid(7)) @db.Uuid
+  id                  String        @id @default(uuid(7)) @db.Uuid
   /// Customer-facing number, e.g. NX-10482
-  number           String      @unique
-  userId           String?     @map("user_id") @db.Uuid
-  email            String
-  status           OrderStatus @default(PENDING_PAYMENT)
-  currency         String      @default("USD") @db.Char(3)
-  subtotalCents    Int         @map("subtotal_cents")
-  shippingCents    Int         @default(0) @map("shipping_cents")
-  taxCents         Int         @default(0) @map("tax_cents")
-  discountCents    Int         @default(0) @map("discount_cents")
-  couponCode       String?     @map("coupon_code")
+  number              String        @unique
+  userId              String?       @map("user_id") @db.Uuid
+  email               String
+  status              OrderStatus   @default(PENDING_PAYMENT)
+  currency            String        @default("USD") @db.Char(3)
+  subtotalCents       Int           @map("subtotal_cents")
+  shippingCents       Int           @default(0) @map("shipping_cents")
+  taxCents            Int           @default(0) @map("tax_cents")
+  discountCents       Int           @default(0) @map("discount_cents")
+  couponCode          String?       @map("coupon_code")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
-  language         String      @default("en")
+  language            String        @default("en")
   /// Total refunded so far (partial refunds and returns).
-  refundedCents    Int         @default(0) @map("refunded_cents")
+  refundedCents       Int           @default(0) @map("refunded_cents")
   /// Postage paid for the label, and where to print it.
-  labelUrl         String?     @map("label_url")
-  postageCents     Int?        @map("postage_cents")
-  totalCents       Int         @map("total_cents")
+  labelUrl            String?       @map("label_url")
+  postageCents        Int?          @map("postage_cents")
+  totalCents          Int           @map("total_cents")
   /// Address snapshots: orders never change when an address book entry does.
-  shippingAddress  Json        @map("shipping_address")
-  billingAddress   Json?       @map("billing_address")
-  trackingCarrier  String?     @map("tracking_carrier")
-  trackingNumber   String?     @map("tracking_number")
-  cancelReason     String?     @map("cancel_reason")
-  placedAt         DateTime?   @map("placed_at")
-  fulfillingAt     DateTime?   @map("fulfilling_at")
-  shippedAt        DateTime?   @map("shipped_at")
-  deliveredAt      DateTime?   @map("delivered_at")
-  cancelledAt      DateTime?   @map("cancelled_at")
+  shippingAddress     Json          @map("shipping_address")
+  billingAddress      Json?         @map("billing_address")
+  trackingCarrier     String?       @map("tracking_carrier")
+  trackingNumber      String?       @map("tracking_number")
+  cancelReason        String?       @map("cancel_reason")
+  placedAt            DateTime?     @map("placed_at")
+  fulfillingAt        DateTime?     @map("fulfilling_at")
+  shippedAt           DateTime?     @map("shipped_at")
+  deliveredAt         DateTime?     @map("delivered_at")
+  cancelledAt         DateTime?     @map("cancelled_at")
   /// Fraud review (ADR-0024): paid but not to be shipped until staff clear it.
-  riskHold         Boolean     @default(false) @map("risk_hold")
+  riskHold            Boolean       @default(false) @map("risk_hold")
   /// What was bought: goods to ship, or e-gift cards sent by email (p10-10).
-  kind             OrderKind   @default(GOODS)
+  kind                OrderKind     @default(GOODS)
   /// Part of the total paid from the customer's gift card balance (p10-10).
-  giftBalanceCents Int         @default(0) @map("gift_balance_cents")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  giftBalanceCents    Int           @default(0) @map("gift_balance_cents")
+  /// NIXZORA Plus (p10-15): the parcel speed NIXZORA ships its own items at.
+  shippingSpeed       ShippingSpeed @default(STANDARD) @map("shipping_speed")
+  /// Shipping a Plus member did not pay; NIXZORA funds sellers' share of it.
+  shippingWaivedCents Int           @default(0) @map("shipping_waived_cents")
+  /// What Plus saved on this order (free shipping and member deal prices), for "you saved".
+  plusSavingsCents    Int           @default(0) @map("plus_savings_cents")
+  /// For PLUS orders: the membership this fee pays for.
+  plusMembershipId    String?       @map("plus_membership_id") @db.Uuid
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
 
   user            User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           OrderItem[]
@@ -498,9 +507,11 @@ model Order {
   riskAssessments RiskAssessment[]
   giftCards       GiftCard[]
   giftEntries     GiftBalanceEntry[]
+  plusMembership  PlusMembership?    @relation(fields: [plusMembershipId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([status])
+  @@index([plusMembershipId])
   @@map("orders")
 }
 
@@ -542,6 +553,14 @@ enum PaymentProvider {
 enum OrderKind {
   GOODS
   GIFT_CARD
+  /// A NIXZORA Plus membership fee (p10-15): nothing ships.
+  PLUS
+}
+
+/// How NIXZORA's own parcel travels: Plus members get 2-day delivery (p10-15).
+enum ShippingSpeed {
+  STANDARD
+  TWO_DAY
 }
 
 enum GiftCardStatus {
@@ -1714,6 +1733,12 @@ model ProductAlert {
 
 // ───────────── Deals (p10-07) ─────────────
 
+enum DealAudience {
+  EVERYONE
+  /// Member-only price: the listed price stays; members pay the deal price.
+  PLUS
+}
+
 enum DealKind {
   /// A few hours, often with a limited quantity ("72% claimed").
   LIGHTNING
@@ -1731,23 +1756,25 @@ enum DealStatus {
 /// A limited-time price drop on every variant of a product. While live, the variants' prices are
 /// lowered (the regular price becomes the "was" price) and restored when it ends.
 model Deal {
-  id             String     @id @default(uuid(7)) @db.Uuid
-  productId      String     @map("product_id") @db.Uuid
+  id             String       @id @default(uuid(7)) @db.Uuid
+  productId      String       @map("product_id") @db.Uuid
   kind           DealKind
-  percentOff     Int        @map("percent_off")
-  startsAt       DateTime   @map("starts_at")
-  endsAt         DateTime   @map("ends_at")
+  percentOff     Int          @map("percent_off")
+  startsAt       DateTime     @map("starts_at")
+  endsAt         DateTime     @map("ends_at")
   /// Units at the deal price (lightning deals); null for no limit.
   quantity       Int?
-  claimed        Int        @default(0)
-  status         DealStatus @default(SCHEDULED)
+  claimed        Int          @default(0)
+  status         DealStatus   @default(SCHEDULED)
   /// Each variant's price and "was" price before the deal: {variantId: [price, compareAt]}.
-  originalPrices Json?      @map("original_prices")
+  originalPrices Json?        @map("original_prices")
+  /// Who gets the price: everyone, or NIXZORA Plus members only (p10-15).
+  audience       DealAudience @default(EVERYONE)
   /// The store that created it, or null for NIXZORA staff.
-  sellerId       String?    @map("seller_id") @db.Uuid
-  createdById    String     @map("created_by_id") @db.Uuid
-  createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @updatedAt @map("updated_at")
+  sellerId       String?      @map("seller_id") @db.Uuid
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -1801,4 +1828,52 @@ model ShoppingListItem {
   @@id([listId, productId])
   @@index([productId])
   @@map("shopping_list_items")
+}
+
+// ───────────── NIXZORA Plus (p10-15) ─────────────
+
+enum PlusPlan {
+  MONTHLY
+  YEARLY
+}
+
+enum PlusStatus {
+  /// The free 30 days.
+  TRIALING
+  ACTIVE
+  /// The renewal could not be charged: benefits continue for a short grace period.
+  PAST_DUE
+  ENDED
+}
+
+/// One per customer, reused if they leave and come back (the free trial is once per customer).
+model PlusMembership {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  userId            String     @unique @map("user_id") @db.Uuid
+  plan              PlusPlan
+  status            PlusStatus
+  /// Benefits last until here (the trial's end, or the paid period's end).
+  currentPeriodEnd  DateTime   @map("current_period_end")
+  /// Leaving: benefits continue to currentPeriodEnd, then the membership ends without charging.
+  cancelAtPeriodEnd Boolean    @default(false) @map("cancel_at_period_end")
+  /// The card renewals are charged to; null for the customer's default card.
+  paymentCardId     String?    @map("payment_card_id") @db.Uuid
+  /// Set once the free trial has been used.
+  trialUsedAt       DateTime?  @map("trial_used_at")
+  /// Failed renewal charges in a row (the grace period's retries).
+  failedAttempts    Int        @default(0) @map("failed_attempts")
+  /// When the sweep next tries to charge (a retry) or remind (trial ending).
+  nextAttemptAt     DateTime?  @map("next_attempt_at")
+  /// The trial-ending reminder went out for this period.
+  remindedAt        DateTime?  @map("reminded_at")
+  startedAt         DateTime   @default(now()) @map("started_at")
+  endedAt           DateTime?  @map("ended_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([status, currentPeriodEnd])
+  @@map("plus_memberships")
 }

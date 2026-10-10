@@ -71,6 +71,22 @@ describe('splitBySeller', () => {
   });
 });
 
+describe('splitBySeller with NIXZORA Plus', () => {
+  it('still pays the store its shipping share when a member shipped free (NIXZORA funds it)', async () => {
+    const { tx, writes } = fakeTx();
+    await splitBySeller(tx, {
+      id: 'o2',
+      number: 'NX-2',
+      subtotalCents: 4000,
+      shippingCents: 0,
+      shippingWaivedCents: 999,
+      items: [{ sellerId: 's1', totalCents: 4000 }],
+    });
+    const part = writes.find((w) => w.model === 'sellerOrder')!.data;
+    expect(part).toMatchObject({ shippingCents: 999, netCents: 4000 + 999 - 480 });
+  });
+});
+
 describe('allocateRefund', () => {
   const part = (sellerId: string, itemsCents: number) => ({
     id: `p-${sellerId}`,

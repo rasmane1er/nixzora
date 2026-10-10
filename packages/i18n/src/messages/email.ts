@@ -171,6 +171,38 @@ export const email = defineMessages({
     push_backInStock_body: '{title} is available again: {price}.',
     push_priceDrop_title: 'Price drop',
     push_priceDrop_body: '{title} is now {price} (was {was}).',
+    plus_trial_subject: 'Welcome to NIXZORA Plus: your free trial has started',
+    plus_trial_text:
+      'Your 30-day free trial runs until {date}. Enjoy free 2-day delivery on items NIXZORA ships, free standard shipping on everything else, member deal prices and early access to lightning deals.\n\nAfter the trial, Plus renews at {price} {per} on {card} until you cancel. Cancel before {date} and you won’t be charged.\n\nManage your membership: {link}\n',
+    plus_joined_subject: 'Welcome to NIXZORA Plus',
+    plus_joined_text:
+      'Thanks for joining. We charged {price} for your {plan} membership, which renews on {date} at {price} until you cancel.\n\nCancel any time; you keep the benefits until {date}: {link}\n',
+    plus_renewed_subject: 'Your NIXZORA Plus membership renewed',
+    plus_renewed_text:
+      'We charged {price} for another {period} of NIXZORA Plus. Your next renewal is on {date}.\n\nManage your membership: {link}\n',
+    plus_reminder_subject: 'NIXZORA Plus renews on {date}',
+    plus_reminder_text:
+      'Your {what} ends on {date}. Then Plus renews at {price} {per} on {card}.\n\nNothing to do if you’d like to keep it. To cancel, or to choose another card or plan: {link}\n',
+    plus_reminder_trial: 'free trial',
+    plus_reminder_period: 'current membership period',
+    plus_noCard: 'the card you add before then',
+    plus_failed_subject: 'We couldn’t renew your NIXZORA Plus membership',
+    plus_failed_text:
+      'Your Plus renewal of {price} couldn’t be charged{problem}. Your benefits continue until {graceDate} while we try again.\n\nPay now, with any card: {payLink}\n\nManage your membership: {link}\n',
+    plus_ended_subject: 'Your NIXZORA Plus membership has ended',
+    plus_ended_text:
+      'Your Plus membership ended on {date}. Thanks for being a member.\n\nRejoin any time: {link}\n',
+    plus_leaving_subject: 'You’ve cancelled NIXZORA Plus',
+    plus_leaving_text:
+      'Your membership won’t renew. You keep free shipping and member prices until {date}.\n\nChanged your mind? Keep Plus here: {link}\n',
+    plus_per_MONTHLY: 'a month',
+    plus_per_YEARLY: 'a year',
+    plus_period_MONTHLY: 'month',
+    plus_period_YEARLY: 'year',
+    plus_plan_MONTHLY: 'monthly',
+    plus_plan_YEARLY: 'yearly',
+    push_plusFailed_title: 'NIXZORA Plus payment needed',
+    push_plusFailed_body: 'Your Plus renewal couldn’t be charged. Your benefits continue for now.',
   },
   fr: {
     auth_duplicate_subject:
@@ -336,6 +368,39 @@ export const email = defineMessages({
     push_backInStock_body: '{title} est de nouveau disponible : {price}.',
     push_priceDrop_title: 'Baisse de prix',
     push_priceDrop_body: '{title} est maintenant à {price} (au lieu de {was}).',
+    plus_trial_subject: 'Bienvenue dans NIXZORA Plus : votre essai gratuit commence',
+    plus_trial_text:
+      'Votre essai gratuit de 30 jours dure jusqu’au {date}. Profitez de la livraison gratuite en 2 jours sur les articles expédiés par NIXZORA, de la livraison standard gratuite sur tout le reste, des prix réservés aux membres et de l’accès anticipé aux offres éclair.\n\nAprès l’essai, Plus se renouvelle à {price} {per} sur {card} jusqu’à ce que vous annuliez. Annulez avant le {date} et vous ne serez pas débité.\n\nGérer votre abonnement : {link}\n',
+    plus_joined_subject: 'Bienvenue dans NIXZORA Plus',
+    plus_joined_text:
+      'Merci de nous avoir rejoints. Nous avons débité {price} pour votre abonnement {plan}, qui se renouvelle le {date} à {price} jusqu’à ce que vous annuliez.\n\nAnnulez à tout moment ; vous gardez les avantages jusqu’au {date} : {link}\n',
+    plus_renewed_subject: 'Votre abonnement NIXZORA Plus est renouvelé',
+    plus_renewed_text:
+      'Nous avons débité {price} pour un {period} de plus de NIXZORA Plus. Prochain renouvellement le {date}.\n\nGérer votre abonnement : {link}\n',
+    plus_reminder_subject: 'NIXZORA Plus se renouvelle le {date}',
+    plus_reminder_text:
+      'Votre {what} se termine le {date}. Plus se renouvelle ensuite à {price} {per} sur {card}.\n\nRien à faire pour le garder. Pour annuler, ou choisir une autre carte ou formule : {link}\n',
+    plus_reminder_trial: 'essai gratuit',
+    plus_reminder_period: 'période d’abonnement en cours',
+    plus_noCard: 'la carte que vous ajouterez d’ici là',
+    plus_failed_subject: 'Nous n’avons pas pu renouveler votre abonnement NIXZORA Plus',
+    plus_failed_text:
+      'Le renouvellement de Plus ({price}) n’a pas pu être débité{problem}. Vos avantages continuent jusqu’au {graceDate} pendant que nous réessayons.\n\nPayer maintenant, avec n’importe quelle carte : {payLink}\n\nGérer votre abonnement : {link}\n',
+    plus_ended_subject: 'Votre abonnement NIXZORA Plus a pris fin',
+    plus_ended_text:
+      'Votre abonnement Plus a pris fin le {date}. Merci d’avoir été membre.\n\nRevenez quand vous voulez : {link}\n',
+    plus_leaving_subject: 'Vous avez résilié NIXZORA Plus',
+    plus_leaving_text:
+      'Votre abonnement ne sera pas renouvelé. Vous gardez la livraison gratuite et les prix membres jusqu’au {date}.\n\nVous changez d’avis ? Gardez Plus ici : {link}\n',
+    plus_per_MONTHLY: 'par mois',
+    plus_per_YEARLY: 'par an',
+    plus_period_MONTHLY: 'mois',
+    plus_period_YEARLY: 'an',
+    plus_plan_MONTHLY: 'mensuel',
+    plus_plan_YEARLY: 'annuel',
+    push_plusFailed_title: 'Paiement NIXZORA Plus nécessaire',
+    push_plusFailed_body:
+      'Le renouvellement de Plus n’a pas pu être débité. Vos avantages continuent pour l’instant.',
   },
   es: {
     auth_duplicate_subject: 'Alguien intentó crear una cuenta de NIXZORA con tu correo electrónico',
@@ -498,5 +563,38 @@ export const email = defineMessages({
     push_backInStock_body: '{title} vuelve a estar disponible: {price}.',
     push_priceDrop_title: 'Bajó de precio',
     push_priceDrop_body: '{title} ahora cuesta {price} (antes {was}).',
+    plus_trial_subject: 'Bienvenido a NIXZORA Plus: empezó tu prueba gratis',
+    plus_trial_text:
+      'Tu prueba gratis de 30 días dura hasta el {date}. Disfruta de envío gratis en 2 días en artículos que envía NIXZORA, envío estándar gratis en todo lo demás, precios para miembros y acceso anticipado a las ofertas relámpago.\n\nDespués de la prueba, Plus se renueva a {price} {per} en {card} hasta que canceles. Cancela antes del {date} y no se te cobrará.\n\nAdministra tu membresía: {link}\n',
+    plus_joined_subject: 'Bienvenido a NIXZORA Plus',
+    plus_joined_text:
+      'Gracias por unirte. Cobramos {price} por tu membresía {plan}, que se renueva el {date} a {price} hasta que canceles.\n\nCancela cuando quieras; conservas los beneficios hasta el {date}: {link}\n',
+    plus_renewed_subject: 'Tu membresía NIXZORA Plus se renovó',
+    plus_renewed_text:
+      'Cobramos {price} por otro {period} de NIXZORA Plus. Tu próxima renovación es el {date}.\n\nAdministra tu membresía: {link}\n',
+    plus_reminder_subject: 'NIXZORA Plus se renueva el {date}',
+    plus_reminder_text:
+      'Tu {what} termina el {date}. Después, Plus se renueva a {price} {per} en {card}.\n\nNo tienes que hacer nada para conservarla. Para cancelar, o elegir otra tarjeta o plan: {link}\n',
+    plus_reminder_trial: 'prueba gratis',
+    plus_reminder_period: 'periodo actual de membresía',
+    plus_noCard: 'la tarjeta que agregues antes',
+    plus_failed_subject: 'No pudimos renovar tu membresía NIXZORA Plus',
+    plus_failed_text:
+      'No se pudo cobrar la renovación de Plus ({price}){problem}. Tus beneficios siguen hasta el {graceDate} mientras lo intentamos de nuevo.\n\nPaga ahora, con cualquier tarjeta: {payLink}\n\nAdministra tu membresía: {link}\n',
+    plus_ended_subject: 'Tu membresía NIXZORA Plus terminó',
+    plus_ended_text:
+      'Tu membresía Plus terminó el {date}. Gracias por ser miembro.\n\nVuelve cuando quieras: {link}\n',
+    plus_leaving_subject: 'Cancelaste NIXZORA Plus',
+    plus_leaving_text:
+      'Tu membresía no se renovará. Conservas el envío gratis y los precios para miembros hasta el {date}.\n\n¿Cambiaste de opinión? Conserva Plus aquí: {link}\n',
+    plus_per_MONTHLY: 'al mes',
+    plus_per_YEARLY: 'al año',
+    plus_period_MONTHLY: 'mes',
+    plus_period_YEARLY: 'año',
+    plus_plan_MONTHLY: 'mensual',
+    plus_plan_YEARLY: 'anual',
+    push_plusFailed_title: 'Pago de NIXZORA Plus necesario',
+    push_plusFailed_body:
+      'No se pudo cobrar la renovación de Plus. Tus beneficios siguen por ahora.',
   },
 });

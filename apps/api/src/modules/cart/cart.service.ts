@@ -5,9 +5,16 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { type Cart, type CartLine, deliveryWindow, OWN_HANDLING_DAYS } from '@nixzora/validation';
+import {
+  type Cart,
+  type CartLine,
+  deliveryWindow,
+  OWN_HANDLING_DAYS,
+  twoDayWindow,
+} from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
+import { PlusBenefits } from '../plus/plus-benefits.service';
 import { availableOf } from '../catalog/catalog-mappers';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -39,6 +46,7 @@ export class CartService {
     private readonly pricing: PricingService,
     private readonly storage: StorageService,
     private readonly coupons: CouponsService,
+    private readonly plus: PlusBenefits,
   ) {}
 
   static newGuestId(): string {
@@ -156,7 +164,12 @@ export class CartService {
   }
 
   /** The cart priced from the live catalog, with stock problems flagged per line. */
-  async view(owner: CartOwner, region?: string | null): Promise<Cart> {
+  async view(
+    owner: CartOwner,
+    region?: string | null,
+    /** The signed-in customer looking at a buy-now cart (member prices, p10-15). */
+    viewerId?: string | null,
+  ): Promise<Cart> {
     const quantities = await this.quantities(owner);
     const variants = quantities.size
       ? await this.prisma.productVariant.findMany({
@@ -173,6 +186,12 @@ export class CartService {
         })
       : [];
     const byId = new Map(variants.map((variant) => [variant.id, variant]));
+    // NIXZORA Plus (p10-15): member-only deal prices, free shipping, 2-day on NIXZORA's items.
+    const memberId = 'userId' in owner ? owner.userId : (viewerId ?? null);
+    const member = memberId ? await this.plus.isMember(memberId) : false;
+    const memberPrices = member
+      ? await this.plus.memberPrices(variants)
+      : new Map<string, number>();
 
     const lines: CartLine[] = [];
     for (const [variantId, quantity] of quantities) {
@@ -185,6 +204,8 @@ export class CartService {
       const available = availableOf(variant.inventory);
       const sellable = variant.isActive && variant.product.status === 'ACTIVE';
       const image = variant.product.images[0];
+      const memberPrice = memberPrices.get(variantId);
+      const unitPrice = memberPrice ?? variant.priceCents;
       lines.push({
         variantId,
         productId: variant.productId,
@@ -194,10 +215,13 @@ export class CartService {
         sku: variant.sku,
         options: (variant.options ?? {}) as Record<string, string>,
         imageUrl: image ? this.storage.publicUrl(image.storageKey) : null,
-        unitPriceCents: variant.priceCents,
-        compareAtCents: variant.compareAtCents,
+        unitPriceCents: unitPrice,
+        compareAtCents: memberPrice
+          ? Math.max(variant.priceCents, variant.compareAtCents ?? 0)
+          : variant.compareAtCents,
         quantity,
-        lineTotalCents: variant.priceCents * quantity,
+        lineTotalCents: unitPrice * quantity,
+        ...(memberPrice ? { regularPriceCents: variant.priceCents } : {}),
         available,
         problem:
           !sellable || available === 0
@@ -224,12 +248,20 @@ export class CartService {
       0,
       ...buyable.map((v) => v.product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
     );
+    const own = buyable.some((v) => !v.product.sellerId);
     return {
-      delivery: buyable.length ? deliveryWindow(new Date(), handling) : null,
+      delivery: !buyable.length
+        ? null
+        : member && buyable.every((v) => !v.product.sellerId)
+          ? twoDayWindow(new Date())
+          : deliveryWindow(new Date(), handling),
       cartId: 'guestId' in owner ? owner.guestId : 'buyNowId' in owner ? owner.buyNowId : null,
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
-      totals: this.pricing.totals(subtotal, region, check?.ok ? check.discountCents : 0),
+      totals: this.pricing.totals(subtotal, region, check?.ok ? check.discountCents : 0, 'USD', {
+        member,
+        twoDay: own,
+      }),
       coupon:
         code && check
           ? {

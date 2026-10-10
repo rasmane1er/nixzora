@@ -359,6 +359,7 @@ export class AccountHubService {
         paymentCards: true,
         giftEntries: { orderBy: { createdAt: 'asc' } },
         subscriptions: { include: { product: { select: { title: true } } } },
+        plusMembership: true,
         conversations: {
           include: {
             seller: { select: { displayName: true } },
@@ -472,6 +473,16 @@ export class AccountHubService {
         status: sub.status.toLowerCase(),
         nextOrderAt: sub.nextOrderAt,
       })),
+      plusMembership: user.plusMembership
+        ? {
+            plan: user.plusMembership.plan.toLowerCase(),
+            status: user.plusMembership.status.toLowerCase(),
+            currentPeriodEnd: user.plusMembership.currentPeriodEnd,
+            leaving: user.plusMembership.cancelAtPeriodEnd,
+            memberSince: user.plusMembership.startedAt,
+            trialUsedAt: user.plusMembership.trialUsedAt,
+          }
+        : null,
       messages: user.conversations.map((c) => ({
         store: c.seller.displayName,
         subject: c.subject,

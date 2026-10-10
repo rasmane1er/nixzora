@@ -24,8 +24,9 @@ const KINDS: {
 export default async function DealsPageView({ searchParams }: { searchParams: SearchParams }) {
   const raw = param(await searchParams, 'kind');
   const kind = raw === 'LIGHTNING' || raw === 'DAY' ? raw : undefined;
-  const [t, f, page] = await Promise.all([
+  const [t, pl, f, page] = await Promise.all([
     getT('deals'),
+    getT('plus'),
     getFormat(),
     api<DealsPage>(`/catalog/deals${kind ? `?kind=${kind}` : ''}`, { revalidate: 30 }).catch(
       () => null,
@@ -80,6 +81,11 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
                       {t('percentOff', { percent: f.percent(u.percentOff / 100) })} ·{' '}
                       {t('startsAt', { time: f.dateTime(u.startsAt) })}
                     </span>
+                    {u.earlyAccess ? (
+                      <span className="plus-price">
+                        <span className="plus-chip">{pl('badge')}</span> {pl('earlyAccessNow')}
+                      </span>
+                    ) : null}
                   </span>
                 </Link>
               </li>

@@ -12,6 +12,7 @@ import { useSession } from '@/lib/session';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
+import { PLUS_ACCENT, PlusPriceText } from './PlusNote';
 import { PressableLink } from './PressableLink';
 import { Price } from './Price';
 import { Stars } from './Stars';
@@ -116,6 +117,12 @@ export function ProductCard({
             currency={product.currency}
             prefix={product.defaultVariantId ? undefined : tp('from')}
           />
+          {product.deal?.plusOnly ? (
+            <PlusPriceText
+              priceCents={product.priceFromCents}
+              percentOff={product.deal.percentOff}
+            />
+          ) : null}
           {product.deal ? <DealTimer deal={product.deal} /> : null}
           {!product.inStock ? (
             <Text variant="small" tone="error">
@@ -129,7 +136,14 @@ export function ProductCard({
           style={[
             styles.badge,
             {
-              backgroundColor: 'deal' in badge ? DEAL_RED : badge.top ? '#2457C5' : brand.signal,
+              backgroundColor:
+                'deal' in badge
+                  ? product.deal?.plusOnly
+                    ? PLUS_ACCENT
+                    : DEAL_RED
+                  : badge.top
+                    ? '#2457C5'
+                    : brand.signal,
             },
           ]}
           pointerEvents="none"

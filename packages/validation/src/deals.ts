@@ -10,6 +10,11 @@ export const DEAL_KINDS = ['LIGHTNING', 'DAY'] as const;
 export type DealKind = (typeof DEAL_KINDS)[number];
 export const DEAL_MAX_HOURS: Record<DealKind, number> = { LIGHTNING: 12, DAY: 7 * 24 };
 export const DEAL_MIN_PERCENT = 5;
+/** Who gets a deal's price: everyone, or NIXZORA Plus members only (p10-15). */
+export const DEAL_AUDIENCES = ['EVERYONE', 'PLUS'] as const;
+export type DealAudience = (typeof DEAL_AUDIENCES)[number];
+/** Plus members get lightning deals this many minutes before everyone else. */
+export const PLUS_EARLY_ACCESS_MINUTES = 30;
 export const DEAL_MAX_PERCENT = 80;
 
 export const DealCreateSchema = z
@@ -20,6 +25,7 @@ export const DealCreateSchema = z
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
     quantity: z.number().int().min(1).max(100_000).nullable().optional(),
+    audience: z.enum(DEAL_AUDIENCES).default('EVERYONE'),
   })
   .refine((d) => Date.parse(d.endsAt) > Date.parse(d.startsAt), {
     message: 'The deal must end after it starts.',
@@ -42,6 +48,7 @@ export type DealView = {
   quantity: number | null;
   claimed: number;
   status: DealStatus;
+  audience: DealAudience;
   product: { id: string; slug: string; title: string; imageUrl: string | null };
   seller: { handle: string; displayName: string } | null;
 };
@@ -56,5 +63,12 @@ export type DealListQuery = z.infer<typeof DealListQuerySchema>;
 /** The deals page: live deals, ending soonest first, and what starts next. */
 export type DealsPage = {
   live: ProductCard[];
-  upcoming: { product: ProductCard; startsAt: string; percentOff: number; kind: DealKind }[];
+  upcoming: {
+    product: ProductCard;
+    startsAt: string;
+    percentOff: number;
+    kind: DealKind;
+    /** Plus members can already buy it at the deal price (early access). */
+    earlyAccess?: boolean;
+  }[];
 };

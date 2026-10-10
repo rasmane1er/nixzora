@@ -1,5 +1,10 @@
 import type {
   CompareView,
+  MyPlus,
+  PlusJoin,
+  PlusJoinResult,
+  PlusOffer,
+  PlusUpdate,
   VisualSearchResult,
   ConversationStart,
   ConversationSummary,
@@ -544,6 +549,12 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** NIXZORA Plus (p10-15): the offer and your membership. */
+      plusOffer: () => request<PlusOffer>('GET', '/plus'),
+      plus: () => request<MyPlus>('GET', '/me/plus'),
+      /** Free trial when available; otherwise a payment to finish like a checkout. */
+      joinPlus: (body: PlusJoin) => request<PlusJoinResult>('POST', '/me/plus', { body }),
+      updatePlus: (body: PlusUpdate) => request<MyPlus>('PATCH', '/me/plus', { body }),
       /** Gift card balance (p10-10): what's left, and what was added and spent. */
       giftBalance: () => request<GiftBalanceView>('GET', '/me/gift-cards'),
       redeemGiftCard: (code: string) =>

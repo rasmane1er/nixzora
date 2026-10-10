@@ -14,6 +14,7 @@ import { space } from '@/lib/theme';
 /** Today's deals (p10-07): live deals ending soonest first, then what starts next. */
 export default function DealsScreen() {
   const t = useT('deals');
+  const tpl = useT('plus');
   const { percent, dateTime } = useFormatters();
   const [kind, setKind] = useState<DealKind | 'ALL'>('ALL');
   const deals = useQuery({
@@ -52,6 +53,7 @@ export default function DealsScreen() {
                 {u.product.title} · {t(u.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} ·{' '}
                 {t('percentOff', { percent: percent(u.percentOff / 100) })} ·{' '}
                 {t('startsAt', { time: dateTime(u.startsAt) })}
+                {u.earlyAccess ? ` · ${tpl('earlyAccessNow')}` : ''}
               </Text>
             ))}
           </View>

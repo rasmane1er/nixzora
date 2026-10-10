@@ -21,7 +21,9 @@ export type RefundableOrder = {
   number: string;
   status: string;
   /** Gift card orders (p10-10) refund in full and void their cards. */
-  kind?: 'GOODS' | 'GIFT_CARD';
+  kind?: 'GOODS' | 'GIFT_CARD' | 'PLUS';
+  /** For Plus fees (p10-15): the membership a full refund ends. */
+  plusMembershipId?: string | null;
   totalCents: number;
   refundedCents: number;
   items: {
@@ -128,6 +130,13 @@ export class RefundsService {
         await tx.order.update({
           where: { id: order.id },
           data: { refundedCents: { increment: amountCents } },
+        });
+      }
+      if (order.kind === 'PLUS' && full && order.plusMembershipId) {
+        // A refunded Plus fee (p10-15) ends the membership now.
+        await tx.plusMembership.updateMany({
+          where: { id: order.plusMembershipId, status: { not: 'ENDED' } },
+          data: { status: 'ENDED', endedAt: new Date(), nextAttemptAt: null },
         });
       }
       if (order.kind === 'GIFT_CARD') {

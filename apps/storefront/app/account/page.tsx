@@ -69,6 +69,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   ]);
   const g = await getT('gifts');
   const sb = await getT('subscribe');
+  const pl = await getT('plus');
   const ib = await getT('inbox');
   const since = f.monthYear(profile.memberSince);
 
@@ -103,6 +104,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
         { href: '/account/lists', icon: 'lists', label: l('title') },
         { href: '/account/messages', icon: 'chat', label: ib('title') },
         { href: '/account/subscriptions', icon: 'buyAgain', label: sb('title') },
+        { href: '/account/plus', icon: 'gift', label: pl('title') },
         {
           href: '/account/gift-cards',
           icon: 'gift',

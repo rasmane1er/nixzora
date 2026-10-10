@@ -10,6 +10,7 @@ import { ExpectedDelivery, TrackingScans } from '@/components/Delivery';
 import { OrderStatusPill } from '@/components/OrderStatusPill';
 import { RateSeller } from '@/components/RateSeller';
 import { Totals } from '@/components/Totals';
+import { PressableLink } from '@/components/PressableLink';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
@@ -93,6 +94,7 @@ export default function OrderScreen() {
   const [push, setPush] = useState<PushStatus | null>(null);
   const w = useT('wallet');
   const g = useT('gifts');
+  const tpl = useT('plus');
   const ti = useT('inbox');
   const client = useQueryClient();
   // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
@@ -220,89 +222,91 @@ export default function OrderScreen() {
           <Banner tone="warn">{t('confirmingPayment')}</Banner>
         ) : null}
 
-        <Card>
-          <Timeline order={o} />
-          {!o.shipments.length ? <ExpectedDelivery window={o.estimatedDelivery} /> : null}
-          {o.shipments.length ? (
-            // Marketplace order: one parcel for NIXZORA's items and one per seller.
-            o.shipments.map((part) => (
-              <View
-                key={part.seller?.handle ?? 'nixzora'}
-                style={{ gap: space.xs, marginTop: space.sm }}
-              >
-                <Divider />
-                <Text style={{ fontFamily: fonts.bodyMedium }}>
-                  {t('shipmentFrom', {
-                    name: part.seller?.displayName ?? 'NIXZORA',
-                    status: t(SHIPMENT_LABEL[part.status]),
-                  })}
-                </Text>
-                <Text variant="small" muted>
-                  {o.items
-                    .filter((item) => part.itemIds.includes(item.id))
-                    .map((item) => `${item.quantity} × ${item.productTitle}`)
-                    .join(', ')}
-                </Text>
-                {part.tracking ? (
-                  <Text variant="small" muted>
-                    {part.tracking.carrier} · <Text variant="mono">{part.tracking.number}</Text>
+        {o.kind === 'PLUS' ? null : (
+          <Card>
+            <Timeline order={o} />
+            {!o.shipments.length ? <ExpectedDelivery window={o.estimatedDelivery} /> : null}
+            {o.shipments.length ? (
+              // Marketplace order: one parcel for NIXZORA's items and one per seller.
+              o.shipments.map((part) => (
+                <View
+                  key={part.seller?.handle ?? 'nixzora'}
+                  style={{ gap: space.xs, marginTop: space.sm }}
+                >
+                  <Divider />
+                  <Text style={{ fontFamily: fonts.bodyMedium }}>
+                    {t('shipmentFrom', {
+                      name: part.seller?.displayName ?? 'NIXZORA',
+                      status: t(SHIPMENT_LABEL[part.status]),
+                    })}
                   </Text>
-                ) : null}
-                {part.status !== 'DELIVERED' ? (
-                  <ExpectedDelivery window={part.estimatedDelivery} />
-                ) : null}
-                {part.tracking ? <TrackingScans events={part.events} /> : null}
-                {part.tracking?.url ? (
+                  <Text variant="small" muted>
+                    {o.items
+                      .filter((item) => part.itemIds.includes(item.id))
+                      .map((item) => `${item.quantity} × ${item.productTitle}`)
+                      .join(', ')}
+                  </Text>
+                  {part.tracking ? (
+                    <Text variant="small" muted>
+                      {part.tracking.carrier} · <Text variant="mono">{part.tracking.number}</Text>
+                    </Text>
+                  ) : null}
+                  {part.status !== 'DELIVERED' ? (
+                    <ExpectedDelivery window={part.estimatedDelivery} />
+                  ) : null}
+                  {part.tracking ? <TrackingScans events={part.events} /> : null}
+                  {part.tracking?.url ? (
+                    <Button
+                      title={to('trackPackage')}
+                      tone="ghost"
+                      icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
+                      onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
+                    />
+                  ) : null}
+                  {part.seller && status === 'signedIn' ? (
+                    <Button
+                      title={ti('contactStore', { store: part.seller.displayName })}
+                      tone="ghost"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/messages/new',
+                          params: {
+                            store: part.seller!.handle,
+                            name: part.seller!.displayName,
+                            order: o.number,
+                          },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {part.seller && part.ratableUntil ? (
+                    <RateSeller number={o.number} token={token} shipment={part} />
+                  ) : part.rating ? (
+                    <Text variant="small" muted>
+                      {to('ratedSeller', { value: part.rating.value })}
+                    </Text>
+                  ) : null}
+                </View>
+              ))
+            ) : o.tracking ? (
+              <View style={{ gap: space.sm, marginTop: space.sm }}>
+                <Divider />
+                <Text variant="small" muted>
+                  {o.tracking.carrier} · <Text variant="mono">{o.tracking.number}</Text>
+                </Text>
+                <TrackingScans events={o.trackingEvents} />
+                {o.tracking.url ? (
                   <Button
                     title={to('trackPackage')}
                     tone="ghost"
                     icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
-                    onPress={() => void WebBrowser.openBrowserAsync(part.tracking!.url!)}
+                    onPress={() => void WebBrowser.openBrowserAsync(o.tracking!.url!)}
                   />
-                ) : null}
-                {part.seller && status === 'signedIn' ? (
-                  <Button
-                    title={ti('contactStore', { store: part.seller.displayName })}
-                    tone="ghost"
-                    onPress={() =>
-                      router.push({
-                        pathname: '/messages/new',
-                        params: {
-                          store: part.seller!.handle,
-                          name: part.seller!.displayName,
-                          order: o.number,
-                        },
-                      })
-                    }
-                  />
-                ) : null}
-                {part.seller && part.ratableUntil ? (
-                  <RateSeller number={o.number} token={token} shipment={part} />
-                ) : part.rating ? (
-                  <Text variant="small" muted>
-                    {to('ratedSeller', { value: part.rating.value })}
-                  </Text>
                 ) : null}
               </View>
-            ))
-          ) : o.tracking ? (
-            <View style={{ gap: space.sm, marginTop: space.sm }}>
-              <Divider />
-              <Text variant="small" muted>
-                {o.tracking.carrier} · <Text variant="mono">{o.tracking.number}</Text>
-              </Text>
-              <TrackingScans events={o.trackingEvents} />
-              {o.tracking.url ? (
-                <Button
-                  title={to('trackPackage')}
-                  tone="ghost"
-                  icon={<Ionicons name="navigate-outline" size={18} color={brand.signal} />}
-                  onPress={() => void WebBrowser.openBrowserAsync(o.tracking!.url!)}
-                />
-              ) : null}
-            </View>
-          ) : null}
-        </Card>
+            ) : null}
+          </Card>
+        )}
 
         <Card>
           <Text variant="heading">{to('items')}</Text>
@@ -348,6 +352,14 @@ export default function OrderScreen() {
                     : g('sentTo', { name: card.recipientName, email: card.recipientEmail })}
               </Text>
             ))}
+          </Card>
+        ) : o.kind === 'PLUS' ? (
+          <Card>
+            <Text variant="heading">{tpl('orderTitle')}</Text>
+            <Text muted>{tpl('orderNote')}</Text>
+            <PressableLink href="/plus">
+              <Text tone="signal">{tpl('manage')}</Text>
+            </PressableLink>
           </Card>
         ) : (
           <Card>
