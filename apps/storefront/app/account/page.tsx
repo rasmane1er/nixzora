@@ -74,6 +74,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const hi = await getT('history');
   const ha = await getT('helpAgent');
   const rf = await getT('referrals');
+  const fl = await getT('follows');
   const since = f.monthYear(profile.memberSince);
 
   const groups: Group[] = [
@@ -167,6 +168,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
         { href: '/help', icon: 'help', label: t('helpCenter') },
         { href: '/help/contact', icon: 'chat', label: t('contactSupport') },
         { href: '/help/contact?topic=PROBLEM', icon: 'flag', label: t('reportProblem') },
+        { href: '/following', icon: 'store', label: fl('navTitle') },
         { href: '/account/referrals', icon: 'gift', label: rf('navTitle') },
         { href: '/help/chat', icon: 'chat', label: ha('hubLabel') },
         { href: '/account/support', icon: 'document', label: t('supportRequests') },

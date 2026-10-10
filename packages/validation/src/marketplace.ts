@@ -398,6 +398,8 @@ export const PublicSellerSchema = z.object({
   /** Orders the store has shipped. */
   salesCount: z.number().int(),
   handlingDays: z.number().int(),
+  /** People following the store (p10-24). */
+  followers: z.number().int().optional(),
 });
 
 // ───────────── Ratings and returns in the seller portal (p7-07) ─────────────

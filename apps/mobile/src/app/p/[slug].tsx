@@ -15,7 +15,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -486,9 +485,7 @@ export default function ProductScreen() {
                     variant="small"
                     style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
                     accessibilityRole="link"
-                    onPress={() =>
-                      void WebBrowser.openBrowserAsync(`${WEB_URL}/s/${item.seller!.handle}`)
-                    }
+                    onPress={() => router.push(`/s/${item.seller!.handle}`)}
                   >
                     {item.seller.displayName}
                   </Text>

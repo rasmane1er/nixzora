@@ -3,7 +3,16 @@
  * when it is installed. Configured per environment; when unset the files answer 404 and links
  * simply stay in the browser.
  */
-export const APP_LINK_PATHS = ['/p/*', '/c/*', '/search', '/cart', '/orders/*', '/r/*'];
+export const APP_LINK_PATHS = [
+  '/p/*',
+  '/c/*',
+  '/search',
+  '/cart',
+  '/orders/*',
+  '/r/*',
+  '/s/*',
+  '/following',
+];
 
 function list(value: string | undefined): string[] {
   return (value ?? '')

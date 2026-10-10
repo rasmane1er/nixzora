@@ -1,10 +1,17 @@
-import { type PagedResult, type ProductCard as Card, type PublicSeller } from '@nixzora/validation';
+import {
+  type FollowStatus,
+  type PagedResult,
+  type ProductCard as Card,
+  type PublicSeller,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
 import { SellerRating } from '@/components/SellerRating';
 import { api, ApiError } from '@/lib/api';
 import { departmentName, getFormat, getT } from '@/lib/i18n';
+import { isSignedIn } from '@/lib/session';
+import { FollowButton } from './FollowButton';
 
 const HANDLE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -40,6 +47,11 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
   );
   const t = await getT('store');
   const p = await getT('product');
+  // Follow stores (p10-24): whether the viewer follows it, and how many people do.
+  const signedIn = await isSignedIn();
+  const follow = await api<FollowStatus>(`/catalog/sellers/${handle}/follow`).catch(
+    (): FollowStatus => ({ following: false, notify: false, followers: store.followers ?? 0 }),
+  );
   const f = await getFormat();
   const since = f.monthYear(store.memberSince);
   const categoryName = store.category
@@ -73,6 +85,12 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
               {store.category ? ` · ${categoryName}` : ''}
             </p>
             <h1>{store.displayName}</h1>
+            <FollowButton
+              handle={store.handle}
+              store={store.displayName}
+              signedIn={signedIn}
+              initial={follow}
+            />
             <ul className="store-hero__stats">
               <li>
                 <SellerRating rating={store.rating} />

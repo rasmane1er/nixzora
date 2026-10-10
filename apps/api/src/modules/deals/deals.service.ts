@@ -295,6 +295,19 @@ export class DealsService implements OnModuleInit, OnModuleDestroy {
         data: { status: 'LIVE', originalPrices: originals as Prisma.InputJsonObject },
       });
       await this.changed(tx, deal.productId);
+      // Follow stores (p10-24): the store's followers hear about it.
+      await tx.outboxEvent.create({
+        data: {
+          aggregateType: 'deal',
+          aggregateId: id,
+          type: 'deal.started',
+          payload: {
+            productId: deal.productId,
+            sellerId: deal.sellerId,
+            percentOff: deal.percentOff,
+          },
+        },
+      });
       return true;
     });
   }

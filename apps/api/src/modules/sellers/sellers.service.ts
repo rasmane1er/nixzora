@@ -217,6 +217,7 @@ export class SellersService {
           select: {
             products: { where: { status: 'ACTIVE' } },
             orders: { where: { status: { in: ['SHIPPED', 'DELIVERED'] } } },
+            followers: true,
           },
         },
       },
@@ -237,6 +238,7 @@ export class SellersService {
       supportEmail: seller.supportEmail,
       salesCount: seller._count.orders,
       handlingDays: seller.handlingDays,
+      followers: seller._count.followers,
     };
   }
 

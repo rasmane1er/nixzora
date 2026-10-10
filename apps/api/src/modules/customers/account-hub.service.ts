@@ -363,6 +363,7 @@ export class AccountHubService {
         couponClips: { include: { coupon: { include: { product: { select: { title: true } } } } } },
         helpConversations: { include: { messages: { orderBy: { createdAt: 'asc' } } } },
         referralCode: true,
+        storeFollows: { include: { seller: { select: { displayName: true, handle: true } } } },
         referralsMade: { select: { status: true, rewardCents: true, createdAt: true } },
         referredBy: { select: { couponCode: true, createdAt: true } },
         savedItems: {
@@ -495,6 +496,12 @@ export class AccountHubService {
         product: c.coupon.product.title,
         clippedAt: c.createdAt,
         usedAt: c.usedAt,
+      })),
+      followedStores: user.storeFollows.map((f) => ({
+        store: f.seller.displayName,
+        handle: f.seller.handle,
+        dealNotifications: f.notify,
+        since: f.createdAt,
       })),
       referrals: {
         code: user.referralCode?.code ?? null,

@@ -1,4 +1,8 @@
 import type {
+  FollowedStore,
+  FollowingFeed,
+  FollowStatus,
+  PublicSeller,
   ReferralInvitePreview,
   ReferralView,
   BrowsingHistory,
@@ -272,6 +276,9 @@ export function createApiClient(options: ClientOptions) {
           query: query as Query,
           auth: 'none',
         }),
+      /** A marketplace store's public page (p10-24 brings it into the app). */
+      store: (handle: string) =>
+        request<PublicSeller>('GET', `/catalog/sellers/${enc(handle)}`, { auth: 'none' }),
       /** Spec and option filters for a search, category, brand or store, with counts. */
       facets: (query: Partial<ProductListQuery> = {}) =>
         request<{ facets: Facet[] }>('GET', '/catalog/facets', {
@@ -582,6 +589,15 @@ export function createApiClient(options: ClientOptions) {
       updateSubscription: (id: string, body: SubscriptionUpdate) =>
         request<SubscriptionView>('PATCH', `/me/subscriptions/${enc(id)}`, { body }),
       cancelSubscription: (id: string) => request<void>('DELETE', `/me/subscriptions/${enc(id)}`),
+      /** Follow stores (p10-24). */
+      followStatus: (handle: string) =>
+        request<FollowStatus>('GET', `/catalog/sellers/${enc(handle)}/follow`),
+      follow: (handle: string) => request<FollowStatus>('PUT', `/me/follows/${enc(handle)}`),
+      unfollow: (handle: string) => request<FollowStatus>('DELETE', `/me/follows/${enc(handle)}`),
+      setFollowNotify: (handle: string, notify: boolean) =>
+        request<FollowStatus>('PATCH', `/me/follows/${enc(handle)}`, { body: { notify } }),
+      followedStores: () => request<FollowedStore[]>('GET', '/me/follows'),
+      following: () => request<FollowingFeed>('GET', '/me/following'),
       /** Refer a friend (p10-23). */
       referral: () => request<ReferralView>('GET', '/me/referral'),
       claimReferral: (code: string) =>

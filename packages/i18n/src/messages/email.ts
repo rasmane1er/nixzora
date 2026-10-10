@@ -40,6 +40,8 @@ export const email = defineMessages({
     order_html_tax: 'Tax',
     order_html_total: 'Total',
     order_html_shipTo: 'Shipping to',
+    push_storeDeal_title: 'New deal at {store}',
+    push_storeDeal_body: '{product}: {percent}% off for a limited time.',
     referral_aFriend: 'your friend',
     referral_reward_subject: 'You earned {amount} for inviting {friend}',
     referral_reward_text:
@@ -247,6 +249,8 @@ export const email = defineMessages({
     order_html_tax: 'Taxes',
     order_html_total: 'Total',
     order_html_shipTo: 'Livraison à',
+    push_storeDeal_title: 'Nouvelle offre chez {store}',
+    push_storeDeal_body: '{product} : -{percent} % pour une durée limitée.',
     referral_aFriend: 'votre ami',
     referral_reward_subject: 'Vous avez gagné {amount} en parrainant {friend}',
     referral_reward_text:
@@ -453,6 +457,8 @@ export const email = defineMessages({
     order_html_tax: 'Impuestos',
     order_html_total: 'Total',
     order_html_shipTo: 'Envío a',
+    push_storeDeal_title: 'Nueva oferta en {store}',
+    push_storeDeal_body: '{product}: {percent} % de descuento por tiempo limitado.',
     referral_aFriend: 'tu amigo',
     referral_reward_subject: 'Ganaste {amount} por invitar a {friend}',
     referral_reward_text:

@@ -94,6 +94,7 @@ model User {
   passkeys           Passkey[]
   deviceSignIns      DeviceSignIn[]
   riskReviews        RiskAssessment[]        @relation("RiskReviewer")
+  storeFollows       StoreFollow[]
 
   @@map("users")
 }
@@ -1415,6 +1416,7 @@ model Seller {
   adCampaigns     AdCampaign[]
   adClicks        AdClick[]
   conversations   Conversation[]
+  followers       StoreFollow[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -2125,4 +2127,22 @@ model Referral {
 
   @@index([referrerId, createdAt])
   @@map("referrals")
+}
+
+/// Follow stores (p10-24, ADR-0046): stores a customer follows, and whether to tell them about deals.
+model StoreFollow {
+  userId         String    @map("user_id") @db.Uuid
+  sellerId       String    @map("seller_id") @db.Uuid
+  /// Push a notification when the store starts a deal.
+  notify         Boolean   @default(true)
+  /// The last deal notification, so a busy store can't send more than one a day.
+  lastNotifiedAt DateTime? @map("last_notified_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sellerId])
+  @@index([sellerId])
+  @@map("store_follows")
 }

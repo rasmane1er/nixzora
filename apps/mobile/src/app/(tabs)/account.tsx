@@ -61,6 +61,7 @@ export default function AccountScreen() {
   const thi = useT('history');
   const tha = useT('helpAgent');
   const trf = useT('referrals');
+  const tfl = useT('follows');
   const ti = useT('inbox');
 
   if (status !== 'signedIn' || !user) {
@@ -215,6 +216,7 @@ export default function AccountScreen() {
       <MenuList
         title={t('groupHelp')}
         items={[
+          { icon: 'storefront-outline', label: tfl('navTitle'), href: '/following' },
           { icon: 'gift-outline', label: trf('navTitle'), href: '/account/referrals' },
           { icon: 'chatbubbles-outline', label: tha('hubLabel'), href: '/help/chat' },
           { icon: 'chatbubble-ellipses-outline', label: t('menuHelp'), href: '/help' },

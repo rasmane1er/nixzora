@@ -36,7 +36,7 @@ const merchantId = process.env.APPLE_MERCHANT_ID ?? 'merchant.com.nixzora.shop';
  * "com.googleusercontent.apps.1234-abcd" (public, from Google Cloud → Credentials).
  */
 const googleIosScheme = process.env.GOOGLE_IOS_URL_SCHEME;
-const LINK_PATHS = ['/p/', '/c/', '/orders/', '/search', '/cart', '/r/'];
+const LINK_PATHS = ['/p/', '/c/', '/orders/', '/search', '/cart', '/r/', '/s/', '/following'];
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,

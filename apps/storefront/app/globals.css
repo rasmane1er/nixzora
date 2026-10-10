@@ -5367,3 +5367,56 @@ td.neg {
   justify-content: space-between;
   gap: 8px;
 }
+
+/* Follow stores (p10-24) */
+.follow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+.follow__alerts {
+  gap: 6px;
+}
+.following-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.following-card__store {
+  font-size: 13px;
+}
+.followed-stores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.followed-store {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.followed-store__logo {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.followed-store__logo--initial {
+  display: grid;
+  place-items: center;
+  background: var(--color-ink);
+  color: #f6f5f1;
+  font-weight: 700;
+  font-size: 20px;
+}
+.followed-store__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
