@@ -178,6 +178,13 @@ export function toOrderView(order: OrderRow): OrderView {
     plusSavingsCents: order.plusSavingsCents ?? 0,
     bundleDiscountCents: order.bundleDiscountCents ?? 0,
     clipDiscountCents: order.clipDiscountCents ?? 0,
+    gift: order.isGift
+      ? {
+          message: order.giftMessage ?? null,
+          from: order.giftFrom ?? null,
+          wrapCents: order.giftWrapCents ?? 0,
+        }
+      : null,
     giftBalanceCents: order.giftBalanceCents ?? 0,
     // Optional so rows loaded without the gift cards (older fixtures) still map.
     giftCards: (order.giftCards ?? []).map((card) => ({

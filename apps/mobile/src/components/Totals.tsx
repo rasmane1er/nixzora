@@ -40,6 +40,7 @@ export function Totals({ totals, taxKnown = true }: { totals: TotalsView; taxKno
   const pl = useT('plus');
   const bd = useT('bundles');
   const cl = useT('clips');
+  const gf = useT('gift');
   // NIXZORA Plus (p10-15): the API marks a member's totals with the shipping it waived.
   const member = totals.shippingWaivedCents !== undefined;
   const c = totals.currency;
@@ -77,6 +78,9 @@ export function Totals({ totals, taxKnown = true }: { totals: TotalsView; taxKno
         }
       />
       <Line label={to('tax')} value={taxKnown ? money(totals.taxCents, c) : tc('atCheckout')} />
+      {totals.giftWrapCents ? (
+        <Line label={gf('wrapLine')} value={money(totals.giftWrapCents, c)} />
+      ) : null}
       <Divider />
       <Line label={to('total')} value={money(totals.totalCents, c)} strong />
       {totals.freeShippingRemainingCents > 0 ? (

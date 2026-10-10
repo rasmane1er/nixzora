@@ -102,6 +102,9 @@ export class OrderEmails implements OnModuleInit {
           : t('order_shippingFree'),
       }),
       t('order_tax', { amount: money(view.taxCents, view.currency) }),
+      ...(view.gift?.wrapCents
+        ? [t('order_giftWrap', { amount: money(view.gift.wrapCents, view.currency) })]
+        : []),
       t('order_total', { amount: money(view.totalCents, view.currency) }),
     ].join('\n');
     const a = view.shippingAddress;
@@ -215,6 +218,14 @@ export class OrderEmails implements OnModuleInit {
                     : t('order_shippingFree'),
                 },
                 { label: t('order_html_tax'), value: money(view.taxCents, view.currency) },
+                ...(view.gift?.wrapCents
+                  ? [
+                      {
+                        label: t('order_html_giftWrap'),
+                        value: money(view.gift.wrapCents, view.currency),
+                      },
+                    ]
+                  : []),
                 {
                   label: t('order_html_total'),
                   value: money(view.totalCents, view.currency),
@@ -223,6 +234,20 @@ export class OrderEmails implements OnModuleInit {
               ],
             },
             { kind: 'box', title: t('order_html_shipTo'), lines: address.split('\n') },
+            // Gift options (p10-22): what goes in the box instead of prices.
+            ...(view.gift
+              ? [
+                  {
+                    kind: 'box' as const,
+                    title: t('order_html_gift'),
+                    lines: [
+                      t('order_giftNoPrices'),
+                      ...(view.gift.message ? [`“${view.gift.message}”`] : []),
+                      ...(view.gift.from ? [t('order_giftFrom', { from: view.gift.from })] : []),
+                    ],
+                  },
+                ]
+              : []),
           ]
         : [
             {

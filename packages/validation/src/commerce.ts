@@ -160,6 +160,8 @@ export type Totals = {
   bundleDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
+  /** Gift wrap (p10-22), included in totalCents. */
+  giftWrapCents?: number;
 };
 
 export type Cart = {
@@ -176,9 +178,15 @@ export type Cart = {
   clippedCoupons?: CartCoupon[];
   /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
   delivery?: DeliveryWindow | null;
+  /** Gift wrap is offered (p10-22): the cart has items NIXZORA ships itself. */
+  giftWrap?: { priceCents: number } | null;
 };
 
 // ───────────── Checkout and orders ─────────────
+
+/** Gift options (p10-22): gift wrap for NIXZORA's own items, per order. */
+export const GIFT_WRAP_CENTS = 499;
+export const GIFT_MESSAGE_MAX = 300;
 
 export const CheckoutRequestSchema = z.object({
   cartId: CartIdSchema.optional(),
@@ -194,7 +202,33 @@ export const CheckoutRequestSchema = z.object({
   paymentCardId: z.uuid().optional(),
   /** Signed-in customers: spend the gift card balance first (p10-10). */
   useGiftBalance: z.boolean().optional(),
+  /** Gift options (p10-22): no prices in the box, an optional message and gift wrap. */
+  gift: z
+    .object({
+      message: z
+        .string()
+        .trim()
+        .max(GIFT_MESSAGE_MAX)
+        .optional()
+        .transform((v) => v || undefined),
+      from: z
+        .string()
+        .trim()
+        .max(60)
+        .optional()
+        .transform((v) => v || undefined),
+      wrap: z.boolean().default(false),
+    })
+    .optional(),
 });
+
+/** What an order says about being a gift. */
+export type OrderGift = {
+  message: string | null;
+  from: string | null;
+  /** What gift wrap cost (0 when not wrapped). */
+  wrapCents: number;
+};
 
 export type CheckoutResponse = {
   orderId: string;
@@ -331,6 +365,8 @@ export type OrderView = {
   bundleDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
+  /** Gift options (p10-22); null when it isn't a gift. */
+  gift?: OrderGift | null;
   /** Part of the total paid from the gift card balance. */
   giftBalanceCents?: number;
   /** The gift cards bought with this order. */

@@ -13,6 +13,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_LOCALE, type Locale } from '@nixzora/i18n';
 import {
+  GIFT_WRAP_CENTS,
   type AdminOrderListQuery,
   type CheckoutRequest,
   type CheckoutResponse,
@@ -160,6 +161,21 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         message: `Some items changed: ${problems.map((p) => p.productTitle).join(', ')}. Review your cart.`,
         cart,
       });
+    }
+
+    // Gift options (p10-22): wrap only what NIXZORA ships; the fee is added after tax.
+    const wrapCents = input.gift?.wrap && !subscription ? GIFT_WRAP_CENTS : 0;
+    if (wrapCents && !cart.giftWrap) {
+      throw new BadRequestException(
+        'Gift wrap is only for items NIXZORA ships. Untick it to continue.',
+      );
+    }
+    if (wrapCents) {
+      cart.totals = {
+        ...cart.totals,
+        giftWrapCents: wrapCents,
+        totalCents: cart.totals.totalCents + wrapCents,
+      };
     }
 
     if (cart.coupon?.problem) {
@@ -526,6 +542,14 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               totalCents: totals.totalCents,
               bundleDiscountCents: totals.bundleDiscountCents ?? 0,
               clipDiscountCents: totals.clipDiscountCents ?? 0,
+              ...(input.gift && !subscriptionByVariant
+                ? {
+                    isGift: true,
+                    giftMessage: input.gift.message ?? null,
+                    giftFrom: input.gift.from ?? null,
+                    giftWrapCents: totals.giftWrapCents ?? 0,
+                  }
+                : {}),
               ...(totals.clipDiscountCents
                 ? { clipDiscounts: clipFunded as Prisma.InputJsonObject }
                 : {}),

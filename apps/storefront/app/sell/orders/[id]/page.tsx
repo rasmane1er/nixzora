@@ -34,7 +34,7 @@ export default async function SellerOrderPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const [t, f] = await Promise.all([getT('sellerTools'), getFormat()]);
+  const [t, f, gf] = await Promise.all([getT('sellerTools'), getFormat(), getT('gift')]);
   const money = (cents: number) => f.money(cents, order.currency);
   const date = (iso: string | null) => (iso ? f.dateTime(iso) : '—');
   const a = order.shipTo;
@@ -63,6 +63,16 @@ export default async function SellerOrderPage({
           <p className="banner banner--info">{t('shipWithin')}</p>
         ) : order.awaitingCarrierScan ? (
           <p className="banner banner--info">{t('awaitingCarrierScan')}</p>
+        ) : null}
+        {/* Gift options (p10-22): no prices in the box, and the card to include. */}
+        {order.gift ? (
+          <div className="banner banner--info gift-box">
+            <strong>{gf('opsGift')}</strong>
+            {order.gift.message ? (
+              <span>{gf('opsMessage', { message: order.gift.message })}</span>
+            ) : null}
+            {order.gift.from ? <span>{gf('fromLine', { from: order.gift.from })}</span> : null}
+          </div>
         ) : null}
         {order.status === 'CANCELLED' ? (
           <p className="banner banner--error">{t('cancelledDoNotShip')}</p>

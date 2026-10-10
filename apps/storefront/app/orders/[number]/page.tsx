@@ -58,6 +58,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const w = await getT('wallet');
   const pl = await getT('plus');
   const ha = await getT('helpAgent');
+  const gf = await getT('gift');
   const f = await getFormat();
   const placed = param(search, 'placed') === '1';
   const notice = param(search, 'notice');
@@ -194,6 +195,25 @@ export default async function OrderPage({ params, searchParams }: Props) {
             })}
           </p>
         </div>
+      ) : null}
+
+      {order.gift && order.kind === 'GOODS' ? (
+        <section className="card gift-box" aria-labelledby="gift-title">
+          <h2 id="gift-title">{gf('orderTitle')}</h2>
+          <p style={{ margin: 0 }}>
+            {gf('noPrices')}
+            {order.gift.wrapCents ? ` ${gf('wrapped')}.` : ''}
+          </p>
+          {order.gift.message ? (
+            <blockquote className="gift-receipt__message">{order.gift.message}</blockquote>
+          ) : null}
+          {order.gift.from ? (
+            <p className="muted" style={{ margin: 0 }}>
+              {gf('fromLine', { from: order.gift.from })}
+            </p>
+          ) : null}
+          <Link href={`/orders/${order.number}/gift-receipt${qs}`}>{gf('receipt')}</Link>
+        </section>
       ) : null}
 
       {!token && order.kind !== 'PLUS' && order.kind !== 'GIFT_CARD' ? (

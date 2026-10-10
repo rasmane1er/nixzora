@@ -10,6 +10,7 @@ import {
   type Cart,
   type CartLine,
   deliveryWindow,
+  GIFT_WRAP_CENTS,
   OWN_HANDLING_DAYS,
   twoDayWindow,
 } from '@nixzora/validation';
@@ -385,6 +386,8 @@ export class CartService {
           ? twoDayWindow(new Date())
           : deliveryWindow(new Date(), handling),
       cartId: 'guestId' in owner ? owner.guestId : 'buyNowId' in owner ? owner.buyNowId : null,
+      // Gift wrap (p10-22) is done in NIXZORA's warehouse, so only for its own items.
+      giftWrap: own ? { priceCents: GIFT_WRAP_CENTS } : null,
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
       totals: this.pricing.totals(

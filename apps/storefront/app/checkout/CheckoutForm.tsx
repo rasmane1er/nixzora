@@ -1,7 +1,12 @@
 'use client';
 
 import { cardBrand, rich } from '@nixzora/i18n';
-import { type PaymentCardView, type SavedAddress, US_STATES } from '@nixzora/validation';
+import {
+  GIFT_MESSAGE_MAX,
+  type PaymentCardView,
+  type SavedAddress,
+  US_STATES,
+} from '@nixzora/validation';
 import { useActionState, useState } from 'react';
 import { useFormat, useT } from '@/components/I18nProvider';
 import { type CheckoutState, placeOrder } from './actions';
@@ -32,7 +37,10 @@ export function CheckoutForm({
   buyNowId,
   cards = [],
   giftBalanceCents = 0,
+  giftWrapCents = null,
 }: {
+  /** Gift wrap price when the cart has items NIXZORA ships (p10-22). */
+  giftWrapCents?: number | null;
   /** Gift card balance to spend first (p10-10). */
   giftBalanceCents?: number;
   email?: string;
@@ -46,6 +54,7 @@ export function CheckoutForm({
   const t = useT('checkout');
   const w = useT('wallet');
   const g = useT('gifts');
+  const gf = useT('gift');
   const f = useFormat();
   const usable = cards.filter((card) => !card.expired);
   const [cardId, setCardId] = useState(
@@ -55,6 +64,7 @@ export function CheckoutForm({
   const initial = addresses[0] ? fromSaved(addresses[0]) : {};
   const [defaults, setDefaults] = useState<Defaults>({ email, ...initial });
   const [formKey, setFormKey] = useState(0);
+  const [isGift, setIsGift] = useState(state.values?.isGift === 'on');
   const v = { ...defaults, ...state.values };
   const err = state.fieldErrors ?? {};
 
@@ -168,6 +178,59 @@ export function CheckoutForm({
           </label>
         ) : null}
         <p className="hint">{t('shipWithinUs')}</p>
+      </section>
+
+      {/* Gift options (p10-22): no prices in the box, a card, and wrap for NIXZORA's items. */}
+      <section className="card form gift-options">
+        <label className="check">
+          <input
+            type="checkbox"
+            name="isGift"
+            checked={isGift}
+            onChange={(event) => setIsGift(event.target.checked)}
+          />{' '}
+          <span>
+            <strong>{gf('isGift')}</strong>
+            <span className="hint" style={{ display: 'block' }}>
+              {gf('isGiftHint')}
+            </span>
+          </span>
+        </label>
+        {isGift ? (
+          <>
+            <label>
+              {gf('message')}
+              <textarea
+                name="giftMessage"
+                maxLength={GIFT_MESSAGE_MAX}
+                rows={3}
+                defaultValue={state.values?.giftMessage ?? ''}
+              />
+              <span className="hint">{gf('messageHint', { max: GIFT_MESSAGE_MAX })}</span>
+            </label>
+            <label>
+              {gf('from')}
+              <input name="giftFrom" maxLength={60} defaultValue={state.values?.giftFrom ?? ''} />
+            </label>
+            {giftWrapCents ? (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  name="giftWrap"
+                  defaultChecked={state.values?.giftWrap === 'on'}
+                />{' '}
+                <span>
+                  {gf('wrap', { price: f.money(giftWrapCents) })}
+                  <span className="hint" style={{ display: 'block' }}>
+                    {gf('wrapHint')}
+                  </span>
+                </span>
+              </label>
+            ) : (
+              <p className="hint">{gf('wrapUnavailable')}</p>
+            )}
+          </>
+        ) : null}
       </section>
 
       {signedIn ? (

@@ -3,6 +3,7 @@ import {
   type Address,
   AddressSchema,
   CartIdSchema,
+  GIFT_MESSAGE_MAX,
   type SavedAddress,
   US_STATES,
 } from '@nixzora/validation';
@@ -86,6 +87,7 @@ export default function CheckoutScreen() {
   const cart = buyNowId ? buyCart : mainCart;
   const l = useT('lists');
   const w = useT('wallet');
+  const gf = useT('gift');
   // Saved cards (p10-09): pay with one now, or keep the new card for next time.
   const cards = useQuery({
     queryKey: ['payment-cards'],
@@ -105,6 +107,11 @@ export default function CheckoutScreen() {
   });
   const giftCents = gift.data?.balanceCents ?? 0;
   const [useGift, setUseGift] = useState(true);
+  // Gift options (p10-22).
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
+  const [giftFrom, setGiftFrom] = useState('');
+  const [giftWrap, setGiftWrap] = useState(false);
   const addresses = useQuery({
     queryKey: keys.addresses,
     queryFn: () => api.account.addresses(),
@@ -138,7 +145,17 @@ export default function CheckoutScreen() {
         : api.cart.get(region as (typeof US_STATES)[number]),
     enabled: !!region,
   });
-  const totals = (region ? priced.data?.totals : undefined) ?? cart.data?.totals;
+  const baseTotals = (region ? priced.data?.totals : undefined) ?? cart.data?.totals;
+  // Gift wrap (p10-22) goes on top of the total; the API adds the same at checkout.
+  const wrapCents = buyNowId || !cart.data?.giftWrap ? 0 : cart.data.giftWrap.priceCents;
+  const totals =
+    baseTotals && isGift && giftWrap && wrapCents
+      ? {
+          ...baseTotals,
+          giftWrapCents: wrapCents,
+          totalCents: baseTotals.totalCents + wrapCents,
+        }
+      : baseTotals;
 
   const set = (key: keyof Form) => (value: string) => {
     setForm((current) => ({
@@ -214,6 +231,15 @@ export default function CheckoutScreen() {
         ...(signedIn && cardId ? { paymentCardId: cardId } : {}),
         ...(signedIn && !cardId && saveCard ? { saveCard: true } : {}),
         ...(signedIn && giftCents > 0 && useGift ? { useGiftBalance: true } : {}),
+        ...(isGift
+          ? {
+              gift: {
+                message: giftMessage.trim() || undefined,
+                from: giftFrom.trim() || undefined,
+                wrap: Boolean(wrapCents && giftWrap),
+              },
+            }
+          : {}),
       });
       if (!signedIn && !buyNowId) session.setCartId(null);
       const order = { number: response.orderNumber, token: response.accessToken, ...valid };
@@ -481,6 +507,58 @@ export default function CheckoutScreen() {
             </Row>
           ) : null}
         </>
+      )}
+
+      {pending ? null : (
+        <Card style={{ gap: space.md }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: fonts.bodyBold }}>{gf('isGift')}</Text>
+              <Text variant="small" muted>
+                {gf('isGiftHint')}
+              </Text>
+            </View>
+            <Switch value={isGift} onValueChange={setIsGift} accessibilityLabel={gf('isGift')} />
+          </Row>
+          {isGift ? (
+            <>
+              <Field
+                label={gf('message')}
+                value={giftMessage}
+                onChangeText={setGiftMessage}
+                maxLength={GIFT_MESSAGE_MAX}
+                multiline
+                hint={gf('messageHint', { max: GIFT_MESSAGE_MAX })}
+                style={{ minHeight: 88, textAlignVertical: 'top' }}
+              />
+              <Field
+                label={gf('from')}
+                value={giftFrom}
+                onChangeText={setGiftFrom}
+                maxLength={60}
+              />
+              {wrapCents ? (
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text>{gf('wrap', { price: money(wrapCents) })}</Text>
+                    <Text variant="small" muted>
+                      {gf('wrapHint')}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={giftWrap}
+                    onValueChange={setGiftWrap}
+                    accessibilityLabel={gf('wrap', { price: money(wrapCents) })}
+                  />
+                </Row>
+              ) : (
+                <Text variant="small" muted>
+                  {gf('wrapUnavailable')}
+                </Text>
+              )}
+            </>
+          ) : null}
+        </Card>
       )}
 
       {totals ? (

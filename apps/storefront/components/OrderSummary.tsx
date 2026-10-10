@@ -33,8 +33,10 @@ export async function OrderTotals({
     | 'kind'
     | 'bundleDiscountCents'
     | 'clipDiscountCents'
+    | 'gift'
   >;
 }) {
+  const gf = await getT('gift');
   const t = await getT('order');
   const pl = await getT('plus');
   const bd = await getT('bundles');
@@ -87,6 +89,12 @@ export async function OrderTotals({
       )}
       <dt>{t('tax')}</dt>
       <dd>{m(order.taxCents)}</dd>
+      {order.gift?.wrapCents ? (
+        <>
+          <dt>{gf('wrapLine')}</dt>
+          <dd>{m(order.gift.wrapCents)}</dd>
+        </>
+      ) : null}
       <dt className="total">{t('total')}</dt>
       <dd className="total">{m(order.totalCents)}</dd>
       {order.giftBalanceCents ? (

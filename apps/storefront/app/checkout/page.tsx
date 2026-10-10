@@ -66,6 +66,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           buyNowId={buyNowId}
           cards={cards}
           giftBalanceCents={gift?.balanceCents ?? 0}
+          giftWrapCents={cart.giftWrap?.priceCents ?? null}
         />
         <aside className="card summary" aria-label={to('orderSummary')}>
           <h2>{tc('yourOrder')}</h2>

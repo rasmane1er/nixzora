@@ -97,6 +97,7 @@ export default function OrderScreen() {
   const tpl = useT('plus');
   const ti = useT('inbox');
   const tha = useT('helpAgent');
+  const tg = useT('gift');
   const client = useQueryClient();
   // Changed your mind (p10-09): cancel within 30 minutes, before anything is packed.
   const cancel = useMutation({
@@ -151,6 +152,7 @@ export default function OrderScreen() {
     freeShippingRemainingCents: 0,
     ...(o.bundleDiscountCents ? { bundleDiscountCents: o.bundleDiscountCents } : {}),
     ...(o.clipDiscountCents ? { clipDiscountCents: o.clipDiscountCents } : {}),
+    ...(o.gift?.wrapCents ? { giftWrapCents: o.gift.wrapCents } : {}),
   };
 
   return (
@@ -377,6 +379,31 @@ export default function OrderScreen() {
             </Text>
           </Card>
         )}
+
+        {/* Gift options (p10-22). */}
+        {o.gift && o.kind === 'GOODS' ? (
+          <Card style={{ gap: space.xs }}>
+            <Text variant="heading">{tg('orderTitle')}</Text>
+            <Text>
+              {tg('noPrices')}
+              {o.gift.wrapCents ? ` ${tg('wrapped')}.` : ''}
+            </Text>
+            {o.gift.message ? (
+              <Text style={{ fontStyle: 'italic' }}>“{o.gift.message}”</Text>
+            ) : null}
+            {o.gift.from ? <Text muted>{tg('fromLine', { from: o.gift.from })}</Text> : null}
+            <Button
+              title={tg('receipt')}
+              tone="ghost"
+              onPress={() =>
+                router.push({
+                  pathname: '/gift-receipt/[number]',
+                  params: token ? { number: o.number, token } : { number: o.number },
+                })
+              }
+            />
+          </Card>
+        ) : null}
 
         {o.returnableUntil ? (
           <Button

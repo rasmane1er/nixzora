@@ -231,6 +231,8 @@ export type SellerOrderView = {
    * scan (p9-05). False before shipping and once scanned.
    */
   awaitingCarrierScan: boolean;
+  /** A gift (p10-22): no prices in the box, and the card to include. */
+  gift?: { message: string | null; from: string | null } | null;
 };
 
 export type SellerBalance = {

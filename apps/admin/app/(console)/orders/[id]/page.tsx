@@ -52,6 +52,7 @@ export default async function OrderPage({
     : [];
   const held = risk.some((r) => r.order?.riskHold);
   const tRisk = await getT('opsRisk');
+  const tGift = await getT('gift');
   const refundable = ['PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED'].includes(
     order.status,
   );
@@ -92,6 +93,21 @@ export default async function OrderPage({
         <p className="banner banner--error" role="alert">
           {tRisk('orderHeld')}
         </p>
+      ) : null}
+      {/* Gift options (p10-22): what the packer needs to know. */}
+      {order.gift ? (
+        <div className="banner banner--info" style={{ display: 'grid', gap: 4 }}>
+          <strong>{tGift('opsGift')}</strong>
+          {order.gift.wrapCents ? (
+            <span>
+              {tGift('opsWrap', { price: f.money(order.gift.wrapCents, order.currency) })}
+            </span>
+          ) : null}
+          {order.gift.message ? (
+            <span>{tGift('opsMessage', { message: order.gift.message })}</span>
+          ) : null}
+          {order.gift.from ? <span>{tGift('fromLine', { from: order.gift.from })}</span> : null}
+        </div>
       ) : null}
       {risk.some((r) => r.status) ? (
         <section style={{ marginBottom: 16 }}>

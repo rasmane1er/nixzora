@@ -52,3 +52,17 @@ test('shipping needs a carrier and tracking number', () => {
     true,
   );
 });
+
+test('gift options trim the message and cap it at 300 characters', () => {
+  const base = { email: 'ada@example.com', shippingAddress: address };
+  const gift = CheckoutRequestSchema.parse({
+    ...base,
+    gift: { message: '  Happy birthday!  ', from: '', wrap: true },
+  }).gift;
+  assert.deepEqual(gift, { message: 'Happy birthday!', from: undefined, wrap: true });
+  assert.equal(CheckoutRequestSchema.parse({ ...base, gift: {} }).gift?.wrap, false);
+  assert.equal(
+    CheckoutRequestSchema.safeParse({ ...base, gift: { message: 'x'.repeat(301) } }).success,
+    false,
+  );
+});

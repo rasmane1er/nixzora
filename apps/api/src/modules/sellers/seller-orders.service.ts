@@ -39,6 +39,9 @@ const include = {
       currency: true,
       placedAt: true,
       shippingAddress: true,
+      isGift: true,
+      giftMessage: true,
+      giftFrom: true,
       items: true,
       riskHold: true,
     },
@@ -378,6 +381,7 @@ export class SellerOrdersService implements OnModuleInit {
       cancelledAt: row.cancelledAt?.toISOString() ?? null,
       underReview: row.order.riskHold,
       awaitingCarrierScan: row.status === 'SHIPPED' && !row.trackingVerifiedAt,
+      gift: row.order.isGift ? { message: row.order.giftMessage, from: row.order.giftFrom } : null,
     };
   }
 

@@ -508,6 +508,12 @@ model Order {
   shippingWaivedCents Int           @default(0) @map("shipping_waived_cents")
   /// What Plus saved on this order (free shipping and member deal prices), for "you saved".
   plusSavingsCents    Int           @default(0) @map("plus_savings_cents")
+  /// Gift options (p10-22, ADR-0044): a gift ships with no prices in the box.
+  isGift              Boolean       @default(false) @map("is_gift")
+  giftMessage         String?       @map("gift_message")
+  giftFrom            String?       @map("gift_from")
+  /// Gift wrap for NIXZORA's own items, included in totalCents (0 = not wrapped).
+  giftWrapCents       Int           @default(0) @map("gift_wrap_cents")
   /// For PLUS orders: the membership this fee pays for.
   plusMembershipId    String?       @map("plus_membership_id") @db.Uuid
   createdAt           DateTime      @default(now()) @map("created_at")

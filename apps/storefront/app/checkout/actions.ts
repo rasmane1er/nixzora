@@ -1,6 +1,12 @@
 'use server';
 
-import { type Cart, CartIdSchema, type CheckoutResponse, US_STATES } from '@nixzora/validation';
+import {
+  type Cart,
+  CartIdSchema,
+  type CheckoutResponse,
+  GIFT_MESSAGE_MAX,
+  US_STATES,
+} from '@nixzora/validation';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { getT } from '@/lib/i18n';
@@ -22,6 +28,11 @@ const FIELDS = [
   'region',
   'postalCode',
   'phone',
+  // Gift options (p10-22), kept when the form comes back with an error.
+  'isGift',
+  'giftMessage',
+  'giftFrom',
+  'giftWrap',
 ] as const;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -121,6 +132,16 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
         ...(signedIn && UUID.test(paymentCardId) ? { paymentCardId } : {}),
         ...(signedIn && !paymentCardId && form.get('saveCard') === 'on' ? { saveCard: true } : {}),
         ...(signedIn && form.get('useGiftBalance') === 'on' ? { useGiftBalance: true } : {}),
+        // Gift options (p10-22).
+        ...(form.get('isGift') === 'on'
+          ? {
+              gift: {
+                message: String(form.get('giftMessage') ?? '').slice(0, GIFT_MESSAGE_MAX),
+                from: String(form.get('giftFrom') ?? '').slice(0, 60),
+                wrap: form.get('giftWrap') === 'on',
+              },
+            }
+          : {}),
         shippingAddress: {
           fullName: values.fullName,
           line1: values.line1,

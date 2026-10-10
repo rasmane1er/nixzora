@@ -57,11 +57,19 @@ export function PlusShippingNote({ totals }: { totals: Totals }) {
       }}
     >
       <PlusChip />
-      <Text variant="small" style={{ flexShrink: 1 }}>
+      {/* On the inverted tile, text takes the tile's own foreground (it was ink on ink). */}
+      <Text variant="small" style={{ flexShrink: 1, color: p.tileFg }}>
         {text}
         {member ? '' : ' · '}
         {member ? null : (
-          <Text variant="small" style={{ color: PLUS_ACCENT, fontFamily: fonts.bodyBold }}>
+          <Text
+            variant="small"
+            style={{
+              color: p.tileFg,
+              fontFamily: fonts.bodyBold,
+              textDecorationLine: 'underline',
+            }}
+          >
             {t('upsellCta')}
           </Text>
         )}
