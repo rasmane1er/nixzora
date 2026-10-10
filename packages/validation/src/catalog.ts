@@ -420,3 +420,23 @@ export type SearchSuggestions = {
   /** "Did you mean": the text with misspelled words fixed, when there were any. */
   correction: string | null;
 };
+
+// ───────────── Compare (p10-13) ─────────────
+
+/** Products side by side: 2 to 4, by slug. */
+export const COMPARE_MAX = 4;
+export const CompareQuerySchema = z.object({
+  products: z
+    .string()
+    .transform((value) => [...new Set(value.split(',').map((s) => s.trim()).filter(Boolean))])
+    .pipe(z.array(z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)).min(1).max(COMPARE_MAX)),
+});
+export type CompareQuery = z.infer<typeof CompareQuerySchema>;
+
+export type CompareView = {
+  products: ProductDetail[];
+  /** Every spec key any of them has, the ones they share first. */
+  specs: string[];
+  /** Spec keys whose values differ between the products (to highlight). */
+  differing: string[];
+};

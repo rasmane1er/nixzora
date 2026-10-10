@@ -13,6 +13,9 @@ import {
   type ProductLookupQuery,
   ProductLookupQuerySchema,
   SlugSchema,
+  type CompareQuery,
+  CompareQuerySchema,
+  type CompareView,
 } from '@nixzora/validation';
 import { ApiZodResponse } from '../../common/api-docs';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
@@ -87,6 +90,14 @@ export class CatalogController {
     @Query(new ZodValidationPipe(ProductLookupQuerySchema)) query: ProductLookupQuery,
   ): Promise<ProductLookup> {
     return this.catalog.lookup(query.code);
+  }
+
+  /** Compare (p10-13): /catalog/compare?products=slug,slug (up to 4). */
+  @Get('compare')
+  compare(
+    @Query(new ZodValidationPipe(CompareQuerySchema)) query: CompareQuery,
+  ): Promise<CompareView> {
+    return this.catalog.compare(query.products);
   }
 
   @Get('products/:slug')

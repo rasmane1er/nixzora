@@ -39,3 +39,4 @@ export { wallet } from './wallet';
 export { gifts } from './gifts';
 export { subscribe } from './subscribe';
 export { inbox } from './inbox';
+export { compare } from './compare';

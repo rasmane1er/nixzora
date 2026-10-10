@@ -4418,3 +4418,71 @@ td.neg {
 .inbox__unread {
   font-weight: 700;
 }
+
+/* ───────────── Compare (p10-13) ───────────── */
+.compare table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+.compare th,
+.compare td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  min-width: 170px;
+}
+.compare tbody th {
+  font-weight: 500;
+  color: var(--muted);
+  min-width: 140px;
+}
+.compare__product {
+  display: grid;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.compare__product img {
+  width: 100%;
+  max-width: 180px;
+  height: auto;
+  border-radius: 10px;
+  background: var(--card);
+}
+.compare__section th {
+  color: var(--fg);
+  font-weight: 700;
+  padding-top: 18px;
+}
+.compare__diff td {
+  background: color-mix(in srgb, var(--color-signal) 8%, transparent);
+}
+.compare-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+.compare-tray {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+  max-width: calc(100vw - 32px);
+}
+.compare-similar {
+  margin: 0;
+}

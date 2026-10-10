@@ -343,6 +343,7 @@ export default function ProductScreen() {
   });
   const ts = useT('subscribe');
   const tib = useT('inbox');
+  const tcmp = useT('compare');
   const [subInterval, setSubInterval] = useState<string>('30');
   // Subscribe & Save (p10-11): the first delivery is ordered at once, on the saved card.
   const subscribeNow = useMutation({
@@ -717,6 +718,23 @@ export default function ProductScreen() {
               </Card>
             ) : null}
             <AddToListButton productId={item.id} />
+            {related.data?.similar.length ? (
+              <Button
+                title={tcmp('similar')}
+                tone="ghost"
+                onPress={() =>
+                  router.push({
+                    pathname: '/compare',
+                    params: {
+                      products: [
+                        item.slug,
+                        ...related.data!.similar.slice(0, 3).map((x) => x.slug),
+                      ].join(','),
+                    },
+                  })
+                }
+              />
+            ) : null}
             {item.seller ? (
               <Button
                 title={tib('askStore')}

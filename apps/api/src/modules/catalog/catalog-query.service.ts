@@ -16,6 +16,7 @@ import {
   OWN_HANDLING_DAYS,
   type ProductPage,
   SPECS,
+  type CompareView,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Category, Prisma } from '../../generated/prisma/client';
@@ -234,6 +235,28 @@ export class CatalogQueryService {
   ): Promise<PagedResult<ProductCard & { status: string }>> {
     const result = await this.list(query, query.status ? { status: query.status } : {}, false);
     return result as PagedResult<ProductCard & { status: string }>;
+  }
+
+  /**
+   * Compare (p10-13): products side by side, in the order asked, skipping any that are gone;
+   * the spec keys they share come first, and those whose values differ are marked.
+   */
+  async compare(slugs: string[]): Promise<CompareView> {
+    const products = (
+      await Promise.all(slugs.map((slug) => this.productBySlug(slug).catch(() => null)))
+    ).filter((p): p is ProductDetail => p !== null);
+    const counts = new Map<string, number>();
+    for (const product of products) {
+      for (const key of Object.keys(product.attributes))
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const specs = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([key]) => key);
+    const differing = specs.filter(
+      (key) => new Set(products.map((p) => JSON.stringify(p.attributes[key] ?? null))).size > 1,
+    );
+    return { products, specs, differing };
   }
 
   async productBySlug(slug: string): Promise<ProductDetail> {

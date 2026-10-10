@@ -26,6 +26,7 @@ import { SITE_URL } from '@/lib/params';
 import { DealTimer } from '@/components/DealTimer';
 import { AddToCart } from './AddToCart';
 import { AddToList } from './AddToList';
+import { CompareButton } from '@/components/CompareButton';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
 import { BoughtTogether } from './BoughtTogether';
@@ -116,6 +117,7 @@ export default async function ProductPage({ params }: Props) {
   const d = await getT('deals');
   const w = await getT('wallet');
   const ib = await getT('inbox');
+  const cmp = await getT('compare');
   // 1-click (p10-09): only when a saved card and an address are ready.
   const oneClick = signedIn && inStock ? await oneClickSetup() : null;
   const a = await getT('ads');
@@ -253,6 +255,7 @@ export default async function ProductPage({ params }: Props) {
               initial={wishIds.includes(product.id)}
             />
             <AddToList productId={product.id} slug={product.slug} />
+            <CompareButton slug={product.slug} />
           </div>
           <p className="sold-by">
             {t('soldBy')}{' '}
@@ -397,6 +400,16 @@ export default async function ProductPage({ params }: Props) {
       )}
       <ProductRail id="sponsored" title={a('sponsoredRelated')} sponsored={ads} />
       <ProductRail id="similar" title={t('similarProducts')} products={related.similar} />
+      {related.similar.length ? (
+        <p className="compare-similar">
+          <Link
+            className="btn btn--secondary"
+            href={`/compare?products=${[product.slug, ...related.similar.slice(0, 3).map((p) => p.slug)].join(',')}`}
+          >
+            {cmp('similar')}
+          </Link>
+        </p>
+      ) : null}
       <ProductRail id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />
       <ViewTracker productId={product.id} />
     </div>

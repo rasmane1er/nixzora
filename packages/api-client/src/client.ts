@@ -1,4 +1,5 @@
 import type {
+  CompareView,
   ConversationStart,
   ConversationSummary,
   ConversationView,
@@ -300,6 +301,9 @@ export function createApiClient(options: ClientOptions) {
       /** A link to upload one review photo; send its storageKey in `photoKeys`. */
       reviewPhotoUpload: (body: UploadRequest) =>
         request<UploadTicket>('POST', '/catalog/reviews/photos/upload', { body }),
+      /** Compare up to 4 products side by side (p10-13). */
+      compare: (slugs: string[]) =>
+        request<CompareView>('GET', '/catalog/compare', { query: { products: slugs.join(',') } }),
       /** Today's deals: live ones ending soonest first, and what starts next (p10-07). */
       deals: (query: DealListQuery = {}) =>
         request<DealsPage>('GET', '/catalog/deals', { query: query as Query }),

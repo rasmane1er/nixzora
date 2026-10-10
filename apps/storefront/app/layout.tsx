@@ -10,6 +10,7 @@ import '@nixzora/ui/tokens.css';
 import './globals.css';
 import { messagesFor } from '@nixzora/i18n';
 import { I18nProvider } from '@/components/I18nProvider';
+import { CompareTray } from '@/components/CompareButton';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
 import { cookies } from 'next/headers';
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <SiteHeader />
           <main id="main">{children}</main>
           <SiteFooter />
+          <CompareTray />
         </I18nProvider>
       </body>
     </html>
