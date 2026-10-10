@@ -51,6 +51,7 @@ function toView(row: ReviewRow, url: (key: string) => string): ReviewView {
     createdAt: row.createdAt.toISOString(),
     photos: row.photos.map((photo) => ({ url: url(photo.storageKey) })),
     helpfulCount: row.helpfulCount,
+    fit: row.fit ?? null,
   };
 }
 
@@ -228,6 +229,8 @@ export class ReviewsService {
       title: input.title,
       body: input.body,
       verifiedPurchase: received || (previous?.verifiedPurchase ?? false),
+      // Size & fit (p10-26): kept as given; left as it was when an edit doesn't say.
+      ...(input.fit !== undefined ? { fit: input.fit } : {}),
     };
     // Photos are checked and re-encoded like product photos before they are kept.
     const photoKeys = [...new Set(input.photoKeys ?? [])];

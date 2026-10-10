@@ -28,6 +28,14 @@ export async function submitReview(_: ReviewState, form: FormData): Promise<Revi
         rating: Number(form.get('rating')),
         title: String(form.get('title') ?? ''),
         body: String(form.get('body') ?? ''),
+        // How it fit (p10-26), on clothing and shoes: empty means "don't say".
+        ...(form.get('fitAsked') === '1'
+          ? {
+              fit: ['SMALL', 'TRUE', 'LARGE'].includes(String(form.get('fit')))
+                ? String(form.get('fit'))
+                : null,
+            }
+          : {}),
         // Uploaded photo keys, in order (p10-05); absent keeps the review's photos.
         ...(form.get('photosSent') === '1'
           ? { photoKeys: form.getAll('photoKeys').map(String).slice(0, 4) }

@@ -51,3 +51,4 @@ export { gift } from './gift';
 export { referrals } from './referrals';
 export { follows } from './follows';
 export { storeStats } from './storeStats';
+export { sizeGuide } from './sizeGuide';

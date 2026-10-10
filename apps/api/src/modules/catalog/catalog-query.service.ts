@@ -27,6 +27,7 @@ import { StorageService } from '../media/storage.service';
 import { Spelling } from './spelling';
 import { ratingSummary, roundRating } from '../../common/rating';
 import { ancestorsOf, descendantIds } from './category-tree';
+import { SIZED_DEPARTMENTS, sizeGuideFor } from './size-guide';
 import {
   productInclude,
   type ProductWithRelations,
@@ -584,6 +585,16 @@ export class CatalogQueryService {
   }
 
   /** Root first, ending with the category itself. One query for the whole (small) tree. */
+  /** The category's id, then its parents' ids, nearest first. */
+  private async categoryChain(category: Category): Promise<string[]> {
+    if (!category.parentId) return [category.id];
+    const categories = await this.prisma.category.findMany({
+      select: { id: true, parentId: true, slug: true, name: true },
+    });
+    const byId = new Map(categories.map((row) => [row.id, row]));
+    return [category.id, ...ancestorsOf(category.id, byId).map((c) => c.id)];
+  }
+
   private async breadcrumb(category: Category): Promise<{ slug: string; name: string }[]> {
     if (!category.parentId) return [{ slug: category.slug, name: category.name }];
     const categories = await this.prisma.category.findMany({
@@ -727,6 +738,10 @@ export class CatalogQueryService {
       _avg: { rating: true },
       _count: { _all: true },
     });
+    const breadcrumb = await this.breadcrumb(product.category);
+    // Size & fit guide (p10-26): clothing and shoes.
+    const sized = SIZED_DEPARTMENTS.has(breadcrumb[0]?.slug ?? '');
+    const categoryIds = sized ? await this.categoryChain(product.category) : [];
     return {
       ...toCard(view, this.url),
       rating: {
@@ -736,7 +751,9 @@ export class CatalogQueryService {
       description: product.description,
       status: product.status,
       attributes: (product.attributes ?? {}) as Record<string, string | number | boolean>,
-      breadcrumb: await this.breadcrumb(product.category),
+      breadcrumb,
+      sizeGuide: sized ? await sizeGuideFor(this.prisma, product, categoryIds) : null,
+      sizeChartId: activeVariantsOnly ? undefined : product.sizeChartId,
       seller: product.seller
         ? {
             handle: product.seller.handle,

@@ -1388,6 +1388,71 @@ async function main(): Promise<void> {
     update: { isPublic: true },
   });
 
+  // Size & fit guide (p10-26): NIXZORA's default charts for clothing and shoes, made once.
+  const DEFAULT_SIZE_CHARTS = [
+    {
+      category: 'tops',
+      name: 'T-shirts and hoodies',
+      note: 'Measure around the fullest part of your chest, under the arms.',
+      columns: ['Chest (in)', 'Chest (cm)', 'Length (in)'],
+      rows: [
+        ['XS', '31–33', '79–84', '26'],
+        ['S', '34–36', '86–91', '27'],
+        ['M', '38–40', '97–102', '28'],
+        ['L', '42–44', '107–112', '29'],
+        ['XL', '46–48', '117–122', '30'],
+        ['XXL', '50–52', '127–132', '31'],
+      ],
+    },
+    {
+      category: 'outerwear',
+      name: 'Jackets and coats',
+      note: 'Measure over a light layer. Between sizes? Take the larger one for layering.',
+      columns: ['Chest (in)', 'Chest (cm)', 'Sleeve (in)'],
+      rows: [
+        ['XS', '32–34', '81–86', '32'],
+        ['S', '35–37', '89–94', '33'],
+        ['M', '38–40', '97–102', '34'],
+        ['L', '41–43', '104–109', '35'],
+        ['XL', '44–46', '112–117', '36'],
+        ['XXL', '47–49', '119–124', '37'],
+      ],
+    },
+    {
+      category: 'shoes',
+      name: 'Shoes',
+      note: 'Sizes are US. Stand on paper and measure from your heel to your longest toe.',
+      columns: ['EU', 'UK', 'Foot length (cm)'],
+      rows: [
+        ['6', '38.5', '5.5', '24.0'],
+        ['7', '40', '6', '25.0'],
+        ['8', '41', '7', '26.0'],
+        ['9', '42.5', '8', '27.0'],
+        ['10', '44', '9', '28.0'],
+        ['11', '45', '10', '29.0'],
+        ['12', '46', '11', '30.0'],
+      ],
+    },
+  ];
+  for (const chart of DEFAULT_SIZE_CHARTS) {
+    const category = await prisma.category.findUnique({ where: { slug: chart.category } });
+    if (!category) continue;
+    const existing = await prisma.sizeChart.findFirst({
+      where: { categoryId: category.id, sellerId: null, isDefault: true },
+    });
+    if (existing) continue;
+    await prisma.sizeChart.create({
+      data: {
+        categoryId: category.id,
+        name: chart.name,
+        note: chart.note,
+        columns: chart.columns,
+        rows: chart.rows.map(([size, ...values]) => ({ size, values })),
+        isDefault: true,
+      },
+    });
+  }
+
   // Sponsored products demo (p10-01): the demo seller gets $50 of ad credit, once, and one
   // campaign promoting its listings. Credit is NIXZORA's promotion, never paid out.
   {

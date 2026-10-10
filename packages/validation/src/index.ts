@@ -35,4 +35,5 @@ export * from './saved';
 export * from './referrals';
 export * from './follows';
 export * from './traffic';
+export * from './size-guide';
 export * from './messaging';

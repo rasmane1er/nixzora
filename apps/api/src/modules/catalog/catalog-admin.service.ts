@@ -214,6 +214,13 @@ export class CatalogAdminService {
     if (!existing) throw new NotFoundException('Product not found.');
     if (input.categoryId) await this.requireCategory(input.categoryId);
     if (input.brandId) await this.requireBrand(input.brandId);
+    // Size & fit guide (p10-26): the store's own chart or one of NIXZORA's, never another store's.
+    if (input.sizeChartId) {
+      const chart = await this.prisma.sizeChart.findUnique({ where: { id: input.sizeChartId } });
+      if (!chart || (chart.sellerId !== null && chart.sellerId !== existing.sellerId)) {
+        throw new BadRequestException('Choose one of your size charts.');
+      }
+    }
     if (input.status === 'ACTIVE' && !existing.variants.some((variant) => variant.isActive)) {
       throw new BadRequestException('Add or activate a variant before publishing this product.');
     }

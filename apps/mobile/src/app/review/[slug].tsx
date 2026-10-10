@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
-import { ReviewCreateSchema } from '@nixzora/validation';
+import { type FitAnswer, FIT_ANSWERS, ReviewCreateSchema } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -10,7 +10,7 @@ import { Banner, Button, Card, Field, Row, Screen, Text } from '@/components/ui'
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { keys } from '@/lib/query';
-import { brand, space, usePalette } from '@/lib/theme';
+import { brand, fonts, space, usePalette } from '@/lib/theme';
 
 /**
  * Write or edit a review, in the app. "Write a review" used to open the product page, which has
@@ -20,12 +20,21 @@ export default function ReviewScreen() {
   const { slug, title: productTitle } = useLocalSearchParams<{ slug: string; title?: string }>();
   const t = useT('productPage');
   const tc = useT('common');
+  const tz = useT('sizeGuide');
   const p = usePalette();
   const client = useQueryClient();
   const mine = useQuery({
     queryKey: ['reviews', 'mine', slug],
     queryFn: () => api.catalog.myReview(slug),
   });
+  // Clothing and shoes also ask how it fit (p10-26); the product page has it cached.
+  const product = useQuery({
+    queryKey: keys.product(slug),
+    queryFn: () => api.catalog.product(slug),
+    staleTime: 5 * 60_000,
+  });
+  const sized = Boolean(product.data?.sizeGuide);
+  const [fit, setFit] = useState<FitAnswer | null>(null);
   const [rating, setRating] = useState(0);
   const [headline, setHeadline] = useState('');
   const [body, setBody] = useState('');
@@ -39,12 +48,14 @@ export default function ReviewScreen() {
     setRating(review.rating);
     setHeadline(review.title);
     setBody(review.body);
+    setFit(review.fit ?? null);
   }, [mine.data]);
 
   const submit = useMutation({
     mutationFn: (input: { rating: number; title: string; body: string }) =>
       api.catalog.submitReview(slug, {
         ...input,
+        ...(sized ? { fit } : {}),
         // Only when photos were added here: otherwise an edit keeps the earlier ones.
         ...(photos.length ? { photoKeys: photos.map((photo) => photo.key) } : {}),
       }),
@@ -159,6 +170,42 @@ export default function ReviewScreen() {
         />
         <ReviewPhotoPicker value={photos} onChange={setPhotos} />
       </Card>
+
+      {sized ? (
+        <Card>
+          <Text>{tz('fitQuestion')}</Text>
+          <Row accessibilityRole="radiogroup" style={{ gap: space.sm, flexWrap: 'wrap' }}>
+            {[...FIT_ANSWERS, null].map((value) => {
+              const active = fit === value;
+              const label = value ? tz(`fit_${value}`) : tz('fitSkip');
+              return (
+                <Pressable
+                  key={value ?? 'skip'}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={label}
+                  onPress={() => setFit(value)}
+                  style={{
+                    paddingVertical: space.sm,
+                    paddingHorizontal: space.md,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: active ? p.fg : p.line,
+                    backgroundColor: active ? p.card : 'transparent',
+                  }}
+                >
+                  <Text
+                    variant="small"
+                    style={{ fontFamily: active ? fonts.bodyBold : fonts.body }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </Row>
+        </Card>
+      ) : null}
 
       {submit.error ? <Banner tone="error">{errorMessage(submit.error)}</Banner> : null}
       <Button

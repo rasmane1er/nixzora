@@ -1,4 +1,5 @@
 import type {
+  SizeChartView,
   TrafficSource,
   SellerAnalytics,
   SellerMeResponse,
@@ -553,6 +554,8 @@ export function createApiClient(options: ClientOptions) {
     /** The store you work for (the seller portal is on the web; the app shows its analytics). */
     seller: {
       me: () => request<SellerMeResponse>('GET', '/seller/me'),
+      /** Size & fit guide (p10-26): the store's charts and NIXZORA's. */
+      sizeCharts: () => request<SizeChartView[]>('GET', '/seller/size-charts'),
       analytics: (days: 7 | 30 | 90) =>
         request<SellerAnalytics>('GET', '/seller/analytics', { query: { days } }),
     },

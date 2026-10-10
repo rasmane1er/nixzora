@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { optionAxes, optionState, pickVariant } from './variant-options';
+import { optionAxes, optionState, pickVariant, sortSizes } from './variant-options';
 
 const tee = ['Natural', 'Black'].flatMap((color) =>
   ['S', 'M', 'L'].map((size) => ({
@@ -33,4 +33,24 @@ test('switching color keeps the size and says when a size is sold out', () => {
   assert.equal(optionState(tee, black, 'size', 'L'), 'soldOut');
   assert.equal(optionState(tee, black, 'size', 'S'), 'available');
   assert.equal(optionState(tee, black, 'size', 'XXL'), 'missing');
+});
+
+test('sortSizes puts letter sizes on their ladder and numbers by value', () => {
+  assert.deepEqual(sortSizes(['L', 'S', 'XL', 'XXL', 'XS', 'M']), [
+    'XS',
+    'S',
+    'M',
+    'L',
+    'XL',
+    'XXL',
+  ]);
+  assert.deepEqual(sortSizes(['10', '8.5', '9', '11']), ['8.5', '9', '10', '11']);
+  assert.deepEqual(sortSizes(['One size', 'S']), ['One size', 'S']);
+});
+
+test('optionAxes lists sizes smallest first', () => {
+  const shirts = ['Natural', 'Black'].flatMap((color) =>
+    ['L', 'S', 'M'].map((size) => ({ options: { color, size }, available: 1 })),
+  );
+  assert.deepEqual(optionAxes(shirts)?.[1], { name: 'size', values: ['S', 'M', 'L'] });
 });

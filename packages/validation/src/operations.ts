@@ -15,6 +15,8 @@ export const ReviewCreateSchema = z.object({
     .array(z.string().regex(/^products\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.(jpg|png|webp|avif)$/))
     .max(4)
     .optional(),
+  /** Size & fit guide (p10-26): how it fit, on clothing and shoes. */
+  fit: z.enum(['SMALL', 'TRUE', 'LARGE']).nullable().optional(),
 });
 
 export const ReviewStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
@@ -41,6 +43,8 @@ export type ReviewView = {
   photos: { url: string }[];
   /** "Was this helpful?" yes votes. */
   helpfulCount: number;
+  /** How it fit (p10-26), when the reviewer said. */
+  fit?: 'SMALL' | 'TRUE' | 'LARGE' | null;
 };
 
 export type RatingSummary = {

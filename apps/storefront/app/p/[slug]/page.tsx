@@ -33,6 +33,7 @@ import { AddToList } from './AddToList';
 import { CompareButton } from '@/components/CompareButton';
 import { Gallery } from './Gallery';
 import { ReviewForm } from './ReviewForm';
+import { SizeGuide } from './SizeGuide';
 import { BoughtTogether } from './BoughtTogether';
 import { BundleOffer } from './BundleOffer';
 import { LowestPriceBadge, PriceHistorySection } from './PriceHistorySection';
@@ -301,6 +302,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
               )}
             </p>
           )}
+          {product.sizeGuide ? <SizeGuide guide={product.sizeGuide} /> : null}
           <AddToCart
             variants={product.variants}
             slug={product.slug}
@@ -416,7 +418,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
               // Only customers who received the product can write a review.
               myReview?.canReview ? (
                 <div id="write-review" style={{ scrollMarginTop: 'calc(var(--header-h) + 60px)' }}>
-                  <ReviewForm slug={product.slug} existing={myReview.review} />
+                  <ReviewForm
+                    slug={product.slug}
+                    existing={myReview.review}
+                    sized={Boolean(product.sizeGuide)}
+                  />
                 </div>
               ) : (
                 <p className="muted" id="write-review">

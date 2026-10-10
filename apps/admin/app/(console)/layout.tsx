@@ -19,6 +19,7 @@ const NAV: { href: string; label: MessageKey<'ops'>; permission: string }[] = [
   { href: '/risk', label: 'nav_risk', permission: 'risk.review' },
   { href: '/products', label: 'nav_products', permission: 'catalog.write' },
   { href: '/categories', label: 'nav_categories', permission: 'catalog.write' },
+  { href: '/size-charts', label: 'nav_sizeCharts', permission: 'catalog.write' },
   { href: '/inventory', label: 'nav_inventory', permission: 'inventory.write' },
   { href: '/sellers', label: 'nav_sellers', permission: 'sellers.manage' },
   { href: '/listings', label: 'nav_listings', permission: 'catalog.write' },

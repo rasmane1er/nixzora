@@ -14,6 +14,31 @@ const rank = (name: string) => {
   return i === -1 ? OPTION_NAMES.length : i;
 };
 
+/** Letter sizes, smallest first. */
+const LETTER_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+/**
+ * Sizes smallest first (p10-26): letter sizes on their ladder, numbers ("9", "10.5", "32") by
+ * value. Anything else, or a mix, keeps the order the store listed.
+ */
+export function sortSizes(values: readonly string[]): string[] {
+  const letter = values.map((v) => LETTER_SIZES.indexOf(v.trim().toUpperCase()));
+  if (letter.every((i) => i >= 0)) {
+    return values
+      .map((v, i) => [v, letter[i]!] as const)
+      .sort((a, b) => a[1] - b[1])
+      .map(([v]) => v);
+  }
+  const numbers = values.map((v) => (/^\d+(\.\d+)?$/.test(v.trim()) ? Number(v) : NaN));
+  if (numbers.every((n) => !Number.isNaN(n))) {
+    return values
+      .map((v, i) => [v, numbers[i]!] as const)
+      .sort((a, b) => a[1] - b[1])
+      .map(([v]) => v);
+  }
+  return [...values];
+}
+
 /** The options to choose, in order, each with its values as first listed; null for a plain list. */
 export function optionAxes(variants: readonly Choosable[]): OptionAxis[] | null {
   const values = new Map<string, string[]>();
@@ -26,7 +51,7 @@ export function optionAxes(variants: readonly Choosable[]): OptionAxis[] | null 
   }
   const axes = [...values]
     .filter(([name, list]) => list.length > 1 && variants.every((v) => name in v.options))
-    .map(([name, list]) => ({ name, values: list }))
+    .map(([name, list]) => ({ name, values: name === 'size' ? sortSizes(list) : list }))
     .sort((a, b) => rank(a.name) - rank(b.name));
   if (axes.length < 2) return null;
   const grid = axes.reduce((n, axis) => n * axis.values.length, 1);

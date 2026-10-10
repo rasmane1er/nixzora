@@ -5468,3 +5468,86 @@ td.neg {
   font-size: 32px;
   line-height: 1.1;
 }
+
+/* Size & fit guide (p10-26) */
+.size-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.size-guide__fit {
+  margin: 0;
+  font-size: 14px;
+}
+.size-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  background: var(--card);
+  color: inherit;
+}
+.size-dialog::backdrop {
+  background: rgb(14 23 38 / 0.45);
+}
+.size-dialog__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.size-table th[scope='row'] {
+  font-weight: 700;
+}
+.size-table td,
+.size-table th {
+  white-space: nowrap;
+}
+.fit-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.fit-bars li {
+  display: grid;
+  grid-template-columns: 110px 1fr 48px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.fit-input {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.fit-input legend {
+  width: 100%;
+}
+.size-chart-form {
+  margin-top: 12px;
+}
+.size-chart-form textarea.mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 14px;
+}
+.size-chart-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  cursor: pointer;
+}
+.size-chart-delete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}

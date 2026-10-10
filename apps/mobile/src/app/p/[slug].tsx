@@ -47,6 +47,7 @@ import { ProductRail } from '@/components/ProductRail';
 import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
+import { SizeGuide } from '@/components/SizeGuide';
 import { Stars } from '@/components/Stars';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -632,6 +633,7 @@ export default function ProductScreen() {
               </View>
             ) : null}
 
+            {item.sizeGuide ? <SizeGuide guide={item.sizeGuide} /> : null}
             <Text variant="small" tone={stock.tone}>
               {stock.text}
             </Text>

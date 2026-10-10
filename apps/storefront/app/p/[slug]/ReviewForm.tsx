@@ -8,11 +8,21 @@ import { ReviewPhotoPicker } from './ReviewPhotos';
 export function ReviewForm({
   slug,
   existing,
+  sized = false,
 }: {
   slug: string;
-  existing: { rating: number; title: string; body: string; status: string } | null;
+  existing: {
+    rating: number;
+    title: string;
+    body: string;
+    status: string;
+    fit?: 'SMALL' | 'TRUE' | 'LARGE' | null;
+  } | null;
+  /** Clothing and shoes ask how it fit (p10-26). */
+  sized?: boolean;
 }) {
   const t = useT('productPage');
+  const sg = useT('sizeGuide');
   const [state, action, pending] = useActionState<ReviewState, FormData>(submitReview, {});
 
   if (state.ok) {
@@ -61,6 +71,24 @@ export function ReviewForm({
           defaultValue={existing?.body}
         />
       </label>
+      {sized ? (
+        <fieldset className="fit-input">
+          <legend className="hint" style={{ marginBottom: 6 }}>
+            {sg('fitQuestion')}
+          </legend>
+          <input type="hidden" name="fitAsked" value="1" />
+          {(['SMALL', 'TRUE', 'LARGE'] as const).map((fit) => (
+            <label key={fit} className="check">
+              <input type="radio" name="fit" value={fit} defaultChecked={existing?.fit === fit} />{' '}
+              {sg(`fit_${fit}`)}
+            </label>
+          ))}
+          <label className="check">
+            <input type="radio" name="fit" value="" defaultChecked={!existing?.fit} />{' '}
+            {sg('fitSkip')}
+          </label>
+        </fieldset>
+      ) : null}
       <ReviewPhotoPicker />
       {state.error ? (
         <p className="banner banner--error" role="alert">

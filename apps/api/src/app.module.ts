@@ -24,6 +24,7 @@ import { PriceHistoryModule } from './modules/price-history/price-history.module
 import { HelpModule } from './modules/help/help.module';
 import { ReferralsModule } from './modules/referrals/referrals.module';
 import { FollowsModule } from './modules/follows/follows.module';
+import { SizeGuideModule } from './modules/size-guide/size-guide.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -109,6 +110,7 @@ import { RedisModule } from './redis/redis.module';
     HelpModule,
     ReferralsModule,
     FollowsModule,
+    SizeGuideModule,
     InsightsModule,
     SellersModule,
     NotificationsModule,

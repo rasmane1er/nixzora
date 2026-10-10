@@ -117,6 +117,8 @@ export const ProductUpdateSchema = z
     categoryId: z.uuid(),
     brandId: z.uuid().nullable(),
     attributes: AttributesSchema,
+    /** Size & fit guide (p10-26): the listing's own chart; null uses the category's. */
+    sizeChartId: z.uuid().nullable(),
   })
   .partial();
 
@@ -348,6 +350,29 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   variants: z.array(VariantSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+  /** Size & fit guide (p10-26): clothing and shoes only. */
+  sizeGuide: z
+    .object({
+      chart: z
+        .object({
+          name: z.string(),
+          note: z.string().nullable(),
+          columns: z.array(z.string()),
+          rows: z.array(z.object({ size: z.string(), values: z.array(z.string()) })),
+        })
+        .nullable(),
+      fit: z.object({
+        answers: z.number().int(),
+        small: z.number().int(),
+        trueToSize: z.number().int(),
+        large: z.number().int(),
+        verdict: z.enum(['SMALL', 'TRUE', 'LARGE']).nullable(),
+      }),
+    })
+    .nullable()
+    .optional(),
+  /** The chart chosen for this listing (seller and staff views). */
+  sizeChartId: z.uuid().nullable().optional(),
 });
 
 export type CategoryNode = {

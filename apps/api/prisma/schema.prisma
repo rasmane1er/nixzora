@@ -305,16 +305,17 @@ enum ProductStatus {
 }
 
 model Category {
-  id          String     @id @default(uuid(7)) @db.Uuid
-  parentId    String?    @map("parent_id") @db.Uuid
-  slug        String     @unique
+  id          String      @id @default(uuid(7)) @db.Uuid
+  parentId    String?     @map("parent_id") @db.Uuid
+  slug        String      @unique
   name        String
   description String?
-  position    Int        @default(0)
-  isActive    Boolean    @default(true) @map("is_active")
-  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryTree")
+  position    Int         @default(0)
+  isActive    Boolean     @default(true) @map("is_active")
+  parent      Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]  @relation("CategoryTree")
   products    Product[]
+  sizeCharts  SizeChart[]
 
   @@index([parentId])
   @@map("categories")
@@ -341,6 +342,8 @@ model Product {
   attributes   Json          @default("{}")
   /// Marketplace seller; null means NIXZORA sells it (first party).
   sellerId     String?       @map("seller_id") @db.Uuid
+  /// Size & fit guide (p10-26): the listing's own chart; null uses the category's default.
+  sizeChartId  String?       @map("size_chart_id") @db.Uuid
   /// Why staff sent a seller's listing back, shown to the seller.
   reviewNote   String?       @map("review_note")
   /// A store lets customers Subscribe & Save on this listing and funds the discount (p10-11).
@@ -370,6 +373,7 @@ model Product {
   searchDoc     ProductSearchDoc?
   viewSources   ProductViewSource[]
   cartAdds      ProductCartAdd[]
+  sizeChart     SizeChart?          @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
 
   @@index([categoryId, status])
   @@index([sellerId, status])
@@ -911,7 +915,9 @@ model Review {
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
   /// "Was this helpful?" yes votes (p10-05), kept with each vote.
-  helpfulCount Int @default(0) @map("helpful_count")
+  helpfulCount Int        @default(0) @map("helpful_count")
+  /// How it fit (p10-26): clothing and shoes, when the reviewer said.
+  fit          ReviewFit?
 
   product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1419,6 +1425,7 @@ model Seller {
   adClicks        AdClick[]
   conversations   Conversation[]
   followers       StoreFollow[]
+  sizeCharts      SizeChart[]
 
   @@index([status, createdAt])
   @@map("sellers")
@@ -2175,4 +2182,36 @@ model ProductCartAdd {
 
   @@id([productId, day])
   @@map("product_cart_adds")
+}
+
+enum ReviewFit {
+  SMALL
+  TRUE
+  LARGE
+}
+
+/// Size & fit guide (p10-26, ADR-0048): a store's chart, or NIXZORA's (default per category).
+model SizeChart {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  /// null: NIXZORA's own chart.
+  sellerId   String?  @map("seller_id") @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  name       String
+  /// Measurement headings, e.g. ["Chest (in)", "Chest (cm)"].
+  columns    String[]
+  /// [{ size: "S", values: ["34–36", "86–91"] }, …]
+  rows       Json
+  note       String?
+  /// NIXZORA's chart for its category's products that have none of their own.
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  seller   Seller?   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([sellerId])
+  @@index([categoryId, isDefault])
+  @@map("size_charts")
 }

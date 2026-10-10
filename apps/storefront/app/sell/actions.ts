@@ -161,6 +161,8 @@ export async function updateListing(form: FormData): Promise<void> {
           description: text(form, 'description'),
           categoryId: text(form, 'categoryId'),
           attributes: specs(form, 'specs'),
+          // Size & fit guide (p10-26): only on clothing and shoes; empty uses the category's.
+          ...(form.has('sizeChartId') ? { sizeChartId: text(form, 'sizeChartId') ?? null } : {}),
         },
       }),
     'noticeListingSaved',

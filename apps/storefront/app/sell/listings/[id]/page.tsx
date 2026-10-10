@@ -1,4 +1,4 @@
-import { type ProductDetail } from '@nixzora/validation';
+import { type SizeChartView, type ProductDetail } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -52,6 +52,11 @@ export default async function ListingPage({
     getFormat(),
   ]);
   const tc = await getT('common');
+  // Size & fit guide (p10-26): clothing and shoe listings choose a size chart.
+  const charts = product.sizeGuide
+    ? await api<SizeChartView[]>('/seller/size-charts').catch((): SizeChartView[] => [])
+    : [];
+  const sg = await getT('sizeGuide');
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
   const canSubmit =
     seller.status === 'ACTIVE' && (product.status === 'DRAFT' || product.status === 'ARCHIVED');
@@ -129,6 +134,23 @@ export default async function ListingPage({
               ))}
             </select>
           </label>
+          {product.sizeGuide ? (
+            <label>
+              {sg('listingChart')}{' '}
+              <Link className="hint" href="/sell/size-charts">
+                {sg('navTitle')}
+              </Link>
+              <select name="sizeChartId" defaultValue={product.sizeChartId ?? ''}>
+                <option value="">{sg('listingChartDefault')}</option>
+                {charts.map((chart) => (
+                  <option key={chart.id} value={chart.id}>
+                    {chart.name} · {chart.categoryName}
+                    {chart.nixzora ? ` · ${sg('nixzora')}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label>
             {t('fieldDescription')}
             <textarea
