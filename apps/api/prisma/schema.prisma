@@ -28,38 +28,40 @@ enum UserStatus {
 }
 
 model User {
-  id                String     @id @default(uuid(7)) @db.Uuid
-  email             String     @unique
-  emailVerifiedAt   DateTime?  @map("email_verified_at")
-  passwordHash      String?    @map("password_hash")
-  firstName         String?    @map("first_name")
-  lastName          String?    @map("last_name")
-  phone             String?
-  status            UserStatus @default(ACTIVE)
+  id                 String     @id @default(uuid(7)) @db.Uuid
+  email              String     @unique
+  emailVerifiedAt    DateTime?  @map("email_verified_at")
+  passwordHash       String?    @map("password_hash")
+  firstName          String?    @map("first_name")
+  lastName           String?    @map("last_name")
+  phone              String?
+  status             UserStatus @default(ACTIVE)
   /// Deals and new arrivals by email: off until the customer opts in.
-  marketingEmails   Boolean    @default(false) @map("marketing_emails")
+  marketingEmails    Boolean    @default(false) @map("marketing_emails")
   /// When the customer agreed to the Terms of Service and Privacy Policy at sign-up.
-  termsAcceptedAt   DateTime?  @map("terms_accepted_at")
+  termsAcceptedAt    DateTime?  @map("terms_accepted_at")
   /// An email after delivery asking for a review.
-  reviewRequests    Boolean    @default(true) @map("review_requests")
+  reviewRequests     Boolean    @default(true) @map("review_requests")
   /// Picks from views, searches, cart, saves, orders and assistant chats (p10-02). Off also stops
   /// recording those signals.
-  personalizedPicks Boolean    @default(true) @map("personalized_picks")
+  personalizedPicks  Boolean    @default(true) @map("personalized_picks")
   /// Back-in-stock and price-drop alerts by push and email (p10-06).
-  stockAlerts       Boolean    @default(true) @map("stock_alerts")
+  stockAlerts        Boolean    @default(true) @map("stock_alerts")
   /// Warranty and return-window reminders (p10-33).
-  orderReminders    Boolean    @default(true) @map("order_reminders")
+  orderReminders     Boolean    @default(true) @map("order_reminders")
+  /// Monthly budget (p10-35): a private spending cap, or null for none.
+  monthlyBudgetCents Int?       @map("monthly_budget_cents")
   /// Profile photo (an uploaded image's storage key).
-  avatarKey         String?    @map("avatar_key")
+  avatarKey          String?    @map("avatar_key")
   /// Language for the website, the app, emails and push: "en", "fr" or "es".
-  language          String     @default("en")
+  language           String     @default("en")
   /// The payment provider's customer (Stripe cus_...) that holds this account's saved cards.
-  paymentCustomerId String?    @unique @map("payment_customer_id")
-  mfaEnabled        Boolean    @default(false) @map("mfa_enabled")
+  paymentCustomerId  String?    @unique @map("payment_customer_id")
+  mfaEnabled         Boolean    @default(false) @map("mfa_enabled")
   /// TOTP secret, encrypted at the application layer (AES-256-GCM).
-  mfaSecretEnc      String?    @map("mfa_secret_enc")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
+  mfaSecretEnc       String?    @map("mfa_secret_enc")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
   sessions           Session[]
   roles              UserRole[]

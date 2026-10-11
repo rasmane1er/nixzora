@@ -1,3 +1,4 @@
+import { BudgetNote } from '@/components/BudgetNote';
 import { calendarDay, INTL_LOCALE, multiBuyAddMore, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
@@ -385,6 +386,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
           )}
           <PlusShippingNote totals={t} signedIn={signedIn} />
           <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
+          {signedIn ? <BudgetNote orderCents={estimated} /> : null}
           {blocked || cart.coupon?.problem ? (
             <p className="banner banner--info">{blocked ? tc('fixItems') : tc('removeCode')}</p>
           ) : (

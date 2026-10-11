@@ -14,6 +14,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
 import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
+import { BudgetModule } from './modules/budget/budget.module';
 import { DealsModule } from './modules/deals/deals.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
@@ -103,6 +104,7 @@ import { RedisModule } from './redis/redis.module';
     AdvertisingModule,
     AlertsModule,
     RemindersModule,
+    BudgetModule,
     DealsModule,
     SubscriptionsModule,
     MessagingModule,

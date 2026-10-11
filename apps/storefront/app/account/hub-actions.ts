@@ -1,6 +1,9 @@
 'use server';
 
 import {
+  BUDGET_MAX_CENTS,
+  BUDGET_MIN_CENTS,
+  dollarsToCents,
   type AddressCreate,
   type Cart,
   type SupportRequestView,
@@ -234,6 +237,22 @@ export async function savePreferences(form: FormData): Promise<void> {
         },
       }),
     (await getT('account'))('preferencesSaved'),
+  );
+}
+
+// ───── Monthly budget (p10-35) ─────
+
+export async function saveBudget(form: FormData): Promise<void> {
+  const t = await getT('budget');
+  const off = form.get('intent') === 'off';
+  const cents = dollarsToCents(form.get('amount'));
+  if (!off && !(cents >= BUDGET_MIN_CENTS && cents <= BUDGET_MAX_CENTS)) {
+    redirect(to('/account/budget', 'error', t('invalid')));
+  }
+  await perform(
+    '/account/budget',
+    () => api('/me/budget', { method: 'PUT', body: { monthlyCents: off ? null : cents } }),
+    off ? t('removed') : t('saved'),
   );
 }
 

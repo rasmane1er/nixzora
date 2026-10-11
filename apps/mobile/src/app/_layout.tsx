@@ -64,6 +64,7 @@ function RootLayout() {
   const tph = useT('photo');
   const tpl = useT('plus');
   const tw = useT('warranty');
+  const tbu = useT('budget');
   const tcl = useT('clips');
   const thi = useT('history');
   const tha = useT('helpAgent');
@@ -152,6 +153,7 @@ function RootLayout() {
                 <Stack.Screen name="account/profile" options={{ title: t('titleProfile') }} />
                 <Stack.Screen name="account/buy-again" options={{ title: t('titleBuyAgain') }} />
                 <Stack.Screen name="account/warranties" options={{ title: tw('title') }} />
+                <Stack.Screen name="account/budget" options={{ title: tbu('title') }} />
                 <Stack.Screen name="account/history" options={{ title: thi('title') }} />
                 <Stack.Screen name="account/payments" options={{ title: t('titlePayments') }} />
                 <Stack.Screen name="account/coupons" options={{ title: t('titleCoupons') }} />

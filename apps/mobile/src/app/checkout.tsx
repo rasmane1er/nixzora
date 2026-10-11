@@ -12,6 +12,7 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { useIsOnline } from '@/components/OfflineToast';
+import { BudgetNote } from '@/components/BudgetNote';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PlusShippingNote } from '@/components/PlusNote';
 import { Totals } from '@/components/Totals';
@@ -203,6 +204,7 @@ export default function CheckoutScreen() {
       await client.invalidateQueries({ queryKey: keys.cart });
       await client.invalidateQueries({ queryKey: ['buyNow'] });
       await client.invalidateQueries({ queryKey: ['gift-balance'] });
+      await client.invalidateQueries({ queryKey: keys.budget });
       await client.invalidateQueries({ queryKey: keys.orders });
       await client.invalidateQueries({ queryKey: ['me'] });
       router.replace({
@@ -568,6 +570,7 @@ export default function CheckoutScreen() {
       ) : null}
       {totals ? <PlusShippingNote totals={totals} /> : null}
       <DeliveryPromise window={cart.data?.delivery} twoDay={totals?.shippingSpeed === 'TWO_DAY'} />
+      {totals ? <BudgetNote orderCents={totals.totalCents} /> : null}
       {problem ? <Banner tone="error">{problem}</Banner> : null}
       {!online ? <Banner tone="warn">{t('offlinePlaceOrder')}</Banner> : null}
       <Button

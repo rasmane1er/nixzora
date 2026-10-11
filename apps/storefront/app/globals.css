@@ -6406,3 +6406,46 @@ td.neg {
     width: 72px;
   }
 }
+
+/* Monthly budget (p10-35) */
+.budget-figure {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+.budget-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.budget-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ok-fg);
+}
+.budget-bar--over span {
+  background: var(--warn-fg);
+}
+.budget-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+}
+.budget-note {
+  margin: 0;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.budget-note--over {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+.budget-note a {
+  color: inherit;
+}

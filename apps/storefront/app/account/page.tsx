@@ -70,6 +70,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const g = await getT('gifts');
   const sb = await getT('subscribe');
   const tw = await getT('warranty');
+  const tb = await getT('budget');
   const pl = await getT('plus');
   const ib = await getT('inbox');
   const hi = await getT('history');
@@ -139,6 +140,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
         },
         { href: '/account/payments', icon: 'payment', label: t('paymentMethods') },
         { href: '/account/coupons', icon: 'coupon', label: t('coupons') },
+        { href: '/account/budget', icon: 'budget', label: tb('title'), hint: tb('hubHint') },
         o.seller
           ? { href: '/sell', icon: 'store', label: t('yourStore'), hint: o.seller.displayName }
           : { href: '/sell', icon: 'store', label: t('sellOnNixzora') },

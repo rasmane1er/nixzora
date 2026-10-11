@@ -47,6 +47,7 @@ import type {
   ProductAlertKind,
   ProductAlertRef,
   WarrantyView,
+  BudgetView,
   QuestionPage,
   QuestionView,
   Facet,
@@ -527,6 +528,10 @@ export function createApiClient(options: ClientOptions) {
       buyAgain: () => request<BuyAgainItem[]>('GET', '/me/buy-again'),
       /** Warranty tracker (p10-33): what's covered and until when. */
       warranties: () => request<WarrantyView[]>('GET', '/me/warranties'),
+      /** Monthly budget (p10-35): the cap, what's spent this month and what's left. */
+      budget: () => request<BudgetView>('GET', '/me/budget'),
+      setBudget: (monthlyCents: number | null) =>
+        request<BudgetView>('PUT', '/me/budget', { body: { monthlyCents } }),
       returns: () => request<ReturnView[]>('GET', '/me/returns'),
       reviews: () => request<AccountReview[]>('GET', '/me/reviews'),
       preferences: () => request<AccountPreferences>('GET', '/me/preferences'),

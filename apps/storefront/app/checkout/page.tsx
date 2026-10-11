@@ -1,3 +1,4 @@
+import { BudgetNote } from '@/components/BudgetNote';
 import {
   type Cart,
   CartIdSchema,
@@ -137,6 +138,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           </dl>
           <PlusShippingNote totals={t} signedIn={signedIn} />
           <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
+          {signedIn ? <BudgetNote orderCents={t.totalCents} /> : null}
           {buyNowId ? (
             <Link href={back} className="muted" style={{ fontSize: 14 }}>
               {l('backToProduct')}

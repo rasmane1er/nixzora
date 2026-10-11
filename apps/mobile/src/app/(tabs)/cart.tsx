@@ -8,6 +8,7 @@ import { useRef } from 'react';
 import { Pressable, RefreshControl, type ScrollView, StyleSheet, View } from 'react-native';
 import { CartLineRow } from '@/components/CartLineRow';
 import { useIsOnline } from '@/components/OfflineToast';
+import { BudgetNote } from '@/components/BudgetNote';
 import { DeliveryPromise } from '@/components/Delivery';
 import { PlusShippingNote } from '@/components/PlusNote';
 import { SavedForLater, useSaved } from '@/components/SavedForLater';
@@ -263,6 +264,11 @@ export default function CartScreen() {
         </View>
         <PlusShippingNote totals={data.totals} />
         <DeliveryPromise window={data.delivery} twoDay={data.totals.shippingSpeed === 'TWO_DAY'} />
+        <BudgetNote
+          orderCents={
+            data.totals.subtotalCents - data.totals.discountCents + data.totals.shippingCents
+          }
+        />
         {blocked ? <Banner tone="warn">{t('fixItemsAbove')}</Banner> : null}
         {!online ? <Banner tone="warn">{t('connectToCheckOut')}</Banner> : null}
         <Text variant="small" muted style={{ textAlign: 'center' }}>

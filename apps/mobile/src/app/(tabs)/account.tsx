@@ -143,6 +143,7 @@ export default function AccountScreen() {
   const ti = useT('inbox');
   const tu = useT('shopUi');
   const tw = useT('warranty');
+  const tbu = useT('budget');
   const p = usePalette();
   const plus = usePlusMember();
 
@@ -308,6 +309,12 @@ export default function AccountScreen() {
           },
           { icon: 'card-outline', label: t('menuPayments'), href: '/account/payments' },
           { icon: 'pricetag-outline', label: t('menuCoupons'), href: '/account/coupons' },
+          {
+            icon: 'wallet-outline',
+            label: tbu('title'),
+            href: '/account/budget',
+            hint: tbu('hubHint'),
+          },
           overview.data?.seller
             ? { icon: 'storefront-outline', label: tc('sellerDashboard'), url: `${WEB_URL}/sell` }
             : {
