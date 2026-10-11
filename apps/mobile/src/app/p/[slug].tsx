@@ -280,6 +280,7 @@ export default function ProductScreen() {
   const tp = useT('productPage');
   const tpo = useT('preorders');
   const tv = useT('vacation');
+  const tpr = useT('product');
   const tu = useT('shopUi');
   const insets = useSafeAreaInsets();
   const locale = useLocale();
@@ -313,6 +314,13 @@ export default function ProductScreen() {
   const [chosen, setChosen] = useState<string | undefined>(variantParam);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  // A check mark on the button for a moment after adding (the banner below stays).
+  const [justAdded, setJustAdded] = useState(false);
+  useEffect(() => {
+    if (!justAdded) return;
+    const timer = setTimeout(() => setJustAdded(false), 1800);
+    return () => clearTimeout(timer);
+  }, [justAdded]);
   // Bundle & save (p10-16).
   const bundles = useQuery({
     queryKey: ['catalog', 'bundles', slug],
@@ -479,6 +487,7 @@ export default function ProductScreen() {
       {
         onSuccess: () => {
           setAdded(true);
+          setJustAdded(true);
           if (Platform.OS !== 'web')
             void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
@@ -1169,7 +1178,15 @@ export default function ProductScreen() {
                 compact={narrow}
               />
               <Button
-                title={item.preorder ? tpo('buttonPlain') : t('addToCart')}
+                title={
+                  justAdded ? tpr('added') : item.preorder ? tpo('buttonPlain') : t('addToCart')
+                }
+                icon={
+                  justAdded ? (
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  ) : undefined
+                }
+                accessibilityLiveRegion="polite"
                 singleLine
                 small={narrow}
                 style={[{ flex: 1, borderRadius: 999 }, narrow && { paddingHorizontal: space.sm }]}

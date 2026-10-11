@@ -1,4 +1,5 @@
 import * as Device from 'expo-device';
+import { markOpenedByLink } from './fresh-start';
 import * as Notifications from 'expo-notifications';
 import { type Href, router } from 'expo-router';
 import { useEffect } from 'react';
@@ -71,7 +72,10 @@ export function useNotificationNavigation(ready: boolean): void {
     if (!ready) return;
     const open = (response: Notifications.NotificationResponse | null) => {
       const path = response?.notification.request.content.data?.path;
-      if (typeof path === 'string' && path.startsWith('/')) router.push(path as Href);
+      if (typeof path === 'string' && path.startsWith('/')) {
+        markOpenedByLink();
+        router.push(path as Href);
+      }
     };
     open(Notifications.getLastNotificationResponse());
     const subscription = Notifications.addNotificationResponseReceivedListener(open);

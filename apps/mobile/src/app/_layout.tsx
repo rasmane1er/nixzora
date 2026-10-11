@@ -27,6 +27,7 @@ import { language, useT } from '@/lib/i18n';
 import { applyOrientationPolicy } from '@/lib/orientation';
 import { enablePush, useNotificationNavigation } from '@/lib/push';
 import { connectQueryToDevice, persistOptions, queryClient } from '@/lib/query';
+import { useFreshStartOnReturn } from '@/lib/fresh-start';
 import { session, useSession } from '@/lib/session';
 import { brand, fonts, palettes } from '@/lib/theme';
 
@@ -95,6 +96,8 @@ function RootLayout() {
     if (status === 'signedIn') void enablePush(false).catch(() => undefined);
   }, [status]);
   useNotificationNavigation(ready && status !== 'locked');
+  // Reopened after a while: a fresh Home screen (ADR-0053).
+  useFreshStartOnReturn(ready && status !== 'locked');
 
   if (!ready) return null;
   const p = dark ? palettes.dark : palettes.light;

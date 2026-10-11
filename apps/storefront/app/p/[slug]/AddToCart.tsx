@@ -12,7 +12,7 @@ import {
   type Variant,
 } from '@nixzora/validation';
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../../cart/actions';
 import { buyNow, oneClickBuy } from '../../checkout/actions';
@@ -51,6 +51,13 @@ export function AddToCart({
   const [selectedId, setSelectedId] = useState(firstInStock?.id);
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  // A check mark on the button for a moment after adding (the banner below stays).
+  const [justAdded, setJustAdded] = useState(false);
+  useEffect(() => {
+    if (!justAdded) return;
+    const timer = setTimeout(() => setJustAdded(false), 1800);
+    return () => clearTimeout(timer);
+  }, [justAdded]);
   const [pending, startTransition] = useTransition();
   const [buying, startBuying] = useTransition();
   const l = useT('lists');
@@ -77,6 +84,7 @@ export function AddToCart({
     setStatus(null);
     startTransition(async () => {
       const result = await addToCart(selected.id, quantity);
+      if (result.ok) setJustAdded(true);
       setStatus(
         result.ok ? { kind: 'ok', text: t('addedToCart') } : { kind: 'error', text: result.error },
       );
@@ -194,13 +202,15 @@ export function AddToCart({
               ? p('soldOut')
               : pending
                 ? t('adding')
-                : preorder
-                  ? po('button', {
-                      price: f.money(selected.priceCents * quantity, selected.currency),
-                    })
-                  : t('addToCartPrice', {
-                      price: f.money(selected.priceCents * quantity, selected.currency),
-                    })}
+                : justAdded
+                  ? `✓ ${p('added')}`
+                  : preorder
+                    ? po('button', {
+                        price: f.money(selected.priceCents * quantity, selected.currency),
+                      })
+                    : t('addToCartPrice', {
+                        price: f.money(selected.priceCents * quantity, selected.currency),
+                      })}
           </button>
         </div>
         {max > 0 ? (
