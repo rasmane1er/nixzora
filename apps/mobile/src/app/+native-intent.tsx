@@ -9,7 +9,8 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
   try {
     const url = new URL(path, 'nixzora://app');
     // Account screens the app has too (warranty reminders, p10-33) open there.
-    if (['/account/warranties', '/account/budget'].includes(url.pathname)) return url.pathname;
+    if (['/account/warranties', '/account/budget', '/account/buy-reminders'].includes(url.pathname))
+      return url.pathname;
     if (url.pathname.startsWith('/account/')) return '/account';
     if (url.pathname.startsWith('/checkout')) return '/cart';
     return path;

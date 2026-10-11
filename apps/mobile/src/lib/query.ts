@@ -66,6 +66,7 @@ export const keys = {
   buyAgain: ['me', 'buy-again'] as const,
   warranties: ['me', 'warranties'] as const,
   budget: ['me', 'budget'] as const,
+  buyReminders: ['me', 'buy-reminders'] as const,
   returns: ['me', 'returns'] as const,
   reviews: ['me', 'reviews'] as const,
   preferences: ['me', 'preferences'] as const,

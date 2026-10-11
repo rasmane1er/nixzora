@@ -80,6 +80,7 @@ model User {
   questions          ProductQuestion[]
   answers            ProductAnswer[]
   productAlerts      ProductAlert[]
+  buyReminders       BuyReminder[]
   lists              ShoppingList[]
   paymentCards       PaymentCard[]
   giftEntries        GiftBalanceEntry[]
@@ -371,6 +372,7 @@ model Product {
   adCampaigns   AdCampaignProduct[]
   questions     ProductQuestion[]
   alerts        ProductAlert[]
+  buyReminders  BuyReminder[]
   deals         Deal[]
   bundleItems   BundleItem[]
   multiBuyItems MultiBuyProduct[]
@@ -1861,6 +1863,25 @@ enum ProductAlertKind {
 
 /// Tell this customer when the product is back in stock, or cheaper than `priceCents`.
 /// Asked for on a sold-out product page, and kept for saved (wishlist) products.
+/// "Remind me to buy" (p10-36): one per customer and product; deleted once sent.
+model BuyReminder {
+  userId     String   @map("user_id") @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  /// The day asked for, and when it goes out (9:00 Eastern that day).
+  remindOn   DateTime @map("remind_on") @db.Date
+  remindAt   DateTime @map("remind_at")
+  /// The price when it was set, to say if it dropped.
+  priceCents Int      @map("price_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@index([remindAt])
+  @@map("buy_reminders")
+}
+
 model ProductAlert {
   userId     String           @map("user_id") @db.Uuid
   productId  String           @map("product_id") @db.Uuid

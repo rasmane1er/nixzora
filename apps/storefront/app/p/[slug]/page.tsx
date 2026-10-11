@@ -1,3 +1,4 @@
+import { BuyReminder } from './BuyReminder';
 import {
   type BundleView,
   type MyPlus,
@@ -11,6 +12,7 @@ import {
   type ReviewInsights as Insights,
   type ReviewPage,
   shownDelivery,
+  type BuyReminderView,
 } from '@nixzora/validation';
 import {
   calendarDay,
@@ -162,6 +164,12 @@ export default async function ProductPage({ params, searchParams }: Props) {
         : Promise.resolve<ProductAlertRef[]>([]),
     ],
   );
+  // "Remind me to buy" (p10-36): the day set for this product, if any.
+  const buyReminder = signedIn
+    ? ((await api<BuyReminderView[]>('/me/buy-reminders').catch((): BuyReminderView[] => [])).find(
+        (r) => r.productId === product.id,
+      )?.date ?? null)
+    : null;
   const specs = Object.entries(product.attributes);
   const t = await getT('productPage');
   const d = await getT('deals');
@@ -439,6 +447,14 @@ export default async function ProductPage({ params, searchParams }: Props) {
               <AddToList productId={product.id} slug={product.slug} />
               <CompareButton slug={product.slug} />
             </div>
+            {inStock ? (
+              <BuyReminder
+                productId={product.id}
+                slug={product.slug}
+                signedIn={signedIn}
+                initial={buyReminder}
+              />
+            ) : null}
             <p className="sold-by">
               {t('soldBy')}{' '}
               {product.seller ? (

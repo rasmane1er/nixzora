@@ -48,6 +48,7 @@ import type {
   ProductAlertRef,
   WarrantyView,
   BudgetView,
+  BuyReminderView,
   QuestionPage,
   QuestionView,
   Facet,
@@ -530,6 +531,12 @@ export function createApiClient(options: ClientOptions) {
       warranties: () => request<WarrantyView[]>('GET', '/me/warranties'),
       /** Monthly budget (p10-35): the cap, what's spent this month and what's left. */
       budget: () => request<BudgetView>('GET', '/me/budget'),
+      /** "Remind me to buy" (p10-36). */
+      buyReminders: () => request<BuyReminderView[]>('GET', '/me/buy-reminders'),
+      setBuyReminder: (productId: string, date: string) =>
+        request<BuyReminderView>('PUT', `/me/buy-reminders/${enc(productId)}`, { body: { date } }),
+      removeBuyReminder: (productId: string) =>
+        request<void>('DELETE', `/me/buy-reminders/${enc(productId)}`),
       setBudget: (monthlyCents: number | null) =>
         request<BudgetView>('PUT', '/me/budget', { body: { monthlyCents } }),
       returns: () => request<ReturnView[]>('GET', '/me/returns'),

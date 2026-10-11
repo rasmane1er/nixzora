@@ -144,6 +144,7 @@ export default function AccountScreen() {
   const tu = useT('shopUi');
   const tw = useT('warranty');
   const tbu = useT('budget');
+  const tbr = useT('buyReminders');
   const p = usePalette();
   const plus = usePlusMember();
 
@@ -281,6 +282,12 @@ export default function AccountScreen() {
             label: tw('title'),
             href: '/account/warranties',
             hint: tw('hubHint'),
+          },
+          {
+            icon: 'notifications-outline',
+            label: tbr('title'),
+            href: '/account/buy-reminders',
+            hint: tbr('hubHint'),
           },
           { icon: 'time-outline', label: thi('navHistory'), href: '/account/history' },
           {

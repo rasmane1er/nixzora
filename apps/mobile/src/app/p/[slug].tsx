@@ -43,6 +43,7 @@ import { PLUS_ACCENT, PlusChip, PlusPriceText } from '@/components/PlusNote';
 import { LowestPriceBadge, PriceHistoryCard } from '@/components/PriceHistoryCard';
 import { ProductQuestions } from '@/components/ProductQuestions';
 import { AddToListButton } from '@/components/AddToListButton';
+import { BuyReminderButton } from '@/components/BuyReminderButton';
 import { Chips } from '@/components/Chips';
 import { DealTimer, DEAL_RED, useDealLabel } from '@/components/DealTimer';
 import { StockAlertButton } from '@/components/StockAlertButton';
@@ -1039,6 +1040,7 @@ export default function ProductScreen() {
                 </Card>
               ) : null}
               <AddToListButton productId={item.id} />
+              {canBuy ? <BuyReminderButton productId={item.id} /> : null}
               {related.data?.similar.length ? (
                 <Button
                   title={tcmp('similar')}

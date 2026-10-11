@@ -166,3 +166,18 @@ export async function setStockAlert(
     return null;
   });
 }
+
+/** "Remind me to buy" (p10-36): set the day, or null to cancel. */
+export async function setBuyReminder(
+  productId: string,
+  date: string | null,
+): Promise<Result<null>> {
+  if (!UUID.test(productId)) return { ok: false, error: 'Invalid product' };
+  return attempt(async () => {
+    await api(
+      `/me/buy-reminders/${productId}`,
+      date ? { method: 'PUT', body: { date } } : { method: 'DELETE' },
+    );
+    return null;
+  });
+}

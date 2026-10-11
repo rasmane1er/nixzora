@@ -256,6 +256,16 @@ export async function saveBudget(form: FormData): Promise<void> {
   );
 }
 
+/** "Remind me to buy" (p10-36): cancel one from the account list. */
+export async function cancelBuyReminder(form: FormData): Promise<void> {
+  const productId = text(form, 'productId') ?? '';
+  await perform(
+    '/account/buy-reminders',
+    () => api(`/me/buy-reminders/${encodeURIComponent(productId)}`, { method: 'DELETE' }),
+    (await getT('buyReminders'))('cancelled'),
+  );
+}
+
 /** Forgets product views and searches (this account and this browser), for personalized picks. */
 export async function clearShoppingHistory(): Promise<void> {
   const visitor = await visitorId();

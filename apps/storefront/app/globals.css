@@ -6449,3 +6449,45 @@ td.neg {
 .budget-note a {
   color: inherit;
 }
+
+/* "Remind me to buy" (p10-36) */
+.buy-reminder {
+  display: grid;
+  gap: 6px;
+}
+.buy-reminder__toggle {
+  justify-self: start;
+  padding-left: 0;
+}
+.buy-reminder__status {
+  margin: 0;
+  font-size: 14px;
+}
+.buy-reminder__status .btn--link {
+  padding: 0;
+  font-size: 14px;
+}
+.buy-reminder__panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.buy-reminder__panel legend {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 4px;
+}
+.buy-reminder__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.buy-reminder__date {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}

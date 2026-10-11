@@ -71,6 +71,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
   const sb = await getT('subscribe');
   const tw = await getT('warranty');
   const tb = await getT('budget');
+  const tr = await getT('buyReminders');
   const pl = await getT('plus');
   const ib = await getT('inbox');
   const hi = await getT('history');
@@ -118,6 +119,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Sear
         },
         { href: '/account/buy-again', icon: 'buyAgain', label: t('buyAgain') },
         { href: '/account/warranties', icon: 'warranty', label: tw('title'), hint: tw('hubHint') },
+        {
+          href: '/account/buy-reminders',
+          icon: 'preferences',
+          label: tr('title'),
+          hint: tr('hubHint'),
+        },
         { href: '/account/history', icon: 'history', label: hi('navHistory') },
         {
           href: '/account/reviews',
