@@ -53,11 +53,35 @@ export async function ProductListing({
 }) {
   const t = await getT('catalog');
   const p = await getT('product');
+  const ts = await getT('search');
+  // On phones the filters fold behind one button (ADR-0053), so results come first.
+  const active =
+    (filters.brand ? 1 : 0) +
+    (filters.minPrice || filters.maxPrice ? 1 : 0) +
+    (filters.inStock === 'true' ? 1 : 0) +
+    (filters.f?.length ?? 0);
   const locale = await getLocale();
   const facetName = (facet: Facet) =>
     facet.kind === 'option' ? optionLabel(facet.key, locale) : specLabel(facet.key, locale);
   return (
     <div className="listing">
+      <input type="checkbox" id="show-filters" className="filters-check" />
+      <label htmlFor="show-filters" className="filters-open">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M4 6h16M7 12h10M10 18h4" />
+        </svg>
+        {ts('filtersTitle')}
+        {active ? ` (${active})` : ''}
+      </label>
       <form className="filters card" action={base}>
         {filters.q && base === '/search' ? (
           <input type="hidden" name="q" value={filters.q} />

@@ -1,4 +1,4 @@
-import { type ComponentProps, type ReactNode, forwardRef } from 'react';
+import { type ComponentProps, type ReactNode, type Ref, forwardRef } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -188,7 +188,7 @@ export function Screen({
   contentContainerStyle,
   wide,
   ...props
-}: ScrollViewProps & { wide?: boolean }) {
+}: ScrollViewProps & { wide?: boolean; ref?: Ref<ScrollView> }) {
   const p = usePalette();
   return (
     <ScrollView

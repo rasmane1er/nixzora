@@ -56,3 +56,4 @@ export { multiBuy } from './multiBuy';
 export { videos } from './videos';
 export { photoColors } from './photoColors';
 export { preorders } from './preorders';
+export { shopUi } from './shopUi';

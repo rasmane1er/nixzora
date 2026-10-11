@@ -7,6 +7,11 @@
   /* NIXZORA Plus (p10-15): its own accent, so member perks read at a glance. */
   --plus: #3d2db8;
   --plus-soft: #ecebff;
+  /* The redesign (ADR-0053): the header band and its quieter text. */
+  --band: #0e1726;
+  --band-muted: #c9d1dc;
+  --photo: #f1eee8;
+  --card-shadow: 0 1px 2px rgb(14 23 38 / 0.05), 0 4px 14px rgb(14 23 38 / 0.07);
 }
 /* Dark: follows the system unless the visitor chose a theme (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
@@ -14,12 +19,20 @@
     --hero-bg: #15223a;
     --plus: #b4a9ff;
     --plus-soft: #24204a;
+    --band: #162133;
+    --band-muted: #9ba6b6;
+    --photo: #1a2433;
+    --card-shadow: none;
   }
 }
 :root[data-theme='dark'] {
   --hero-bg: #15223a;
   --plus: #b4a9ff;
   --plus-soft: #24204a;
+  --band: #162133;
+  --band-muted: #9ba6b6;
+  --photo: #1a2433;
+  --card-shadow: none;
 }
 
 * {
@@ -123,9 +136,26 @@ code,
   position: sticky;
   top: 0;
   z-index: 20;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  /* The redesign (ADR-0053): the ink band, as in the app. */
+  background: var(--band);
+  color: #fff;
+}
+.site-header .suggest {
+  color: var(--fg);
+}
+.site-header .logo__word {
+  color: #fff;
+}
+.site-header .site-search input {
+  background: #fff;
+  color: var(--color-ink);
+  border-color: transparent;
+}
+.site-header .site-search input::placeholder {
+  color: #5f6673;
+}
+.site-header .header-link:hover {
+  color: var(--color-signal);
 }
 .site-header__row {
   height: var(--header-h);
@@ -258,14 +288,29 @@ code,
 }
 .cat-nav a {
   text-decoration: none;
-  color: var(--muted);
+  color: var(--band-muted);
   white-space: nowrap;
 }
 .cat-nav a:hover,
 .cat-nav a[aria-current='page'] {
-  color: var(--fg);
+  color: #fff;
 }
-@media (max-width: 760px) {
+.cat-nav__deliver {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 18px;
+  border-right: 1px solid rgb(255 255 255 / 0.18);
+}
+.cat-nav .cat-nav__deals {
+  color: #fff;
+}
+/* Tablets and phones: the search gets a row of its own, as in the app. */
+@media (max-width: 900px) {
   .site-header__row {
     height: auto;
     flex-wrap: wrap;
@@ -277,6 +322,8 @@ code,
     flex-basis: 100%;
     max-width: none;
   }
+}
+@media (max-width: 760px) {
   .site-header__links .hide-sm {
     display: none;
   }
@@ -548,8 +595,10 @@ input[type='checkbox'] {
 }
 .product-card {
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  /* The redesign (ADR-0053): lifted cards; the hairline only shows in dark mode. */
+  border: 1px solid transparent;
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
   overflow: hidden;
   text-decoration: none;
   display: flex;
@@ -563,8 +612,9 @@ input[type='checkbox'] {
   transform: translateY(-2px);
 }
 .product-card__img {
-  aspect-ratio: 4 / 3;
-  background: linear-gradient(135deg, #e9e6dd, #d8d4c8);
+  aspect-ratio: 1.05;
+  padding: 8%;
+  background: var(--photo);
   display: grid;
   place-items: center;
   color: #6f6a5c;
@@ -575,19 +625,32 @@ input[type='checkbox'] {
 /* Dark: follows the system unless the visitor chose a theme (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .product-card__img {
-    background: linear-gradient(135deg, #1c2636, #263244);
     color: #8d98a8;
+  }
+  :root:not([data-theme='light']) .product-card {
+    border-color: var(--line);
   }
 }
 :root[data-theme='dark'] .product-card__img {
-  background: linear-gradient(135deg, #1c2636, #263244);
   color: #8d98a8;
+}
+:root[data-theme='dark'] .product-card {
+  border-color: var(--line);
 }
 
 .product-card__img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+.card-save {
+  justify-self: start;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ok-fg);
+  background: var(--ok-bg);
+  border-radius: 999px;
+  padding: 1px 9px;
 }
 .product-card__body {
   padding: 14px 16px 16px;
@@ -988,21 +1051,27 @@ input[type='checkbox'] {
   display: grid;
   grid-template-columns: 96px 1fr auto;
   gap: 16px;
-  padding-block: 18px;
-  border-bottom: 1px solid var(--line);
+  /* The redesign (ADR-0053): each line is a lifted card. */
+  padding: 14px;
+  margin-bottom: 12px;
+  background: var(--card);
+  border: 1px solid transparent;
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
   align-items: start;
 }
 .cart-line__img {
   width: 96px;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(135deg, #e9e6dd, #d8d4c8);
+  padding: 6px;
+  background: var(--photo);
 }
 .cart-line__img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .cart-line__actions {
   display: flex;
@@ -3498,6 +3567,8 @@ td.neg {
 }
 .card-add {
   width: 100%;
+  border-radius: 999px;
+  min-height: 40px;
 }
 .card-badge {
   position: absolute;
@@ -3560,8 +3631,9 @@ td.neg {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid transparent;
+  background: var(--card);
+  box-shadow: 0 2px 8px rgb(14 23 38 / 0.14);
   color: var(--fg);
   cursor: pointer;
 }
@@ -4565,7 +4637,7 @@ td.neg {
 /* ───── NIXZORA Plus (p10-15) ───── */
 .cat-nav .cat-nav__plus {
   font-weight: 600;
-  color: var(--plus);
+  color: #b4a9ff;
 }
 .plus-chip {
   display: inline-block;
@@ -5788,4 +5860,228 @@ td.neg {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-signal-text);
+}
+
+/* ───── The redesign (ADR-0053): phones get the app's layout ───── */
+.filters-check,
+.filters-open {
+  display: none;
+}
+@media (max-width: 860px) {
+  .filters-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-self: start;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  /* Focusable but invisible: the label is what people see and press. */
+  .filters-check {
+    display: block;
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .filters-check:focus-visible + .filters-open {
+    outline: 3px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+  .filters-check:not(:checked) ~ .filters {
+    display: none;
+  }
+  .filters-check:checked + .filters-open {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #fff;
+  }
+}
+/* Results as rows on phones, photo on the left, like the app's search. */
+@media (max-width: 560px) {
+  .listing .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .listing .product-card__link {
+    flex-direction: row;
+    gap: 12px;
+    padding: 12px 12px 0;
+  }
+  .listing .product-card__img {
+    flex: none;
+    width: 112px;
+    height: 132px;
+    aspect-ratio: auto;
+    padding: 8px;
+    border-radius: 14px;
+  }
+  .listing .product-card__body {
+    flex: 1;
+    min-width: 0;
+    padding: 0 36px 0 0;
+    align-content: start;
+  }
+  .listing .product-card__actions,
+  .listing .card-swatches {
+    padding-left: 136px;
+  }
+  .listing .product-card__actions {
+    padding-top: 10px;
+  }
+  .listing .card-add {
+    width: auto;
+    padding-inline: 18px;
+  }
+  .listing .card-badge {
+    top: 18px;
+    left: 18px;
+    max-width: 100px;
+  }
+}
+
+/* The product page's buy bar: inline on wide screens, pinned to the bottom on phones. */
+.buy-bar {
+  display: grid;
+  gap: 10px;
+}
+.buy-bar .btn {
+  border-radius: 999px;
+}
+@media (max-width: 760px) {
+  body:has(.buy-bar) {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .buy-bar {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px rgb(14 23 38 / 0.08);
+  }
+  .buy-bar .qty {
+    flex: 1.6;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+  /* The label stays for screen readers; the select says the number. */
+  .buy-bar .qty label {
+    font-size: 0;
+  }
+  .buy-bar .qty select {
+    width: 58px;
+    font-size: 15px;
+    min-height: 46px;
+    border-radius: 999px;
+    padding-inline: 12px 4px;
+  }
+  .buy-bar .btn {
+    min-height: 46px;
+    font-size: 14px;
+    padding-inline: 10px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .buy-bar .qty .btn {
+    min-width: 0;
+  }
+  .buy-bar .one-click,
+  .buy-bar > .btn--buy-now {
+    flex: 1;
+    min-width: 0;
+  }
+  .buy-bar .one-click .btn {
+    width: 100%;
+  }
+  .buy-bar .one-click .muted {
+    display: none;
+  }
+}
+
+/* The cart (ADR-0053): lifted summary, savings pill, and a pinned bar on phones. */
+.cart .summary {
+  border-color: transparent;
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
+}
+.cart .summary .btn--primary {
+  border-radius: 999px;
+}
+.cart-saving {
+  justify-self: start;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ok-fg);
+  background: var(--ok-bg);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+.cart-bar {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .cart-line {
+    border-color: var(--line);
+  }
+}
+:root[data-theme='dark'] .cart-line {
+  border-color: var(--line);
+}
+@media (max-width: 760px) {
+  body:has(.cart-bar) {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .cart-bar {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px rgb(14 23 38 / 0.08);
+  }
+  .cart-bar > div {
+    display: grid;
+    line-height: 1.2;
+  }
+  .cart-bar .muted {
+    font-size: 12px;
+  }
+  .cart-bar strong {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-size: 22px;
+  }
+  .cart-bar .btn {
+    flex: 1;
+    min-height: 50px;
+    border-radius: 999px;
+  }
+  .cart-line {
+    grid-template-columns: 80px 1fr;
+  }
+  .cart-line__img {
+    width: 80px;
+  }
+  .cart-line > .num {
+    grid-column: 2;
+    text-align: left;
+  }
 }

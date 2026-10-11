@@ -73,6 +73,18 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
     releases.length && releases.length < cart.lines.length ? releases.sort().at(-1)! : null;
   const t = cart.totals;
   const threshold = t.subtotalCents + t.freeShippingRemainingCents;
+  const tu = await getT('shopUi');
+  const estimated = t.subtotalCents - t.discountCents + t.shippingCents;
+  // What the shopper keeps (ADR-0053): list-price markdowns, member prices and every discount.
+  const saving =
+    cart.lines.reduce(
+      (sum, l) =>
+        sum +
+        Math.max(0, Math.max(l.compareAtCents ?? 0, l.regularPriceCents ?? 0) - l.unitPriceCents) *
+          l.quantity,
+      0,
+    ) + t.discountCents;
+  const canCheckOut = !(blocked || cart.coupon?.problem);
 
   return (
     <div className="wrap section">
@@ -254,10 +266,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
             <dt>{to('tax')}</dt>
             <dd className="muted">{tc('atCheckout')}</dd>
             <dt className="total">{tc('estimatedTotal')}</dt>
-            <dd className="total">
-              {f.money(t.subtotalCents - t.discountCents + t.shippingCents)}
-            </dd>
+            <dd className="total">{f.money(estimated)}</dd>
           </dl>
+          {saving > 0 ? (
+            <p className="cart-saving">{tu('youSave', { amount: f.money(saving) })}</p>
+          ) : null}
           {cart.clippedCoupons?.length ? (
             <ul className="bundle-lines">
               {cart.clippedCoupons.map((c) => (
@@ -347,6 +360,18 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
         </aside>
       </div>
       <SavedForLater items={saved} />
+      {/* Phones (ADR-0053): the total and Check out stay in reach while scrolling the lines. */}
+      <div className="cart-bar">
+        <div>
+          <span className="muted">{tu('total')}</span>
+          <strong>{f.money(estimated)}</strong>
+        </div>
+        {canCheckOut ? (
+          <Link className="btn btn--primary" href="/checkout">
+            {tc('checkOut')}
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export function ProductGrid({
   loadingMore,
   refreshing = false,
   onRefresh,
+  layout = 'grid',
 }: {
   products: Card[];
   header?: ReactElement;
@@ -28,9 +29,13 @@ export function ProductGrid({
   loadingMore?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** `list`: one product per row on phones (search results); tablets keep the grid. */
+  layout?: 'grid' | 'list';
 }) {
   const p = usePalette();
-  const { width, columns } = useLayout();
+  const { width, columns: gridColumns } = useLayout();
+  const rows = layout === 'list' && gridColumns <= 2;
+  const columns = rows ? 1 : gridColumns;
   const cardWidth = (width - space.lg * 2 - space.md * (columns - 1)) / columns;
   return (
     <FlatList
@@ -43,7 +48,7 @@ export function ProductGrid({
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: space.xxl * 2 }}
-      columnWrapperStyle={{ gap: space.md }}
+      columnWrapperStyle={columns > 1 ? { gap: space.md } : undefined}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       onEndReachedThreshold={0.6}
@@ -57,7 +62,7 @@ export function ProductGrid({
       renderItem={({ item }) => (
         // A fixed width keeps cards in a short last row the same size as the rest.
         <View style={{ width: cardWidth }}>
-          <ProductCard product={item} />
+          <ProductCard product={item} layout={rows ? 'row' : 'grid'} />
         </View>
       )}
     />

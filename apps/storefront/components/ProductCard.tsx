@@ -96,7 +96,7 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member] = await Promise.all([
+  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member, tu] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
@@ -108,6 +108,7 @@ export async function ProductCard({
     getFormat(),
     wishedIds(),
     isPlusMember(),
+    getT('shopUi'),
   ]);
   // "Arrives …" (p10-17): Plus members get NIXZORA's own items in 2 days, free.
   const twoDay = member && product.shipsFromNixzora === true;
@@ -188,7 +189,6 @@ export async function ProductCard({
       </div>
       <div className="product-card__body">
         {adToken ? <span className="product-card__sponsored">{a('sponsored')}</span> : null}
-        <span className="product-card__brand">{product.brand?.name ?? ' '}</span>
         <span className="product-card__title">{product.title}</span>
         {rating && rating.count > 0 && rating.average != null ? (
           <span
@@ -210,6 +210,18 @@ export async function ProductCard({
           locale={INTL_LOCALE[locale]}
           wasLabel={t('was')}
         />
+        {onSale && !deal ? (
+          // The redesign (ADR-0053): the saving in words, in the savings green.
+          <span className="card-save">
+            {tu('savePercent', {
+              percent: f.percent(
+                Math.round(
+                  (1 - product.priceFromCents / (product.compareAtCents as number)) * 100,
+                ) / 100,
+              ),
+            })}
+          </span>
+        ) : null}
         {deal && plusOnly ? (
           <span className="plus-price">
             {pl('memberPrice', {

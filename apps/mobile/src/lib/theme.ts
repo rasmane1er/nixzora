@@ -27,7 +27,13 @@ type PaletteShape = Record<
   | 'warnBg'
   | 'warnFg'
   | 'tile'
-  | 'tileFg',
+  | 'tileFg'
+  /** The redesign (ADR-0053): the dark header band, its muted text, and photo tiles. */
+  | 'header'
+  | 'headerMuted'
+  | 'photo'
+  /** Soft signal tint behind icons (account tiles). */
+  | 'tint',
   string
 >;
 
@@ -48,6 +54,10 @@ const light: PaletteShape = {
   warnFg: '#8A5A0F',
   tile: brand.ink,
   tileFg: brand.paper,
+  header: brand.ink,
+  headerMuted: '#C9D1DC',
+  photo: '#F1EEE8',
+  tint: '#FBE7DF',
 };
 
 export type Palette = PaletteShape;
@@ -69,6 +79,10 @@ const dark: Palette = {
   warnFg: '#E3B455',
   tile: brand.paper,
   tileFg: brand.ink,
+  header: '#162133',
+  headerMuted: '#9BA6B6',
+  photo: '#1A2433',
+  tint: '#3A2418',
 };
 
 export const palettes = { light, dark };
@@ -89,3 +103,12 @@ export const fonts = {
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 export const radius = 12;
+
+/** A card lifted off the page (ADR-0053): soft on light, a hairline on dark. */
+export const cardShadow = {
+  shadowColor: '#0E1726',
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 2,
+} as const;

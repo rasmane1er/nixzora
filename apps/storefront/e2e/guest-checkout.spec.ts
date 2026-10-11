@@ -9,7 +9,7 @@ test('a guest buys a product', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Tell us what you need');
 
   // Find something in stock through search.
-  await page.getByRole('searchbox', { name: 'Search products' }).fill('laptop');
+  await page.getByRole('combobox', { name: 'Search products' }).fill('laptop');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page).toHaveURL(/\/search\?q=laptop/);
   await page.getByLabel('In stock only').check();

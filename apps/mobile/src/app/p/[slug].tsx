@@ -2,6 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import {
   COLOR_OPTION,
+  colorSwatch,
+  twoToneSwatches,
   optionAxes,
   optionState,
   photosForColor,
@@ -64,7 +66,7 @@ import { keys } from '@/lib/query';
 import { calendarDay, cardBrand } from '@nixzora/i18n';
 import { useSession } from '@/lib/session';
 import { visitorId } from '@/lib/visitor';
-import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
+import { brand, cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
 
 function stockText(
   variant: Variant,
@@ -272,6 +274,8 @@ export default function ProductScreen() {
   const t = useT('appShop');
   const tp = useT('productPage');
   const tpo = useT('preorders');
+  const tu = useT('shopUi');
+  const insets = useSafeAreaInsets();
   const locale = useLocale();
   const tc = useT('common');
   const ta = useT('ads');
@@ -474,145 +478,327 @@ export default function ProductScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: '',
-          headerRight: () => (
-            <Row style={{ gap: space.lg }}>
-              <Pressable
-                accessibilityLabel={t('share')}
-                hitSlop={8}
-                onPress={() =>
-                  void Share.share({
-                    message: t('shareMessage', { title: item.title }),
-                    url: `${WEB_URL}/p/${item.slug}`,
-                  })
-                }
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={{ flex: 1, backgroundColor: p.bg }}>
+        <Screen wide contentContainerStyle={{ padding: 0, gap: 0 }}>
+          {/* Tablets: photos beside the details. Phones: photos on top, at a readable width. */}
+          <View style={layout.wide ? styles.panes : styles.single}>
+            <View style={layout.wide ? { width: galleryWidth } : undefined}>
+              <Gallery product={item} size={galleryWidth} color={color} />
+              {/* The redesign (ADR-0053): back, share and save float over the photo. */}
+              <View
+                pointerEvents="box-none"
+                style={{
+                  position: 'absolute',
+                  top: insets.top + space.sm,
+                  left: space.lg,
+                  right: space.lg,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
               >
-                <Ionicons name="share-outline" size={22} color={p.fg} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={wished ? t('removeFromSaved') : t('saveForLater')}
-                accessibilityState={{ selected: wished }}
-                hitSlop={8}
-                onPress={onWish}
-              >
-                <Ionicons
-                  name={wished ? 'heart' : 'heart-outline'}
-                  size={23}
-                  color={wished ? p.signalText : p.fg}
-                />
-              </Pressable>
-            </Row>
-          ),
-        }}
-      />
-      <Screen wide contentContainerStyle={{ padding: 0, gap: 0 }}>
-        {/* Tablets: photos beside the details. Phones: photos on top, at a readable width. */}
-        <View style={layout.wide ? styles.panes : styles.single}>
-          <View style={layout.wide ? { width: galleryWidth } : undefined}>
-            <Gallery product={item} size={galleryWidth} color={color} />
-          </View>
-          <View style={[{ padding: space.lg, gap: space.lg }, layout.wide && styles.detailsPane]}>
-            <View style={{ gap: space.xs }}>
-              {item.brand ? (
-                <Text variant="label" muted>
-                  {item.brand.name}
-                </Text>
-              ) : null}
-              <Text variant="title">{item.title}</Text>
-              <Stars average={item.rating.average} count={item.rating.count} />
-              <Text variant="small" muted>
-                {tp('soldBy')}{' '}
-                {item.seller ? (
-                  <Text
-                    variant="small"
-                    style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
-                    accessibilityRole="link"
-                    onPress={() => router.push(`/s/${item.seller!.handle}`)}
-                  >
-                    {item.seller.displayName}
-                  </Text>
-                ) : (
-                  <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
-                    NIXZORA
-                  </Text>
-                )}
-                {item.seller?.rating.count && item.seller.rating.average !== null
-                  ? t('sellerRatingInline', {
-                      rating: rating(item.seller.rating.average),
-                      count: item.seller.rating.count,
-                    })
-                  : ''}
-              </Text>
-            </View>
-
-            <BoughtLine product={item} />
-            {item.deal ? (
-              <View style={{ gap: space.xs }}>
-                <View
-                  style={[
-                    styles.dealBadge,
-                    { backgroundColor: item.deal.plusOnly ? PLUS_ACCENT : DEAL_RED },
-                  ]}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={tu('back')}
+                  onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+                  style={[styles.float, cardShadow, { backgroundColor: p.card }]}
                 >
-                  <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
-                    {dealLabel(item.deal)}
-                  </Text>
-                </View>
-                {item.deal.plusOnly ? (
-                  <PlusPriceText
-                    priceCents={item.priceFromCents}
-                    percentOff={item.deal.percentOff}
-                  />
-                ) : null}
-                <DealTimer deal={item.deal} />
+                  <Ionicons name="chevron-back" size={22} color={p.fg} />
+                </Pressable>
+                <Row style={{ gap: space.sm }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('share')}
+                    onPress={() =>
+                      void Share.share({
+                        message: t('shareMessage', { title: item.title }),
+                        url: `${WEB_URL}/p/${item.slug}`,
+                      })
+                    }
+                    style={[styles.float, cardShadow, { backgroundColor: p.card }]}
+                  >
+                    <Ionicons name="share-outline" size={20} color={p.fg} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={wished ? t('removeFromSaved') : t('saveForLater')}
+                    accessibilityState={{ selected: wished }}
+                    onPress={onWish}
+                    style={[styles.float, cardShadow, { backgroundColor: p.card }]}
+                  >
+                    <Ionicons
+                      name={wished ? 'heart' : 'heart-outline'}
+                      size={20}
+                      color={wished ? brand.signalStrong : p.fg}
+                    />
+                  </Pressable>
+                </Row>
               </View>
-            ) : null}
-            {variant ? (
-              <Price
-                cents={variant.priceCents}
-                compareAtCents={variant.compareAtCents}
-                currency={variant.currency}
-                size="lg"
-              />
-            ) : null}
-            <LowestPriceBadge slug={slug} />
-
-            {axes && variant ? (
-              axes.map((axis) => (
-                <View key={axis.name} style={{ gap: space.sm }}>
+            </View>
+            <View
+              style={[
+                { padding: space.lg, gap: space.lg },
+                layout.wide
+                  ? styles.detailsPane
+                  : {
+                      marginTop: -20,
+                      borderTopLeftRadius: 24,
+                      borderTopRightRadius: 24,
+                      backgroundColor: p.card,
+                    },
+              ]}
+            >
+              <View style={{ gap: space.xs }}>
+                {item.brand ? (
                   <Text variant="label" muted>
-                    {tp('optionChosen', {
-                      name: optionName(axis.name),
-                      value: variant.options[axis.name] ?? '',
-                    })}
+                    {item.brand.name}
+                  </Text>
+                ) : null}
+                <Text variant="title">{item.title}</Text>
+                <Stars average={item.rating.average} count={item.rating.count} />
+                <Text variant="small" muted>
+                  {tp('soldBy')}{' '}
+                  {item.seller ? (
+                    <Text
+                      variant="small"
+                      style={{ fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' }}
+                      accessibilityRole="link"
+                      onPress={() => router.push(`/s/${item.seller!.handle}`)}
+                    >
+                      {item.seller.displayName}
+                    </Text>
+                  ) : (
+                    <Text variant="small" style={{ fontFamily: fonts.bodyMedium }}>
+                      NIXZORA
+                    </Text>
+                  )}
+                  {item.seller?.rating.count && item.seller.rating.average !== null
+                    ? t('sellerRatingInline', {
+                        rating: rating(item.seller.rating.average),
+                        count: item.seller.rating.count,
+                      })
+                    : ''}
+                </Text>
+              </View>
+
+              <BoughtLine product={item} />
+              {item.deal ? (
+                <View style={{ gap: space.xs }}>
+                  <View
+                    style={[
+                      styles.dealBadge,
+                      { backgroundColor: item.deal.plusOnly ? PLUS_ACCENT : DEAL_RED },
+                    ]}
+                  >
+                    <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
+                      {dealLabel(item.deal)}
+                    </Text>
+                  </View>
+                  {item.deal.plusOnly ? (
+                    <PlusPriceText
+                      priceCents={item.priceFromCents}
+                      percentOff={item.deal.percentOff}
+                    />
+                  ) : null}
+                  <DealTimer deal={item.deal} />
+                </View>
+              ) : null}
+              {variant ? (
+                <Row style={{ gap: space.md, flexWrap: 'wrap' }}>
+                  <Price
+                    cents={variant.priceCents}
+                    compareAtCents={variant.compareAtCents}
+                    currency={variant.currency}
+                    size="lg"
+                  />
+                  {variant.compareAtCents && variant.compareAtCents > variant.priceCents ? (
+                    <View style={[styles.save, { backgroundColor: p.okBg }]}>
+                      <Text variant="small" style={{ color: p.okFg, fontFamily: fonts.bodyBold }}>
+                        {tu('savePercent', {
+                          percent: percent(1 - variant.priceCents / variant.compareAtCents),
+                        })}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Row>
+              ) : null}
+              {specs.length ? (
+                // Highlights (ADR-0053): the first specs, at a glance.
+                <View style={[styles.highlights, { backgroundColor: p.bg }]}>
+                  <Text variant="label" muted>
+                    {tu('highlights')}
+                  </Text>
+                  {specs.slice(0, 4).map(([key, value]) => (
+                    <Row key={key} style={{ gap: space.sm, alignItems: 'flex-start' }}>
+                      <View style={[styles.check, { backgroundColor: p.fg }]}>
+                        <Ionicons name="checkmark" size={13} color={p.bg} />
+                      </View>
+                      <Text variant="small" style={{ flex: 1 }}>
+                        <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
+                          {attributeLabel(key)}:
+                        </Text>{' '}
+                        {typeof value === 'boolean' ? (value ? '✓' : '—') : String(value)}
+                      </Text>
+                    </Row>
+                  ))}
+                </View>
+              ) : null}
+              <LowestPriceBadge slug={slug} />
+
+              {axes && variant ? (
+                axes.map((axis) => (
+                  <View key={axis.name} style={{ gap: space.sm }}>
+                    <Text variant="label" muted>
+                      {tp('optionChosen', {
+                        name: optionName(axis.name),
+                        value: variant.options[axis.name] ?? '',
+                      })}
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                      {axis.values.map((value) => {
+                        const active = variant.options[axis.name] === value;
+                        const state = optionState(sellable, variant, axis.name, value);
+                        // Colors as round swatches (ADR-0053) when we can draw them.
+                        const two = axis.name === COLOR_OPTION ? twoToneSwatches(value) : null;
+                        const sw =
+                          axis.name === COLOR_OPTION ? (two?.[0] ?? colorSwatch(value)) : null;
+                        if (sw) {
+                          return (
+                            <Pressable
+                              key={value}
+                              accessibilityRole="radio"
+                              accessibilityState={{ selected: active }}
+                              accessibilityLabel={
+                                state === 'available' ? value : tp('optionUnavailable', { value })
+                              }
+                              onPress={() => {
+                                setChosen(pickVariant(sellable, variant, axis.name, value).id);
+                                setQuantity(1);
+                                setAdded(false);
+                              }}
+                              style={[
+                                styles.dot,
+                                {
+                                  borderColor: active ? p.fg : p.line,
+                                  opacity: state === 'available' ? 1 : 0.45,
+                                },
+                              ]}
+                            >
+                              <View style={[styles.dotInner, { backgroundColor: sw }]}>
+                                {two ? (
+                                  <View style={[styles.dotHalf, { backgroundColor: two[1] }]} />
+                                ) : null}
+                              </View>
+                            </Pressable>
+                          );
+                        }
+                        return (
+                          <Pressable
+                            key={value}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: active }}
+                            accessibilityLabel={
+                              state === 'available' ? value : tp('optionUnavailable', { value })
+                            }
+                            onPress={() => {
+                              setChosen(pickVariant(sellable, variant, axis.name, value).id);
+                              setQuantity(1);
+                              setAdded(false);
+                            }}
+                            style={[
+                              styles.option,
+                              {
+                                minWidth: 52,
+                                alignItems: 'center',
+                                borderColor: active ? p.fg : p.line,
+                                backgroundColor: active ? p.card : 'transparent',
+                                opacity: state === 'available' ? 1 : 0.5,
+                              },
+                            ]}
+                          >
+                            <Text
+                              variant="small"
+                              style={{
+                                fontFamily: active ? fonts.bodyBold : fonts.body,
+                                textDecorationLine: state === 'available' ? 'none' : 'line-through',
+                              }}
+                            >
+                              {value}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))
+              ) : sellable.length > 1 ? (
+                <View style={{ gap: space.sm }}>
+                  <Text variant="label" muted>
+                    {variant &&
+                    sellable.every(
+                      (v) => Object.keys(v.options).length === 1 && v.options[COLOR_OPTION],
+                    )
+                      ? tp('optionChosen', {
+                          name: optionName(COLOR_OPTION),
+                          value: variant.options[COLOR_OPTION] ?? '',
+                        })
+                      : tp('choose')}
                   </Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                    {axis.values.map((value) => {
-                      const active = variant.options[axis.name] === value;
-                      const state = optionState(sellable, variant, axis.name, value);
+                    {sellable.map((v) => {
+                      const active = v.id === variant?.id;
+                      const out = v.available <= 0;
+                      // A product whose only option is its color: round swatches (ADR-0053).
+                      const name = v.options[COLOR_OPTION];
+                      const two = name ? twoToneSwatches(name) : null;
+                      const sw =
+                        name && Object.keys(v.options).length === 1
+                          ? (two?.[0] ?? colorSwatch(name))
+                          : null;
+                      if (sw) {
+                        return (
+                          <Pressable
+                            key={v.id}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: active }}
+                            accessibilityLabel={
+                              out ? t('itemSoldOut', { title: v.title }) : v.title
+                            }
+                            onPress={() => {
+                              setChosen(v.id);
+                              setQuantity(1);
+                              setAdded(false);
+                            }}
+                            style={[
+                              styles.dot,
+                              { borderColor: active ? p.fg : p.line, opacity: out ? 0.45 : 1 },
+                            ]}
+                          >
+                            <View style={[styles.dotInner, { backgroundColor: sw }]}>
+                              {two ? (
+                                <View style={[styles.dotHalf, { backgroundColor: two[1] }]} />
+                              ) : null}
+                            </View>
+                          </Pressable>
+                        );
+                      }
                       return (
                         <Pressable
-                          key={value}
+                          key={v.id}
                           accessibilityRole="radio"
                           accessibilityState={{ selected: active }}
-                          accessibilityLabel={
-                            state === 'available' ? value : tp('optionUnavailable', { value })
-                          }
+                          accessibilityLabel={out ? t('itemSoldOut', { title: v.title }) : v.title}
                           onPress={() => {
-                            setChosen(pickVariant(sellable, variant, axis.name, value).id);
+                            setChosen(v.id);
                             setQuantity(1);
                             setAdded(false);
                           }}
                           style={[
                             styles.option,
                             {
-                              minWidth: 52,
-                              alignItems: 'center',
                               borderColor: active ? p.fg : p.line,
                               backgroundColor: active ? p.card : 'transparent',
-                              opacity: state === 'available' ? 1 : 0.5,
+                              opacity: out ? 0.5 : 1,
                             },
                           ]}
                         >
@@ -620,354 +806,429 @@ export default function ProductScreen() {
                             variant="small"
                             style={{
                               fontFamily: active ? fonts.bodyBold : fonts.body,
-                              textDecorationLine: state === 'available' ? 'none' : 'line-through',
+                              textDecorationLine: out ? 'line-through' : 'none',
                             }}
                           >
-                            {value}
+                            {v.title}
                           </Text>
                         </Pressable>
                       );
                     })}
                   </View>
                 </View>
-              ))
-            ) : sellable.length > 1 ? (
-              <View style={{ gap: space.sm }}>
-                <Text variant="label" muted>
-                  {tp('choose')}
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                  {sellable.map((v) => {
-                    const active = v.id === variant?.id;
-                    const out = v.available <= 0;
-                    return (
-                      <Pressable
-                        key={v.id}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={out ? t('itemSoldOut', { title: v.title }) : v.title}
-                        onPress={() => {
-                          setChosen(v.id);
-                          setQuantity(1);
-                          setAdded(false);
-                        }}
-                        style={[
-                          styles.option,
-                          {
-                            borderColor: active ? p.fg : p.line,
-                            backgroundColor: active ? p.card : 'transparent',
-                            opacity: out ? 0.5 : 1,
-                          },
-                        ]}
-                      >
-                        <Text
-                          variant="small"
-                          style={{
-                            fontFamily: active ? fonts.bodyBold : fonts.body,
-                            textDecorationLine: out ? 'line-through' : 'none',
-                          }}
-                        >
-                          {v.title}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
+              ) : null}
 
-            {item.sizeGuide ? <SizeGuide guide={item.sizeGuide} /> : null}
-            <Text variant="small" tone={stock.tone}>
-              {stock.text}
-            </Text>
-            {item.preorder ? (
-              // Pre-orders (p10-30): when it ships, and that it can be cancelled until then.
-              <View
-                style={{
-                  gap: space.xs,
-                  padding: space.md,
-                  borderRadius: radius,
-                  borderWidth: 1,
-                  borderColor: p.line,
-                  backgroundColor: p.card,
-                }}
-              >
-                <Row style={{ gap: space.sm, flexWrap: 'wrap' }}>
-                  <View
-                    style={{
-                      backgroundColor: '#0E1726',
-                      borderRadius: 999,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
-                      {tpo('badge')}
-                    </Text>
-                  </View>
-                  <Text style={{ fontFamily: fonts.bodyBold }}>
-                    {tpo('shipsFrom', { date: calendarDay(item.preorder.releaseDate, locale) })}
-                  </Text>
-                </Row>
-                <Text variant="small" muted>
-                  {tpo('pdpNote', { date: calendarDay(item.preorder.releaseDate, locale) })}
-                </Text>
-              </View>
-            ) : null}
-            {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
-            {item.multiBuy ? <OfferRow offer={item.multiBuy} /> : null}
-            <DeliveryPromise
-              window={shownDelivery(item, member && !item.seller)}
-              twoDay={member && !item.seller}
-            />
-            {item.seller ? null : (
-              // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
-              <Pressable
-                accessibilityRole="link"
-                onPress={() => router.push('/plus')}
-                style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}
-              >
-                <PlusChip />
-                <Text variant="small" style={{ flexShrink: 1 }}>
-                  {tpl('twoDayWithPlus')}
-                </Text>
-              </Pressable>
-            )}
-
-            {canBuy ? (
-              <Row style={{ gap: space.lg }}>
-                <QuantityStepper
-                  value={quantity}
-                  max={variant.available}
-                  onChange={(next) => setQuantity(Math.max(1, next))}
-                />
-                <Button
-                  title={item.preorder ? tpo('buttonPlain') : t('addToCart')}
-                  style={{ flex: 1 }}
-                  loading={add.isPending}
-                  onPress={onAdd}
-                />
-              </Row>
-            ) : (
-              <StockAlertButton productId={item.id} />
-            )}
-            {canBuy && oneClickCard && oneClickAddress && user ? (
-              <View style={{ gap: space.xs }}>
-                <Button
-                  title={w('oneClick')}
-                  tone="secondary"
-                  loading={oneClick.isPending}
-                  onPress={() => oneClick.mutate({ variantId: variant.id, qty: quantity })}
-                />
-                <Text variant="small" muted>
-                  {w('oneClickNote', {
-                    name: oneClickAddress.fullName,
-                    city: oneClickAddress.city,
-                    card: w('cardLabel', {
-                      brand: cardBrand(oneClickCard.brand),
-                      last4: oneClickCard.last4,
-                    }),
-                  })}
-                </Text>
-              </View>
-            ) : null}
-            {oneClick.error ? <Banner tone="error">{errorMessage(oneClick.error)}</Banner> : null}
-            {oneClick.data?.paymentProblem ? (
-              <Banner tone="error">{oneClick.data.paymentProblem}</Banner>
-            ) : null}
-            {canBuy ? (
-              <Button
-                title={l('buyNow')}
-                tone="secondary"
-                loading={buyNow.isPending}
-                onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
-              />
-            ) : null}
-            {item.subscribable && canBuy && !item.preorder ? (
-              <Card style={{ gap: space.sm }}>
-                <Text style={{ fontFamily: fonts.bodyBold }}>
-                  {ts('subscribeSave', { percent: percent(SUBSCRIBE_PERCENT / 100) })}
-                </Text>
-                <Text variant="small" muted>
-                  {ts('bulkHint', { percent: percent(SUBSCRIBE_BULK_PERCENT / 100) })}
-                </Text>
-                {status !== 'signedIn' ? (
-                  <Button
-                    title={ts('signIn')}
-                    tone="ghost"
-                    onPress={() => router.push('/sign-in')}
-                  />
-                ) : !oneClickCard || !oneClickAddress ? (
-                  <Text variant="small" muted>
-                    {ts('needsSetup')}
-                  </Text>
-                ) : (
-                  <>
-                    <Text variant="small">{ts('every')}</Text>
-                    <Chips<string>
-                      value={subInterval}
-                      onChange={setSubInterval}
-                      options={SUBSCRIPTION_INTERVALS.map((days) => ({
-                        value: String(days),
-                        label: ts(`interval_${days}`),
-                      }))}
-                    />
-                    <Button
-                      title={ts('subscribe', {
-                        price: money(
-                          Math.round((variant.priceCents * (100 - SUBSCRIBE_PERCENT)) / 100) *
-                            quantity,
-                          variant.currency,
-                        ),
-                      })}
-                      tone="secondary"
-                      loading={subscribeNow.isPending}
-                      onPress={() => subscribeNow.mutate({ variantId: variant.id, qty: quantity })}
-                    />
-                    <Text variant="small" muted>
-                      {ts('autoRenew')}
-                    </Text>
-                  </>
-                )}
-                {subscribeNow.error ? (
-                  <Banner tone="error">{errorMessage(subscribeNow.error)}</Banner>
-                ) : null}
-                {subscribeNow.data?.order && !subscribeNow.data.order.paid ? (
-                  <Banner tone="warn">
-                    {subscribeNow.data.order.paymentProblem ?? ts('firstNeedsPayment')}
-                  </Banner>
-                ) : null}
-              </Card>
-            ) : null}
-            <AddToListButton productId={item.id} />
-            {related.data?.similar.length ? (
-              <Button
-                title={tcmp('similar')}
-                tone="ghost"
-                onPress={() =>
-                  router.push({
-                    pathname: '/compare',
-                    params: {
-                      products: [
-                        item.slug,
-                        ...related.data!.similar.slice(0, 3).map((x) => x.slug),
-                      ].join(','),
-                    },
-                  })
-                }
-              />
-            ) : null}
-            {item.seller ? (
-              <Button
-                title={tib('askStore')}
-                tone="ghost"
-                onPress={() =>
-                  status === 'signedIn'
-                    ? router.push({
-                        pathname: '/messages/new',
-                        params: {
-                          store: item.seller!.handle,
-                          name: item.seller!.displayName,
-                          product: item.id,
-                        },
-                      })
-                    : router.push('/sign-in')
-                }
-              />
-            ) : null}
-            {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
-            {buyNow.error ? <Banner tone="error">{errorMessage(buyNow.error)}</Banner> : null}
-            {added ? (
-              <Banner tone="ok">
-                {tp('addedToCart')}{' '}
-                <Link
-                  href="/cart"
-                  style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
+              {item.sizeGuide ? <SizeGuide guide={item.sizeGuide} /> : null}
+              <Text variant="small" tone={stock.tone}>
+                {stock.text}
+              </Text>
+              {item.preorder ? (
+                // Pre-orders (p10-30): when it ships, and that it can be cancelled until then.
+                <View
+                  style={{
+                    gap: space.xs,
+                    padding: space.md,
+                    borderRadius: radius,
+                    borderWidth: 1,
+                    borderColor: p.line,
+                    backgroundColor: p.card,
+                  }}
                 >
-                  {t('viewCart')}
-                </Link>
-              </Banner>
-            ) : null}
-
-            <Divider />
-            {item.videos?.length ? <ProductVideos videos={item.videos} /> : null}
-            <View style={{ gap: space.sm }}>
-              <Text variant="heading">{t('aboutItem')}</Text>
-              <Text>{item.description}</Text>
-            </View>
-
-            {specs.length ? (
-              <Card style={{ gap: 0, paddingVertical: space.sm }}>
-                {specs.map(([key, value], i) => (
-                  <Row
-                    key={key}
-                    style={{
-                      justifyContent: 'space-between',
-                      paddingVertical: space.sm,
-                      borderTopWidth: i ? StyleSheet.hairlineWidth : 0,
-                      borderColor: p.line,
-                    }}
-                  >
-                    <Text variant="small" muted>
-                      {attributeLabel(key)}
-                    </Text>
-                    <Text
-                      variant="small"
-                      style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, textAlign: 'right' }}
+                  <Row style={{ gap: space.sm, flexWrap: 'wrap' }}>
+                    <View
+                      style={{
+                        backgroundColor: '#0E1726',
+                        borderRadius: 999,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                      }}
                     >
-                      {typeof value === 'boolean' ? (value ? tc('yes') : tc('no')) : String(value)}
+                      <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
+                        {tpo('badge')}
+                      </Text>
+                    </View>
+                    <Text style={{ fontFamily: fonts.bodyBold }}>
+                      {tpo('shipsFrom', { date: calendarDay(item.preorder.releaseDate, locale) })}
                     </Text>
                   </Row>
+                  <Text variant="small" muted>
+                    {tpo('pdpNote', { date: calendarDay(item.preorder.releaseDate, locale) })}
+                  </Text>
+                </View>
+              ) : null}
+              {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
+              {item.multiBuy ? <OfferRow offer={item.multiBuy} /> : null}
+              {/* Delivery in its own card (ADR-0053). */}
+              <View style={[styles.deliveryCard, { borderColor: p.line }]}>
+                <DeliveryPromise
+                  window={shownDelivery(item, member && !item.seller)}
+                  twoDay={member && !item.seller}
+                />
+                {item.seller ? null : (
+                  // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => router.push('/plus')}
+                    style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}
+                  >
+                    <PlusChip />
+                    <Text variant="small" style={{ flexShrink: 1 }}>
+                      {tpl('twoDayWithPlus')}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {canBuy ? null : <StockAlertButton productId={item.id} />}
+              {canBuy && oneClickCard && oneClickAddress && user ? (
+                <View style={{ gap: space.xs }}>
+                  <Button
+                    title={w('oneClick')}
+                    tone="secondary"
+                    loading={oneClick.isPending}
+                    onPress={() => oneClick.mutate({ variantId: variant.id, qty: quantity })}
+                  />
+                  <Text variant="small" muted>
+                    {w('oneClickNote', {
+                      name: oneClickAddress.fullName,
+                      city: oneClickAddress.city,
+                      card: w('cardLabel', {
+                        brand: cardBrand(oneClickCard.brand),
+                        last4: oneClickCard.last4,
+                      }),
+                    })}
+                  </Text>
+                </View>
+              ) : null}
+              {oneClick.error ? <Banner tone="error">{errorMessage(oneClick.error)}</Banner> : null}
+              {oneClick.data?.paymentProblem ? (
+                <Banner tone="error">{oneClick.data.paymentProblem}</Banner>
+              ) : null}
+              {/* Free shipping, returns and secure payment (ADR-0053). */}
+              <Row style={{ justifyContent: 'space-between', gap: space.sm }}>
+                {(
+                  [
+                    ['car-outline', tu('trustShipping'), tu('trustShippingSub', { amount: '$99' })],
+                    ['refresh-outline', tu('trustReturns'), tu('trustReturnsSub')],
+                    ['lock-closed-outline', tu('trustSecure'), tu('trustSecureSub')],
+                  ] as const
+                ).map(([icon, title, sub]) => (
+                  <View key={icon} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+                    <View style={[styles.trustIcon, { backgroundColor: p.bg }]}>
+                      <Ionicons name={icon} size={19} color={p.fg} />
+                    </View>
+                    <Text
+                      variant="small"
+                      style={{ fontFamily: fonts.bodyBold, textAlign: 'center', fontSize: 12 }}
+                    >
+                      {title}
+                    </Text>
+                    <Text variant="small" muted style={{ textAlign: 'center', fontSize: 11 }}>
+                      {sub}
+                    </Text>
+                  </View>
                 ))}
-              </Card>
-            ) : null}
-            {variant ? (
-              <Text variant="mono" muted>
-                {tp('sku', { sku: variant.sku })}
-              </Text>
-            ) : null}
+              </Row>
+              {item.subscribable && canBuy && !item.preorder ? (
+                <Card style={{ gap: space.sm }}>
+                  <Text style={{ fontFamily: fonts.bodyBold }}>
+                    {ts('subscribeSave', { percent: percent(SUBSCRIBE_PERCENT / 100) })}
+                  </Text>
+                  <Text variant="small" muted>
+                    {ts('bulkHint', { percent: percent(SUBSCRIBE_BULK_PERCENT / 100) })}
+                  </Text>
+                  {status !== 'signedIn' ? (
+                    <Button
+                      title={ts('signIn')}
+                      tone="ghost"
+                      onPress={() => router.push('/sign-in')}
+                    />
+                  ) : !oneClickCard || !oneClickAddress ? (
+                    <Text variant="small" muted>
+                      {ts('needsSetup')}
+                    </Text>
+                  ) : (
+                    <>
+                      <Text variant="small">{ts('every')}</Text>
+                      <Chips<string>
+                        value={subInterval}
+                        onChange={setSubInterval}
+                        options={SUBSCRIPTION_INTERVALS.map((days) => ({
+                          value: String(days),
+                          label: ts(`interval_${days}`),
+                        }))}
+                      />
+                      <Button
+                        title={ts('subscribe', {
+                          price: money(
+                            Math.round((variant.priceCents * (100 - SUBSCRIBE_PERCENT)) / 100) *
+                              quantity,
+                            variant.currency,
+                          ),
+                        })}
+                        tone="secondary"
+                        loading={subscribeNow.isPending}
+                        onPress={() =>
+                          subscribeNow.mutate({ variantId: variant.id, qty: quantity })
+                        }
+                      />
+                      <Text variant="small" muted>
+                        {ts('autoRenew')}
+                      </Text>
+                    </>
+                  )}
+                  {subscribeNow.error ? (
+                    <Banner tone="error">{errorMessage(subscribeNow.error)}</Banner>
+                  ) : null}
+                  {subscribeNow.data?.order && !subscribeNow.data.order.paid ? (
+                    <Banner tone="warn">
+                      {subscribeNow.data.order.paymentProblem ?? ts('firstNeedsPayment')}
+                    </Banner>
+                  ) : null}
+                </Card>
+              ) : null}
+              <AddToListButton productId={item.id} />
+              {related.data?.similar.length ? (
+                <Button
+                  title={tcmp('similar')}
+                  tone="ghost"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/compare',
+                      params: {
+                        products: [
+                          item.slug,
+                          ...related.data!.similar.slice(0, 3).map((x) => x.slug),
+                        ].join(','),
+                      },
+                    })
+                  }
+                />
+              ) : null}
+              {item.seller ? (
+                <Button
+                  title={tib('askStore')}
+                  tone="ghost"
+                  onPress={() =>
+                    status === 'signedIn'
+                      ? router.push({
+                          pathname: '/messages/new',
+                          params: {
+                            store: item.seller!.handle,
+                            name: item.seller!.displayName,
+                            product: item.id,
+                          },
+                        })
+                      : router.push('/sign-in')
+                  }
+                />
+              ) : null}
+              {add.error ? <Banner tone="error">{errorMessage(add.error)}</Banner> : null}
+              {buyNow.error ? <Banner tone="error">{errorMessage(buyNow.error)}</Banner> : null}
+              {added ? (
+                <Banner tone="ok">
+                  {tp('addedToCart')}{' '}
+                  <Link
+                    href="/cart"
+                    style={{ fontFamily: fonts.bodyBold, textDecorationLine: 'underline' }}
+                  >
+                    {t('viewCart')}
+                  </Link>
+                </Banner>
+              ) : null}
 
-            {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
-            <ProductReviews slug={slug} />
-            <PriceHistoryCard slug={slug} />
-            <ProductQuestions slug={slug} />
+              <Divider />
+              {item.videos?.length ? <ProductVideos videos={item.videos} /> : null}
+              <View style={{ gap: space.sm }}>
+                <Text variant="heading">{t('aboutItem')}</Text>
+                <Text>{item.description}</Text>
+              </View>
 
-            {(bundles.data ?? []).map((bundle) => (
-              <BundleOfferCard key={bundle.id} bundle={bundle} currentId={item.id} />
-            ))}
+              {specs.length ? (
+                <Card style={{ gap: 0, paddingVertical: space.sm }}>
+                  {specs.map(([key, value], i) => (
+                    <Row
+                      key={key}
+                      style={{
+                        justifyContent: 'space-between',
+                        paddingVertical: space.sm,
+                        borderTopWidth: i ? StyleSheet.hairlineWidth : 0,
+                        borderColor: p.line,
+                      }}
+                    >
+                      <Text variant="small" muted>
+                        {attributeLabel(key)}
+                      </Text>
+                      <Text
+                        variant="small"
+                        style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, textAlign: 'right' }}
+                      >
+                        {typeof value === 'boolean'
+                          ? value
+                            ? tc('yes')
+                            : tc('no')
+                          : String(value)}
+                      </Text>
+                    </Row>
+                  ))}
+                </Card>
+              ) : null}
+              {variant ? (
+                <Text variant="mono" muted>
+                  {tp('sku', { sku: variant.sku })}
+                </Text>
+              ) : null}
 
-            {(related.data?.boughtTogether ?? []).some((o) => o.inStock && o.defaultVariantId) ? (
-              <BoughtTogether
-                title={tp('oftenBoughtTogether')}
-                current={
-                  sellable.filter((v) => v.available > 0).length === 1
-                    ? {
-                        variantId: sellable.find((v) => v.available > 0)!.id,
-                        title: item.title,
-                        priceCents: sellable.find((v) => v.available > 0)!.priceCents,
-                        image: item.images[0]?.url ?? null,
-                      }
-                    : null
-                }
-                others={related.data?.boughtTogether ?? []}
-              />
-            ) : (
-              <ProductRail
-                title={tp('oftenBoughtTogether')}
-                products={related.data?.boughtTogether ?? []}
-              />
-            )}
-            <ProductRail title={ta('sponsoredRelated')} sponsored={sponsored.data?.ads ?? []} />
-            <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
-            <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
+              {insights.data ? <ReviewInsightsCard insights={insights.data} /> : null}
+              <ProductReviews slug={slug} />
+              <PriceHistoryCard slug={slug} />
+              <ProductQuestions slug={slug} />
+
+              {(bundles.data ?? []).map((bundle) => (
+                <BundleOfferCard key={bundle.id} bundle={bundle} currentId={item.id} />
+              ))}
+
+              {(related.data?.boughtTogether ?? []).some((o) => o.inStock && o.defaultVariantId) ? (
+                <BoughtTogether
+                  title={tp('oftenBoughtTogether')}
+                  current={
+                    sellable.filter((v) => v.available > 0).length === 1
+                      ? {
+                          variantId: sellable.find((v) => v.available > 0)!.id,
+                          title: item.title,
+                          priceCents: sellable.find((v) => v.available > 0)!.priceCents,
+                          image: item.images[0]?.url ?? null,
+                        }
+                      : null
+                  }
+                  others={related.data?.boughtTogether ?? []}
+                />
+              ) : (
+                <ProductRail
+                  title={tp('oftenBoughtTogether')}
+                  products={related.data?.boughtTogether ?? []}
+                />
+              )}
+              <ProductRail title={ta('sponsoredRelated')} sponsored={sponsored.data?.ads ?? []} />
+              <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
+              <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
+            </View>
           </View>
-        </View>
-      </Screen>
+        </Screen>
+        {canBuy ? (
+          // The redesign (ADR-0053): quantity, Add to cart and Buy now stay at the bottom.
+          <View
+            style={[
+              styles.buyBar,
+              {
+                backgroundColor: p.card,
+                borderTopColor: p.line,
+                paddingBottom: insets.bottom + space.md,
+              },
+            ]}
+          >
+            <View
+              style={{
+                width: '100%',
+                maxWidth: READABLE_WIDTH,
+                alignSelf: 'center',
+                flexDirection: 'row',
+                gap: space.sm,
+                alignItems: 'center',
+              }}
+            >
+              <QuantityStepper
+                value={quantity}
+                max={variant.available}
+                onChange={(next) => setQuantity(Math.max(1, next))}
+              />
+              <Button
+                title={item.preorder ? tpo('buttonPlain') : t('addToCart')}
+                style={{ flex: 1, borderRadius: 999 }}
+                loading={add.isPending}
+                onPress={onAdd}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ busy: buyNow.isPending }}
+                disabled={buyNow.isPending}
+                onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
+                style={({ pressed }) => [
+                  styles.buyNow,
+                  { backgroundColor: brand.ink, opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <Text style={{ color: '#FFFFFF', fontFamily: fonts.bodyBold }}>{l('buyNow')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  float: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  save: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  deliveryCard: { borderWidth: 1, borderRadius: 16, padding: space.md, gap: space.sm },
+  highlights: { borderRadius: 16, padding: space.md, gap: space.sm },
+  check: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  dot: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(14,23,38,0.12)',
+  },
+  dotHalf: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%' },
+  trustIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyBar: {
+    borderTopWidth: 1,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    shadowColor: '#0E1726',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
+  },
+  buyNow: {
+    minHeight: 48,
+    borderRadius: 999,
+    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
   panes: {
     flexDirection: 'row',

@@ -166,68 +166,71 @@ export function AddToCart({
         </div>
       ) : null}
 
-      <div className="qty">
-        <label>
-          {t('quantity')}
-          <select
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            disabled={max === 0}
+      {/* On phones this pins to the bottom of the screen (ADR-0053), like the app. */}
+      <div className="buy-bar">
+        <div className="qty">
+          <label>
+            {t('quantity')}
+            <select
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              disabled={max === 0}
+            >
+              {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="btn btn--primary"
+            type="button"
+            onClick={add}
+            disabled={pending || max === 0}
+            style={{ flex: 1 }}
           >
-            {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          className="btn btn--primary"
-          type="button"
-          onClick={add}
-          disabled={pending || max === 0}
-          style={{ flex: 1 }}
-        >
-          {max === 0
-            ? p('soldOut')
-            : pending
-              ? t('adding')
-              : preorder
-                ? po('button', {
-                    price: f.money(selected.priceCents * quantity, selected.currency),
-                  })
-                : t('addToCartPrice', {
-                    price: f.money(selected.priceCents * quantity, selected.currency),
-                  })}
-        </button>
-      </div>
-      {max > 0 ? (
-        oneClick ? (
-          <div className="one-click">
+            {max === 0
+              ? p('soldOut')
+              : pending
+                ? t('adding')
+                : preorder
+                  ? po('button', {
+                      price: f.money(selected.priceCents * quantity, selected.currency),
+                    })
+                  : t('addToCartPrice', {
+                      price: f.money(selected.priceCents * quantity, selected.currency),
+                    })}
+          </button>
+        </div>
+        {max > 0 ? (
+          oneClick ? (
+            <div className="one-click">
+              <button
+                className="btn btn--buy-now"
+                type="button"
+                onClick={() => buy(true)}
+                disabled={buying || pending}
+              >
+                {buying ? l('buyingNow') : w('oneClick')}
+              </button>
+              <span className="muted">
+                {oneClick.shipTo} · {oneClick.card} ·{' '}
+                <Link href="/account/payments">{w('oneClickChange')}</Link>
+              </span>
+            </div>
+          ) : (
             <button
               className="btn btn--buy-now"
               type="button"
-              onClick={() => buy(true)}
+              onClick={() => buy()}
               disabled={buying || pending}
             >
-              {buying ? l('buyingNow') : w('oneClick')}
+              {buying ? l('buyingNow') : l('buyNow')}
             </button>
-            <span className="muted">
-              {oneClick.shipTo} · {oneClick.card} ·{' '}
-              <Link href="/account/payments">{w('oneClickChange')}</Link>
-            </span>
-          </div>
-        ) : (
-          <button
-            className="btn btn--buy-now"
-            type="button"
-            onClick={() => buy()}
-            disabled={buying || pending}
-          >
-            {buying ? l('buyingNow') : l('buyNow')}
-          </button>
-        )
-      ) : null}
+          )
+        ) : null}
+      </div>
       {subscribe && max > 0 ? (
         <div className="subscribe-box">
           <strong>{sub('subscribeSave', { percent: f.percent(SUBSCRIBE_PERCENT / 100) })}</strong>

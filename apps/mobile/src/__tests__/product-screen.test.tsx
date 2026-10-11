@@ -115,7 +115,8 @@ it('opens a product and picks its color, then its size', async () => {
   expect(await screen.findByText('Linden organic cotton tee')).toBeTruthy();
   expect(screen.getByText('Color: Black')).toBeTruthy();
   expect(screen.getByText('Size: XS')).toBeTruthy();
-  fireEvent.press(screen.getByText('Sage'));
+  // Colors are round swatches now (ADR-0053): found by their name, not text.
+  fireEvent.press(screen.getByLabelText('Sage'));
   fireEvent.press(screen.getByText('XL'));
   expect(screen.getByText('Color: Sage')).toBeTruthy();
   expect(screen.getByText('Size: XL')).toBeTruthy();

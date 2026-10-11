@@ -4,8 +4,8 @@ import { errorMessage } from '@nixzora/api-client';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ShopHeader } from '@/components/ShopHeader';
 import { FilterButton } from '@/components/FilterSheet';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
@@ -15,7 +15,7 @@ import { useFormatters } from '@/lib/format';
 import { api } from '@/lib/api';
 import { useCategories, useProductList } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
-import { fonts, space, usePalette } from '@/lib/theme';
+import { brand, fonts, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 
 export default function SearchScreen() {
@@ -89,50 +89,44 @@ export default function SearchScreen() {
     return () => clearTimeout(timer);
   }, [q]);
 
+  // The search field lives in the ink band (ADR-0053), white like the home screen's.
+  const field = (
+    <View style={styles.field}>
+      <Ionicons name="search" size={18} color="#5F6673" />
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        placeholder={t('searchPlaceholder')}
+        placeholderTextColor="#5F6673"
+        accessibilityLabel={tc('searchLabel')}
+        returnKeyType="search"
+        autoCorrect={false}
+        autoCapitalize="none"
+        clearButtonMode="while-editing"
+        onSubmitEditing={() => setQ(text.trim())}
+        style={styles.input}
+      />
+      <Pressable
+        accessibilityLabel={tph('searchByPhoto')}
+        onPress={() => router.push('/photo-search')}
+        hitSlop={4}
+        style={styles.fieldIcon}
+      >
+        <Ionicons name="camera-outline" size={20} color={brand.ink} />
+      </Pressable>
+      <Pressable
+        accessibilityLabel={t('scanBarcode')}
+        onPress={() => router.push('/scan')}
+        hitSlop={4}
+        style={styles.fieldIcon}
+      >
+        <Ionicons name="barcode-outline" size={20} color={brand.ink} />
+      </Pressable>
+    </View>
+  );
+
   const header = (
     <View style={{ gap: space.md, marginBottom: space.sm }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.sm,
-          borderWidth: 1,
-          borderColor: p.line,
-          backgroundColor: p.input,
-          borderRadius: 999,
-          paddingHorizontal: space.lg,
-          minHeight: 46,
-        }}
-      >
-        <Ionicons name="search" size={18} color={p.muted} />
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder={t('searchPlaceholder')}
-          placeholderTextColor={p.muted}
-          accessibilityLabel={tc('searchLabel')}
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-          clearButtonMode="while-editing"
-          onSubmitEditing={() => setQ(text.trim())}
-          style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
-        />
-        <Pressable
-          accessibilityLabel={tph('searchByPhoto')}
-          onPress={() => router.push('/photo-search')}
-          hitSlop={8}
-        >
-          <Ionicons name="camera-outline" size={22} color={p.fg} />
-        </Pressable>
-        <Pressable
-          accessibilityLabel={t('scanBarcode')}
-          onPress={() => router.push('/scan')}
-          hitSlop={8}
-        >
-          <Ionicons name="barcode-outline" size={22} color={p.fg} />
-        </Pressable>
-      </View>
       {s && text.trim() && text.trim() !== q ? (
         <View style={{ gap: space.sm }} accessibilityLabel={ts('suggestionsLabel')}>
           {s.correction ? (
@@ -238,8 +232,15 @@ export default function SearchScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: p.bg }}>
+    <View style={{ flex: 1, backgroundColor: p.bg }}>
+      <ShopHeader
+        search={field}
+        showLogo={false}
+        showDeliverTo={false}
+        onBack={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
+      />
       <ProductGrid
+        layout="list"
         products={products}
         header={header}
         loadingMore={results.isFetchingNextPage}
@@ -252,6 +253,31 @@ export default function SearchScreen() {
           )
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  field: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    borderRadius: 23,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingLeft: space.lg,
+    paddingRight: 4,
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    width: '100%',
+    color: brand.ink,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    minHeight: 44,
+  },
+  fieldIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+});

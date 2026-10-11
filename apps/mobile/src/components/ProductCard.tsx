@@ -3,13 +3,13 @@ import type { ProductCard as Card } from '@nixzora/validation';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
+import { brand, cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 import { BoughtLine, DeliveryLine } from './CardExtras';
 import { OfferTag } from '@/components/MultiBuy';
@@ -30,8 +30,11 @@ import { Text } from './ui';
 export function ProductCard({
   product,
   adToken,
+  layout = 'grid',
 }: {
   product: Card;
+  /** `row`: photo on the left, details beside it, for search results on phones (ADR-0053). */
+  layout?: 'grid' | 'row';
   /** A sponsored product (p10-01): labelled, and opening it records the click. */
   adToken?: string;
 }) {
@@ -40,9 +43,12 @@ export function ProductCard({
   const tp = useT('product');
   const tpo = useT('preorders');
   const ta = useT('ads');
+  const tu = useT('shopUi');
+  const dark = useColorScheme() === 'dark';
   const { percent } = useFormatters();
   const dealLabel = useDealLabel();
   const rating = product.rating;
+  const row = layout === 'row';
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
   // Pre-orders (p10-30) first: shoppers need to know it ships later.
   const badge = product.preorder
@@ -61,7 +67,14 @@ export function ProductCard({
           : null;
 
   return (
-    <View style={[styles.card, { backgroundColor: p.card, borderColor: p.line }]}>
+    <View
+      style={[
+        styles.card,
+        cardShadow,
+        // The redesign (ADR-0053): lifted cards; a hairline where shadows don't show (dark).
+        { backgroundColor: p.card, borderColor: dark ? p.line : 'transparent' },
+      ]}
+    >
       <PressableLink
         href={`/p/${product.slug}`}
         accessibilityRole="link"
@@ -78,9 +91,13 @@ export function ProductCard({
             ? () => void visitorId().then((id) => api.ads.click(adToken, id).catch(() => undefined))
             : undefined
         }
-        style={({ pressed }) => [styles.link, { opacity: pressed ? 0.85 : 1 }]}
+        style={({ pressed }) => [
+          styles.link,
+          row && styles.rowLink,
+          { opacity: pressed ? 0.85 : 1 },
+        ]}
       >
-        <View style={[styles.imageWrap, { backgroundColor: p.bg }]}>
+        <View style={[styles.imageWrap, row && styles.rowImage, { backgroundColor: p.photo }]}>
           {product.image ? (
             <Image
               source={{ uri: product.image.url }}
@@ -96,18 +113,13 @@ export function ProductCard({
             </Text>
           )}
         </View>
-        <View style={styles.body}>
+        <View style={[styles.body, row && styles.rowBody]}>
           {adToken ? (
             <View style={[styles.sponsored, { borderColor: p.line }]}>
               <Text variant="small" muted style={{ fontSize: 11, fontFamily: fonts.bodyBold }}>
                 {ta('sponsored')}
               </Text>
             </View>
-          ) : null}
-          {product.brand ? (
-            <Text variant="label" muted numberOfLines={1}>
-              {product.brand.name}
-            </Text>
           ) : null}
           <Text
             variant="small"
@@ -129,6 +141,18 @@ export function ProductCard({
             currency={product.currency}
             prefix={product.defaultVariantId ? undefined : tp('from')}
           />
+          {onSale && !product.deal ? (
+            <View style={[styles.save, { backgroundColor: p.okBg }]}>
+              <Text
+                variant="small"
+                style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 11 }}
+              >
+                {tu('savePercent', {
+                  percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
+                })}
+              </Text>
+            </View>
+          ) : null}
           {product.deal?.plusOnly ? (
             <PlusPriceText
               priceCents={product.priceFromCents}
@@ -150,6 +174,7 @@ export function ProductCard({
         <View
           style={[
             styles.badge,
+            row && styles.rowBadge,
             {
               backgroundColor:
                 'preorder' in badge
@@ -171,7 +196,7 @@ export function ProductCard({
         </View>
       ) : null}
       <CardHeart productId={product.id} title={product.title} />
-      <View style={styles.actions}>
+      <View style={[styles.actions, row && styles.rowActions]}>
         <CardAdd product={product} />
       </View>
     </View>
@@ -195,7 +220,7 @@ function CardHeart({ productId, title }: { productId: string; title: string }) {
         if (status !== 'signedIn') return router.push('/sign-in');
         toggle.mutate({ productId, wished });
       }}
-      style={[styles.heart, { backgroundColor: p.card, borderColor: p.line }]}
+      style={[styles.heart, cardShadow, { backgroundColor: p.card }]}
     >
       <Ionicons
         name={wished ? 'heart' : 'heart-outline'}
@@ -247,7 +272,7 @@ function CardAdd({ product }: { product: Card }) {
         styles.button,
         {
           borderColor: 'transparent',
-          backgroundColor: pressed ? brand.signalPressed : brand.signal,
+          backgroundColor: pressed ? brand.signalPressed : brand.signalStrong,
         },
       ]}
     >
@@ -267,10 +292,11 @@ function CardAdd({ product }: { product: Card }) {
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, borderWidth: 1, borderRadius: radius, overflow: 'hidden' },
-  link: { flex: 1 },
-  imageWrap: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  card: { flex: 1, borderWidth: 1, borderRadius: radius + 6 },
+  link: { flex: 1, borderRadius: radius + 6, overflow: 'hidden' },
+  imageWrap: { aspectRatio: 1.05, alignItems: 'center', justifyContent: 'center', padding: '8%' },
   image: { width: '100%', height: '100%' },
+  save: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   body: { padding: space.md, gap: 4 },
   sponsored: {
     alignSelf: 'flex-start',
@@ -279,6 +305,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   actions: { paddingHorizontal: space.md, paddingBottom: space.md },
+  rowLink: { flexDirection: 'row', padding: space.md, gap: space.md },
+  rowImage: { width: 112, aspectRatio: 112 / 132, borderRadius: 14, padding: 8 },
+  rowBody: { flex: 1, padding: 0, paddingRight: 36 },
+  rowBadge: { top: space.md + 6, left: space.md + 6, maxWidth: 100 },
+  rowActions: { paddingLeft: space.md * 2 + 112, alignItems: 'flex-start' },
   badge: {
     position: 'absolute',
     top: 8,
@@ -292,15 +323,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   button: {
-    minHeight: 38,
+    minHeight: 40,
     borderWidth: 1,
     borderRadius: 999,
     alignItems: 'center',

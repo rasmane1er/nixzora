@@ -1,6 +1,6 @@
 import { Logo } from '@nixzora/ui';
 import Link from 'next/link';
-import { type SellerMeResponse } from '@nixzora/validation';
+import { type SavedAddress, type SellerMeResponse } from '@nixzora/validation';
 import { api, catalog, currentCart } from '@/lib/api';
 import { INTL_LOCALE } from '@nixzora/i18n';
 import { departmentName, getLocale, getT } from '@/lib/i18n';
@@ -55,12 +55,24 @@ export async function SiteHeader() {
         .then((me) => Boolean(me.seller))
         .catch(() => false)
     : false;
+  // "Deliver to Alex · Washington 20001" (ADR-0053), from the default shipping address.
+  const tu = await getT('shopUi');
+  const addresses = signedIn
+    ? await api<SavedAddress[]>('/me/addresses').catch(() => [] as SavedAddress[])
+    : [];
+  const address = addresses.find((a) => a.isDefaultShipping) ?? addresses[0];
+  const deliverTo = address
+    ? tu('deliverTo', {
+        name: address.fullName.split(' ')[0] ?? address.fullName,
+        place: `${address.city} ${address.postalCode}`,
+      })
+    : tu('deliverGuest');
 
   return (
     <header className="site-header">
       <div className="wrap site-header__row">
         <Link href="/" className="logo" aria-label={l('home')}>
-          <Logo size={34} />
+          <Logo size={34} inverted />
         </Link>
         <SearchBox
           labels={{
@@ -101,6 +113,26 @@ export async function SiteHeader() {
       </div>
       {categories.length ? (
         <nav className="wrap cat-nav" aria-label={l('departments')}>
+          <Link
+            href={signedIn ? '/account/addresses' : '/account/login'}
+            className="cat-nav__deliver"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+            {deliverTo}
+          </Link>
           <Link href="/deals" className="cat-nav__deals">
             {dealsLabel}
           </Link>

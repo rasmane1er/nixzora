@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { calendarDay } from '@nixzora/i18n';
 import type { CartLine } from '@nixzora/validation';
 import { PressableLink } from './PressableLink';
@@ -5,7 +6,7 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { optionsText, useFormatters } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
-import { fonts, space, usePalette } from '@/lib/theme';
+import { cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
 import { QuantityStepper } from './QuantityStepper';
 import { PlusChip } from './PlusNote';
 import { Text } from './ui';
@@ -29,14 +30,15 @@ export function CartLineRow({
   const tc = useT('cart');
   const tpl = useT('plus');
   const tpo = useT('preorders');
+  const tu = useT('shopUi');
   const locale = useLocale();
   const options = optionsText(line.options);
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, cardShadow, { backgroundColor: p.card }]}>
       <PressableLink
         href={`/p/${line.productSlug}?variant=${line.variantId}`}
         accessibilityLabel={line.productTitle}
-        style={[styles.thumb, { backgroundColor: p.card, borderColor: p.line }]}
+        style={[styles.thumb, { backgroundColor: p.photo }]}
       >
         {line.imageUrl ? (
           <Image
@@ -75,6 +77,16 @@ export function CartLineRow({
             {tc('lowStock', { count: line.available })}
           </Text>
         ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+          <Text style={{ fontFamily: fonts.display, fontSize: 17 }}>
+            {money(line.lineTotalCents)}
+          </Text>
+          {line.compareAtCents && line.compareAtCents > line.unitPriceCents ? (
+            <Text variant="small" muted style={{ textDecorationLine: 'line-through' }}>
+              {money(line.compareAtCents * line.quantity)}
+            </Text>
+          ) : null}
+        </View>
         <View style={styles.bottom}>
           <QuantityStepper
             value={line.quantity}
@@ -83,29 +95,38 @@ export function CartLineRow({
             onChange={onQuantity}
             label={tc('quantityOf', { title: line.productTitle })}
           />
-          <Text style={{ fontFamily: fonts.displayMedium }}>{money(line.lineTotalCents)}</Text>
+          <View style={{ flexDirection: 'row', gap: space.xs }}>
+            {onSave ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${ts('saveForLater')}: ${line.productTitle}`}
+                disabled={busy}
+                onPress={onSave}
+                style={[styles.icon, { backgroundColor: p.bg }]}
+              >
+                <Ionicons name="bookmark-outline" size={18} color={p.fg} />
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${tu('remove')}: ${line.productTitle}`}
+              disabled={busy}
+              onPress={() => onQuantity(0)}
+              style={[styles.icon, { backgroundColor: p.bg }]}
+            >
+              <Ionicons name="trash-outline" size={18} color={p.fg} />
+            </Pressable>
+          </View>
         </View>
-        {onSave ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${ts('saveForLater')}: ${line.productTitle}`}
-            disabled={busy}
-            onPress={onSave}
-            style={{ alignSelf: 'flex-start', paddingVertical: 4 }}
-          >
-            <Text variant="small" tone="signal" style={{ fontFamily: fonts.bodyBold }}>
-              {ts('saveForLater')}
-            </Text>
-          </Pressable>
-        ) : null}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
-  thumb: { width: 76, height: 76, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
+  row: { flexDirection: 'row', gap: space.md, padding: space.md, borderRadius: radius + 6 },
+  thumb: { width: 92, height: 92, borderRadius: radius + 2, overflow: 'hidden', padding: 6 },
+  icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   bottom: {
     flexDirection: 'row',
     alignItems: 'center',
