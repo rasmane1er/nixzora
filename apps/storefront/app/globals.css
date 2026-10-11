@@ -6491,3 +6491,42 @@ td.neg {
   align-items: center;
   flex-wrap: wrap;
 }
+
+/* "Get it by" (p10-37) */
+.arrive-by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.arrive-by__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.arrive-by__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 5px 11px;
+}
+.arrive-by__chip[aria-current='true'] {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 1px var(--color-signal);
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .arrive-by {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+  }
+  .arrive-by__chip,
+  .arrive-by__label {
+    flex: none;
+  }
+}

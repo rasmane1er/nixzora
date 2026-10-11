@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ShopHeader } from '@/components/ShopHeader';
+import { ArriveByChips } from '@/components/ArriveByChips';
 import { FilterButton } from '@/components/FilterSheet';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
@@ -31,6 +32,7 @@ export default function SearchScreen() {
   const [q, setQ] = useState(params.q ?? '');
   const [sort, setSort] = useState<Sort>('relevance');
   const [filters, setFilters] = useState<string[]>([]);
+  const [arriveBy, setArriveBy] = useState<string | undefined>();
   const categories = useCategories();
 
   // A link like /search?q=monitor replaces the current query.
@@ -55,7 +57,7 @@ export default function SearchScreen() {
     enabled: text.trim().length > 0,
     staleTime: 60_000,
   });
-  const query = useMemo(() => ({ q, sort, f: filters }), [q, sort, filters]);
+  const query = useMemo(() => ({ q, sort, f: filters, arriveBy }), [q, sort, filters, arriveBy]);
   const facets = useQuery({
     queryKey: ['facets', q, filters],
     queryFn: () => api.catalog.facets({ q, f: filters }),
@@ -179,6 +181,7 @@ export default function SearchScreen() {
         </View>
       ) : null}
       <SortChips value={sort} onChange={setSort} />
+      {searching ? <ArriveByChips value={arriveBy} onChange={setArriveBy} /> : null}
       {searching ? (
         <FilterButton facets={facets.data ?? []} value={filters} onChange={setFilters} />
       ) : null}
@@ -196,7 +199,17 @@ export default function SearchScreen() {
         </Text>
       ) : null}
       {searching && total > 0 ? (
-        <ProductRail title={ta('sponsoredResults')} sponsored={ads.data?.ads ?? []} />
+        <ProductRail
+          title={ta('sponsoredResults')}
+          sponsored={(ads.data?.ads ?? []).filter(
+            // "Get it by" (p10-37) applies to sponsored products too.
+            (ad) =>
+              !arriveBy ||
+              (ad.product.inStock &&
+                !!ad.product.delivery &&
+                ad.product.delivery.latest <= arriveBy),
+          )}
+        />
       ) : null}
       {!searching && categories.data?.length ? (
         <View style={{ gap: space.sm }}>

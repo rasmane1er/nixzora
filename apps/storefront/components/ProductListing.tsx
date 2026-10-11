@@ -1,5 +1,6 @@
-import { filterValueLabel, optionLabel, specLabel } from '@nixzora/i18n';
+import { calendarDay, filterValueLabel, optionLabel, specLabel } from '@nixzora/i18n';
 import {
+  arriveByChoices,
   type Facet,
   FILTER_PATTERN,
   type PagedResult,
@@ -18,6 +19,8 @@ export type ListingFilters = {
   minPrice?: string;
   maxPrice?: string;
   inStock?: string;
+  /** "Get it by" (p10-37): "2026-10-16". */
+  arriveBy?: string;
   sort?: string;
   page?: string;
   /** Spec and option filters, "key:value" (p10-03). */
@@ -54,11 +57,25 @@ export async function ProductListing({
   const t = await getT('catalog');
   const p = await getT('product');
   const ts = await getT('search');
+  const ab = await getT('arriveBy');
+  // "Get it by" (p10-37): the soonest days things can arrive, plus the one picked (if older).
+  const days = arriveByChoices();
+  // Sponsored products follow the filter too: only ones that arrive in time.
+  const ads = filters.arriveBy
+    ? sponsored.filter(
+        (ad) =>
+          ad.product.inStock &&
+          !!ad.product.delivery &&
+          ad.product.delivery.latest <= filters.arriveBy!,
+      )
+    : sponsored;
+  if (filters.arriveBy && !days.includes(filters.arriveBy)) days.push(filters.arriveBy);
   // On phones the filters fold behind one button (ADR-0053), so results come first.
   const active =
     (filters.brand ? 1 : 0) +
     (filters.minPrice || filters.maxPrice ? 1 : 0) +
     (filters.inStock === 'true' ? 1 : 0) +
+    (filters.arriveBy ? 1 : 0) +
     (filters.f?.length ?? 0);
   const locale = await getLocale();
   const facetName = (facet: Facet) =>
@@ -86,6 +103,7 @@ export async function ProductListing({
         {filters.q && base === '/search' ? (
           <input type="hidden" name="q" value={filters.q} />
         ) : null}
+        {filters.arriveBy ? <input type="hidden" name="arriveBy" value={filters.arriveBy} /> : null}
         <fieldset>
           <legend>{t('brand')}</legend>
           <select name="brand" defaultValue={filters.brand ?? ''} aria-label={t('brand')}>
@@ -173,15 +191,46 @@ export async function ProductListing({
         <div className="listing__bar">
           <span className="muted">{p('products', { count: result.total })}</span>
         </div>
+        <nav className="arrive-by" aria-label={ab('label')}>
+          <span className="arrive-by__label">{ab('label')}</span>
+          {days.map((day) => {
+            const on = filters.arriveBy === day;
+            const date = calendarDay(day, locale);
+            return (
+              <Link
+                key={day}
+                className="chip arrive-by__chip"
+                aria-current={on ? 'true' : undefined}
+                aria-label={ab('a11y', { date })}
+                href={href(base, { ...filters, arriveBy: on ? undefined : day }, 1)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M2.25 6.75h11.25v9.75H2.25V6.75Zm11.25 3h4.5l3.75 3.75v3h-8.25M6.75 18.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm10.5 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+                </svg>
+                {ab('chip', { date })}
+              </Link>
+            );
+          })}
+        </nav>
         {/* Sponsored products (p10-01) lead the grid, each labelled; only with real results. */}
-        {sponsored.length && result.items.length ? <AboutAds /> : null}
+        {ads.length && result.items.length ? <AboutAds /> : null}
         {result.items.length === 0 ? (
           <div className="empty card">
             <p>{t('noResults')}</p>
           </div>
         ) : (
           <div className="grid">
-            {sponsored.map((ad) => (
+            {ads.map((ad) => (
               <ProductCard key={`ad-${ad.product.id}`} product={ad.product} adToken={ad.token} />
             ))}
             {result.items.map((product, i) => (
@@ -225,6 +274,10 @@ export function toApiQuery(filters: ListingFilters, extra: Record<string, string
     minPrice: dollars(filters.minPrice),
     maxPrice: dollars(filters.maxPrice),
     inStock: filters.inStock === 'true' ? 'true' : undefined,
+    arriveBy:
+      filters.arriveBy && /^\d{4}-\d{2}-\d{2}$/.test(filters.arriveBy)
+        ? filters.arriveBy
+        : undefined,
     sort:
       filters.sort && ['relevance', 'newest', 'price_asc', 'price_desc'].includes(filters.sort)
         ? filters.sort
@@ -253,6 +306,7 @@ export function filtersFrom(params: Record<string, string | string[] | undefined
     minPrice: get('minPrice'),
     maxPrice: get('maxPrice'),
     inStock: get('inStock'),
+    arriveBy: get('arriveBy'),
     sort: get('sort'),
     page: get('page'),
     f: [params.f ?? []]

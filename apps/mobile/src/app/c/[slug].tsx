@@ -8,6 +8,7 @@ import { ScrollView, View } from 'react-native';
 import { FilterButton } from '@/components/FilterSheet';
 import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
+import { ArriveByChips } from '@/components/ArriveByChips';
 import { type Sort, SortChips } from '@/components/SortChips';
 import { Banner, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -42,7 +43,8 @@ export default function CategoryScreen() {
   const categories = useCategories();
   const category = find(categories.data ?? [], slug);
   const [filters, setFilters] = useState<string[]>([]);
-  const results = useProductList({ category: slug, sort, f: filters });
+  const [arriveBy, setArriveBy] = useState<string | undefined>();
+  const results = useProductList({ category: slug, sort, f: filters, arriveBy });
   const facets = useQuery({
     queryKey: ['facets', 'category', slug, filters],
     queryFn: () => api.catalog.facets({ category: slug, f: filters }),
@@ -80,6 +82,7 @@ export default function CategoryScreen() {
         </ScrollView>
       ) : null}
       <SortChips value={sort} onChange={setSort} options={['newest', 'price_asc', 'price_desc']} />
+      <ArriveByChips value={arriveBy} onChange={setArriveBy} />
       <FilterButton facets={facets.data ?? []} value={filters} onChange={setFilters} />
       {results.error && !results.data ? (
         <Banner tone="error">{errorMessage(results.error)}</Banner>

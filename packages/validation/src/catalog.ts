@@ -231,6 +231,8 @@ export const ProductListQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
+  /** "Get it by" (p10-37): only what arrives by this day ("2026-10-16"). */
+  arriveBy: z.iso.date().optional(),
   sort: ProductSortSchema.default('relevance'),
   page: z.coerce.number().int().min(1).max(500).default(1),
   pageSize: z.coerce.number().int().min(1).max(60).default(24),

@@ -19,6 +19,8 @@ import {
   type ProductPage,
   SPECS,
   type CompareView,
+  easternToday,
+  maxHandlingDaysBy,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
 import { type Category, Prisma } from '../../generated/prisma/client';
@@ -354,6 +356,33 @@ export class CatalogQueryService {
     }
     if (query.brand) where.brand = { slug: query.brand };
     if (query.seller) where.seller = { handle: query.seller };
+
+    // "Get it by" (p10-37): in stock, not a pre-order, from a store that's open and fast enough.
+    if (query.arriveBy) {
+      const maxHandling = maxHandlingDaysBy(query.arriveBy);
+      if (maxHandling < 0) return emptyPage(query);
+      const today = new Date(`${easternToday()}T00:00:00Z`);
+      query = { ...query, inStock: true };
+      where.AND = [
+        { OR: [{ releaseDate: null }, { releaseDate: { lte: today } }] },
+        {
+          OR: [
+            ...(OWN_HANDLING_DAYS <= maxHandling ? [{ sellerId: null }] : []),
+            {
+              seller: {
+                handlingDays: { lte: maxHandling },
+                // Not away (ADR-0055); spelled out so empty dates count as open.
+                OR: [
+                  { vacationFrom: null },
+                  { vacationFrom: { gt: today } },
+                  { vacationUntil: { lte: today } },
+                ],
+              },
+            },
+          ],
+        },
+      ];
+    }
 
     // Spec and option filters (p10-03): the products that have every chosen key.
     let filtered: string[] | null = null;
