@@ -361,6 +361,27 @@ export async function reorderPhotos(productId: string, imageIds: string[]): Prom
   }
 }
 
+/** Photos per color (p10-29): which color a photo shows, or every color (null). */
+export async function setPhotoColor(
+  productId: string,
+  imageId: string,
+  color: string | null,
+): Promise<Result<null>> {
+  if (!UUID.test(productId) || !UUID.test(imageId)) {
+    return { ok: false, error: (await getT('sellerTools'))('errorUnknownPhoto') };
+  }
+  try {
+    await api(`/seller/products/${productId}/images/${imageId}`, {
+      method: 'PATCH',
+      body: { color },
+    });
+    revalidatePath(`/sell/listings/${productId}`);
+    return { ok: true, data: null };
+  } catch (error) {
+    return await failure(error);
+  }
+}
+
 export async function deletePhoto(productId: string, imageId: string): Promise<Result<null>> {
   if (!UUID.test(productId) || !UUID.test(imageId)) {
     return { ok: false, error: (await getT('sellerTools'))('errorUnknownPhoto') };

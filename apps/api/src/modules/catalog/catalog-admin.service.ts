@@ -15,6 +15,8 @@ import {
   MAX_PRODUCT_VIDEOS,
   parseVideoUrl,
   type ProductImageAttach,
+  type ProductImageColor,
+  productColors,
   type ProductVideoAdd,
   type ProductImageOrder,
   type ProductUpdate,
@@ -399,6 +401,48 @@ export class CatalogAdminService {
     });
     await this.audit.recordFor(actor, 'catalog.image.reordered', 'product', productId, {
       order: input.imageIds,
+    });
+    return this.query.productById(productId);
+  }
+
+  /** Photos per color (p10-29): which of the product's colors a photo shows, or none. */
+  async setImageColor(
+    productId: string,
+    imageId: string,
+    input: ProductImageColor,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        variants: { select: { options: true, isActive: true } },
+        images: { where: { id: imageId }, select: { id: true } },
+      },
+    });
+    if (!product?.images.length) throw new NotFoundException('Image not found.');
+    if (input.color !== null) {
+      const colors = productColors(
+        product.variants.map((v) => ({
+          options: (v.options ?? {}) as Record<string, string>,
+          isActive: v.isActive,
+        })),
+      );
+      if (!colors.includes(input.color)) {
+        throw new BadRequestException(
+          colors.length
+            ? `Choose one of this product's colors: ${colors.join(', ')}.`
+            : 'This product has no colors to choose from.',
+        );
+      }
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productImage.update({ where: { id: imageId }, data: { color: input.color } });
+      // Cards show each color's photo, so search and lists need to hear about it.
+      await this.outbox(tx, 'catalog.product.updated', productId, { imageColor: imageId });
+    });
+    await this.audit.recordFor(actor, 'catalog.image.color_set', 'product', productId, {
+      imageId,
+      color: input.color,
     });
     return this.query.productById(productId);
   }

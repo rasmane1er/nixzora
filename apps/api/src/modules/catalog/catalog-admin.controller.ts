@@ -31,6 +31,8 @@ import {
   ProductDetailSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductImageColor,
+  ProductImageColorSchema,
   type ProductVideoAdd,
   ProductVideoAddSchema,
   type ProductImageOrder,
@@ -210,6 +212,17 @@ export class CatalogAdminController {
     @Actor() actor: ActorContext,
   ): Promise<ProductDetail> {
     return this.admin.removeVideo(id, videoId, actor);
+  }
+
+  @Patch('products/:id/images/:imageId')
+  @ApiZodBody(ProductImageColorSchema)
+  setImageColor(
+    @Param('id', uuid) id: string,
+    @Param('imageId', uuid) imageId: string,
+    @Body(new ZodValidationPipe(ProductImageColorSchema)) body: ProductImageColor,
+    @Actor() actor: ActorContext,
+  ): Promise<ProductDetail> {
+    return this.admin.setImageColor(id, imageId, body, actor);
   }
 
   @Delete('products/:id/images/:imageId')

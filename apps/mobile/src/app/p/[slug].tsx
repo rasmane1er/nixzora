@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import {
+  COLOR_OPTION,
   optionAxes,
   optionState,
+  photosForColor,
   pickVariant,
   type ProductDetail,
   SUBSCRIBE_BULK_PERCENT,
@@ -15,7 +17,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -77,7 +79,16 @@ function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' 
  * Product photos: swipe through them, tap a thumbnail to jump, or tap a photo to see it full
  * screen (swipe there too). A counter shows where you are, however many photos there are.
  */
-function Gallery({ product, size }: { product: ProductDetail; size: number }) {
+function Gallery({
+  product,
+  size,
+  color,
+}: {
+  product: ProductDetail;
+  size: number;
+  /** Photos per color (p10-29): the chosen color's photos first. */
+  color: string | null;
+}) {
   const p = usePalette();
   const t = useT('appShop');
   const tp = useT('productPage');
@@ -87,7 +98,14 @@ function Gallery({ product, size }: { product: ProductDetail; size: number }) {
   const [full, setFull] = useState<number | null>(null);
   const pager = useRef<ScrollView>(null);
   const thumbs = useRef<ScrollView>(null);
-  const photos = product.images;
+  const photos = useMemo(() => photosForColor(product.images, color), [product.images, color]);
+  // A new color starts at its first photo.
+  const first = photos[0]?.id;
+  useEffect(() => {
+    pager.current?.scrollTo({ x: 0, animated: false });
+    thumbs.current?.scrollTo({ x: 0, animated: false });
+    setIndex(0);
+  }, [first, photos.length]);
 
   const show = (to: number, animated = true) => {
     pager.current?.scrollTo({ x: to * size, animated });
@@ -257,9 +275,15 @@ export default function ProductScreen() {
   const galleryWidth = layout.wide
     ? Math.min(760, Math.round((Math.min(layout.width, 1400) - space.xl * 3) * 0.55))
     : Math.min(layout.width, READABLE_WIDTH);
-  const { slug, variant: variantParam } = useLocalSearchParams<{
+  const {
+    slug,
+    variant: variantParam,
+    color: colorParam,
+  } = useLocalSearchParams<{
     slug: string;
     variant?: string;
+    /** Photos per color (p10-29): from a card's swatch. */
+    color?: string;
   }>();
   const { status, user } = useSession();
   const product = useQuery({
@@ -405,7 +429,11 @@ export default function ProductScreen() {
   const sellable = item.variants.filter((v) => v.isActive);
   const axes = optionAxes(sellable);
   const variant =
-    sellable.find((v) => v.id === chosen) ?? sellable.find((v) => v.available > 0) ?? sellable[0];
+    sellable.find((v) => v.id === chosen) ??
+    sellable.find((v) => v.available > 0 && colorParam && v.options[COLOR_OPTION] === colorParam) ??
+    sellable.find((v) => v.available > 0) ??
+    sellable[0];
+  const color = variant?.options[COLOR_OPTION] ?? null;
   const wished = !!wishIds.data?.includes(item.id);
   const stock = variant ? stockText(variant) : { text: t('notAvailable'), tone: 'error' as const };
   const canBuy = !!variant && variant.available > 0;
@@ -470,7 +498,7 @@ export default function ProductScreen() {
         {/* Tablets: photos beside the details. Phones: photos on top, at a readable width. */}
         <View style={layout.wide ? styles.panes : styles.single}>
           <View style={layout.wide ? { width: galleryWidth } : undefined}>
-            <Gallery product={item} size={galleryWidth} />
+            <Gallery product={item} size={galleryWidth} color={color} />
           </View>
           <View style={[{ padding: space.lg, gap: space.lg }, layout.wide && styles.detailsPane]}>
             <View style={{ gap: space.xs }}>

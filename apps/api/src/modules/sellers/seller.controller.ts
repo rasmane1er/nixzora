@@ -23,6 +23,8 @@ import {
   PayoutOnboardingLinkSchema,
   type ProductImageAttach,
   ProductImageAttachSchema,
+  type ProductImageColor,
+  ProductImageColorSchema,
   type ProductVideoAdd,
   ProductVideoAddSchema,
   type ProductImageOrder,
@@ -375,6 +377,17 @@ export class SellerController {
     @Actor() actor: ActorContext,
   ) {
     return this.listings.removeVideo(id, videoId, actor);
+  }
+
+  @Patch('products/:id/images/:imageId')
+  @ApiZodBody(ProductImageColorSchema)
+  setImageColor(
+    @Param('id', uuid) id: string,
+    @Param('imageId', uuid) imageId: string,
+    @Body(new ZodValidationPipe(ProductImageColorSchema)) body: ProductImageColor,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.listings.setImageColor(id, imageId, body, actor);
   }
 
   @Delete('products/:id/images/:imageId')

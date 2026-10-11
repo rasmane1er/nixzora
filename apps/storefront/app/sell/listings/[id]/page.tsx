@@ -1,4 +1,4 @@
-import { type SizeChartView, type ProductDetail } from '@nixzora/validation';
+import { productColors, type SizeChartView, type ProductDetail } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -178,7 +178,11 @@ export default async function ListingPage({
         <section className="card stack">
           <h2>{t('photosTitle')}</h2>
           {product.images.length ? (
-            <PhotoOrder productId={product.id} photos={product.images} />
+            <PhotoOrder
+              productId={product.id}
+              photos={product.images}
+              colors={productColors(product.variants)}
+            />
           ) : (
             <p className="muted">{t('needPhoto')}</p>
           )}

@@ -1,7 +1,9 @@
 import {
   type BundleView,
   type MyPlus,
+  COLOR_OPTION,
   PRICE_HISTORY_RANGES,
+  productColors,
   type ProductAlertRef,
   type QuestionPage,
   type ProductDetail,
@@ -39,6 +41,7 @@ import { AddToList } from './AddToList';
 import { CompareButton } from '@/components/CompareButton';
 import { Gallery } from './Gallery';
 import { ProductVideos } from './ProductVideos';
+import { ProductColorProvider } from './ProductColor';
 import { ReviewForm } from './ReviewForm';
 import { SizeGuide } from './SizeGuide';
 import { BoughtTogether } from './BoughtTogether';
@@ -54,7 +57,7 @@ import { WishButton } from './WishButton';
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ ph?: string | string[] }>;
+  searchParams: Promise<{ ph?: string | string[]; color?: string | string[] }>;
 };
 
 async function load(slug: string): Promise<ProductDetail> {
@@ -89,9 +92,20 @@ const renderedAt = () => Date.now();
 export default async function ProductPage({ params, searchParams }: Props) {
   const { slug } = await params;
   // Price history range (p10-19): ?ph=30|90|365, 90 days unless asked.
-  const phRaw = Number((await searchParams).ph);
+  const query = await searchParams;
+  const phRaw = Number(query.ph);
   const ph = (PRICE_HISTORY_RANGES as readonly number[]).includes(phRaw) ? phRaw : 90;
   const product = await load(slug);
+  // Photos per color (p10-29): ?color=Sage from a card's swatch, if the product has it.
+  const asked = typeof query.color === 'string' ? query.color : null;
+  // Otherwise the color the picker starts on (its first variant in stock).
+  const startsOn =
+    product.variants.find((v) => v.isActive && v.available > 0) ??
+    product.variants.find((v) => v.isActive);
+  const initialColor =
+    asked && productColors(product.variants).includes(asked)
+      ? asked
+      : (startsOn?.options[COLOR_OPTION] ?? null);
   const signedIn = await isSignedIn();
   // NIXZORA Plus (p10-15): members see their 2-day promise; everyone else, the offer.
   const member = signedIn
@@ -214,172 +228,176 @@ export default async function ProductPage({ params, searchParams }: Props) {
         ))}
       </ol>
 
-      <div className="pdp">
-        <Gallery
-          photos={product.images.map(({ id, url, alt }) => ({ id, url, alt }))}
-          fallback={categoryName}
-        />
+      <ProductColorProvider initial={initialColor}>
+        <div className="pdp">
+          <Gallery
+            photos={product.images.map(({ id, url, alt, color }) => ({ id, url, alt, color }))}
+            fallback={categoryName}
+          />
 
-        <div className="buybox">
-          <div className="stack" style={{ gap: 8 }}>
-            {product.brand ? (
-              <span className="product-card__brand">{product.brand.name}</span>
-            ) : null}
-            <h1>{product.title}</h1>
-            {product.rating.count ? (
-              <a href="#reviews" className="rating-line">
-                <Stars value={product.rating.average ?? 0} />
-                <span>
-                  {f.number(product.rating.average ?? 0)} ·{' '}
-                  {t('reviewCount', { count: product.rating.count })}
-                </span>
-              </a>
-            ) : null}
-            {product.boughtPastMonth ? (
-              <span className="card-bought">
-                {p('boughtPastMonth', {
-                  count: new Intl.NumberFormat(INTL_LOCALE[locale], {
-                    notation: 'compact',
-                  }).format(product.boughtPastMonth),
-                })}
-              </span>
-            ) : null}
-            <Price
-              cents={product.priceFromCents}
-              compareAtCents={product.compareAtCents}
-              currency={product.currency}
-              prefix={product.variants.length > 1 ? p('from') : undefined}
-              locale={INTL_LOCALE[locale]}
-              wasLabel={p('was')}
-            />
-            <LowestPriceBadge slug={product.slug} />
-          </div>
-          {product.deal ? (
-            <div className="pdp-deal">
-              <span
-                className={`card-badge card-badge--${product.deal.plusOnly ? 'plus' : 'deal'} pdp-deal__badge`}
-              >
-                {product.deal.plusOnly
-                  ? pl('plusPrice')
-                  : d(product.deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')}{' '}
-                · {d('percentOff', { percent: f.percent(product.deal.percentOff / 100) })}
-              </span>
-              {product.deal.plusOnly ? (
-                <span className="plus-price">
-                  {pl('memberPrice', {
-                    price: f.money(
-                      Math.max(
-                        1,
-                        Math.round(
-                          (product.priceFromCents * (100 - product.deal.percentOff)) / 100,
-                        ),
-                      ),
-                    ),
+          <div className="buybox">
+            <div className="stack" style={{ gap: 8 }}>
+              {product.brand ? (
+                <span className="product-card__brand">{product.brand.name}</span>
+              ) : null}
+              <h1>{product.title}</h1>
+              {product.rating.count ? (
+                <a href="#reviews" className="rating-line">
+                  <Stars value={product.rating.average ?? 0} />
+                  <span>
+                    {f.number(product.rating.average ?? 0)} ·{' '}
+                    {t('reviewCount', { count: product.rating.count })}
+                  </span>
+                </a>
+              ) : null}
+              {product.boughtPastMonth ? (
+                <span className="card-bought">
+                  {p('boughtPastMonth', {
+                    count: new Intl.NumberFormat(INTL_LOCALE[locale], {
+                      notation: 'compact',
+                    }).format(product.boughtPastMonth),
                   })}
                 </span>
               ) : null}
-              <DealTimer
-                endsAt={product.deal.endsAt}
-                claimedPercent={
-                  product.deal.kind === 'LIGHTNING' ? product.deal.claimedPercent : null
-                }
-                initialNow={renderedAt()}
+              <Price
+                cents={product.priceFromCents}
+                compareAtCents={product.compareAtCents}
+                currency={product.currency}
+                prefix={product.variants.length > 1 ? p('from') : undefined}
+                locale={INTL_LOCALE[locale]}
+                wasLabel={p('was')}
               />
+              <LowestPriceBadge slug={product.slug} />
             </div>
-          ) : null}
-          {product.coupon ? (
-            <ClipButton
-              couponId={product.coupon.id}
-              label={couponLabel(product.coupon, cl, f)}
-              initial={(await clippedCouponIds()).has(product.coupon.id)}
-            />
-          ) : null}
-          {product.multiBuy ? (
-            // Buy X, get Y (p10-27): mix and match on the offer's page.
-            <p className="pdp-offer">
-              <span className="card-offer">{multiBuyTerms(mb, product.multiBuy)}</span>
-              {product.multiBuy.endsAt ? (
-                <span className="muted">
-                  {mb('endsOn', { date: f.date(product.multiBuy.endsAt) })}
+            {product.deal ? (
+              <div className="pdp-deal">
+                <span
+                  className={`card-badge card-badge--${product.deal.plusOnly ? 'plus' : 'deal'} pdp-deal__badge`}
+                >
+                  {product.deal.plusOnly
+                    ? pl('plusPrice')
+                    : d(product.deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')}{' '}
+                  · {d('percentOff', { percent: f.percent(product.deal.percentOff / 100) })}
                 </span>
-              ) : null}
-              <Link href={`/offers/${product.multiBuy.id}`}>{mb('shopOffer')} →</Link>
-            </p>
-          ) : null}
-          <DeliveryPromise
-            window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}
-            twoDay={member && !product.seller}
-          />
-          {product.seller ? null : (
-            // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
-            <p className="plus-note">
-              <span className="plus-chip">{pl('badge')}</span> {pl('twoDayWithPlus')}
-              {member ? null : (
+                {product.deal.plusOnly ? (
+                  <span className="plus-price">
+                    {pl('memberPrice', {
+                      price: f.money(
+                        Math.max(
+                          1,
+                          Math.round(
+                            (product.priceFromCents * (100 - product.deal.percentOff)) / 100,
+                          ),
+                        ),
+                      ),
+                    })}
+                  </span>
+                ) : null}
+                <DealTimer
+                  endsAt={product.deal.endsAt}
+                  claimedPercent={
+                    product.deal.kind === 'LIGHTNING' ? product.deal.claimedPercent : null
+                  }
+                  initialNow={renderedAt()}
+                />
+              </div>
+            ) : null}
+            {product.coupon ? (
+              <ClipButton
+                couponId={product.coupon.id}
+                label={couponLabel(product.coupon, cl, f)}
+                initial={(await clippedCouponIds()).has(product.coupon.id)}
+              />
+            ) : null}
+            {product.multiBuy ? (
+              // Buy X, get Y (p10-27): mix and match on the offer's page.
+              <p className="pdp-offer">
+                <span className="card-offer">{multiBuyTerms(mb, product.multiBuy)}</span>
+                {product.multiBuy.endsAt ? (
+                  <span className="muted">
+                    {mb('endsOn', { date: f.date(product.multiBuy.endsAt) })}
+                  </span>
+                ) : null}
+                <Link href={`/offers/${product.multiBuy.id}`}>{mb('shopOffer')} →</Link>
+              </p>
+            ) : null}
+            <DeliveryPromise
+              window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}
+              twoDay={member && !product.seller}
+            />
+            {product.seller ? null : (
+              // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
+              <p className="plus-note">
+                <span className="plus-chip">{pl('badge')}</span> {pl('twoDayWithPlus')}
+                {member ? null : (
+                  <>
+                    {' '}
+                    <Link href="/plus">{pl('upsellCta')}</Link>
+                  </>
+                )}
+              </p>
+            )}
+            {product.sizeGuide ? <SizeGuide guide={product.sizeGuide} /> : null}
+            <AddToCart
+              variants={product.variants}
+              slug={product.slug}
+              subscribe={product.subscribable ? { signedIn, ready: Boolean(oneClick) } : null}
+              oneClick={
+                oneClick
+                  ? {
+                      shipTo: `${oneClick.address.fullName}, ${oneClick.address.city}`,
+                      card: w('cardLabel', {
+                        brand: cardBrand(oneClick.card.brand),
+                        last4: oneClick.card.last4,
+                      }),
+                    }
+                  : null
+              }
+            />
+            {!inStock ? (
+              <StockAlert
+                productId={product.id}
+                slug={product.slug}
+                signedIn={signedIn}
+                initial={alerts.some(
+                  (x) => x.productId === product.id && x.kind === 'BACK_IN_STOCK',
+                )}
+              />
+            ) : null}
+            <div className="pdp-save">
+              <WishButton
+                productId={product.id}
+                slug={product.slug}
+                initial={wishIds.includes(product.id)}
+              />
+              <AddToList productId={product.id} slug={product.slug} />
+              <CompareButton slug={product.slug} />
+            </div>
+            <p className="sold-by">
+              {t('soldBy')}{' '}
+              {product.seller ? (
                 <>
-                  {' '}
-                  <Link href="/plus">{pl('upsellCta')}</Link>
+                  <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>{' '}
+                  <SellerRating rating={product.seller.rating} />
+                  {' · '}
+                  <Link
+                    href={`/account/messages/new?store=${product.seller.handle}&product=${product.id}`}
+                  >
+                    {ib('askStore')}
+                  </Link>
                 </>
+              ) : (
+                <strong>NIXZORA</strong>
               )}
             </p>
-          )}
-          {product.sizeGuide ? <SizeGuide guide={product.sizeGuide} /> : null}
-          <AddToCart
-            variants={product.variants}
-            slug={product.slug}
-            subscribe={product.subscribable ? { signedIn, ready: Boolean(oneClick) } : null}
-            oneClick={
-              oneClick
-                ? {
-                    shipTo: `${oneClick.address.fullName}, ${oneClick.address.city}`,
-                    card: w('cardLabel', {
-                      brand: cardBrand(oneClick.card.brand),
-                      last4: oneClick.card.last4,
-                    }),
-                  }
-                : null
-            }
-          />
-          {!inStock ? (
-            <StockAlert
-              productId={product.id}
-              slug={product.slug}
-              signedIn={signedIn}
-              initial={alerts.some((x) => x.productId === product.id && x.kind === 'BACK_IN_STOCK')}
-            />
-          ) : null}
-          <div className="pdp-save">
-            <WishButton
-              productId={product.id}
-              slug={product.slug}
-              initial={wishIds.includes(product.id)}
-            />
-            <AddToList productId={product.id} slug={product.slug} />
-            <CompareButton slug={product.slug} />
+            <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
+              <li>{t('perkShipping')}</li>
+              <li>{t('perkReturns')}</li>
+              <li>{t('perkSecure')}</li>
+            </ul>
           </div>
-          <p className="sold-by">
-            {t('soldBy')}{' '}
-            {product.seller ? (
-              <>
-                <Link href={`/s/${product.seller.handle}`}>{product.seller.displayName}</Link>{' '}
-                <SellerRating rating={product.seller.rating} />
-                {' · '}
-                <Link
-                  href={`/account/messages/new?store=${product.seller.handle}&product=${product.id}`}
-                >
-                  {ib('askStore')}
-                </Link>
-              </>
-            ) : (
-              <strong>NIXZORA</strong>
-            )}
-          </p>
-          <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
-            <li>{t('perkShipping')}</li>
-            <li>{t('perkReturns')}</li>
-            <li>{t('perkSecure')}</li>
-          </ul>
         </div>
-      </div>
+      </ProductColorProvider>
 
       {product.videos?.length ? <ProductVideos videos={product.videos} /> : null}
 

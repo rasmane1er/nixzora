@@ -14,6 +14,7 @@ import {
   type ProductCopySuggestion,
   type ProductDetail,
   type ProductImageAttach,
+  type ProductImageColor,
   type ProductVideoAdd,
   type ProductImageOrder,
   type SellerProductCreate,
@@ -227,6 +228,17 @@ export class SellerListingsService {
   ): Promise<ProductDetail> {
     await this.owned(productId, actor, { write: true });
     return this.catalog.removeVideo(productId, videoId, this.as(actor));
+  }
+
+  /** Photos per color (p10-29): tagging a photo changes no content, so no new review. */
+  async setImageColor(
+    productId: string,
+    imageId: string,
+    input: ProductImageColor,
+    actor: ActorContext,
+  ): Promise<ProductDetail> {
+    await this.owned(productId, actor, { write: true });
+    return this.catalog.setImageColor(productId, imageId, input, this.as(actor));
   }
 
   async reorderImages(

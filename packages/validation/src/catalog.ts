@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CardMultiBuySchema } from './multi-buys';
 import { ProductVideoSchema } from './videos';
+import { CardColorSchema } from './colors';
 
 /** URL-safe identifier: lowercase letters, digits and single hyphens. */
 export const SlugSchema = z
@@ -247,6 +248,8 @@ export const ImageSchema = z.object({
   url: z.string(),
   alt: z.string(),
   position: z.number().int(),
+  /** Photos per color (p10-29): the color it shows, or null for every color. */
+  color: z.string().nullable().optional(),
 });
 
 export const ProductCardSchema = z.object({
@@ -286,6 +289,8 @@ export const ProductCardSchema = z.object({
   freeDelivery: z.boolean().optional(),
   /** NIXZORA ships it: Plus members get it in 2 days (p10-15). */
   shipsFromNixzora: z.boolean().optional(),
+  /** Photos per color (p10-29): its colors as swatches, when it comes in two or more. */
+  colors: z.array(CardColorSchema).optional(),
   /** Buy X, get Y (p10-27): the live offer this product is in. */
   multiBuy: CardMultiBuySchema.optional(),
   /** A live coupon to clip (p10-18): "Save 15% with coupon". */

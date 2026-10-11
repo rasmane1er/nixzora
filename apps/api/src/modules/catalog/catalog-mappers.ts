@@ -1,5 +1,9 @@
 import {
+  type CardColor,
+  colorSwatch,
   deliveryWindow,
+  productColors,
+  twoToneSwatches,
   type Image,
   OWN_HANDLING_DAYS,
   type ProductCard,
@@ -23,7 +27,7 @@ export const productInclude = {
     },
   },
   images: { orderBy: { position: 'asc' } },
-  variants: { include: { inventory: true }, orderBy: { priceCents: 'asc' } },
+  variants: { include: { inventory: true }, orderBy: [{ priceCents: 'asc' }, { id: 'asc' }] },
 } satisfies Prisma.ProductInclude;
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
@@ -41,6 +45,7 @@ export function toImage(
     url: publicUrl(image.storageKey),
     alt: image.alt,
     position: image.position,
+    color: image.color ?? null,
   };
 }
 
@@ -82,6 +87,34 @@ export function toCard(
     // When it arrives if ordered now (p10-17): the store's handling time, or NIXZORA's.
     delivery: deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
     shipsFromNixzora: !product.sellerId,
+    ...cardColors(active, product.images, publicUrl),
+  };
+}
+
+/** Photos per color (p10-29): a card's swatches, each with that color's first photo. */
+function cardColors(
+  variants: ProductWithRelations['variants'],
+  images: ProductWithRelations['images'],
+  publicUrl: (key: string) => string,
+): { colors?: CardColor[] } {
+  // In the order the store added them (ids are time-ordered), not by price.
+  const names = productColors(
+    [...variants]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((v) => ({ options: (v.options ?? {}) as Record<string, string> })),
+  );
+  if (names.length < 2) return {};
+  return {
+    colors: names.map((name) => {
+      const photo = images.find((image) => image.color === name);
+      const two = twoToneSwatches(name);
+      return {
+        name,
+        swatch: two ? two[0] : colorSwatch(name),
+        ...(two ? { swatch2: two[1] } : {}),
+        imageUrl: photo ? publicUrl(photo.storageKey) : null,
+      };
+    }),
   };
 }
 

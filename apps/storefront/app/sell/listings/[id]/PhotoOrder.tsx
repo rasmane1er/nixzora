@@ -3,13 +3,23 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useT } from '@/components/I18nProvider';
-import { deletePhoto, reorderPhotos } from '../../actions';
+import { deletePhoto, reorderPhotos, setPhotoColor } from '../../actions';
 
-type Photo = { id: string; url: string; alt: string };
+type Photo = { id: string; url: string; alt: string; color?: string | null };
 
 /** The listing's photos in order: the first is the main photo shoppers see in search and lists. */
-export function PhotoOrder({ productId, photos }: { productId: string; photos: Photo[] }) {
+export function PhotoOrder({
+  productId,
+  photos,
+  colors = [],
+}: {
+  productId: string;
+  photos: Photo[];
+  /** Photos per color (p10-29): the listing's colors, when it has two or more. */
+  colors?: string[];
+}) {
   const t = useT('sellerTools');
+  const pc = useT('photoColors');
   const tc = useT('common');
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -38,6 +48,11 @@ export function PhotoOrder({ productId, photos }: { productId: string; photos: P
           {error}
         </p>
       ) : null}
+      {colors.length > 1 ? (
+        <p className="hint" style={{ margin: 0 }}>
+          {pc('colorHint')}
+        </p>
+      ) : null}
       <ol className="seller-photos" aria-busy={pending}>
         {photos.map((photo, i) => (
           <li key={photo.id}>
@@ -48,6 +63,25 @@ export function PhotoOrder({ productId, photos }: { productId: string; photos: P
                 {i === 0 ? t('mainPhoto') : t('photoN', { n: i + 1 })}
               </figcaption>
             </figure>
+            {colors.length > 1 ? (
+              <label className="seller-photos__color">
+                <span className="hint">{pc('showsColor')}</span>
+                <select
+                  value={photo.color ?? ''}
+                  disabled={pending}
+                  onChange={(e) =>
+                    run(() => setPhotoColor(productId, photo.id, e.target.value || null))
+                  }
+                >
+                  <option value="">{pc('everyColor')}</option>
+                  {colors.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <div className="seller-photos__tools">
               <button
                 type="button"

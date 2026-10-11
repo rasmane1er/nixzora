@@ -1,4 +1,9 @@
-import { type ProductCard as Card, twoDayWindow } from '@nixzora/validation';
+import {
+  CARD_SWATCHES,
+  type CardColor,
+  type ProductCard as Card,
+  twoDayWindow,
+} from '@nixzora/validation';
 import { deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
@@ -9,6 +14,52 @@ import { isPlusMember } from '@/lib/plus';
 import { wishedIds } from '@/lib/wishlist';
 import { CardAdd, CardHeart } from './CardActions';
 import { DealTimer } from './DealTimer';
+
+/** Photos per color (p10-29): each color opens the product with that color chosen. */
+async function Swatches({ slug, colors }: { slug: string; colors: CardColor[] }) {
+  const t = await getT('photoColors');
+  const shown = colors.slice(0, CARD_SWATCHES);
+  return (
+    <ul
+      className="card-swatches"
+      aria-label={t('swatches', { colors: colors.map((c) => c.name).join(', ') })}
+    >
+      {shown.map((color) => (
+        <li key={color.name}>
+          <Link
+            href={`/p/${slug}?color=${encodeURIComponent(color.name)}`}
+            className="card-swatch"
+            title={color.name}
+            aria-label={t('seeColor', { color: color.name })}
+            style={
+              color.swatch
+                ? {
+                    background: color.swatch2
+                      ? `linear-gradient(135deg, ${color.swatch} 50%, ${color.swatch2} 50%)`
+                      : color.swatch,
+                  }
+                : undefined
+            }
+          >
+            {color.swatch ? null : color.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- that color's photo
+              <img src={color.imageUrl} alt="" width={24} height={24} loading="lazy" />
+            ) : (
+              <span aria-hidden="true">{color.name.charAt(0)}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+      {colors.length > shown.length ? (
+        <li>
+          <Link href={`/p/${slug}`} className="card-swatch card-swatch--more">
+            {t('more', { count: colors.length - shown.length })}
+          </Link>
+        </li>
+      ) : null}
+    </ul>
+  );
+}
 
 /** The server's clock for this render (deal countdowns start from it). */
 const renderedAt = () => Date.now();
@@ -201,6 +252,7 @@ export async function ProductCard({
           {body}
         </Link>
       )}
+      {product.colors && !adToken ? <Swatches slug={product.slug} colors={product.colors} /> : null}
       {badge ? <span className={`card-badge card-badge--${badge.kind}`}>{badge.text}</span> : null}
       <CardHeart productId={product.id} title={product.title} initial={wished} />
       <div className="product-card__actions">

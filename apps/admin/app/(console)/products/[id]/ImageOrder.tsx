@@ -3,13 +3,23 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useT } from '@/components/I18nProvider';
-import { deleteImage, reorderImages } from '../actions';
+import { deleteImage, reorderImages, setImageColor } from '../actions';
 
-type Photo = { id: string; url: string; alt: string };
+type Photo = { id: string; url: string; alt: string; color?: string | null };
 
 /** The product's photos in order: the first is the main photo shoppers see in search and lists. */
-export function ImageOrder({ productId, photos }: { productId: string; photos: Photo[] }) {
+export function ImageOrder({
+  productId,
+  photos,
+  colors = [],
+}: {
+  productId: string;
+  photos: Photo[];
+  /** Photos per color (p10-29): the product's colors, when it has two or more. */
+  colors?: string[];
+}) {
   const router = useRouter();
+  const pc = useT('photoColors');
   const t = useT('opsCatalog');
   const tc = useT('common');
   const [pending, start] = useTransition();
@@ -48,6 +58,25 @@ export function ImageOrder({ productId, photos }: { productId: string; photos: P
                 {i === 0 ? t('mainPhoto') : t('photoNumber', { n: i + 1 })}
               </figcaption>
             </figure>
+            {colors.length > 1 ? (
+              <label className="image-color">
+                <span className="muted small">{pc('showsColor')}</span>
+                <select
+                  value={photo.color ?? ''}
+                  disabled={pending}
+                  onChange={(e) =>
+                    run(() => setImageColor(productId, photo.id, e.target.value || null))
+                  }
+                >
+                  <option value="">{pc('everyColor')}</option>
+                  {colors.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <div className="photo-order__tools">
               <button
                 type="button"

@@ -2,6 +2,7 @@ import { rich } from '@nixzora/i18n';
 import {
   InventoryAdjustReasonSchema,
   MAX_PRODUCT_VIDEOS,
+  productColors,
   type ProductDetail,
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
@@ -153,7 +154,11 @@ export default async function ProductPage({
               <p className="muted">{t('noImages')}</p>
             ) : (
               <div style={{ marginBottom: 16 }}>
-                <ImageOrder productId={product.id} photos={product.images} />
+                <ImageOrder
+                  productId={product.id}
+                  photos={product.images}
+                  colors={productColors(product.variants)}
+                />
               </div>
             )}
             <ImageUpload

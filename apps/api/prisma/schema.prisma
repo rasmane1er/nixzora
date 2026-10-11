@@ -413,6 +413,8 @@ model ProductImage {
   storageKey  String                     @map("storage_key")
   alt         String
   position    Int                        @default(0)
+  /// Photos per color (p10-29): the variant color it shows, or null for every color.
+  color       String?
   /// Search by photo (ADR-0036): colour and layout signature, written by the visual indexer.
   visual      Unsupported("vector(64)")?
   /// Failed signature attempts; the indexer gives up after three.

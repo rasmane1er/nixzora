@@ -869,3 +869,13 @@ pre.meta {
   padding: 0;
   list-style: none;
 }
+
+/* Photos per color (p10-29) */
+.image-color {
+  display: grid;
+  gap: 2px;
+}
+.image-color select {
+  font-size: 13px;
+  padding: 4px 6px;
+}

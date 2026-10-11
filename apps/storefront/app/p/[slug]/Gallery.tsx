@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { photosForColor } from '@nixzora/validation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '@/components/I18nProvider';
+import { useProductColor } from './ProductColor';
 
-type Photo = { id: string; url: string; alt: string };
+type Photo = { id: string; url: string; alt: string; color?: string | null };
 
 const smooth = (): ScrollBehavior =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
@@ -84,9 +86,12 @@ function Arrows({ index, count, go }: { index: number; count: number; go: (to: n
 }
 
 /** Product photos: swipe or use the arrows and thumbnails; tap a photo to see it full screen. */
-export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: string }) {
+export function Gallery({ photos: all, fallback }: { photos: Photo[]; fallback: string }) {
   const t = useT('productPage');
   const c = useT('common');
+  // Photos per color (p10-29): the chosen color's photos first, other colors' left out.
+  const [color] = useProductColor();
+  const photos = useMemo(() => photosForColor(all, color), [all, color]);
   const mainTrack = useRef<HTMLDivElement>(null);
   const fullTrack = useRef<HTMLDivElement>(null);
   const main = useSlides(mainTrack, photos.length);
@@ -94,6 +99,13 @@ export function Gallery({ photos, fallback }: { photos: Photo[]; fallback: strin
   const dialog = useRef<HTMLDialogElement>(null);
   const thumbs = useRef<HTMLDivElement>(null);
   const [zoomed, setZoomed] = useState(false);
+
+  // A new color starts at its first photo.
+  const first = photos[0]?.id;
+  useEffect(() => {
+    main.go(0, 'auto');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the set changes
+  }, [first, photos.length]);
 
   // Keep the active thumbnail in view when there are more than fit.
   useEffect(() => {

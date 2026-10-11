@@ -19,6 +19,7 @@ import { PLUS_ACCENT, PlusPriceText } from './PlusNote';
 import { PressableLink } from './PressableLink';
 import { Price } from './Price';
 import { Stars } from './Stars';
+import { Swatches } from './Swatches';
 import { Text } from './ui';
 
 /**
@@ -113,6 +114,9 @@ export function ProductCard({
           </Text>
           {rating?.average != null && rating.count ? (
             <Stars average={rating.average} count={rating.count} />
+          ) : null}
+          {product.colors && !adToken ? (
+            <Swatches slug={product.slug} colors={product.colors} />
           ) : null}
           <BoughtLine product={product} />
           <Price

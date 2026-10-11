@@ -2,6 +2,7 @@
 
 import { optionLabel } from '@nixzora/i18n';
 import {
+  COLOR_OPTION,
   optionAxes,
   optionState,
   pickVariant,
@@ -16,6 +17,7 @@ import { useFormat, useLocale, useT } from '@/components/I18nProvider';
 import { addToCart } from '../../cart/actions';
 import { buyNow, oneClickBuy } from '../../checkout/actions';
 import { subscribeTo } from '../../account/subscriptions/actions';
+import { useProductColor } from './ProductColor';
 
 /** Variant picker + quantity + add to cart. Prices shown here are display only; the server re-prices. */
 export function AddToCart({
@@ -32,7 +34,12 @@ export function AddToCart({
   subscribe?: { signedIn: boolean; ready: boolean } | null;
 }) {
   const buyable = variants.filter((variant) => variant.isActive);
-  const firstInStock = buyable.find((variant) => variant.available > 0) ?? buyable[0];
+  // Photos per color (p10-29): a color from the link (a card's swatch) picks its variant.
+  const [color, setColor] = useProductColor();
+  const firstInStock =
+    buyable.find((v) => v.available > 0 && (!color || v.options[COLOR_OPTION] === color)) ??
+    buyable.find((v) => v.available > 0) ??
+    buyable[0];
   const t = useT('productPage');
   const p = useT('product');
   const f = useFormat();
@@ -55,6 +62,8 @@ export function AddToCart({
 
   function choose(id: string) {
     setSelectedId(id);
+    const chosen = buyable.find((v) => v.id === id)?.options[COLOR_OPTION];
+    if (chosen) setColor(chosen);
     setQuantity(1);
     setStatus(null);
   }
