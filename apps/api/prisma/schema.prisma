@@ -47,6 +47,8 @@ model User {
   personalizedPicks Boolean    @default(true) @map("personalized_picks")
   /// Back-in-stock and price-drop alerts by push and email (p10-06).
   stockAlerts       Boolean    @default(true) @map("stock_alerts")
+  /// Warranty and return-window reminders (p10-33).
+  orderReminders    Boolean    @default(true) @map("order_reminders")
   /// Profile photo (an uploaded image's storage key).
   avatarKey         String?    @map("avatar_key")
   /// Language for the website, the app, emails and push: "en", "fr" or "es".
@@ -331,28 +333,30 @@ model Brand {
 }
 
 model Product {
-  id           String        @id @default(uuid(7)) @db.Uuid
-  slug         String        @unique
-  title        String
-  description  String
-  status       ProductStatus @default(DRAFT)
-  categoryId   String        @map("category_id") @db.Uuid
-  brandId      String?       @map("brand_id") @db.Uuid
+  id             String        @id @default(uuid(7)) @db.Uuid
+  slug           String        @unique
+  title          String
+  description    String
+  status         ProductStatus @default(DRAFT)
+  categoryId     String        @map("category_id") @db.Uuid
+  brandId        String?       @map("brand_id") @db.Uuid
   /// Normalized specs, e.g. {"ram_gb": 32, "storage_gb": 1024, "battery_hours": 18}
-  attributes   Json          @default("{}")
+  attributes     Json          @default("{}")
   /// Marketplace seller; null means NIXZORA sells it (first party).
-  sellerId     String?       @map("seller_id") @db.Uuid
+  sellerId       String?       @map("seller_id") @db.Uuid
   /// Size & fit guide (p10-26): the listing's own chart; null uses the category's default.
-  sizeChartId  String?       @map("size_chart_id") @db.Uuid
+  sizeChartId    String?       @map("size_chart_id") @db.Uuid
   /// Pre-orders (p10-30): sells now and ships from this day (US Eastern); null when in stock.
-  releaseDate  DateTime?     @map("release_date") @db.Date
+  releaseDate    DateTime?     @map("release_date") @db.Date
+  /// Warranty tracker (p10-33): how many months the warranty runs, or null for none.
+  warrantyMonths Int?          @map("warranty_months")
   /// Why staff sent a seller's listing back, shown to the seller.
-  reviewNote   String?       @map("review_note")
+  reviewNote     String?       @map("review_note")
   /// A store lets customers Subscribe & Save on this listing and funds the discount (p10-11).
   /// NIXZORA's own products always qualify.
-  subscribable Boolean       @default(false)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  subscribable   Boolean       @default(false)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
   seller        Seller?             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   category      Category            @relation(fields: [categoryId], references: [id])
@@ -501,6 +505,8 @@ model Order {
   id                    String        @id @default(uuid(7)) @db.Uuid
   /// Customer-facing number, e.g. NX-10482
   number                String        @unique
+  /// Return-window reminder (p10-33): sent two days before returns close.
+  returnRemindedAt      DateTime?     @map("return_reminded_at")
   userId                String?       @map("user_id") @db.Uuid
   email                 String
   status                OrderStatus   @default(PENDING_PAYMENT)
@@ -587,22 +593,25 @@ model Order {
 }
 
 model OrderItem {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  orderId        String    @map("order_id") @db.Uuid
-  variantId      String?   @map("variant_id") @db.Uuid
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  orderId            String    @map("order_id") @db.Uuid
+  variantId          String?   @map("variant_id") @db.Uuid
   /// Snapshots of what was bought, at the price paid
-  productTitle   String    @map("product_title")
-  variantTitle   String    @map("variant_title")
-  sku            String
-  unitPriceCents Int       @map("unit_price_cents")
-  quantity       Int
-  totalCents     Int       @map("total_cents")
+  productTitle       String    @map("product_title")
+  variantTitle       String    @map("variant_title")
+  sku                String
+  unitPriceCents     Int       @map("unit_price_cents")
+  quantity           Int
+  totalCents         Int       @map("total_cents")
   /// Marketplace seller of this line at the time of purchase; null for NIXZORA's own items.
-  sellerId       String?   @map("seller_id") @db.Uuid
+  sellerId           String?   @map("seller_id") @db.Uuid
   /// The Subscribe & Save subscription that ordered this line (p10-11).
-  subscriptionId String?   @map("subscription_id") @db.Uuid
+  subscriptionId     String?   @map("subscription_id") @db.Uuid
   /// Pre-orders (p10-30): the release day this line ships from, when it was a pre-order.
-  shipsOn        DateTime? @map("ships_on") @db.Date
+  shipsOn            DateTime? @map("ships_on") @db.Date
+  /// Warranty tracker (p10-33): the product's warranty when bought, and when its reminder went.
+  warrantyMonths     Int?      @map("warranty_months")
+  warrantyRemindedAt DateTime? @map("warranty_reminded_at")
 
   order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)

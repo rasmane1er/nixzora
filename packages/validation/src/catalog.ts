@@ -1,3 +1,4 @@
+import { WarrantyMonthsSchema } from './warranty';
 import { StoreAwaySchema } from './vacation';
 import { CardChipSchema } from './card-chips';
 import { SpendOfferBriefSchema } from './spend-offers';
@@ -127,6 +128,8 @@ export const ProductUpdateSchema = z
     sizeChartId: z.uuid().nullable(),
     /** Pre-orders (p10-30): the day it ships from; null sells it as usual. */
     releaseDate: z.iso.date().nullable(),
+    /** Warranty tracker (p10-33): how long the warranty lasts; null = none stated. */
+    warrantyMonths: WarrantyMonthsSchema,
   })
   .partial();
 
@@ -401,6 +404,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   sizeChartId: z.uuid().nullable().optional(),
   /** Pre-orders (p10-30): the release date as stored, on the editor views (also past ones). */
   releaseDate: z.iso.date().nullable().optional(),
+  /** Warranty tracker (p10-33): months of warranty; null or absent = none stated. */
+  warrantyMonths: z.number().int().nullable().optional(),
 });
 
 export type CategoryNode = {

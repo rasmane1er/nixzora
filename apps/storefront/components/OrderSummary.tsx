@@ -1,5 +1,10 @@
 import { deliveryRange, INTL_LOCALE, type MessageKey } from '@nixzora/i18n';
-import { codeDiscountCents, type OrderView, type TrackingStep } from '@nixzora/validation';
+import {
+  codeDiscountCents,
+  type OrderView,
+  type TrackingStep,
+  warrantyStatus,
+} from '@nixzora/validation';
 import { getFormat, getLocale, getT } from '@/lib/i18n';
 
 /** An order status in the visitor's language (as sent when NIXZORA doesn't know it). */
@@ -124,6 +129,7 @@ export async function OrderTotals({
 
 export async function OrderItems({ order }: { order: OrderView }) {
   const f = await getFormat();
+  const tw = await getT('warranty');
   return (
     <ul className="mini-lines">
       {order.items.map((item) => (
@@ -131,6 +137,13 @@ export async function OrderItems({ order }: { order: OrderView }) {
           <span>
             {item.quantity} × {item.productTitle}
             <span className="muted"> · {item.variantTitle}</span>
+            {item.warrantyUntil ? (
+              <span className="mini-lines__note">
+                {tw(warrantyStatus(item.warrantyUntil) === 'ENDED' ? 'ended' : 'until', {
+                  date: f.date(`${item.warrantyUntil}T12:00:00Z`),
+                })}
+              </span>
+            ) : null}
           </span>
           <span>{f.money(item.totalCents, order.currency)}</span>
         </li>

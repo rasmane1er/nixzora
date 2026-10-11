@@ -182,6 +182,16 @@ export const email = defineMessages({
     push_backInStock_body: '{title} is available again: {price}.',
     push_priceDrop_title: 'Price drop',
     push_priceDrop_body: '{title} is now {price} (was {was}).',
+    remind_return_subject: 'Returns for order {number} close on {date}',
+    remind_return_text:
+      'Hi,\n\nThe return window for order {number} closes on {date}. If something isn’t right, start a return before then: {link}\n\nTurn order reminders off in your preferences: {prefs}\n',
+    push_remindReturn_title: 'Returns close soon',
+    push_remindReturn_body: 'Order {number}: start a return by {date} if you need one.',
+    remind_warranty_subject: 'The warranty on {title} ends on {date}',
+    remind_warranty_text:
+      'Hi,\n\nThe warranty on {title} (order {number}) ends on {date}. If something isn’t working, contact {store} before then: {contact}\n\nAll your warranties: {link}\n\nTurn order reminders off in your preferences: {prefs}\n',
+    push_remindWarranty_title: 'Warranty ending soon',
+    push_remindWarranty_body: '{title} is covered until {date}.',
     plus_trial_subject: 'Welcome to NIXZORA Plus: your free trial has started',
     plus_trial_text:
       'Your 30-day free trial runs until {date}. Enjoy free 2-day delivery on items NIXZORA ships, free standard shipping on everything else, member deal prices and early access to lightning deals.\n\nAfter the trial, Plus renews at {price} {per} on {card} until you cancel. Cancel before {date} and you won’t be charged.\n\nManage your membership: {link}\n',
@@ -390,6 +400,16 @@ export const email = defineMessages({
     push_backInStock_body: '{title} est de nouveau disponible : {price}.',
     push_priceDrop_title: 'Baisse de prix',
     push_priceDrop_body: '{title} est maintenant à {price} (au lieu de {was}).',
+    remind_return_subject: 'Les retours de la commande {number} ferment le {date}',
+    remind_return_text:
+      'Bonjour,\n\nLe délai de retour de la commande {number} se termine le {date}. Si quelque chose ne va pas, lancez un retour avant cette date : {link}\n\nDésactivez les rappels de commande dans vos préférences : {prefs}\n',
+    push_remindReturn_title: 'Les retours ferment bientôt',
+    push_remindReturn_body: 'Commande {number} : lancez un retour avant le {date} si besoin.',
+    remind_warranty_subject: 'La garantie de {title} se termine le {date}',
+    remind_warranty_text:
+      'Bonjour,\n\nLa garantie de {title} (commande {number}) se termine le {date}. Si quelque chose ne fonctionne pas, contactez {store} avant cette date : {contact}\n\nToutes vos garanties : {link}\n\nDésactivez les rappels de commande dans vos préférences : {prefs}\n',
+    push_remindWarranty_title: 'Garantie bientôt terminée',
+    push_remindWarranty_body: '{title} est couvert jusqu’au {date}.',
     plus_trial_subject: 'Bienvenue dans NIXZORA Plus : votre essai gratuit commence',
     plus_trial_text:
       'Votre essai gratuit de 30 jours dure jusqu’au {date}. Profitez de la livraison gratuite en 2 jours sur les articles expédiés par NIXZORA, de la livraison standard gratuite sur tout le reste, des prix réservés aux membres et de l’accès anticipé aux offres éclair.\n\nAprès l’essai, Plus se renouvelle à {price} {per} sur {card} jusqu’à ce que vous annuliez. Annulez avant le {date} et vous ne serez pas débité.\n\nGérer votre abonnement : {link}\n',
@@ -596,6 +616,17 @@ export const email = defineMessages({
     push_backInStock_body: '{title} vuelve a estar disponible: {price}.',
     push_priceDrop_title: 'Bajó de precio',
     push_priceDrop_body: '{title} ahora cuesta {price} (antes {was}).',
+    remind_return_subject: 'Las devoluciones del pedido {number} cierran el {date}',
+    remind_return_text:
+      'Hola:\n\nEl plazo de devolución del pedido {number} termina el {date}. Si algo no está bien, inicia una devolución antes: {link}\n\nDesactiva los recordatorios de pedidos en tus preferencias: {prefs}\n',
+    push_remindReturn_title: 'Las devoluciones cierran pronto',
+    push_remindReturn_body:
+      'Pedido {number}: inicia una devolución antes del {date} si la necesitas.',
+    remind_warranty_subject: 'La garantía de {title} termina el {date}',
+    remind_warranty_text:
+      'Hola:\n\nLa garantía de {title} (pedido {number}) termina el {date}. Si algo no funciona, contacta con {store} antes: {contact}\n\nTodas tus garantías: {link}\n\nDesactiva los recordatorios de pedidos en tus preferencias: {prefs}\n',
+    push_remindWarranty_title: 'La garantía termina pronto',
+    push_remindWarranty_body: '{title} está cubierto hasta el {date}.',
     plus_trial_subject: 'Bienvenido a NIXZORA Plus: empezó tu prueba gratis',
     plus_trial_text:
       'Tu prueba gratis de 30 días dura hasta el {date}. Disfruta de envío gratis en 2 días en artículos que envía NIXZORA, envío estándar gratis en todo lo demás, precios para miembros y acceso anticipado a las ofertas relámpago.\n\nDespués de la prueba, Plus se renueva a {price} {per} en {card} hasta que canceles. Cancela antes del {date} y no se te cobrará.\n\nAdministra tu membresía: {link}\n',

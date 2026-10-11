@@ -106,6 +106,22 @@ const laptop = (
   variants,
 });
 
+/** Warranty tracker (p10-33): demo warranty lengths in months, by category. */
+const DEMO_WARRANTY: Record<string, number> = {
+  headphones: 12,
+  speakers: 12,
+  monitors: 36,
+  laptops: 24,
+  desktops: 24,
+  phones: 12,
+  keyboards: 24,
+  mice: 24,
+  gaming: 12,
+  wearables: 12,
+  'smart-home': 24,
+  kitchen: 24,
+};
+
 const products: ProductSeed[] = [
   laptop(
     'kestrel-14-pro',
@@ -1108,9 +1124,16 @@ async function main(): Promise<void> {
     };
     const row = await prisma.product.upsert({
       where: { slug: product.slug },
-      create: { slug: product.slug, ...data },
+      create: { slug: product.slug, ...data, warrantyMonths: DEMO_WARRANTY[product.category] },
       update: data,
     });
+    // Warranty tracker (p10-33): set once, so a warranty changed in an editor is kept.
+    if (DEMO_WARRANTY[product.category]) {
+      await prisma.product.updateMany({
+        where: { id: row.id, warrantyMonths: null },
+        data: { warrantyMonths: DEMO_WARRANTY[product.category] },
+      });
+    }
 
     // Demo illustrations bundled with the storefront (public/demo-products): the main view and
     // three more (close-up, angled, on a table) for the gallery. Added only while the product has

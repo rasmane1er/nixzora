@@ -84,6 +84,10 @@ export async function updateProduct(form: FormData): Promise<void> {
           attributes: typedAttributes(pairs(form, 'attributes')),
           // Pre-orders (p10-30): empty makes it an ordinary product.
           ...(form.has('releaseDate') ? { releaseDate: text(form, 'releaseDate') ?? null } : {}),
+          // Warranty tracker (p10-33): empty means no warranty.
+          ...(form.has('warrantyMonths')
+            ? { warrantyMonths: Number(text(form, 'warrantyMonths')) || null }
+            : {}),
         },
       }),
     t('noticeProductSaved'),

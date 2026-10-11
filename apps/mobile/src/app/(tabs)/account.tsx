@@ -142,6 +142,7 @@ export default function AccountScreen() {
   const tss = useT('storeStats');
   const ti = useT('inbox');
   const tu = useT('shopUi');
+  const tw = useT('warranty');
   const p = usePalette();
   const plus = usePlusMember();
 
@@ -274,6 +275,12 @@ export default function AccountScreen() {
           { icon: 'pricetags-outline', label: tcl('pageTitle'), href: '/coupons' },
           { icon: 'gift-outline', label: tg('balanceTitle'), href: '/account/gift-cards' },
           { icon: 'refresh-outline', label: t('menuBuyAgain'), href: '/account/buy-again' },
+          {
+            icon: 'shield-checkmark-outline',
+            label: tw('title'),
+            href: '/account/warranties',
+            hint: tw('hubHint'),
+          },
           { icon: 'time-outline', label: thi('navHistory'), href: '/account/history' },
           {
             icon: 'return-down-back-outline',

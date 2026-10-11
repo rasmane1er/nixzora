@@ -1,4 +1,4 @@
-import { rich } from '@nixzora/i18n';
+import { rich, warrantyLabel } from '@nixzora/i18n';
 import {
   addDays,
   easternToday,
@@ -7,6 +7,7 @@ import {
   MAX_PRODUCT_VIDEOS,
   productColors,
   type ProductDetail,
+  WARRANTY_CHOICES,
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -49,7 +50,7 @@ export default async function ProductPage({
 }) {
   const { id } = await params;
   const search = await searchParams;
-  const [me, product, { categories, brands }, t, tc, tv, po, f] = await Promise.all([
+  const [me, product, { categories, brands }, t, tc, tv, po, tw, f] = await Promise.all([
     currentStaff(),
     loadProduct(id),
     catalogOptions(),
@@ -57,6 +58,7 @@ export default async function ProductPage({
     getT('common'),
     getT('videos'),
     getT('preorders'),
+    getT('warranty'),
     getFormat(),
   ]);
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
@@ -154,6 +156,22 @@ export default async function ProductPage({
                   max={addDays(easternToday(), PREORDER_MAX_DAYS)}
                 />
                 <span className="hint">{po('releaseHint', { max: PREORDER_MAX_DAYS })}</span>
+              </label>
+              {/* Warranty tracker (p10-33). */}
+              <label>
+                {tw('editorLabel')}
+                <select name="warrantyMonths" defaultValue={product.warrantyMonths ?? ''}>
+                  <option value="">{tw('editorNone')}</option>
+                  {[...new Set([...WARRANTY_CHOICES, product.warrantyMonths ?? 0])]
+                    .filter((months) => months > 0)
+                    .sort((a, b) => a - b)
+                    .map((months) => (
+                      <option key={months} value={months}>
+                        {warrantyLabel(tw, months)}
+                      </option>
+                    ))}
+                </select>
+                <span className="hint">{tw('editorHint')}</span>
               </label>
               <div>
                 <SubmitButton>{t('saveDetails')}</SubmitButton>

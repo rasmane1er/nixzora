@@ -46,6 +46,7 @@ import type {
   ShoppingListView,
   ProductAlertKind,
   ProductAlertRef,
+  WarrantyView,
   QuestionPage,
   QuestionView,
   Facet,
@@ -524,6 +525,8 @@ export function createApiClient(options: ClientOptions) {
           query: query as Record<string, string | number | undefined>,
         }),
       buyAgain: () => request<BuyAgainItem[]>('GET', '/me/buy-again'),
+      /** Warranty tracker (p10-33): what's covered and until when. */
+      warranties: () => request<WarrantyView[]>('GET', '/me/warranties'),
       returns: () => request<ReturnView[]>('GET', '/me/returns'),
       reviews: () => request<AccountReview[]>('GET', '/me/reviews'),
       preferences: () => request<AccountPreferences>('GET', '/me/preferences'),

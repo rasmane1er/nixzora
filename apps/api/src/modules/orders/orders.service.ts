@@ -537,14 +537,14 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               });
             }
           }
-          // Who sells each line, frozen at purchase (null = NIXZORA).
-          const owners = new Map(
+          // Who sells each line, and its warranty (p10-33), frozen at purchase (null = NIXZORA).
+          const products = new Map(
             (
               await tx.product.findMany({
                 where: { id: { in: [...new Set(lines.map((line) => line.productId))] } },
-                select: { id: true, sellerId: true },
+                select: { id: true, sellerId: true, warrantyMonths: true },
               })
-            ).map((product) => [product.id, product.sellerId]),
+            ).map((product) => [product.id, product]),
           );
           const order = await tx.order.create({
             data: {
@@ -613,7 +613,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                   unitPriceCents: line.unitPriceCents,
                   quantity: line.quantity,
                   totalCents: line.lineTotalCents,
-                  sellerId: owners.get(line.productId) ?? null,
+                  sellerId: products.get(line.productId)?.sellerId ?? null,
+                  warrantyMonths: products.get(line.productId)?.warrantyMonths ?? null,
                   subscriptionId: subscriptionByVariant?.get(line.variantId) ?? null,
                   // Pre-orders (p10-30): the release day this line ships from.
                   shipsOn: line.releaseDate ? new Date(`${line.releaseDate}T00:00:00Z`) : null,

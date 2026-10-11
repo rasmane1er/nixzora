@@ -75,3 +75,8 @@ export function multiBuyAddMore(
   const vars = { count: offer.addMore, percent: offer.percentOff };
   return offer.percentOff >= 100 ? t('addMore_free', vars) : t('addMore_percent', vars);
 }
+
+/** Warranty tracker (p10-33): "2-year warranty", "6-month warranty". */
+export function warrantyLabel(t: Translate<'warranty'>, months: number): string {
+  return months % 12 === 0 ? t('years', { count: months / 12 }) : t('months', { count: months });
+}

@@ -5,6 +5,8 @@ import {
   type OrderView,
   RETURN_WINDOW_DAYS,
   SELLER_RATING_WINDOW_DAYS,
+  easternToday,
+  warrantyUntil,
 } from '@nixzora/validation';
 import { type Prisma } from '../../generated/prisma/client';
 
@@ -87,6 +89,17 @@ export function preorderShipsOn(order: { items?: { shipsOn?: Date | null }[] }):
     .map((item) => item.shipsOn?.toISOString().slice(0, 10))
     .filter((d): d is string => !!d);
   return days.length ? days.sort().at(-1)! : null;
+}
+
+/** The last day of a line's warranty ("2028-03-14"), or null when it has none. */
+export function itemWarrantyUntil(
+  order: { deliveredAt: Date | null; placedAt: Date | null; status: string },
+  item: { warrantyMonths?: number | null },
+): string | null {
+  const start = order.deliveredAt ?? order.placedAt;
+  if (!item.warrantyMonths || !start || ['CANCELLED', 'REFUNDED'].includes(order.status))
+    return null;
+  return warrantyUntil(easternToday(start), item.warrantyMonths);
 }
 
 export const orderInclude = {
@@ -176,6 +189,8 @@ export function toOrderView(order: OrderRow): OrderView {
       unitPriceCents: item.unitPriceCents,
       quantity: item.quantity,
       totalCents: item.totalCents,
+      // Warranty tracker (p10-33): runs from delivery (or purchase, until it's delivered).
+      warrantyUntil: itemWarrantyUntil(order, item),
     })),
     tracking:
       order.trackingCarrier && order.trackingNumber

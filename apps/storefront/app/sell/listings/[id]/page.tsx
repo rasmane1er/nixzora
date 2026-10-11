@@ -1,3 +1,4 @@
+import { WarrantySelect } from '@/components/WarrantySelect';
 import {
   addDays,
   easternToday,
@@ -188,6 +189,7 @@ export default async function ListingPage({
             />
             <span className="hint">{po('releaseHint', { max: PREORDER_MAX_DAYS })}</span>
           </label>
+          <WarrantySelect value={product.warrantyMonths} />
           <div>
             <button className="btn btn--primary" type="submit">
               {t('saveDetails')}

@@ -34,6 +34,7 @@ import { Stars } from '@/components/Stars';
 import { api, ApiError, catalog } from '@/lib/api';
 import { cspNonce } from '@/lib/csp-nonce';
 import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
+import { warrantyLabel } from '@nixzora/i18n';
 import { oneClickSetup } from '@/lib/one-click';
 import { isSignedIn } from '@/lib/session';
 import { SITE_URL } from '@/lib/params';
@@ -169,6 +170,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const mb = await getT('multiBuy');
   const sp = await getT('spendSave');
   const po = await getT('preorders');
+  const tw = await getT('warranty');
   const vac = await getT('vacation');
   const w = await getT('wallet');
   const ib = await getT('inbox');
@@ -455,6 +457,13 @@ export default async function ProductPage({ params, searchParams }: Props) {
               )}
             </p>
             <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
+              {product.warrantyMonths ? (
+                <li>
+                  <strong>{warrantyLabel(tw, product.warrantyMonths)}</strong>
+                  {' · '}
+                  {tw('pdpHint')}
+                </li>
+              ) : null}
               <li>{t('perkShipping')}</li>
               <li>{t('perkReturns')}</li>
               <li>{t('perkSecure')}</li>

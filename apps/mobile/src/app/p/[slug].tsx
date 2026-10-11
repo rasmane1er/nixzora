@@ -65,7 +65,7 @@ import { t as translate, useLocale, useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { useCartMutation, usePlusMember, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
-import { calendarDay, cardBrand } from '@nixzora/i18n';
+import { calendarDay, cardBrand, warrantyLabel } from '@nixzora/i18n';
 import { useSession } from '@/lib/session';
 import { visitorId } from '@/lib/visitor';
 import { brand, cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
@@ -279,6 +279,7 @@ export default function ProductScreen() {
   const t = useT('appShop');
   const tp = useT('productPage');
   const tpo = useT('preorders');
+  const tw = useT('warranty');
   const tv = useT('vacation');
   const tpr = useT('product');
   const tu = useT('shopUi');
@@ -937,6 +938,22 @@ export default function ProductScreen() {
               {oneClick.error ? <Banner tone="error">{errorMessage(oneClick.error)}</Banner> : null}
               {oneClick.data?.paymentProblem ? (
                 <Banner tone="error">{oneClick.data.paymentProblem}</Banner>
+              ) : null}
+              {/* Warranty tracker (p10-33). */}
+              {item.warrantyMonths ? (
+                <Row style={{ gap: space.sm, alignItems: 'center' }}>
+                  <View style={[styles.trustIcon, { backgroundColor: p.bg }]}>
+                    <Ionicons name="shield-checkmark-outline" size={19} color={p.fg} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
+                      {warrantyLabel(tw, item.warrantyMonths)}
+                    </Text>
+                    <Text variant="small" muted style={{ fontSize: 12 }}>
+                      {tw('pdpHint')}
+                    </Text>
+                  </View>
+                </Row>
               ) : null}
               {/* Free shipping, returns and secure payment (ADR-0053). */}
               <Row style={{ justifyContent: 'space-between', gap: space.sm }}>

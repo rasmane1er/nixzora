@@ -13,11 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PreferencesPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const [prefs, t, a, c] = await Promise.all([
+  const [prefs, t, a, c, tw] = await Promise.all([
     accountApi<AccountPreferences>('/me/preferences', '/account/preferences'),
     getT('accountActivity'),
     getT('ads'),
     getT('community'),
+    getT('warranty'),
   ]);
 
   return (
@@ -48,6 +49,17 @@ export default async function PreferencesPage({ searchParams }: { searchParams: 
             <span className="stack" style={{ gap: 2 }}>
               <strong>{c('prefAlerts')}</strong>
               <span className="muted">{c('prefAlertsHint')}</span>
+            </span>
+          </label>
+          <label className="pref">
+            <input
+              type="checkbox"
+              name="orderReminders"
+              defaultChecked={prefs.orderReminders ?? true}
+            />
+            <span className="stack" style={{ gap: 2 }}>
+              <strong>{tw('prefTitle')}</strong>
+              <span className="muted">{tw('prefHint')}</span>
             </span>
           </label>
           <label className="pref">

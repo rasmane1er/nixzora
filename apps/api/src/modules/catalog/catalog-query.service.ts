@@ -787,6 +787,7 @@ export class CatalogQueryService {
       sizeGuide: sized ? await sizeGuideFor(this.prisma, product, categoryIds) : null,
       sizeChartId: activeVariantsOnly ? undefined : product.sizeChartId,
       releaseDate: activeVariantsOnly ? undefined : releaseDay(product),
+      warrantyMonths: product.warrantyMonths ?? null,
       seller: product.seller
         ? {
             handle: product.seller.handle,

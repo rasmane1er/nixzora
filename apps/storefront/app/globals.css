@@ -6343,3 +6343,66 @@ td.neg {
     display: none;
   }
 }
+
+/* Warranty tracker (p10-33) */
+.warranty-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+}
+.warranty-item {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.warranty-item__img {
+  width: 96px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--photo);
+  overflow: hidden;
+}
+.warranty-item__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.warranty-item .pill {
+  justify-self: start;
+}
+.warranty-item__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.warranty-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+.pill--warranty-active {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.pill--warranty-ending_soon {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+.mini-lines__note {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (max-width: 420px) {
+  .warranty-item {
+    grid-template-columns: 72px 1fr;
+  }
+  .warranty-item__img {
+    width: 72px;
+  }
+}

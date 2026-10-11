@@ -27,6 +27,8 @@ export const AccountPreferencesSchema = z.object({
   personalizedPicks: z.boolean().optional(),
   /** Back-in-stock and price-drop alerts by push and email (p10-06). Optional on save. */
   stockAlerts: z.boolean().optional(),
+  /** Reminders before a return window closes or a warranty ends (p10-33/34). Optional on save. */
+  orderReminders: z.boolean().optional(),
 });
 
 export const ORDER_FILTERS = ['all', 'open', 'delivered', 'cancelled', 'returns'] as const;

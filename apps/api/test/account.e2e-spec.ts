@@ -205,6 +205,7 @@ describe('Your Account (e2e)', () => {
       reviewRequests: true,
       personalizedPicks: true,
       stockAlerts: true,
+      orderReminders: true,
     });
     // Older apps send only the email choices; personalized picks stay as they were.
     await http()
@@ -217,6 +218,7 @@ describe('Your Account (e2e)', () => {
       reviewRequests: false,
       personalizedPicks: true,
       stockAlerts: true,
+      orderReminders: true,
     });
   });
 

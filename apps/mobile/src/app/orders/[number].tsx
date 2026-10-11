@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import { calendarDay } from '@nixzora/i18n';
-import type { OrderView } from '@nixzora/validation';
+import { type OrderView, warrantyStatus } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -95,6 +95,7 @@ export default function OrderScreen() {
   const [push, setPush] = useState<PushStatus | null>(null);
   const w = useT('wallet');
   const tpo = useT('preorders');
+  const tw = useT('warranty');
   const locale = useLocale();
   const g = useT('gifts');
   const tpl = useT('plus');
@@ -336,6 +337,13 @@ export default function OrderScreen() {
                 <Text variant="small" muted>
                   {t('lineQuantity', { variant: item.variantTitle, quantity: item.quantity })}
                 </Text>
+                {item.warrantyUntil ? (
+                  <Text variant="small" muted style={{ fontSize: 12 }}>
+                    {tw(warrantyStatus(item.warrantyUntil) === 'ENDED' ? 'ended' : 'until', {
+                      date: shortDate(`${item.warrantyUntil}T12:00:00Z`),
+                    })}
+                  </Text>
+                ) : null}
               </View>
               <Text style={{ fontFamily: fonts.bodyMedium }}>
                 {money(item.totalCents, o.currency)}

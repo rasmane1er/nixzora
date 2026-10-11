@@ -60,3 +60,4 @@ export { videos } from './videos';
 export { photoColors } from './photoColors';
 export { preorders } from './preorders';
 export { shopUi } from './shopUi';
+export { warranty } from './warranty';

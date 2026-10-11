@@ -163,6 +163,7 @@ export class AccountHubService {
         reviewRequests: true,
         personalizedPicks: true,
         stockAlerts: true,
+        orderReminders: true,
       },
     });
     return user;
@@ -177,6 +178,7 @@ export class AccountHubService {
         reviewRequests: true,
         personalizedPicks: true,
         stockAlerts: true,
+        orderReminders: true,
       },
     });
     // Turning personalized picks off also forgets what was recorded for them (p10-02).

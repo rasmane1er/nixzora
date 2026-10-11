@@ -19,6 +19,7 @@ export default function PreferencesScreen() {
   const t = useT('appAccount');
   const a = useT('ads');
   const c = useT('community');
+  const tw = useT('warranty');
   const clear = useMutation({
     mutationFn: async () => api.recommendations.clearHistory(await visitorId()),
     onSuccess: () => void client.invalidateQueries({ queryKey: ['recommendations'] }),
@@ -74,6 +75,18 @@ export default function PreferencesScreen() {
             disabled={!current}
             onValueChange={toggle('marketingEmails')}
             accessibilityLabel={t('prefsDealsA11y')}
+          />,
+        )}
+      </Card>
+      <Card>
+        {row(
+          tw('prefTitle'),
+          tw('prefHint'),
+          <Switch
+            value={current?.orderReminders ?? true}
+            disabled={!current}
+            onValueChange={toggle('orderReminders')}
+            accessibilityLabel={tw('prefTitle')}
           />,
         )}
       </Card>

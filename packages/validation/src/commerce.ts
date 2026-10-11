@@ -302,6 +302,8 @@ export type OrderItemView = {
   unitPriceCents: number;
   quantity: number;
   totalCents: number;
+  /** Warranty tracker (p10-33): the last day of cover, when the listing stated a warranty. */
+  warrantyUntil?: string | null;
 };
 
 /** A carrier scan (p10-04), newest first in lists. */
