@@ -6112,3 +6112,109 @@ td.neg {
   font-weight: 600;
   margin-bottom: 4px;
 }
+
+/* Cards like the app (ADR-0053): the photo fills an inset rounded tile; truck and cart icons. */
+.product-card .product-card__img {
+  margin: 6px 6px 0;
+  aspect-ratio: 1.3;
+  padding: 0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.product-card .product-card__img img {
+  object-fit: cover;
+}
+.product-card .product-card__title {
+  font-weight: 700;
+  line-height: 1.3;
+}
+.product-card .product-card__body {
+  padding: 10px 14px 10px;
+}
+.product-card .product-card__actions {
+  padding: 0 14px 14px;
+}
+.product-card .card-badge {
+  top: 14px;
+  left: 14px;
+}
+.product-card .card-heart {
+  top: 12px;
+  right: 12px;
+}
+.card-delivery {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.card-delivery__icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--muted);
+}
+.card-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.card-chips {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card-chips > span {
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .listing .card-chips {
+    display: flex;
+  }
+  .listing .product-card .product-card__img {
+    margin: 0;
+    width: 120px;
+    height: 132px;
+    aspect-ratio: auto;
+  }
+  .listing .product-card__link {
+    padding: 10px 10px 0;
+  }
+  .listing .product-card__body {
+    padding: 0 6px 0 0;
+  }
+  .listing .product-card__title {
+    padding-right: 0;
+  }
+  .listing .product-card .card-badge {
+    top: 18px;
+    left: 18px;
+  }
+  /* The green "Save X%" pill says it in a row, so the sale badge steps aside (as in the app). */
+  .listing .product-card .card-badge--sale {
+    display: none;
+  }
+  .listing .product-card .card-badge {
+    max-width: 108px;
+  }
+  /* The heart sits on the photo's lower corner, clear of any badge (as in the app). */
+  .listing .product-card .card-heart {
+    top: 104px;
+    right: auto;
+    left: 88px;
+  }
+  .listing .product-card__actions,
+  .listing .card-swatches {
+    padding-left: 142px;
+  }
+  .listing .product-card__actions {
+    padding-bottom: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+}

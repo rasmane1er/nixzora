@@ -1,3 +1,4 @@
+import { CardChipSchema } from './card-chips';
 import { SpendOfferBriefSchema } from './spend-offers';
 import { z } from 'zod';
 import { CardMultiBuySchema } from './multi-buys';
@@ -307,6 +308,8 @@ export const ProductCardSchema = z.object({
       amountOffCents: z.number().int().nullable(),
     })
     .optional(),
+  /** Spec chips (ADR-0053): up to three short facts for the card. */
+  chips: z.array(CardChipSchema).optional(),
 });
 
 /**

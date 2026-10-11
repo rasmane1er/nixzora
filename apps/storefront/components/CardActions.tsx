@@ -103,6 +103,23 @@ export function CardAdd({
         })
       }
     >
+      {state === 'idle' && !pending ? (
+        <svg
+          viewBox="0 0 24 24"
+          width="17"
+          height="17"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M2.5 3.5h2.2l2.3 11h10.7l2.3-7.8H6.2" />
+          <circle cx="9" cy="19" r="1.4" />
+          <circle cx="17" cy="19" r="1.4" />
+        </svg>
+      ) : null}
       <span aria-live="polite">
         {pending ? t('adding') : state === 'added' ? `✓ ${t('added')}` : t('addToCart')}
       </span>

@@ -43,6 +43,19 @@ export function multiBuyTerms(
   return terms.percentOff >= 100 ? t('terms_free', vars) : t('terms_percent', vars);
 }
 
+/** A spec chip on a product card (ADR-0053): "30h battery", "Noise cancelling". */
+export function chipText(
+  t: Translate<'cardChips'>,
+  chip: { key: string; value: string | number | boolean },
+  locale?: string,
+): string {
+  const v =
+    typeof chip.value === 'number'
+      ? new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(chip.value)
+      : String(chip.value);
+  return t(chip.key as Parameters<typeof t>[0], { v });
+}
+
 /** Spend more, save more tiers (p10-31): "Spend $50, save $5 · Spend $100, save $15". */
 export function spendTiers(
   t: Translate<'spendSave'>,

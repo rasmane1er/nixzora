@@ -3,7 +3,8 @@ import { type ProductCard, shownDelivery } from '@nixzora/validation';
 import { View } from 'react-native';
 import { usePlusMember } from '@/lib/hooks';
 import { useLocale, useT } from '@/lib/i18n';
-import { fonts } from '@/lib/theme';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { fonts, usePalette } from '@/lib/theme';
 import { PlusChip } from './PlusNote';
 import { Text } from './ui';
 
@@ -30,6 +31,7 @@ export function DeliveryLine({ product }: { product: ProductCard }) {
   const t = useT('product');
   const locale = useLocale();
   const member = usePlusMember();
+  const p = usePalette();
   if (!product.inStock) return null;
   const twoDay = member && product.shipsFromNixzora === true;
   // From the release day for a pre-order (p10-30).
@@ -48,9 +50,16 @@ export function DeliveryLine({ product }: { product: ProductCard }) {
       : 'deliveryPaid';
   const [before, after = ''] = t(key, { date: '\u0000' }).split('\u0000');
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+      {/* The redesign (ADR-0053): a delivery truck leads the line. */}
+      <MaterialCommunityIcons
+        name="truck-outline"
+        size={16}
+        color={p.muted}
+        style={{ marginTop: 1 }}
+      />
       {twoDay ? <PlusChip /> : null}
-      <Text variant="small" style={{ flexShrink: 1 }}>
+      <Text variant="small" style={{ flex: 1 }}>
         {before}
         <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
           {when}

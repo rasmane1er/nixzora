@@ -24,6 +24,13 @@ button always in reach.
 - **Lifted cards.** Product cards, cart lines and summaries are white cards with an 18 px
   radius and a soft shadow (a hairline instead in dark mode, where shadows don't show). Photos
   sit on a warm tile (`#F1EEE8`, `#1A2433` dark), contained rather than cropped.
+- **Cards that read like a store's.** The photo fills a rounded tile inset in the card, with the
+  badge and save heart on it; a bold two-line title, rating, price with the green saving, a
+  delivery truck before the date, and an Add to cart button with a cart icon. Rows (search on
+  phones) also show up to three spec chips ("30h battery", "Noise cancelling") from the product's
+  attributes (`cardChips`, worded per language in the `cardChips` messages); a sale needs no badge
+  there since the green pill says it, and the heart sits on the photo's lower corner, clear of
+  longer badges.
 - **Savings in words.** A green "Save 25%" pill on cards and product pages on sale (not on
   deals, which have their own badge), and "You're saving $X" in the cart: list-price markdowns,
   member prices and every discount together.

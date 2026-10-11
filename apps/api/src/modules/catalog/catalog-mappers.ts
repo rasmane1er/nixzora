@@ -1,4 +1,5 @@
 import {
+  cardChips,
   type CardColor,
   colorSwatch,
   deliveryFrom,
@@ -91,6 +92,11 @@ export function toCard(
     ...(isPreorder(releaseDay(product)) ? { preorder: { releaseDate: releaseDay(product)! } } : {}),
     shipsFromNixzora: !product.sellerId,
     ...cardColors(active, product.images, publicUrl),
+    // Spec chips (ADR-0053): up to three short facts for the card.
+    ...(() => {
+      const chips = cardChips(product.attributes);
+      return chips.length ? { chips } : {};
+    })(),
   };
 }
 

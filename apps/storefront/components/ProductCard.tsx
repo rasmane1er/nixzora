@@ -4,7 +4,7 @@ import {
   type ProductCard as Card,
   shownDelivery,
 } from '@nixzora/validation';
-import { deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
+import { chipText, deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { adHref } from '@/lib/ads';
@@ -96,7 +96,7 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member, tu] = await Promise.all([
+  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member, tu, tch] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
@@ -109,6 +109,7 @@ export async function ProductCard({
     wishedIds(),
     isPlusMember(),
     getT('shopUi'),
+    getT('cardChips'),
   ]);
   // "Arrives …" (p10-17): Plus members get NIXZORA's own items in 2 days, free.
   const twoDay = member && product.shipsFromNixzora === true;
@@ -199,6 +200,14 @@ export async function ProductCard({
             <span className="muted">{t('reviewCount', { count: rating.count })}</span>
           </span>
         ) : null}
+        {product.chips?.length ? (
+          // Spec chips (ADR-0053): shown in result rows on phones.
+          <span className="card-chips">
+            {product.chips.map((chip) => (
+              <span key={chip.key}>{chipText(tch, chip, INTL_LOCALE[locale])}</span>
+            ))}
+          </span>
+        ) : null}
         {bought ? (
           <span className="card-bought">{t('boughtPastMonth', { count: bought })}</span>
         ) : null}
@@ -246,7 +255,25 @@ export async function ProductCard({
         ) : null}
         {deliveryText ? (
           <span className="card-delivery">
-            {twoDay ? <span className="plus-chip">{pl('badge')}</span> : null} {deliveryText}
+            <svg
+              className="card-delivery__icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 6h11v10H2zM13 9h4l3 3.5V16h-7" />
+              <circle cx="6" cy="17.5" r="1.8" />
+              <circle cx="17" cy="17.5" r="1.8" />
+            </svg>
+            <span>
+              {twoDay ? <span className="plus-chip">{pl('badge')}</span> : null} {deliveryText}
+            </span>
           </span>
         ) : (
           <span className={`stock${product.inStock ? '' : ' stock--out'}`}>
