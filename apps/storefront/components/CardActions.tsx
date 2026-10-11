@@ -84,7 +84,23 @@ export function CardAdd({
         href={`/p/${slug}`}
         aria-label={t('chooseOptionsFor', { title })}
       >
-        {t('chooseOptions')}
+        {/* On narrow result rows only the icon shows (ADR-0053). */}
+        <svg
+          className="card-add__icon"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+          <circle cx="16" cy="7" r="2" />
+          <circle cx="10" cy="17" r="2" />
+        </svg>
+        <span className="card-add__label">{t('chooseOptions')}</span>
       </Link>
     );
   }
@@ -120,7 +136,7 @@ export function CardAdd({
           <circle cx="17" cy="19" r="1.4" />
         </svg>
       ) : null}
-      <span aria-live="polite">
+      <span aria-live="polite" className="card-add__label">
         {pending ? t('adding') : state === 'added' ? `✓ ${t('added')}` : t('addToCart')}
       </span>
     </button>

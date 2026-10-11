@@ -6285,3 +6285,82 @@ td.neg {
     padding-left: calc(min(40%, 170px) + 22px);
   }
 }
+
+.card-add__icon {
+  display: none;
+}
+/* Narrow phones: result rows tighten to fit beside the photo, like the app (ADR-0053). */
+@media (max-width: 420px) {
+  .listing .card-chips {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .listing .card-chips > span {
+    flex-shrink: 0;
+  }
+  .listing .card-chips > span:nth-child(n + 3) {
+    display: none;
+  }
+  /* Only the last chip shown gives way, ending in "…". */
+  .listing .card-chips > span:nth-child(2),
+  .listing .card-chips > span:only-child {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .listing .product-card__title {
+    font-size: 13px;
+  }
+  .listing .card-bought {
+    display: none;
+  }
+  .listing .product-card .card-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+  .listing .product-card .card-heart {
+    width: 30px;
+    height: 30px;
+    top: 14px;
+    left: calc(min(40%, 170px) - 30px);
+  }
+  .listing .product-card .price__now {
+    font-size: 17px;
+  }
+  /* The button becomes a round icon beside the delivery line. */
+  .listing .product-card__actions {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 0;
+  }
+  .listing .card-delivery,
+  .listing .card-away {
+    padding-right: 44px;
+  }
+  .listing .card-add {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .listing .card-add svg {
+    margin: 0;
+  }
+  .listing .card-add .card-add__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .listing .card-add__icon {
+    display: block;
+  }
+  .listing .product-card__link {
+    padding-bottom: 12px;
+  }
+}

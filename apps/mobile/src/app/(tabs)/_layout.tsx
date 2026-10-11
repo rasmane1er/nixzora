@@ -30,6 +30,8 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
         headerStyle: { backgroundColor: p.bg },
         headerShadowVisible: false,
+        // Typing (Ask, search): the tab bar steps aside so the field sits right on the keyboard.
+        tabBarHideOnKeyboard: true,
         headerTitleStyle: { fontFamily: fonts.displayMedium, color: p.fg },
       }}
     >

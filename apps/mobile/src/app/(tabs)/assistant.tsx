@@ -19,6 +19,7 @@ import { Price } from '@/components/Price';
 import { Banner, Button, Card, Row, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { visitorId } from '@/lib/visitor';
+import { useKeyboardVisible } from '@/lib/keyboard';
 import { useFormatters } from '@/lib/format';
 import { useCartMutation } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
@@ -258,6 +259,7 @@ export default function AssistantScreen() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const scroll = useRef<ScrollView>(null);
+  const keyboard = useKeyboardVisible();
   const handled = useRef<string | null>(null);
 
   const chat = useMutation({
@@ -287,11 +289,9 @@ export default function AssistantScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: p.bg }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-      >
+      {/* The field rides up with the keyboard on both platforms (Android is edge-to-edge, so the
+          window no longer resizes for it). */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
           ref={scroll}
           onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
@@ -352,6 +352,8 @@ export default function AssistantScreen() {
         <Row
           style={{
             margin: space.md,
+            // Clears the raised Ask button in the tab bar, which steps aside while typing.
+            marginBottom: keyboard ? space.sm : space.md + 18,
             width: Math.min(width - space.md * 2, READABLE_WIDTH - space.md * 2),
             alignSelf: 'center',
             borderWidth: 1.5,

@@ -262,6 +262,18 @@ function RowCard({
   const dark = useColorScheme() === 'dark';
   const { percent } = useFormatters();
   const [wide, setWide] = useState(false);
+  // Fit to the photo (ADR-0053): when the details run taller than the square photo, step down
+  // to tighter type, one row of chips and a round icon button, until they fit (or 2 steps).
+  const [fit, setFit] = useState<0 | 1 | 2>(0);
+  const [photoH, setPhotoH] = useState(0);
+  const [detailsH, setDetailsH] = useState(0);
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!photoH || !detailsH) return;
+    if (detailsH > photoH + 1 && fit < 2) setFit((f) => (f + 1) as 1 | 2);
+    else setSettled(true);
+  }, [photoH, detailsH, fit]);
+  const iconButton = fit > 0;
   const href = `/p/${product.slug}` as const;
   const label = adToken
     ? ta('sponsoredItem', { title: product.title })
@@ -279,7 +291,7 @@ function RowCard({
         { backgroundColor: p.card, borderColor: dark ? p.line : 'transparent' },
       ]}
     >
-      <View style={styles.rowMedia}>
+      <View style={styles.rowMedia} onLayout={(e) => setPhotoH(e.nativeEvent.layout.width)}>
         <PressableLink
           href={href}
           accessibilityRole="link"
@@ -315,98 +327,128 @@ function RowCard({
             </Text>
           </View>
         ) : null}
-        <CardHeart productId={product.id} title={product.title} style={styles.rowHeart} />
+        <CardHeart
+          productId={product.id}
+          title={product.title}
+          // With a badge on the photo, the heart takes the lower corner so neither is cut.
+          style={[styles.rowHeart, badge && photoH ? { top: photoH - 38 } : null]}
+        />
       </View>
 
-      <View style={styles.rowBody} onLayout={(e) => setWide(e.nativeEvent.layout.width >= 300)}>
-        <PressableLink
-          href={href}
-          accessibilityRole="link"
-          accessibilityLabel={label}
-          onPress={recordClick}
-          style={{ gap: 4 }}
+      <View
+        style={[styles.rowBody, { opacity: settled ? 1 : 0 }]}
+        onLayout={(e) => setWide(e.nativeEvent.layout.width >= 300)}
+      >
+        <View
+          style={{ gap: FIT_GAP[fit] }}
+          onLayout={(e) => setDetailsH(e.nativeEvent.layout.height)}
         >
-          {adToken ? (
-            <View style={[styles.sponsored, { borderColor: p.line }]}>
-              <Text variant="small" muted style={{ fontSize: 11, fontFamily: fonts.bodyBold }}>
-                {ta('sponsored')}
-              </Text>
-            </View>
-          ) : null}
-          <Text numberOfLines={2} style={styles.rowTitle}>
-            {product.title}
-          </Text>
-        </PressableLink>
-        {product.rating?.average != null && product.rating.count ? (
-          <Stars average={product.rating.average} count={product.rating.count} compact />
-        ) : null}
-        {product.chips?.length ? (
-          <View style={styles.chips}>
-            {product.chips.map((chip) => (
-              <View key={chip.key} style={[styles.chip, { backgroundColor: p.bg }]}>
-                <Text
-                  variant="small"
-                  numberOfLines={1}
-                  style={{ fontSize: 11, lineHeight: 15, color: p.muted }}
-                >
-                  {chipText(tch, chip, INTL_LOCALE[locale])}
+          <PressableLink
+            href={href}
+            accessibilityRole="link"
+            accessibilityLabel={label}
+            onPress={recordClick}
+            style={{ gap: 4 }}
+          >
+            {adToken ? (
+              <View style={[styles.sponsored, { borderColor: p.line }]}>
+                <Text variant="small" muted style={{ fontSize: 11, fontFamily: fonts.bodyBold }}>
+                  {ta('sponsored')}
                 </Text>
               </View>
-            ))}
-          </View>
-        ) : null}
-        {product.colors && !adToken ? (
-          <Swatches slug={product.slug} colors={product.colors} />
-        ) : null}
-        <View style={styles.priceRow}>
-          <Price
-            cents={product.priceFromCents}
-            compareAtCents={product.compareAtCents}
-            currency={product.currency}
-            size="row"
-            prefix={product.defaultVariantId ? undefined : tp('from')}
-          />
-          {onSale ? (
-            <View style={[styles.save, { backgroundColor: p.okBg }]}>
-              <Text
-                variant="small"
-                style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 11 }}
-              >
-                {tu('savePercent', {
-                  percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
-                })}
-              </Text>
+            ) : null}
+            <Text numberOfLines={2} style={[styles.rowTitle, FIT_TITLE[fit]]}>
+              {product.title}
+            </Text>
+          </PressableLink>
+          {product.rating?.average != null && product.rating.count ? (
+            <Stars average={product.rating.average} count={product.rating.count} compact />
+          ) : null}
+          {product.chips?.length ? (
+            // One row of chips once space is tight; the rest are on the product page.
+            <View style={[styles.chips, fit > 0 && styles.chipsOneRow]}>
+              {product.chips.slice(0, fit === 2 ? 2 : 3).map((chip) => (
+                <View
+                  key={chip.key}
+                  style={[styles.chip, fit > 0 && styles.chipShrink, { backgroundColor: p.bg }]}
+                >
+                  <Text
+                    variant="small"
+                    numberOfLines={1}
+                    style={{ fontSize: 11, lineHeight: 15, color: p.muted }}
+                  >
+                    {chipText(tch, chip, INTL_LOCALE[locale])}
+                  </Text>
+                </View>
+              ))}
             </View>
           ) : null}
-        </View>
-        {product.deal?.plusOnly ? (
-          <PlusPriceText priceCents={product.priceFromCents} percentOff={product.deal.percentOff} />
-        ) : null}
-        {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
-        {product.multiBuy ? <OfferTag offer={product.multiBuy} /> : null}
-        {product.deal ? <DealTimer deal={product.deal} /> : null}
-        <View style={[styles.rowFoot, wide && styles.rowFootWide]}>
-          {product.inStock ? (
-            <View style={styles.delivery}>
-              {product.storeAway ? (
-                <AwayLine until={product.storeAway.until} />
-              ) : (
-                <DeliveryLine product={product} compact />
-              )}
+          {product.colors && !adToken && fit < 2 ? (
+            <Swatches slug={product.slug} colors={product.colors} />
+          ) : null}
+          <View style={styles.priceRow}>
+            <Price
+              cents={product.priceFromCents}
+              compareAtCents={product.compareAtCents}
+              currency={product.currency}
+              size={fit === 2 ? 'md' : 'row'}
+              prefix={product.defaultVariantId ? undefined : tp('from')}
+            />
+            {onSale ? (
+              <View style={[styles.save, { backgroundColor: p.okBg }]}>
+                <Text
+                  variant="small"
+                  style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 11 }}
+                >
+                  {tu('savePercent', {
+                    percent: percent(
+                      1 - product.priceFromCents / (product.compareAtCents as number),
+                    ),
+                  })}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {product.deal?.plusOnly ? (
+            <PlusPriceText
+              priceCents={product.priceFromCents}
+              percentOff={product.deal.percentOff}
+            />
+          ) : null}
+          {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
+          {product.multiBuy ? <OfferTag offer={product.multiBuy} /> : null}
+          {product.deal ? <DealTimer deal={product.deal} /> : null}
+          <View style={[styles.rowFoot, (wide || iconButton) && styles.rowFootWide]}>
+            {product.inStock ? (
+              <View style={styles.delivery}>
+                {product.storeAway ? (
+                  <AwayLine until={product.storeAway.until} />
+                ) : (
+                  <DeliveryLine product={product} compact />
+                )}
+              </View>
+            ) : (
+              <Text variant="small" tone="error" style={{ flex: 1 }}>
+                {tp('soldOut')}
+              </Text>
+            )}
+            <View style={wide || iconButton ? null : { alignSelf: 'flex-end' }}>
+              {product.storeAway ? null : <CardAdd product={product} compact icon={iconButton} />}
             </View>
-          ) : (
-            <Text variant="small" tone="error" style={{ flex: 1 }}>
-              {tp('soldOut')}
-            </Text>
-          )}
-          <View style={wide ? null : { alignSelf: 'flex-end' }}>
-            {product.storeAway ? null : <CardAdd product={product} compact />}
           </View>
         </View>
       </View>
     </View>
   );
 }
+
+/** Row card sizes at each fit step (0 roomy … 2 tightest). */
+const FIT_GAP = [4, 3, 2] as const;
+const FIT_TITLE = [
+  {},
+  { fontSize: 13, lineHeight: 17 },
+  { fontSize: 12.5, lineHeight: 16 },
+] as const;
 
 function CardHeart({
   productId,
@@ -444,7 +486,16 @@ function CardHeart({
   );
 }
 
-function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
+function CardAdd({
+  product,
+  compact,
+  icon,
+}: {
+  product: Card;
+  compact?: boolean;
+  /** A round icon button, for rows where space is tight. */
+  icon?: boolean;
+}) {
   const p = usePalette();
   const tp = useT('product');
   const [added, setAdded] = useState(false);
@@ -466,15 +517,21 @@ function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
         style={({ pressed }) => [
           styles.button,
           compact && styles.compact,
+          icon && styles.iconButton,
           { borderColor: p.line, backgroundColor: pressed ? p.line : p.card },
         ]}
       >
-        <Text
-          variant="small"
-          style={[{ fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
-        >
-          {tp('chooseOptions')}
-        </Text>
+        {icon ? (
+          <Ionicons name="options-outline" size={18} color={p.fg} />
+        ) : (
+          <Text
+            variant="small"
+            numberOfLines={1}
+            style={[{ fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
+          >
+            {tp('chooseOptions')}
+          </Text>
+        )}
       </PressableLink>
     );
   }
@@ -488,6 +545,7 @@ function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
       style={({ pressed }) => [
         styles.button,
         compact && styles.compact,
+        icon && styles.iconButton,
         {
           borderColor: 'transparent',
           backgroundColor: pressed ? brand.signalPressed : brand.signalStrong,
@@ -498,15 +556,21 @@ function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
         <ActivityIndicator size="small" color="#fff" />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {compact && !added ? <Ionicons name="cart-outline" size={15} color="#fff" /> : null}
-          <Text
-            variant="small"
-            numberOfLines={1}
-            style={[{ color: '#fff', fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
-            accessibilityLiveRegion="polite"
-          >
-            {added ? `✓ ${tp('added')}` : tp('addToCart')}
-          </Text>
+          {icon ? (
+            <Ionicons name={added ? 'checkmark' : 'cart-outline'} size={18} color="#fff" />
+          ) : compact && !added ? (
+            <Ionicons name="cart-outline" size={15} color="#fff" />
+          ) : null}
+          {icon ? null : (
+            <Text
+              variant="small"
+              numberOfLines={1}
+              style={[{ color: '#fff', fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
+              accessibilityLiveRegion="polite"
+            >
+              {added ? `✓ ${tp('added')}` : tp('addToCart')}
+            </Text>
+          )}
         </View>
       )}
     </Pressable>
@@ -557,6 +621,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compact: { minHeight: 36, paddingHorizontal: 10 },
+  iconButton: { width: 38, height: 38, minHeight: 38, paddingHorizontal: 0, borderRadius: 19 },
   row: {
     flexDirection: 'row',
     gap: space.md,
@@ -575,12 +640,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowBadge: { top: 8, left: 8, maxWidth: '62%' },
+  rowBadge: { top: 8, left: 8, maxWidth: '90%' },
   // On the photo's lower corner, clear of any badge.
-  rowHeart: { top: 6, right: 6 },
+  rowHeart: { top: 6, right: 6, width: 32, height: 32, borderRadius: 16 },
   rowBody: { flex: 1, minWidth: 0, gap: 4, paddingTop: 2 },
   rowTitle: { fontFamily: fonts.bodyBold, fontSize: 13.5, lineHeight: 18, paddingRight: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipsOneRow: { flexWrap: 'nowrap', overflow: 'hidden' },
+  // A chip that doesn't fit ends in "…" instead of being cut.
+  chipShrink: { flexShrink: 1, minWidth: 0 },
   chip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, maxWidth: '100%' },
   priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   rowFoot: { gap: space.sm, marginTop: 2 },
