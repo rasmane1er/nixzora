@@ -263,7 +263,11 @@ export default function CartScreen() {
           ) : null}
         </View>
         <PlusShippingNote totals={data.totals} />
-        <DeliveryPromise window={data.delivery} twoDay={data.totals.shippingSpeed === 'TWO_DAY'} />
+        <DeliveryPromise
+          window={data.delivery}
+          twoDay={data.totals.shippingSpeed === 'TWO_DAY'}
+          preorder={data.lines.some((line) => !!line.releaseDate)}
+        />
         <BudgetNote
           orderCents={
             data.totals.subtotalCents - data.totals.discountCents + data.totals.shippingCents

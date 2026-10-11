@@ -1,3 +1,4 @@
+import { InlineDeadline } from '@/components/Countdown';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import type { AccountOrder, OrderFilter } from '@nixzora/validation';
@@ -106,7 +107,11 @@ function OrderCard({ order }: { order: AccountOrder }) {
       ))}
       {order.returnableUntil ? (
         <Text variant="small" muted>
-          {t('returnsOpenUntil', { date: shortDate(order.returnableUntil) })}
+          <InlineDeadline
+            until={order.returnableUntil}
+            soon="returnsCloseIn"
+            later={t('returnsOpenUntil', { date: shortDate(order.returnableUntil) })}
+          />
           {order.openReturns ? t('returnsInProgress', { count: order.openReturns }) : ''}
         </Text>
       ) : null}

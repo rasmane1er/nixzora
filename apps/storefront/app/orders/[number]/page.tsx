@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { calendarDay, deliveryRange, INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
 import { type OrderView, type ReturnView } from '@nixzora/validation';
 import type { Metadata } from 'next';
@@ -107,16 +108,23 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <details className="card cancel-order">
           <summary>
             {/* Pre-orders (p10-30) stay cancellable until release day. */}
-            {order.preorderShipsOn
-              ? po('orderNote', { date: calendarDay(order.preorderShipsOn, locale) })
-              : w('cancelUntil', {
+            {order.preorderShipsOn ? (
+              po('orderNote', { date: calendarDay(order.preorderShipsOn, locale) })
+            ) : (
+              // A live "You can cancel for 18 min more" (p10-38).
+              <Deadline
+                until={order.cancellableUntil}
+                soon="cancelFor"
+                later={w('cancelUntil', {
                   time: new Intl.DateTimeFormat(INTL_LOCALE[locale], {
                     hour: 'numeric',
                     minute: '2-digit',
                     timeZone: 'America/New_York',
                     timeZoneName: 'short',
                   }).format(new Date(order.cancellableUntil)),
-                })}{' '}
+                })}
+              />
+            )}{' '}
             <span className="btn btn--secondary btn--sm">{w('cancelOrder')}</span>
           </summary>
           <form action={cancelOrder} className="cancel-order__confirm">
@@ -198,11 +206,15 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <div className="stack" style={{ gap: 6 }}>
           <ReturnForm order={order} token={token} />
           <p className="hint">
-            {t('returnsOpenUntil', {
-              date: new Intl.DateTimeFormat(INTL_LOCALE[locale], { dateStyle: 'long' }).format(
-                new Date(order.returnableUntil),
-              ),
-            })}
+            <Deadline
+              until={order.returnableUntil}
+              soon="returnsCloseIn"
+              later={t('returnsOpenUntil', {
+                date: new Intl.DateTimeFormat(INTL_LOCALE[locale], { dateStyle: 'long' }).format(
+                  new Date(order.returnableUntil),
+                ),
+              })}
+            />
           </p>
         </div>
       ) : null}

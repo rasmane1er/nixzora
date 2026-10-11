@@ -1,3 +1,4 @@
+import { InlineDeadline } from '@/components/Countdown';
 import { errorMessage } from '@nixzora/api-client';
 import type { AccountCoupon } from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
@@ -52,7 +53,15 @@ export default function CouponsScreen() {
                 {c.minSubtotalCents
                   ? t('couponsMin', { amount: f.money(c.minSubtotalCents) })
                   : t('couponsNoMin')}
-                {c.endsAt ? ` · ${t('couponsUntil', { date: f.date(c.endsAt) })}` : ''}
+                {c.endsAt ? (
+                  <>
+                    {' · '}
+                    <InlineDeadline
+                      until={c.endsAt}
+                      later={t('couponsUntil', { date: f.date(c.endsAt) })}
+                    />
+                  </>
+                ) : null}
               </Text>
             </View>
           </Row>

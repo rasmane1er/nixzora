@@ -1,3 +1,4 @@
+import { Deadline } from './Countdown';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { multiBuyAddMore, multiBuyTerms } from '@nixzora/i18n';
 import { type CardMultiBuy, type CartMultiBuy } from '@nixzora/validation';
@@ -42,9 +43,7 @@ export function OfferRow({ offer }: { offer: CardMultiBuy }) {
     >
       <OfferTag offer={offer} />
       {offer.endsAt ? (
-        <Text variant="small" muted>
-          {t('endsOn', { date: f.shortDate(offer.endsAt) })}
-        </Text>
+        <Deadline until={offer.endsAt} later={t('endsOn', { date: f.shortDate(offer.endsAt) })} />
       ) : null}
       <Text variant="small" style={{ textDecorationLine: 'underline' }}>
         {t('shopOffer')} →

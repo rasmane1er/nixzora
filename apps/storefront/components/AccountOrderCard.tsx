@@ -1,3 +1,4 @@
+import { Deadline } from './Countdown';
 import { type AccountOrder, type BuyAgainItem } from '@nixzora/validation';
 import Link from 'next/link';
 import { buyAgain } from '@/app/account/hub-actions';
@@ -126,9 +127,12 @@ export async function AccountOrderCard({ order, back }: { order: AccountOrder; b
             {t('viewOrder')}
           </Link>
           {order.returnableUntil ? (
-            <span className="hint">
-              {t('returnsOpenUntil', { date: f.date(order.returnableUntil) })}
-            </span>
+            <Deadline
+              className="hint"
+              until={order.returnableUntil}
+              soon="returnsCloseIn"
+              later={t('returnsOpenUntil', { date: f.date(order.returnableUntil) })}
+            />
           ) : null}
         </div>
       </div>

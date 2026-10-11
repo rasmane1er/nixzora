@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { type AccountCoupon } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { AccountHeader } from '@/components/AccountHeader';
@@ -34,7 +35,12 @@ export default async function CouponsPage() {
                   {c.minSubtotalCents
                     ? t('minOrder', { amount: f.money(c.minSubtotalCents, 'USD') })
                     : t('noMinimum')}
-                  {c.endsAt ? ` · ${t('until', { date: f.date(c.endsAt) })}` : ''}
+                  {c.endsAt ? (
+                    <>
+                      {' · '}
+                      <Deadline until={c.endsAt} later={t('until', { date: f.date(c.endsAt) })} />
+                    </>
+                  ) : null}
                 </span>
                 <span className="coupon__code mono">{c.code}</span>
                 {c.used ? <span className="hint">{t('usedCode')}</span> : null}

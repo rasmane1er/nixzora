@@ -569,7 +569,11 @@ export default function CheckoutScreen() {
         </Card>
       ) : null}
       {totals ? <PlusShippingNote totals={totals} /> : null}
-      <DeliveryPromise window={cart.data?.delivery} twoDay={totals?.shippingSpeed === 'TWO_DAY'} />
+      <DeliveryPromise
+        window={cart.data?.delivery}
+        twoDay={totals?.shippingSpeed === 'TWO_DAY'}
+        preorder={!!cart.data?.lines.some((line) => !!line.releaseDate)}
+      />
       {totals ? <BudgetNote orderCents={totals.totalCents} /> : null}
       {problem ? <Banner tone="error">{problem}</Banner> : null}
       {!online ? <Banner tone="warn">{t('offlinePlaceOrder')}</Banner> : null}

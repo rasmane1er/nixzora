@@ -1,3 +1,4 @@
+import { InlineDeadline } from '@/components/Countdown';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -38,7 +39,11 @@ export default function CouponsScreen() {
                 {c.product.title}
               </Text>
               <Text variant="small" muted>
-                {money(c.product.priceFromCents)} · {t('endsOn', { date: shortDate(c.endsAt) })}
+                {money(c.product.priceFromCents)} ·{' '}
+                <InlineDeadline
+                  until={c.endsAt}
+                  later={t('endsOn', { date: shortDate(c.endsAt) })}
+                />
               </Text>
             </View>
           </Pressable>

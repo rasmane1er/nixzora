@@ -385,7 +385,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
             <p className="free-ship">{tc('gotFreeShipping')}</p>
           )}
           <PlusShippingNote totals={t} signedIn={signedIn} />
-          <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
+          <DeliveryPromise
+            window={cart.delivery}
+            twoDay={t.shippingSpeed === 'TWO_DAY'}
+            preorder={cart.lines.some((line) => !!line.releaseDate)}
+          />
           {signedIn ? <BudgetNote orderCents={estimated} /> : null}
           {blocked || cart.coupon?.problem ? (
             <p className="banner banner--info">{blocked ? tc('fixItems') : tc('removeCode')}</p>

@@ -1,3 +1,4 @@
+import { InlineDeadline } from '@/components/Countdown';
 import { multiBuyTerms } from '@nixzora/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -56,7 +57,15 @@ export default function OfferScreen() {
             </Text>
             <Text variant="small" muted>
               {o.seller ? t('from', { store: o.seller.displayName }) : t('fromNixzora')}
-              {o.endsAt ? ` · ${t('endsOn', { date: f.shortDate(o.endsAt) })}` : ''}
+              {o.endsAt ? (
+                <>
+                  {' · '}
+                  <InlineDeadline
+                    until={o.endsAt}
+                    later={t('endsOn', { date: f.shortDate(o.endsAt) })}
+                  />
+                </>
+              ) : null}
             </Text>
           </View>
         }

@@ -1,3 +1,4 @@
+import { InlineDeadline } from '@/components/Countdown';
 import { errorMessage } from '@nixzora/api-client';
 import { spendTiers } from '@nixzora/i18n';
 import type { DealKind } from '@nixzora/validation';
@@ -97,7 +98,15 @@ export default function DealsScreen() {
                   </Text>
                   <Text variant="small" muted>
                     {o.seller ? sp('onStore', { store: o.seller.displayName }) : sp('onNixzora')}
-                    {o.endsAt ? ` · ${sp('endsOn', { date: shortDate(o.endsAt) })}` : ''}
+                    {o.endsAt ? (
+                      <>
+                        {' · '}
+                        <InlineDeadline
+                          until={o.endsAt}
+                          later={sp('endsOn', { date: shortDate(o.endsAt) })}
+                        />
+                      </>
+                    ) : null}
                     {o.seller ? ' ›' : ''}
                   </Text>
                 </Pressable>

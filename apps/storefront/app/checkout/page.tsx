@@ -137,7 +137,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
             <dd className="muted">{tc('nextStep')}</dd>
           </dl>
           <PlusShippingNote totals={t} signedIn={signedIn} />
-          <DeliveryPromise window={cart.delivery} twoDay={t.shippingSpeed === 'TWO_DAY'} />
+          <DeliveryPromise
+            window={cart.delivery}
+            twoDay={t.shippingSpeed === 'TWO_DAY'}
+            preorder={cart.lines.some((line) => !!line.releaseDate)}
+          />
           {signedIn ? <BudgetNote orderCents={t.totalCents} /> : null}
           {buyNowId ? (
             <Link href={back} className="muted" style={{ fontSize: 14 }}>

@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { type CouponsPage } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -51,7 +52,11 @@ export default async function CouponsPageView() {
                 initial={clipped.has(c.id)}
                 compact
               />
-              <span className="hint">{t('endsOn', { date: f.date(c.endsAt) })}</span>
+              <Deadline
+                className="hint"
+                until={c.endsAt}
+                later={t('endsOn', { date: f.date(c.endsAt) })}
+              />
             </li>
           ))}
         </ul>

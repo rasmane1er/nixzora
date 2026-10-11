@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { multiBuyTerms, spendTiers } from '@nixzora/i18n';
 import {
   type DealKind,
@@ -105,7 +106,15 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
                     <span className="muted">
                       {o.seller ? mb('from', { store: o.seller.displayName }) : mb('fromNixzora')} ·{' '}
                       {mb('productCount', { count: o.products.length })}
-                      {o.endsAt ? ` · ${mb('endsOn', { date: f.date(o.endsAt) })}` : ''}
+                      {o.endsAt ? (
+                        <>
+                          {' · '}
+                          <Deadline
+                            until={o.endsAt}
+                            later={mb('endsOn', { date: f.date(o.endsAt) })}
+                          />
+                        </>
+                      ) : null}
                     </span>
                   </span>
                 </Link>
@@ -129,7 +138,15 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
                     <strong>{spendTiers(sp, o.tiers, (c) => f.money(c))}</strong>
                     <span className="muted">
                       {o.seller ? sp('onStore', { store: o.seller.displayName }) : sp('onNixzora')}
-                      {o.endsAt ? ` · ${sp('endsOn', { date: f.date(o.endsAt) })}` : ''}
+                      {o.endsAt ? (
+                        <>
+                          {' · '}
+                          <Deadline
+                            until={o.endsAt}
+                            later={sp('endsOn', { date: f.date(o.endsAt) })}
+                          />
+                        </>
+                      ) : null}
                     </span>
                   </span>
                 </Link>

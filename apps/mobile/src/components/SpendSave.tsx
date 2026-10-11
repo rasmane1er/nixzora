@@ -1,3 +1,4 @@
+import { InlineDeadline } from './Countdown';
 import { spendTiers } from '@nixzora/i18n';
 import type { CartSpendOffer, SpendOfferBrief } from '@nixzora/validation';
 import { router } from 'expo-router';
@@ -47,7 +48,15 @@ export function SpendRow({
       <Text style={{ fontFamily: fonts.bodyBold }}>{spendTiers(t, offer.tiers, f.money)}</Text>
       <Text variant="small" muted>
         {store ? t('onStore', { store: store.displayName }) : t('onNixzora')}
-        {offer.endsAt ? ` ${t('endsOn', { date: f.shortDate(offer.endsAt) })}` : ''}
+        {offer.endsAt ? (
+          <>
+            {' '}
+            <InlineDeadline
+              until={offer.endsAt}
+              later={t('endsOn', { date: f.shortDate(offer.endsAt) })}
+            />
+          </>
+        ) : null}
       </Text>
       {store ? (
         <Pressable

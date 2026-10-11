@@ -1,3 +1,4 @@
+import { useOrderWithin } from './Countdown';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { deliveryRange } from '@nixzora/i18n';
 import type { DeliveryWindow, TrackingStep } from '@nixzora/validation';
@@ -11,14 +12,19 @@ import { Text } from './ui';
 export function DeliveryPromise({
   window,
   twoDay = false,
+  preorder = false,
 }: {
   window: DeliveryWindow | null | undefined;
   /** NIXZORA Plus 2-day delivery (p10-15). */
   twoDay?: boolean;
+  /** Pre-orders (p10-30) ship from their release day, so there's no order cutoff to show. */
+  preorder?: boolean;
 }) {
   const p = usePalette();
   const d = useT('delivery');
   const locale = useLocale();
+  // "Order within 2 h 15 min" in the last 24 hours before the cutoff (p10-38).
+  const within = useOrderWithin(twoDay);
   if (!window) return null;
   return (
     <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
@@ -27,9 +33,19 @@ export function DeliveryPromise({
         <Text style={{ fontFamily: fonts.bodyBold }}>
           {d('arrives', { range: deliveryRange(window, locale) })}
         </Text>
-        <Text variant="small" muted>
-          {d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}
-        </Text>
+        {within && !preorder ? (
+          <Text variant="small" muted>
+            <Text variant="small" style={{ color: p.okFg, fontFamily: fonts.bodyBold }}>
+              {within.lead}
+            </Text>
+            {' · '}
+            {within.hint}
+          </Text>
+        ) : (
+          <Text variant="small" muted>
+            {d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}
+          </Text>
+        )}
       </View>
     </View>
   );

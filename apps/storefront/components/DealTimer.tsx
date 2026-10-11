@@ -1,20 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { clockText, countdownPhase } from '@nixzora/validation';
+import { useNow } from './Countdown';
 import { useFormat, useT } from './I18nProvider';
 
-/** "3:07:15" for what is left of a deal (hours may pass 24 for day deals). */
-export function remaining(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
+/** "3:07:15" for what is left of a deal. */
+export const remaining = clockText;
 
 /**
- * A live deal's countdown ("Ends in 3:07:15"), or its end date when it is days away, plus a
- * "64% claimed" bar for limited deals. Renders the server's text first, then ticks.
+ * A live deal's countdown ("Ends in 3:07:15") in its last 24 hours, "Ending soon" in the last
+ * hour, otherwise its end date (p10-38); plus a "64% claimed" bar for limited deals. Renders
+ * the server's text first, then ticks on the page's shared clock.
  */
 export function DealTimer({
   endsAt,
@@ -27,24 +23,22 @@ export function DealTimer({
   initialNow: number;
 }) {
   const t = useT('deals');
+  const tc = useT('countdown');
   const f = useFormat();
-  const [now, setNow] = useState(initialNow);
+  const now = useNow(1000, initialNow) ?? initialNow;
   const end = Date.parse(endsAt);
   const left = end - now;
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const phase = countdownPhase(end, now);
 
   return (
     <span className="deal-timer">
-      <span className="deal-timer__time">
-        {left <= 0
+      <span className="deal-timer__time" role={phase === 'later' ? undefined : 'timer'}>
+        {phase === 'ended'
           ? t('ended')
-          : left > 48 * 3_600_000
+          : phase === 'later'
             ? t('endsOn', { date: f.date(endsAt) })
             : t('endsIn', { time: remaining(left) })}
+        {phase === 'soon' ? <span className="deal-soon">{tc('endingSoon')}</span> : null}
       </span>
       {claimedPercent != null ? (
         <span className="deal-claimed">

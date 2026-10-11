@@ -897,6 +897,7 @@ export default function ProductScreen() {
                   <DeliveryPromise
                     window={shownDelivery(item, member && !item.seller)}
                     twoDay={member && !item.seller}
+                    preorder={!!item.preorder}
                   />
                   {item.seller ? null : (
                     // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).

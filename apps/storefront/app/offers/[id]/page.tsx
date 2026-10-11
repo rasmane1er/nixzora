@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { multiBuyTerms } from '@nixzora/i18n';
 import { type MultiBuyView } from '@nixzora/validation';
 import type { Metadata } from 'next';
@@ -68,7 +69,12 @@ export default async function OfferPage({ params }: { params: Promise<{ id: stri
           ) : (
             t('fromNixzora')
           )}
-          {offer.endsAt ? ` · ${t('endsOn', { date: f.date(offer.endsAt) })}` : ''}
+          {offer.endsAt ? (
+            <>
+              {' · '}
+              <Deadline until={offer.endsAt} later={t('endsOn', { date: f.date(offer.endsAt) })} />
+            </>
+          ) : null}
         </p>
       </header>
       {offer.products.length ? (

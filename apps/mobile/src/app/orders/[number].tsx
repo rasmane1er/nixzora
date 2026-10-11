@@ -1,3 +1,4 @@
+import { Deadline, InlineDeadline } from '@/components/Countdown';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import { calendarDay } from '@nixzora/i18n';
@@ -181,14 +182,21 @@ export default function OrderScreen() {
           <Card>
             <Text>
               {/* Pre-orders (p10-30) stay cancellable until release day. */}
-              {o.preorderShipsOn
-                ? tpo('orderNote', { date: calendarDay(o.preorderShipsOn, locale) })
-                : w('cancelUntil', {
+              {o.preorderShipsOn ? (
+                tpo('orderNote', { date: calendarDay(o.preorderShipsOn, locale) })
+              ) : (
+                // A live "You can cancel for 18 min more" (p10-38).
+                <InlineDeadline
+                  until={o.cancellableUntil}
+                  soon="cancelFor"
+                  later={w('cancelUntil', {
                     time: new Date(o.cancellableUntil).toLocaleTimeString([], {
                       hour: 'numeric',
                       minute: '2-digit',
                     }),
                   })}
+                />
+              )}
             </Text>
             <Button
               title={w('cancelOrder')}
@@ -424,6 +432,9 @@ export default function OrderScreen() {
           </Card>
         ) : null}
 
+        {o.returnableUntil ? (
+          <Deadline until={o.returnableUntil} soon="returnsCloseIn" later="" />
+        ) : null}
         {o.returnableUntil ? (
           <Button
             title={t('returnItemUntil', { date: shortDate(o.returnableUntil) })}

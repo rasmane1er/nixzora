@@ -1,15 +1,19 @@
 import { deliveryRange } from '@nixzora/i18n';
 import { type DeliveryWindow } from '@nixzora/validation';
 import { getLocale, getT } from '@/lib/i18n';
+import { OrderWithin } from './Countdown';
 
 /** "Arrives Thu, Oct 15 – Tue, Oct 20" with how it is worked out (p10-04). */
 export async function DeliveryPromise({
   window,
   twoDay = false,
+  preorder = false,
 }: {
   window: DeliveryWindow | null | undefined;
   /** NIXZORA Plus 2-day delivery (p10-15). */
   twoDay?: boolean;
+  /** Pre-orders (p10-30) ship from their release day, so there's no order cutoff to show. */
+  preorder?: boolean;
 }) {
   if (!window) return null;
   const [d, locale] = await Promise.all([getT('delivery'), getLocale()]);
@@ -26,7 +30,17 @@ export async function DeliveryPromise({
       </svg>
       <span>
         <strong>{d('arrives', { range: deliveryRange(window, locale) })}</strong>
-        <span className="muted">{d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}</span>
+        {preorder ? (
+          <span className="muted">{d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}</span>
+        ) : (
+          // "Order within 2 h 15 min" in the last 24 hours before the cutoff (p10-38).
+          <OrderWithin
+            twoDay={twoDay}
+            fallback={
+              <span className="muted">{d(twoDay ? 'arrivesHintTwoDay' : 'arrivesHint')}</span>
+            }
+          />
+        )}
       </span>
     </p>
   );

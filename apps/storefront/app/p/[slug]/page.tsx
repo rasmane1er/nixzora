@@ -1,3 +1,4 @@
+import { Deadline } from '@/components/Countdown';
 import { BuyReminder } from './BuyReminder';
 import {
   type BundleView,
@@ -343,9 +344,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
               <p className="pdp-offer">
                 <span className="card-offer">{multiBuyTerms(mb, product.multiBuy)}</span>
                 {product.multiBuy.endsAt ? (
-                  <span className="muted">
-                    {mb('endsOn', { date: f.date(product.multiBuy.endsAt) })}
-                  </span>
+                  <Deadline
+                    className="muted"
+                    until={product.multiBuy.endsAt}
+                    later={mb('endsOn', { date: f.date(product.multiBuy.endsAt) })}
+                  />
                 ) : null}
                 <Link href={`/offers/${product.multiBuy.id}`}>{mb('shopOffer')} →</Link>
               </p>
@@ -359,9 +362,15 @@ export default async function ProductPage({ params, searchParams }: Props) {
                   {product.seller
                     ? sp('onStore', { store: product.seller.displayName })
                     : sp('onNixzora')}
-                  {product.spendOffer.endsAt
-                    ? ` ${sp('endsOn', { date: f.date(product.spendOffer.endsAt) })}`
-                    : ''}
+                  {product.spendOffer.endsAt ? (
+                    <>
+                      {' '}
+                      <Deadline
+                        until={product.spendOffer.endsAt}
+                        later={sp('endsOn', { date: f.date(product.spendOffer.endsAt) })}
+                      />
+                    </>
+                  ) : null}
                 </span>
                 {product.seller ? (
                   <Link href={`/s/${product.seller.handle}`}>
@@ -375,6 +384,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
               <DeliveryPromise
                 window={shownDelivery(product, member && !product.seller)}
                 twoDay={member && !product.seller}
+                preorder={!!product.preorder}
               />
             )}
             {product.seller ? null : (

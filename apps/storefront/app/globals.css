@@ -6530,3 +6530,33 @@ td.neg {
     flex: none;
   }
 }
+
+/* Countdowns (p10-38) */
+.order-within {
+  display: block;
+  font-size: 13px;
+}
+.order-within strong {
+  color: var(--ok-fg);
+}
+.deadline {
+  font-variant-numeric: tabular-nums;
+}
+.deadline--counting {
+  color: var(--warn-fg);
+  font-weight: 600;
+}
+.deadline--soon {
+  color: var(--err-fg);
+  font-weight: 700;
+}
+.deal-soon {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--err-bg);
+  color: var(--err-fg);
+}
