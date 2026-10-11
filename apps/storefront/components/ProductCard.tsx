@@ -140,6 +140,28 @@ export async function ProductCard({
       b: (chunk) => <strong key="when">{chunk}</strong>,
     });
   })();
+  // Result rows on phones (ADR-0053): one short line, "Free · Tue, Oct 20".
+  const deliveryShort = (() => {
+    if (!window) return null;
+    const day = deliveryDay(window.latest, locale);
+    // Narrow phones drop the weekday ("Oct 20"); CSS picks which one shows.
+    const short = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${window.latest}T12:00:00Z`));
+    const when = (text: string) => (day.tomorrow ? t('deliveryTomorrow', { date: text }) : text);
+    const free = twoDay || member || product.freeDelivery;
+    return (
+      <>
+        {free ? `${tu('freeShort')} · ` : ''}
+        <b>
+          <span className="dd-long">{when(day.text)}</span>
+          <span className="dd-short">{when(short)}</span>
+        </b>
+      </>
+    );
+  })();
   const bought =
     product.boughtPastMonth != null
       ? new Intl.NumberFormat(INTL_LOCALE[locale], { notation: 'compact' }).format(
@@ -149,6 +171,9 @@ export async function ProductCard({
   const wished = wishlist.has(product.id);
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
+  const savedFraction = onSale
+    ? Math.round((1 - product.priceFromCents / (product.compareAtCents as number)) * 100) / 100
+    : 0;
   const deal = product.deal;
   // A member-only deal (p10-15) leaves the price as listed and shows the member price.
   const plusOnly = deal?.plusOnly === true;
@@ -198,6 +223,10 @@ export async function ProductCard({
       </div>
       <div className="product-card__body">
         {adToken ? <span className="product-card__sponsored">{a('sponsored')}</span> : null}
+        {badge && badge.kind !== 'sale' ? (
+          // In phone rows the badge reads as a label above the title (ADR-0053).
+          <span className={`card-eyebrow card-eyebrow--${badge.kind}`}>{badge.text}</span>
+        ) : null}
         <span className="product-card__title">{product.title}</span>
         {rating && rating.count > 0 && rating.average != null ? (
           <span
@@ -219,26 +248,28 @@ export async function ProductCard({
         {bought ? (
           <span className="card-bought">{t('boughtPastMonth', { count: bought })}</span>
         ) : null}
-        <Price
-          cents={product.priceFromCents}
-          compareAtCents={product.compareAtCents}
-          currency={product.currency}
-          prefix={product.defaultVariantId ? undefined : t('from')}
-          locale={INTL_LOCALE[locale]}
-          wasLabel={t('was')}
-        />
-        {onSale && !deal ? (
-          // The redesign (ADR-0053): the saving in words, in the savings green.
-          <span className="card-save">
-            {tu('savePercent', {
-              percent: f.percent(
-                Math.round(
-                  (1 - product.priceFromCents / (product.compareAtCents as number)) * 100,
-                ) / 100,
-              ),
-            })}
-          </span>
-        ) : null}
+        <span className="card-price-row">
+          <Price
+            cents={product.priceFromCents}
+            compareAtCents={product.compareAtCents}
+            currency={product.currency}
+            prefix={product.defaultVariantId ? undefined : t('from')}
+            locale={INTL_LOCALE[locale]}
+            wasLabel={t('was')}
+          />
+          {onSale && !deal ? (
+            // The redesign (ADR-0053): the saving in words, in the savings green.
+            <span className="card-save">
+              <span className="card-save__long">
+                {tu('savePercent', { percent: f.percent(savedFraction) })}
+              </span>
+              {/* Narrow phone rows say it shorter. */}
+              <span className="card-save__short" aria-hidden="true">
+                −{f.percent(savedFraction)}
+              </span>
+            </span>
+          ) : null}
+        </span>
         {deal && plusOnly ? (
           <span className="plus-price">
             {pl('memberPrice', {
@@ -295,6 +326,28 @@ export async function ProductCard({
             {product.inStock ? t('inStock') : t('soldOut')}
           </span>
         )}
+        {deliveryShort && !product.storeAway ? (
+          <span className="card-delivery-short">
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 6h11v10H2zM13 9h4l3 3.5V16h-7" />
+              <circle cx="6" cy="17.5" r="1.8" />
+              <circle cx="17" cy="17.5" r="1.8" />
+            </svg>
+            <span>
+              {twoDay ? <span className="plus-chip">{pl('badge')}</span> : null} {deliveryShort}
+            </span>
+          </span>
+        ) : null}
       </div>
     </>
   );

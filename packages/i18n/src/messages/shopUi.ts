@@ -3,6 +3,7 @@ import { defineMessages } from '../define';
 /** The 2026 app redesign: header, tabs, home, product page, cart and results (ADR-0053). */
 export const shopUi = defineMessages({
   en: {
+    freeShort: 'Free',
     cartTitle: 'Cart',
     tabHome: 'Home',
     tabCategories: 'Categories',
@@ -55,6 +56,7 @@ export const shopUi = defineMessages({
     categoriesTitle: 'Shop by category',
   },
   fr: {
+    freeShort: 'Gratuit',
     cartTitle: 'Panier',
     tabHome: 'Accueil',
     tabCategories: 'Catégories',
@@ -108,6 +110,7 @@ export const shopUi = defineMessages({
     categoriesTitle: 'Acheter par catégorie',
   },
   es: {
+    freeShort: 'Gratis',
     cartTitle: 'Carrito',
     tabHome: 'Inicio',
     tabCategories: 'Categorías',

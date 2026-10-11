@@ -72,3 +72,46 @@ export function DeliveryLine({ product, compact }: { product: ProductCard; compa
     </View>
   );
 }
+
+/**
+ * One line for result rows (ADR-0053): "Free · Tue, Oct 20" (or just the day when shipping
+ * isn't free; Plus members' 2-day items lead with the Plus chip).
+ */
+export function ShortDelivery({ product, narrow }: { product: ProductCard; narrow?: boolean }) {
+  const t = useT('product');
+  const tu = useT('shopUi');
+  const locale = useLocale();
+  const member = usePlusMember();
+  const p = usePalette();
+  if (!product.inStock) return null;
+  const twoDay = member && product.shipsFromNixzora === true;
+  const window = shownDelivery(product, twoDay);
+  if (!window) return null;
+  const day = deliveryDay(window.latest, locale);
+  // Narrow phones drop the weekday: "Free · Oct 20".
+  const text = narrow
+    ? new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+      }).format(new Date(`${window.latest}T12:00:00Z`))
+    : day.text;
+  const when = day.tomorrow ? t('deliveryTomorrow', { date: text }) : text;
+  const free = twoDay || member || product.freeDelivery;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      <MaterialCommunityIcons name="truck-outline" size={15} color={p.muted} />
+      {twoDay ? <PlusChip /> : null}
+      <Text
+        variant="small"
+        numberOfLines={1}
+        style={{ flexShrink: 1, fontSize: 12, lineHeight: 16, color: p.muted }}
+      >
+        {free ? `${tu('freeShort')} · ` : ''}
+        <Text variant="small" style={{ fontSize: 12, lineHeight: 16, fontFamily: fonts.bodyBold }}>
+          {when}
+        </Text>
+      </Text>
+    </View>
+  );
+}

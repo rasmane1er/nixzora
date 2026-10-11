@@ -5903,48 +5903,6 @@ td.neg {
     color: #fff;
   }
 }
-/* Results as rows on phones, photo on the left, like the app's search. */
-@media (max-width: 560px) {
-  .listing .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .listing .product-card__link {
-    flex-direction: row;
-    gap: 12px;
-    padding: 12px 12px 0;
-  }
-  .listing .product-card__img {
-    flex: none;
-    width: 112px;
-    height: 132px;
-    aspect-ratio: auto;
-    padding: 8px;
-    border-radius: 14px;
-  }
-  .listing .product-card__body {
-    flex: 1;
-    min-width: 0;
-    padding: 0 36px 0 0;
-    align-content: start;
-  }
-  .listing .product-card__actions,
-  .listing .card-swatches {
-    padding-left: 136px;
-  }
-  .listing .product-card__actions {
-    padding-top: 10px;
-  }
-  .listing .card-add {
-    width: auto;
-    padding-inline: 18px;
-  }
-  .listing .card-badge {
-    top: 18px;
-    left: 18px;
-    max-width: 100px;
-  }
-}
-
 /* The product page's buy bar: inline on wide screens, pinned to the bottom on phones. */
 .buy-bar {
   display: grid;
@@ -6172,53 +6130,6 @@ td.neg {
   color: var(--muted);
   white-space: nowrap;
 }
-@media (max-width: 560px) {
-  .listing .card-chips {
-    display: flex;
-  }
-  .listing .product-card .product-card__img {
-    margin: 0;
-    width: 120px;
-    height: 132px;
-    aspect-ratio: auto;
-  }
-  .listing .product-card__link {
-    padding: 10px 10px 0;
-  }
-  .listing .product-card__body {
-    padding: 0 6px 0 0;
-  }
-  .listing .product-card__title {
-    padding-right: 0;
-  }
-  .listing .product-card .card-badge {
-    top: 18px;
-    left: 18px;
-  }
-  /* The green "Save X%" pill says it in a row, so the sale badge steps aside (as in the app). */
-  .listing .product-card .card-badge--sale {
-    display: none;
-  }
-  .listing .product-card .card-badge {
-    max-width: 108px;
-  }
-  /* The heart sits on the photo's lower corner, clear of any badge (as in the app). */
-  .listing .product-card .card-heart {
-    top: 104px;
-    right: auto;
-    left: 88px;
-  }
-  .listing .product-card__actions,
-  .listing .card-swatches {
-    padding-left: 142px;
-  }
-  .listing .product-card__actions {
-    padding-bottom: 12px;
-    display: flex;
-    justify-content: flex-end;
-  }
-}
-
 /* Store vacation mode (p10-32) */
 .card-away {
   font-size: 13px;
@@ -6234,110 +6145,165 @@ td.neg {
   margin: 0;
 }
 
-/* Phone result rows: smaller type so the details sit beside a square photo (ADR-0053). */
-@media (max-width: 560px) {
-  .listing .product-card .product-card__img {
-    width: 40%;
-    max-width: 170px;
-    height: auto;
-    aspect-ratio: 1;
-    align-self: flex-start;
-  }
-  /* Top-right of the photo, as in the app. */
-  .listing .product-card .card-heart {
-    top: 16px;
-    right: auto;
-    left: calc(min(40%, 170px) - 34px);
-  }
-  .listing .product-card__title {
-    font-size: 14px;
-    line-height: 1.3;
-  }
-  .listing .product-card__body {
-    gap: 3px;
-    font-size: 13px;
-  }
-  .listing .card-chips > span {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-  .listing .product-card .price {
-    font-size: 12px;
-  }
-  .listing .product-card .price__now {
-    font-size: 19px;
-  }
-  .listing .product-card .price__was {
-    font-size: 12px;
-  }
-  .listing .card-delivery,
-  .listing .card-bought,
-  .listing .card-rating {
-    font-size: 12px;
-  }
-  .listing .card-add {
-    min-height: 34px;
-    font-size: 12.5px;
-    padding-inline: 14px;
-  }
-  .listing .product-card__actions,
-  .listing .card-swatches {
-    padding-left: calc(min(40%, 170px) + 22px);
-  }
-}
-
 .card-add__icon {
   display: none;
 }
-/* Narrow phones: result rows tighten to fit beside the photo, like the app (ADR-0053). */
-@media (max-width: 420px) {
+
+/* Phone result rows, "even rows" (ADR-0053): a square photo with the heart; beside it, always
+   the photo's height, the label, title and rating (or two chips) at the top, and the price, a
+   one-line delivery date and one round button at the bottom. Same anatomy on every card. */
+.card-eyebrow,
+.card-delivery-short {
+  display: none;
+}
+/* Price and saving pill: their own lines in grid cards, one row in phone rows. */
+.card-price-row {
+  display: contents;
+}
+.card-save__short,
+.dd-short {
+  display: none;
+}
+@media (max-width: 560px) {
+  .listing {
+    --row-photo: clamp(104px, 30vw, 132px);
+  }
+  .listing .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .listing .product-card__link {
+    flex-direction: row;
+    gap: 12px;
+    padding: 10px;
+  }
+  .listing .product-card .product-card__img {
+    flex: none;
+    width: var(--row-photo);
+    height: var(--row-photo);
+    aspect-ratio: auto;
+    margin: 0;
+    padding: 0;
+    border-radius: 14px;
+  }
+  .listing .product-card__body {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--row-photo);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .listing .product-card__title {
+    font-size: 13.5px;
+    line-height: 1.3;
+  }
+  .listing .card-eyebrow {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--color-signal-strong);
+  }
+  .listing .card-eyebrow--top {
+    color: #2457c5;
+  }
+  .listing .card-eyebrow--deal {
+    color: #b3261e;
+  }
+  .listing .card-eyebrow--preorder {
+    color: var(--fg);
+  }
+  /* What rows leave to the product page. */
+  .listing .product-card .card-badge,
+  .listing .card-bought,
+  .listing .card-coupon,
+  .listing .card-offer,
+  .listing .plus-price,
+  .listing .deal-timer,
+  .listing .card-swatches,
+  .listing .card-delivery,
+  .listing .product-card:has(.card-rating) .card-chips {
+    display: none;
+  }
+  .listing .card-rating {
+    font-size: 12px;
+  }
   .listing .card-chips {
+    display: flex;
     flex-wrap: nowrap;
+    gap: 5px;
     overflow: hidden;
   }
   .listing .card-chips > span {
     flex-shrink: 0;
+    font-size: 11px;
+    padding: 3px 8px;
   }
   .listing .card-chips > span:nth-child(n + 3) {
     display: none;
   }
-  /* Only the last chip shown gives way, ending in "…". */
-  .listing .card-chips > span:nth-child(2),
-  .listing .card-chips > span:only-child {
+  .listing .card-chips > span:nth-child(2) {
     flex-shrink: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .listing .product-card__title {
-    font-size: 13px;
+  /* The price and the delivery line sit at the bottom, level with the photo's edge. */
+  .listing .card-price-row {
+    margin-top: auto;
+    padding-right: 44px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
   }
-  .listing .card-bought {
+  .listing .card-price-row .price {
+    font-size: 11.5px;
+  }
+  .listing .card-price-row .price__now {
+    font-size: 18px;
+  }
+  .listing .card-price-row:has(.card-save) .price__was {
     display: none;
   }
-  .listing .product-card .card-badge {
-    font-size: 11px;
-    padding: 2px 7px;
+  .listing .card-save {
+    font-size: 10.5px;
+    padding: 3px 7px;
+    white-space: nowrap;
   }
-  .listing .product-card .card-heart {
-    width: 30px;
-    height: 30px;
-    top: 14px;
-    left: calc(min(40%, 170px) - 30px);
+  .listing .card-delivery-short {
+    padding-right: 44px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
   }
-  .listing .product-card .price__now {
-    font-size: 17px;
+  .listing .card-delivery-short b {
+    color: var(--fg);
+    font-weight: 600;
   }
-  /* The button becomes a round icon beside the delivery line. */
+  .listing .card-delivery-short svg {
+    flex: none;
+  }
+  .listing .card-delivery-short > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .listing .card-away {
+    font-size: 12px;
+  }
+  /* One round button, bottom right. */
   .listing .product-card__actions {
     position: absolute;
-    right: 12px;
-    bottom: 12px;
+    right: 10px;
+    bottom: 10px;
     padding: 0;
-  }
-  .listing .card-delivery,
-  .listing .card-away {
-    padding-right: 44px;
   }
   .listing .card-add {
     width: 38px;
@@ -6345,9 +6311,6 @@ td.neg {
     min-height: 38px;
     padding: 0;
     border-radius: 50%;
-  }
-  .listing .card-add svg {
-    margin: 0;
   }
   .listing .card-add .card-add__label {
     position: absolute;
@@ -6360,7 +6323,23 @@ td.neg {
   .listing .card-add__icon {
     display: block;
   }
-  .listing .product-card__link {
-    padding-bottom: 12px;
+  .listing .product-card .card-heart {
+    width: 30px;
+    height: 30px;
+    top: 16px;
+    right: auto;
+    left: calc(10px + var(--row-photo) - 36px);
+  }
+}
+@media (max-width: 380px) {
+  .listing .card-save__long {
+    display: none;
+  }
+  .listing .card-save__short,
+  .listing .dd-short {
+    display: inline;
+  }
+  .listing .dd-long {
+    display: none;
   }
 }

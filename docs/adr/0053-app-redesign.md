@@ -31,6 +31,14 @@ button always in reach.
   attributes (`cardChips`, worded per language in the `cardChips` messages); a sale needs no badge
   there since the green pill says it, and the heart sits on the photo's lower corner, clear of
   longer badges.
+- **Even rows for search on phones** (chosen from three options). Every result row has the same
+  anatomy and is exactly the photo's height: a square photo (about a third of the width) with
+  the save heart; a small colored label for a deal, pre-order, top rated or sponsored item; a
+  two-line title; the rating, or two spec chips when there's no rating; then, at the bottom,
+  the price with its saving, one short delivery line ("Free · Tue, Oct 20") and one round
+  button: a cart, or an options icon when there's a choice to make. Narrow phones (under
+  about 360pt) shorten the saving to "−25%" and drop the weekday. Offers, coupons, deal timers
+  and colors stay on the product page. Tablets and the desktop website keep the grid.
 - **Savings in words.** A green "Save 25%" pill on cards and product pages on sale (not on
   deals, which have their own badge), and "You're saving $X" in the cart: list-price markdowns,
   member prices and every discount together.

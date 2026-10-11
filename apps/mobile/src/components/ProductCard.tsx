@@ -17,10 +17,11 @@ import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
 import { useCartMutation, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { useLocale, useT } from '@/lib/i18n';
+import { useLayout } from '@/lib/layout';
 import { useSession } from '@/lib/session';
 import { brand, cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
-import { BoughtLine, DeliveryLine } from './CardExtras';
+import { BoughtLine, DeliveryLine, ShortDelivery } from './CardExtras';
 import { AwayLine } from './Vacation';
 import { OfferTag } from '@/components/MultiBuy';
 import { CouponTag } from './ClipCoupon';
@@ -238,8 +239,10 @@ function badgeColor(badge: NonNullable<Badge>, product: Card): string {
 }
 
 /**
- * The row card (search results on phones, ADR-0053): photo with its badge and heart on the
- * left; title, rating, spec chips, price with the saving, delivery and the button on the right.
+ * The row card (search results on phones, ADR-0053 "even rows"): a square photo with the save
+ * heart; beside it, always the photo's height, the label, title and rating (or spec chips) at
+ * the top, and the price, a one-line delivery date and one round button at the bottom. Every
+ * card has the same anatomy; offers, coupons and colors are on the product page.
  */
 function RowCard({
   product,
@@ -260,20 +263,10 @@ function RowCard({
   const tch = useT('cardChips');
   const locale = useLocale();
   const dark = useColorScheme() === 'dark';
-  const { percent } = useFormatters();
-  const [wide, setWide] = useState(false);
-  // Fit to the photo (ADR-0053): when the details run taller than the square photo, step down
-  // to tighter type, one row of chips and a round icon button, until they fit (or 2 steps).
-  const [fit, setFit] = useState<0 | 1 | 2>(0);
-  const [photoH, setPhotoH] = useState(0);
-  const [detailsH, setDetailsH] = useState(0);
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    if (!photoH || !detailsH) return;
-    if (detailsH > photoH + 1 && fit < 2) setFit((f) => (f + 1) as 1 | 2);
-    else setSettled(true);
-  }, [photoH, detailsH, fit]);
-  const iconButton = fit > 0;
+  const { percent, money } = useFormatters();
+  const { width } = useLayout();
+  // About a third of the screen, never tiny or huge.
+  const size = Math.round(Math.min(132, Math.max(104, width * 0.3)));
   const href = `/p/${product.slug}` as const;
   const label = adToken
     ? ta('sponsoredItem', { title: product.title })
@@ -283,6 +276,13 @@ function RowCard({
   const recordClick = adToken
     ? () => void visitorId().then((id) => api.ads.click(adToken, id).catch(() => undefined))
     : undefined;
+  // The label above the title: sponsored, a deal, pre-order or top rated.
+  const eyebrow = adToken
+    ? { text: ta('sponsored'), color: p.muted }
+    : badge
+      ? { text: badge.text, color: dark ? brand.signal : badgeColor(badge, product) }
+      : null;
+  const rating = product.rating;
   return (
     <View
       style={[
@@ -291,7 +291,7 @@ function RowCard({
         { backgroundColor: p.card, borderColor: dark ? p.line : 'transparent' },
       ]}
     >
-      <View style={styles.rowMedia} onLayout={(e) => setPhotoH(e.nativeEvent.layout.width)}>
+      <View style={{ width: size, height: size }}>
         <PressableLink
           href={href}
           accessibilityRole="link"
@@ -317,60 +317,33 @@ function RowCard({
             </Text>
           )}
         </PressableLink>
-        {badge ? (
-          <View
-            style={[styles.badge, styles.rowBadge, { backgroundColor: badgeColor(badge, product) }]}
-            pointerEvents="none"
-          >
-            <Text variant="small" numberOfLines={1} style={styles.badgeText}>
-              {badge.text}
-            </Text>
-          </View>
-        ) : null}
-        <CardHeart
-          productId={product.id}
-          title={product.title}
-          // With a badge on the photo, the heart takes the lower corner so neither is cut.
-          style={[styles.rowHeart, badge && photoH ? { top: photoH - 38 } : null]}
-        />
+        <CardHeart productId={product.id} title={product.title} style={styles.rowHeart} />
       </View>
 
-      <View
-        style={[styles.rowBody, { opacity: settled ? 1 : 0 }]}
-        onLayout={(e) => setWide(e.nativeEvent.layout.width >= 300)}
-      >
-        <View
-          style={{ gap: FIT_GAP[fit] }}
-          onLayout={(e) => setDetailsH(e.nativeEvent.layout.height)}
+      <View style={[styles.rowBody, { minHeight: size }]}>
+        <PressableLink
+          href={href}
+          accessibilityRole="link"
+          accessibilityLabel={label}
+          onPress={recordClick}
+          style={{ gap: 3 }}
         >
-          <PressableLink
-            href={href}
-            accessibilityRole="link"
-            accessibilityLabel={label}
-            onPress={recordClick}
-            style={{ gap: 4 }}
-          >
-            {adToken ? (
-              <View style={[styles.sponsored, { borderColor: p.line }]}>
-                <Text variant="small" muted style={{ fontSize: 11, fontFamily: fonts.bodyBold }}>
-                  {ta('sponsored')}
-                </Text>
-              </View>
-            ) : null}
-            <Text numberOfLines={2} style={[styles.rowTitle, FIT_TITLE[fit]]}>
-              {product.title}
+          {eyebrow ? (
+            <Text numberOfLines={1} style={[styles.eyebrow, { color: eyebrow.color }]}>
+              {eyebrow.text}
             </Text>
-          </PressableLink>
-          {product.rating?.average != null && product.rating.count ? (
-            <Stars average={product.rating.average} count={product.rating.count} compact />
           ) : null}
-          {product.chips?.length ? (
-            // One row of chips once space is tight; the rest are on the product page.
-            <View style={[styles.chips, fit > 0 && styles.chipsOneRow]}>
-              {product.chips.slice(0, fit === 2 ? 2 : 3).map((chip) => (
+          <Text numberOfLines={2} style={styles.rowTitle}>
+            {product.title}
+          </Text>
+          {rating?.average != null && rating.count ? (
+            <Stars average={rating.average} count={rating.count} compact />
+          ) : product.chips?.length ? (
+            <View style={styles.chipsOneRow}>
+              {product.chips.slice(0, 2).map((chip, i) => (
                 <View
                   key={chip.key}
-                  style={[styles.chip, fit > 0 && styles.chipShrink, { backgroundColor: p.bg }]}
+                  style={[styles.chip, i === 1 && styles.chipShrink, { backgroundColor: p.bg }]}
                 >
                   <Text
                     variant="small"
@@ -383,72 +356,65 @@ function RowCard({
               ))}
             </View>
           ) : null}
-          {product.colors && !adToken && fit < 2 ? (
-            <Swatches slug={product.slug} colors={product.colors} />
-          ) : null}
-          <View style={styles.priceRow}>
-            <Price
-              cents={product.priceFromCents}
-              compareAtCents={product.compareAtCents}
-              currency={product.currency}
-              size={fit === 2 ? 'md' : 'row'}
-              prefix={product.defaultVariantId ? undefined : tp('from')}
-            />
-            {onSale ? (
-              <View style={[styles.save, { backgroundColor: p.okBg }]}>
-                <Text
-                  variant="small"
-                  style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 11 }}
-                >
-                  {tu('savePercent', {
-                    percent: percent(
-                      1 - product.priceFromCents / (product.compareAtCents as number),
-                    ),
-                  })}
+        </PressableLink>
+
+        <View style={styles.rowFoot}>
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <View style={styles.priceRow}>
+              {product.defaultVariantId ? null : (
+                <Text variant="small" muted style={{ fontSize: 11.5 }}>
+                  {tp('from')}
                 </Text>
-              </View>
-            ) : null}
-          </View>
-          {product.deal?.plusOnly ? (
-            <PlusPriceText
-              priceCents={product.priceFromCents}
-              percentOff={product.deal.percentOff}
-            />
-          ) : null}
-          {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
-          {product.multiBuy ? <OfferTag offer={product.multiBuy} /> : null}
-          {product.deal ? <DealTimer deal={product.deal} /> : null}
-          <View style={[styles.rowFoot, (wide || iconButton) && styles.rowFootWide]}>
-            {product.inStock ? (
-              <View style={styles.delivery}>
-                {product.storeAway ? (
-                  <AwayLine until={product.storeAway.until} />
-                ) : (
-                  <DeliveryLine product={product} compact />
-                )}
-              </View>
+              )}
+              <Text
+                style={[styles.rowPrice, onSale && { color: p.signalText }]}
+                accessibilityLabel={
+                  onSale
+                    ? `${money(product.priceFromCents, product.currency)}, ${tu('savePercent', {
+                        percent: percent(
+                          1 - product.priceFromCents / (product.compareAtCents as number),
+                        ),
+                      })}`
+                    : undefined
+                }
+              >
+                {money(product.priceFromCents, product.currency)}
+              </Text>
+              {onSale ? (
+                <View style={[styles.save, { backgroundColor: p.okBg }]}>
+                  <Text
+                    variant="small"
+                    numberOfLines={1}
+                    style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 10.5 }}
+                  >
+                    {/* Narrow phones: "−30%"; the struck price is on the product page. */}
+                    {width < 360
+                      ? `−${percent(1 - product.priceFromCents / (product.compareAtCents as number))}`
+                      : tu('savePercent', {
+                          percent: percent(
+                            1 - product.priceFromCents / (product.compareAtCents as number),
+                          ),
+                        })}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            {product.storeAway ? (
+              <AwayLine until={product.storeAway.until} />
+            ) : product.inStock ? (
+              <ShortDelivery product={product} narrow={width < 360} />
             ) : (
-              <Text variant="small" tone="error" style={{ flex: 1 }}>
+              <Text variant="small" tone="error" style={{ fontSize: 12 }}>
                 {tp('soldOut')}
               </Text>
             )}
-            <View style={wide || iconButton ? null : { alignSelf: 'flex-end' }}>
-              {product.storeAway ? null : <CardAdd product={product} compact icon={iconButton} />}
-            </View>
           </View>
+          {product.storeAway ? null : <CardAdd product={product} compact icon />}
         </View>
       </View>
     </View>
   );
 }
-
-/** Row card sizes at each fit step (0 roomy … 2 tightest). */
-const FIT_GAP = [4, 3, 2] as const;
-const FIT_TITLE = [
-  {},
-  { fontSize: 13, lineHeight: 17 },
-  { fontSize: 12.5, lineHeight: 16 },
-] as const;
 
 function CardHeart({
   productId,
@@ -622,6 +588,7 @@ const styles = StyleSheet.create({
   },
   compact: { minHeight: 36, paddingHorizontal: 10 },
   iconButton: { width: 38, height: 38, minHeight: 38, paddingHorizontal: 0, borderRadius: 19 },
+  // Even rows (ADR-0053): the details are exactly the photo's height.
   row: {
     flexDirection: 'row',
     gap: space.md,
@@ -629,31 +596,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius + 6,
   },
-  // The photo is ~40% of the row; the details fit beside it (ADR-0053).
-  rowMedia: { width: '40%', maxWidth: 170 },
-  // Square, like the product photos, so nothing is cropped; centered beside the details.
   rowImage: {
-    width: '100%',
-    aspectRatio: 1,
+    flex: 1,
     borderRadius: 14,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowBadge: { top: 8, left: 8, maxWidth: '90%' },
-  // On the photo's lower corner, clear of any badge.
-  rowHeart: { top: 6, right: 6, width: 32, height: 32, borderRadius: 16 },
-  rowBody: { flex: 1, minWidth: 0, gap: 4, paddingTop: 2 },
-  rowTitle: { fontFamily: fonts.bodyBold, fontSize: 13.5, lineHeight: 18, paddingRight: 2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chipsOneRow: { flexWrap: 'nowrap', overflow: 'hidden' },
-  // A chip that doesn't fit ends in "…" instead of being cut.
+  rowHeart: { top: 6, right: 6, width: 30, height: 30, borderRadius: 15 },
+  rowBody: { flex: 1, minWidth: 0, justifyContent: 'space-between', gap: 6 },
+  rowTitle: { fontFamily: fonts.bodyBold, fontSize: 13.5, lineHeight: 18 },
+  rowPrice: { fontFamily: fonts.display, fontSize: 18, lineHeight: 22 },
+  eyebrow: { fontFamily: fonts.bodyBold, fontSize: 10.5, lineHeight: 13, letterSpacing: 0.2 },
+  chipsOneRow: { flexDirection: 'row', gap: 5, overflow: 'hidden', marginTop: 1 },
+  // The second chip gives way with "…" rather than being cut.
   chipShrink: { flexShrink: 1, minWidth: 0 },
-  chip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, maxWidth: '100%' },
-  priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  rowFoot: { gap: space.sm, marginTop: 2 },
-  rowFootWide: { flexDirection: 'row', alignItems: 'center' },
-  delivery: { flex: 1 },
+  chip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowFoot: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
   button: {
     minHeight: 40,
     borderWidth: 1,
