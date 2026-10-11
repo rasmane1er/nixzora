@@ -1,3 +1,4 @@
+import { SpendOffersService } from '../spend-offers/spend-offers.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -57,6 +58,7 @@ export class CatalogQueryService {
     private readonly search: SearchIndexService,
     private readonly config: ConfigService<Env, true>,
     private readonly spelling: Spelling,
+    private readonly spendOffers: SpendOffersService,
   ) {}
 
   /** Public catalog reads tolerate a second of staleness: the read replica when there is one. */
@@ -795,6 +797,10 @@ export class CatalogQueryService {
       reviewNote: activeVariantsOnly ? null : product.reviewNote,
       images: product.images.map((image) => toImage(image, this.url)),
       videos: videos.map(toVideo),
+      // Spend more, save more (p10-31): on shopper views, the store's live tiers.
+      ...(activeVariantsOnly
+        ? { spendOffer: await this.spendOffers.briefFor(product.sellerId ?? null) }
+        : {}),
       variants: view.variants.map(toVariant),
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),

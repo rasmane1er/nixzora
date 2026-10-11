@@ -292,6 +292,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       coupon: null,
       bundles: [],
       multiBuys: [],
+      spendOffers: [],
       clippedCoupons: [],
       totals: this.pricing.totals(subtotal, region, 0, 'USD', plus),
     };
@@ -495,7 +496,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     // Buy X, get Y (p10-27): the same, and what each offer saved.
     const multiFunded: Record<string, number> = {};
     const multiUses: Record<string, number> = {};
-    if (totals.bundleDiscountCents || totals.multiBuyDiscountCents) {
+    // Spend more, save more (p10-31): the same.
+    const spendFunded: Record<string, number> = {};
+    const spendUses: Record<string, number> = {};
+    if (totals.bundleDiscountCents || totals.multiBuyDiscountCents || totals.spendDiscountCents) {
       const savings = await this.carts.savings(lines);
       for (const saving of savings.bundles) {
         const key = saving.sellerId ?? 'nixzora';
@@ -505,6 +509,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const key = saving.sellerId ?? 'nixzora';
         multiFunded[key] = (multiFunded[key] ?? 0) + saving.discountCents;
         multiUses[saving.id] = saving.discountCents;
+      }
+      for (const saving of savings.spends.filter((s) => s.discountCents)) {
+        const key = saving.sellerId ?? 'nixzora';
+        spendFunded[key] = (spendFunded[key] ?? 0) + saving.discountCents;
+        spendUses[saving.id] = saving.discountCents;
       }
     }
     // Clipped coupons (p10-18): which clips this order uses, and who funds them.
@@ -571,6 +580,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                     multiBuyDiscountCents: totals.multiBuyDiscountCents,
                     multiBuyDiscounts: multiFunded as Prisma.InputJsonObject,
                     multiBuyUses: multiUses as Prisma.InputJsonObject,
+                  }
+                : {}),
+              ...(totals.spendDiscountCents
+                ? {
+                    spendDiscountCents: totals.spendDiscountCents,
+                    spendDiscounts: spendFunded as Prisma.InputJsonObject,
+                    spendUses: spendUses as Prisma.InputJsonObject,
                   }
                 : {}),
               // NIXZORA Plus (p10-15): what membership changed on this order.

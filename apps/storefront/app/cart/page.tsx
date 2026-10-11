@@ -37,6 +37,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const to = await getT('order');
   const bd = await getT('bundles');
   const mb = await getT('multiBuy');
+  const sp = await getT('spendSave');
   const po = await getT('preorders');
   const cl = await getT('clips');
   const tCommon = await getT('common');
@@ -122,6 +123,26 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               {po('cartMixed', { date: calendarDay(mixedRelease, locale) })}
             </p>
           ) : null}
+          {/* Spend more, save more (p10-31): what each store's tiers saved, or how far the next is. */}
+          {cart.spendOffers?.map((s) => {
+            const store = s.seller?.displayName ?? sp('nixzora');
+            return (
+              <p key={s.id} className="banner banner--info cart-spend">
+                <span className="card-offer">{sp('title')}</span>{' '}
+                {s.discountCents ? sp('reached', { off: f.money(s.discountCents), store }) : null}{' '}
+                {s.next
+                  ? sp('more', {
+                      amount: f.money(s.next.moreCents),
+                      store,
+                      off: f.money(s.next.offCents),
+                    })
+                  : null}{' '}
+                {s.seller && s.next ? (
+                  <Link href={`/s/${s.seller.handle}`}>{sp('shopStore', { store })} →</Link>
+                ) : null}
+              </p>
+            );
+          })}
           {/* Buy X, get Y (p10-27): a few more items would get the reward. */}
           {cart.multiBuys
             ?.filter((m) => m.addMore)
@@ -245,6 +266,12 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
               <>
                 <dt>{mb('savings')}</dt>
                 <dd className="discount">−{f.money(t.multiBuyDiscountCents)}</dd>
+              </>
+            ) : null}
+            {t.spendDiscountCents ? (
+              <>
+                <dt>{sp('savings')}</dt>
+                <dd className="discount">−{f.money(t.spendDiscountCents)}</dd>
               </>
             ) : null}
             {t.clipDiscountCents ? (

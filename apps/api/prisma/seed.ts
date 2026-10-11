@@ -1370,6 +1370,34 @@ async function main(): Promise<void> {
     });
   }
 
+  // Spend more, save more (p10-31): on the demo store, when it has no live offer. (Not on
+  // NIXZORA's own range: tests buy NIXZORA items and expect list totals.)
+  const demoStore = await prisma.seller.findUnique({
+    where: { handle: 'brightline-audio' },
+    select: { id: true },
+  });
+  if (
+    demoStore &&
+    !(await prisma.spendOffer.count({
+      where: {
+        sellerId: demoStore.id,
+        status: 'ACTIVE',
+        OR: [{ endsAt: null }, { endsAt: { gt: new Date(now) } }],
+      },
+    }))
+  ) {
+    await prisma.spendOffer.create({
+      data: {
+        sellerId: demoStore.id,
+        tiers: [
+          { minCents: 7_500, offCents: 1_000 },
+          { minCents: 15_000, offCents: 2_500 },
+        ],
+        createdById: SEED_ACTOR,
+      },
+    });
+  }
+
   // Clip coupons (p10-18): two on NIXZORA's own products, renewed when a seed runs after they end.
   const DEMO_COUPONS = [
     {

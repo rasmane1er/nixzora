@@ -43,6 +43,17 @@ export function multiBuyTerms(
   return terms.percentOff >= 100 ? t('terms_free', vars) : t('terms_percent', vars);
 }
 
+/** Spend more, save more tiers (p10-31): "Spend $50, save $5 · Spend $100, save $15". */
+export function spendTiers(
+  t: Translate<'spendSave'>,
+  tiers: readonly { minCents: number; offCents: number }[],
+  money: (cents: number) => string,
+): string {
+  return tiers
+    .map((tier) => t('tier', { min: money(tier.minCents), off: money(tier.offCents) }))
+    .join(' · ');
+}
+
 /** "Add 1 more item from this offer and it's free" (p10-27). */
 export function multiBuyAddMore(
   t: Translate<'multiBuy'>,

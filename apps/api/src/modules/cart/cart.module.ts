@@ -1,3 +1,4 @@
+import { SpendOffersModule } from '../spend-offers/spend-offers.module';
 import { Module } from '@nestjs/common';
 import { MediaModule } from '../media/media.module';
 import { PlusCoreModule } from '../plus/plus-core.module';
@@ -9,7 +10,7 @@ import { SavedController } from './saved.controller';
 import { SavedService } from './saved.service';
 
 @Module({
-  imports: [MediaModule, PromotionsModule, PlusCoreModule],
+  imports: [MediaModule, PromotionsModule, PlusCoreModule, SpendOffersModule],
   controllers: [CartController, SavedController],
   providers: [CartService, PricingService, SavedService],
   exports: [CartService, PricingService],

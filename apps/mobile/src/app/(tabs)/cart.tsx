@@ -12,6 +12,7 @@ import { DeliveryPromise } from '@/components/Delivery';
 import { PlusShippingNote } from '@/components/PlusNote';
 import { SavedForLater, useSaved } from '@/components/SavedForLater';
 import { CartOffers } from '@/components/MultiBuy';
+import { CartSpend } from '@/components/SpendSave';
 import { InkBand } from '@/components/ShopHeader';
 import { Totals } from '@/components/Totals';
 import { Banner, Button, Card, EmptyState, Field, Row, Screen, Text } from '@/components/ui';
@@ -238,6 +239,12 @@ export default function CartScreen() {
           )}
         </Card>
 
+        {data.spendOffers?.length ? (
+          // Spend more, save more (p10-31): each store's tiers, reached or how far.
+          <Card>
+            <CartSpend offers={data.spendOffers} />
+          </Card>
+        ) : null}
         {data.multiBuys?.length ? (
           // Buy X, get Y (p10-27): what applied, and what a few more items would get.
           <Card>

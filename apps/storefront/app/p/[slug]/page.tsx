@@ -17,6 +17,7 @@ import {
   cardBrand,
   INTL_LOCALE,
   multiBuyTerms,
+  spendTiers,
   rich,
   specLabel as sharedSpecLabel,
 } from '@nixzora/i18n';
@@ -166,6 +167,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const pl = await getT('plus');
   const cl = await getT('clips');
   const mb = await getT('multiBuy');
+  const sp = await getT('spendSave');
   const po = await getT('preorders');
   const w = await getT('wallet');
   const ib = await getT('inbox');
@@ -336,6 +338,26 @@ export default async function ProductPage({ params, searchParams }: Props) {
                 ) : null}
                 <Link href={`/offers/${product.multiBuy.id}`}>{mb('shopOffer')} →</Link>
               </p>
+            ) : null}
+            {product.spendOffer ? (
+              // Spend more, save more (p10-31): the store's tiers, on everything it sells.
+              <div className="pdp-spend">
+                <span className="card-offer">{sp('title')}</span>
+                <strong>{spendTiers(sp, product.spendOffer.tiers, (c) => f.money(c))}</strong>
+                <span className="muted">
+                  {product.seller
+                    ? sp('onStore', { store: product.seller.displayName })
+                    : sp('onNixzora')}
+                  {product.spendOffer.endsAt
+                    ? ` ${sp('endsOn', { date: f.date(product.spendOffer.endsAt) })}`
+                    : ''}
+                </span>
+                {product.seller ? (
+                  <Link href={`/s/${product.seller.handle}`}>
+                    {sp('shopStore', { store: product.seller.displayName })} →
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
             <DeliveryPromise
               window={shownDelivery(product, member && !product.seller)}

@@ -1,3 +1,4 @@
+import { SpendOffersModule } from '../spend-offers/spend-offers.module';
 import { Module } from '@nestjs/common';
 import { MediaModule } from '../media/media.module';
 import { SearchModule } from '../search/search.module';
@@ -9,7 +10,7 @@ import { SearchHelpService } from './search-help.service';
 import { Spelling } from './spelling';
 
 @Module({
-  imports: [MediaModule, SearchModule],
+  imports: [MediaModule, SearchModule, SpendOffersModule],
   controllers: [CatalogController, CatalogAdminController],
   providers: [CatalogQueryService, CatalogAdminService, SearchHelpService, Spelling],
   exports: [CatalogQueryService, CatalogAdminService],

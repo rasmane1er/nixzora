@@ -1,3 +1,4 @@
+import { SpendOffersService } from '../spend-offers/spend-offers.service';
 import { randomBytes } from 'node:crypto';
 import {
   BadRequestException,
@@ -16,6 +17,8 @@ import {
   OWN_HANDLING_DAYS,
   type MultiBuySaving,
   multiBuySavings,
+  type SpendSaving,
+  spendSavings,
   twoDayFrom,
 } from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -72,6 +75,7 @@ export class CartService {
     private readonly storage: StorageService,
     private readonly coupons: CouponsService,
     private readonly plus: PlusBenefits,
+    private readonly spendOffers: SpendOffersService,
   ) {}
 
   static newGuestId(): string {
@@ -179,15 +183,16 @@ export class CartService {
 
   /**
    * Bundles first (p10-16), then Buy X, get Y offers (p10-27) on the units bundles didn't use,
-   * so one unit is never discounted twice.
+   * so one unit is never discounted twice; then each store's Spend more, save more tiers
+   * (p10-31) on what's left of what the shopper spends with it.
    */
   async savings(
     lines: CartLine[],
     now = new Date(),
-  ): Promise<{ bundles: BundleSaving[]; multiBuys: MultiBuySaving[] }> {
-    if (!lines.length) return { bundles: [], multiBuys: [] };
+  ): Promise<{ bundles: BundleSaving[]; multiBuys: MultiBuySaving[]; spends: SpendSaving[] }> {
+    if (!lines.length) return { bundles: [], multiBuys: [], spends: [] };
     const productIds = [...new Set(lines.map((line) => line.productId))];
-    const [rows, offers] = await Promise.all([
+    const [rows, offers, owners] = await Promise.all([
       lines.length < 2 && lines[0]!.quantity < 2
         ? []
         : this.prisma.bundle.findMany({
@@ -201,6 +206,10 @@ export class CartService {
           products: { some: { productId: { in: productIds } } },
         },
         include: { products: { select: { productId: true } } },
+      }),
+      this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, sellerId: true },
       }),
     ]);
     const present = new Set(productIds);
@@ -229,7 +238,21 @@ export class CartService {
         productIds: offer.products.map((p) => p.productId),
       })),
     );
-    return { bundles, multiBuys };
+    // What the shopper spends with each store ('' = NIXZORA), after bundles and offers.
+    const sellerOf = new Map(owners.map((o) => [o.id, o.sellerId ?? '']));
+    const spent = new Map<string, number>();
+    const add = (key: string, cents: number) => spent.set(key, (spent.get(key) ?? 0) + cents);
+    for (const line of lines) add(sellerOf.get(line.productId) ?? '', line.lineTotalCents);
+    for (const saving of [...bundles, ...multiBuys])
+      add(saving.sellerId ?? '', -saving.discountCents);
+    const spends = spendSavings(
+      spent,
+      await this.spendOffers.rules(
+        [...spent.keys()].map((key) => key || null),
+        now,
+      ),
+    );
+    return { bundles, multiBuys, spends };
   }
 
   /**
@@ -415,7 +438,13 @@ export class CartService {
       .reduce((sum, line) => sum + line.lineTotalCents, 0);
     // Bundle & save (p10-16): complete sets of a bundle take its percentage off.
     // Buy X, get Y (p10-27): on the units bundles didn't use.
-    const { bundles, multiBuys } = await this.savings(lines.filter((line) => !line.problem));
+    // Spend more, save more (p10-31): each store's tiers on what's left.
+    const { bundles, multiBuys, spends } = await this.savings(
+      lines.filter((line) => !line.problem),
+    );
+    const stores = spends.length
+      ? await this.spendOffers.stores(spends.map((s) => s.sellerId))
+      : null;
     // Clipped coupons (p10-18): the shopper's, on products in the cart.
     const clipped = memberId
       ? await this.clipped(
@@ -461,7 +490,16 @@ export class CartService {
         bundles.reduce((sum, b) => sum + b.discountCents, 0),
         clipped.reduce((sum, c) => sum + c.discountCents, 0),
         multiBuys.reduce((sum, m) => sum + m.discountCents, 0),
+        spends.reduce((sum, s) => sum + s.discountCents, 0),
       ),
+      ...(spends.length
+        ? {
+            spendOffers: spends.map(({ sellerId, ...offer }) => ({
+              ...offer,
+              seller: sellerId ? (stores?.get(sellerId) ?? null) : null,
+            })),
+          }
+        : {}),
       ...(clipped.length
         ? {
             clippedCoupons: clipped.map((c) => ({

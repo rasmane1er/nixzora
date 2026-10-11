@@ -28,13 +28,16 @@ export class PricingService {
     clipCents = 0,
     /** Buy X, get Y (p10-27): with bundles, before clipped coupons and a code. */
     multiBuyCents = 0,
+    /** Spend more, save more (p10-31): after bundles and offers, before clipped coupons. */
+    spendCents = 0,
   ): Totals {
     const flat = this.config.get('SHIPPING_FLAT_CENTS', { infer: true });
     const threshold = this.config.get('FREE_SHIPPING_THRESHOLD_CENTS', { infer: true });
     const bundle = Math.min(Math.max(0, bundleCents), subtotalCents);
     const multiBuy = Math.min(Math.max(0, multiBuyCents), subtotalCents - bundle);
-    const clip = Math.min(Math.max(0, clipCents), subtotalCents - bundle - multiBuy);
-    const before = bundle + multiBuy + clip;
+    const spend = Math.min(Math.max(0, spendCents), subtotalCents - bundle - multiBuy);
+    const clip = Math.min(Math.max(0, clipCents), subtotalCents - bundle - multiBuy - spend);
+    const before = bundle + multiBuy + spend + clip;
     const discount = before + Math.min(Math.max(0, discountCents), subtotalCents - before);
     const goods = subtotalCents - discount;
     const standardCents = subtotalCents === 0 || goods >= threshold ? 0 : flat;
@@ -56,6 +59,7 @@ export class PricingService {
           : Math.max(0, threshold - goods),
       ...(bundle ? { bundleDiscountCents: bundle } : {}),
       ...(multiBuy ? { multiBuyDiscountCents: multiBuy } : {}),
+      ...(spend ? { spendDiscountCents: spend } : {}),
       ...(clip ? { clipDiscountCents: clip } : {}),
       ...(plus.member
         ? {

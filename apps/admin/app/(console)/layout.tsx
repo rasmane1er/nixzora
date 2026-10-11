@@ -29,6 +29,7 @@ const NAV: { href: string; label: MessageKey<'ops'>; permission: string }[] = [
   { href: '/deals', label: 'nav_deals', permission: 'promotions.manage' },
   { href: '/bundles', label: 'nav_bundles', permission: 'promotions.manage' },
   { href: '/multi-buys', label: 'nav_multiBuys', permission: 'promotions.manage' },
+  { href: '/spend-offers', label: 'nav_spendOffers', permission: 'promotions.manage' },
   { href: '/clip-coupons', label: 'nav_clipCoupons', permission: 'promotions.manage' },
   { href: '/gift-cards', label: 'nav_gift_cards', permission: 'orders.read.all' },
   { href: '/ads', label: 'nav_ads', permission: 'promotions.manage' },

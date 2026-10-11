@@ -156,6 +156,7 @@ export default function OrderScreen() {
     ...(o.bundleDiscountCents ? { bundleDiscountCents: o.bundleDiscountCents } : {}),
     ...(o.clipDiscountCents ? { clipDiscountCents: o.clipDiscountCents } : {}),
     ...(o.multiBuyDiscountCents ? { multiBuyDiscountCents: o.multiBuyDiscountCents } : {}),
+    ...(o.spendDiscountCents ? { spendDiscountCents: o.spendDiscountCents } : {}),
     ...(o.gift?.wrapCents ? { giftWrapCents: o.gift.wrapCents } : {}),
   };
 

@@ -195,6 +195,7 @@ export function toOrderView(order: OrderRow): OrderView {
     plusSavingsCents: order.plusSavingsCents ?? 0,
     bundleDiscountCents: order.bundleDiscountCents ?? 0,
     multiBuyDiscountCents: order.multiBuyDiscountCents ?? 0,
+    spendDiscountCents: order.spendDiscountCents ?? 0,
     clipDiscountCents: order.clipDiscountCents ?? 0,
     gift: order.isGift
       ? {

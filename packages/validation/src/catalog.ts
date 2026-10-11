@@ -1,3 +1,4 @@
+import { SpendOfferBriefSchema } from './spend-offers';
 import { z } from 'zod';
 import { CardMultiBuySchema } from './multi-buys';
 import { ProductVideoSchema } from './videos';
@@ -362,6 +363,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
   images: z.array(ImageSchema),
   /** Product videos (p10-28): YouTube or Vimeo, in the order the store added them. */
   videos: z.array(ProductVideoSchema).optional(),
+  /** Spend more, save more (p10-31): the live offer of the store that sells it. */
+  spendOffer: SpendOfferBriefSchema.nullable().optional(),
   variants: z.array(VariantSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

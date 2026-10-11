@@ -26,6 +26,7 @@ import { ReferralsModule } from './modules/referrals/referrals.module';
 import { FollowsModule } from './modules/follows/follows.module';
 import { SizeGuideModule } from './modules/size-guide/size-guide.module';
 import { MultiBuysModule } from './modules/multi-buys/multi-buys.module';
+import { SpendOffersModule } from './modules/spend-offers/spend-offers.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -113,6 +114,7 @@ import { RedisModule } from './redis/redis.module';
     FollowsModule,
     SizeGuideModule,
     MultiBuysModule,
+    SpendOffersModule,
     InsightsModule,
     SellersModule,
     NotificationsModule,

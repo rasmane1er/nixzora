@@ -1,4 +1,5 @@
 import { errorMessage } from '@nixzora/api-client';
+import { spendTiers } from '@nixzora/i18n';
 import type { DealKind } from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -11,14 +12,15 @@ import { Banner, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
 import { useT } from '@/lib/i18n';
-import { space } from '@/lib/theme';
+import { fonts, space } from '@/lib/theme';
 
 /** Today's deals (p10-07): live deals ending soonest first, then what starts next. */
 export default function DealsScreen() {
   const t = useT('deals');
   const tpl = useT('plus');
   const mb = useT('multiBuy');
-  const { percent, dateTime } = useFormatters();
+  const sp = useT('spendSave');
+  const { percent, dateTime, money, shortDate } = useFormatters();
   const [kind, setKind] = useState<DealKind | 'ALL'>('ALL');
   const deals = useQuery({
     queryKey: ['deals', kind],
@@ -26,6 +28,12 @@ export default function DealsScreen() {
     staleTime: 30_000,
   });
   const upcoming = deals.data?.upcoming ?? [];
+  // Spend more, save more (p10-31): stores taking money off bigger orders.
+  const spends = useQuery({
+    queryKey: ['spend-offers'],
+    queryFn: () => api.catalog.spendOffers(),
+    staleTime: 60_000,
+  });
   // Buy X, get Y (p10-27): live offers to mix and match.
   const offers = useQuery({
     queryKey: ['multi-buys'],
@@ -65,6 +73,32 @@ export default function DealsScreen() {
                   <Text variant="small" muted style={{ flexShrink: 1 }}>
                     {o.seller ? mb('from', { store: o.seller.displayName }) : mb('fromNixzora')} ·{' '}
                     {mb('productCount', { count: o.products.length })} ›
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          {kind === 'ALL' && spends.data?.length ? (
+            <View style={{ gap: space.sm }}>
+              <Text variant="heading">{sp('title')}</Text>
+              <Text variant="small" muted>
+                {sp('dealsLead')}
+              </Text>
+              {spends.data.map((o) => (
+                <Pressable
+                  key={o.id}
+                  accessibilityRole="link"
+                  disabled={!o.seller}
+                  onPress={() => o.seller && router.push(`/s/${o.seller.handle}`)}
+                  style={{ gap: 2 }}
+                >
+                  <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
+                    {spendTiers(sp, o.tiers, money)}
+                  </Text>
+                  <Text variant="small" muted>
+                    {o.seller ? sp('onStore', { store: o.seller.displayName }) : sp('onNixzora')}
+                    {o.endsAt ? ` · ${sp('endsOn', { date: shortDate(o.endsAt) })}` : ''}
+                    {o.seller ? ' ›' : ''}
                   </Text>
                 </Pressable>
               ))}

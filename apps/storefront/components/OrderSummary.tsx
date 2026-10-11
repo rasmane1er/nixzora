@@ -33,6 +33,7 @@ export async function OrderTotals({
     | 'kind'
     | 'bundleDiscountCents'
     | 'multiBuyDiscountCents'
+    | 'spendDiscountCents'
     | 'clipDiscountCents'
     | 'gift'
   >;
@@ -42,6 +43,7 @@ export async function OrderTotals({
   const pl = await getT('plus');
   const bd = await getT('bundles');
   const mb = await getT('multiBuy');
+  const sp = await getT('spendSave');
   const cl = await getT('clips');
   const g = await getT('gifts');
   const f = await getFormat();
@@ -60,6 +62,12 @@ export async function OrderTotals({
         <>
           <dt>{mb('savings')}</dt>
           <dd className="discount">−{m(order.multiBuyDiscountCents)}</dd>
+        </>
+      ) : null}
+      {order.spendDiscountCents ? (
+        <>
+          <dt>{sp('savings')}</dt>
+          <dd className="discount">−{m(order.spendDiscountCents)}</dd>
         </>
       ) : null}
       {order.clipDiscountCents ? (

@@ -6085,3 +6085,30 @@ td.neg {
     text-align: left;
   }
 }
+
+/* Spend more, save more (p10-31) */
+.pdp-spend {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-signal) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--color-signal) 30%, transparent);
+  font-size: 14px;
+}
+.pdp-spend .card-offer {
+  font-size: 12px;
+}
+.cart-spend .card-offer {
+  margin-right: 4px;
+}
+.spend-tier {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.spend-tier legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}

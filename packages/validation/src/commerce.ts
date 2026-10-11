@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { type GiftCardLine } from './gift-cards';
 import { type CartBundle } from './bundles';
 import type { CartMultiBuy } from './multi-buys';
+import type { CartSpendOffer } from './spend-offers';
 import { type CartCoupon } from './clip-coupons';
 import { type DeliveryWindow } from './delivery';
 import { EmailSchema } from './auth';
@@ -163,6 +164,8 @@ export type Totals = {
   bundleDiscountCents?: number;
   /** Buy X, get Y (p10-27): the part of discountCents that offers saved. */
   multiBuyDiscountCents?: number;
+  /** Spend more, save more (p10-31): the part of discountCents store spend tiers saved. */
+  spendDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
   /** Gift wrap (p10-22), included in totalCents. */
@@ -181,6 +184,8 @@ export type Cart = {
   bundles?: CartBundle[];
   /** Buy X, get Y offers in the cart (p10-27), including ones a few more items would unlock. */
   multiBuys?: CartMultiBuy[];
+  /** Spend more, save more (p10-31): each store's offer, reached or not yet. */
+  spendOffers?: CartSpendOffer[];
   /** Clipped coupons that apply (p10-18). */
   clippedCoupons?: CartCoupon[];
   /** When it should arrive if ordered now (the slowest store in the cart), p10-04. */
@@ -374,6 +379,8 @@ export type OrderView = {
   bundleDiscountCents?: number;
   /** Buy X, get Y (p10-27): the part of discountCents that offers saved. */
   multiBuyDiscountCents?: number;
+  /** Spend more, save more (p10-31): the part of discountCents store spend tiers saved. */
+  spendDiscountCents?: number;
   /** Clipped coupons (p10-18): the part of discountCents they saved. */
   clipDiscountCents?: number;
   /** Gift options (p10-22); null when it isn't a gift. */
@@ -439,6 +446,7 @@ export function codeDiscountCents(totals: {
   discountCents: number;
   bundleDiscountCents?: number;
   multiBuyDiscountCents?: number;
+  spendDiscountCents?: number;
   clipDiscountCents?: number;
 }): number {
   return Math.max(
@@ -446,6 +454,7 @@ export function codeDiscountCents(totals: {
     totals.discountCents -
       (totals.bundleDiscountCents ?? 0) -
       (totals.multiBuyDiscountCents ?? 0) -
+      (totals.spendDiscountCents ?? 0) -
       (totals.clipDiscountCents ?? 0),
   );
 }

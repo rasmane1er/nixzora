@@ -29,6 +29,7 @@ export * from './subscriptions';
 export * from './plus';
 export * from './bundles';
 export * from './multi-buys';
+export * from './spend-offers';
 export * from './videos';
 export * from './colors';
 export * from './preorders';

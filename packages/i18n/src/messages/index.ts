@@ -53,6 +53,7 @@ export { follows } from './follows';
 export { storeStats } from './storeStats';
 export { sizeGuide } from './sizeGuide';
 export { multiBuy } from './multiBuy';
+export { spendSave } from './spendSave';
 export { videos } from './videos';
 export { photoColors } from './photoColors';
 export { preorders } from './preorders';

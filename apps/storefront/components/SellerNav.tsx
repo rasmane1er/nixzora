@@ -14,6 +14,7 @@ const LINKS = [
   { href: '/sell/deals', label: 'navDeals' },
   { href: '/sell/bundles', label: 'navBundles' },
   { href: '/sell/multi-buys', label: 'navMultiBuys' },
+  { href: '/sell/spend-offers', label: 'navSpendOffers' },
   { href: '/sell/coupons', label: 'navCoupons' },
   { href: '/sell/size-charts', label: 'navSizeCharts' },
   { href: '/sell/ads', label: 'navAds' },

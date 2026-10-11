@@ -55,6 +55,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const to = await getT('order');
   const bd = await getT('bundles');
   const mb = await getT('multiBuy');
+  const sp = await getT('spendSave');
   const po = await getT('preorders');
   const locale = await getLocale();
   const cl = await getT('clips');
@@ -107,6 +108,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
               <>
                 <dt>{mb('savings')}</dt>
                 <dd className="discount">−{f.money(t.multiBuyDiscountCents)}</dd>
+              </>
+            ) : null}
+            {t.spendDiscountCents ? (
+              <>
+                <dt>{sp('savings')}</dt>
+                <dd className="discount">−{f.money(t.spendDiscountCents)}</dd>
               </>
             ) : null}
             {t.clipDiscountCents ? (

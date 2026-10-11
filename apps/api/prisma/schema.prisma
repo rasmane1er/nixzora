@@ -522,6 +522,11 @@ model Order {
   multiBuyDiscounts     Json?         @map("multi_buy_discounts")
   /// {offerId: cents} for each offer this order used.
   multiBuyUses          Json?         @map("multi_buy_uses")
+  /// Spend more, save more (p10-31): what store spend tiers saved, who funds each part, and
+  /// what each offer saved.
+  spendDiscountCents    Int           @default(0) @map("spend_discount_cents")
+  spendDiscounts        Json?         @map("spend_discounts")
+  spendUses             Json?         @map("spend_uses")
   /// Language the customer checked out in ("en", "fr", "es"): emails to guests use it.
   language              String        @default("en")
   /// Total refunded so far (partial refunds and returns).
@@ -2292,4 +2297,21 @@ model MultiBuyProduct {
   @@id([multiBuyId, productId])
   @@index([productId])
   @@map("multi_buy_products")
+}
+
+/// Spend more, save more (p10-31, ADR-0054): tiers on everything a store sells. One live offer
+/// per store (null seller = NIXZORA's own range); tiers is [{ minCents, offCents }], ascending.
+model SpendOffer {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  tiers       Json
+  status      MultiBuyStatus @default(ACTIVE)
+  sellerId    String?        @map("seller_id") @db.Uuid
+  endsAt      DateTime?      @map("ends_at")
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([sellerId])
+  @@map("spend_offers")
 }

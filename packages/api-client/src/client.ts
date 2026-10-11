@@ -17,6 +17,7 @@ import type {
   PriceHistory,
   BundleView,
   MultiBuyView,
+  SpendOfferView,
   CouponsPage,
   CompareView,
   MyPlus,
@@ -340,6 +341,8 @@ export function createApiClient(options: ClientOptions) {
       multiBuy: (id: string) => request<MultiBuyView>('GET', `/catalog/multi-buys/${enc(id)}`),
       /** Live offers, newest first (the Deals page). */
       multiBuys: () => request<MultiBuyView[]>('GET', '/catalog/multi-buys'),
+      /** Spend more, save more (p10-31): live store tiers. */
+      spendOffers: () => request<SpendOfferView[]>('GET', '/catalog/spend-offers'),
       /** Bundle & save (p10-16): the bundles a product is in. */
       bundles: (slug: string) =>
         request<BundleView[]>('GET', `/catalog/products/${enc(slug)}/bundles`),

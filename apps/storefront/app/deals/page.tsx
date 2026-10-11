@@ -1,5 +1,10 @@
-import { multiBuyTerms } from '@nixzora/i18n';
-import { type DealKind, type DealsPage, type MultiBuyView } from '@nixzora/validation';
+import { multiBuyTerms, spendTiers } from '@nixzora/i18n';
+import {
+  type DealKind,
+  type DealsPage,
+  type MultiBuyView,
+  type SpendOfferView,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
@@ -25,7 +30,7 @@ const KINDS: {
 export default async function DealsPageView({ searchParams }: { searchParams: SearchParams }) {
   const raw = param(await searchParams, 'kind');
   const kind = raw === 'LIGHTNING' || raw === 'DAY' ? raw : undefined;
-  const [t, pl, mb, f, page, offers] = await Promise.all([
+  const [t, pl, mb, f, page, offers, spends, sp] = await Promise.all([
     getT('deals'),
     getT('plus'),
     getT('multiBuy'),
@@ -39,6 +44,13 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
       : api<MultiBuyView[]>('/catalog/multi-buys', { auth: false, revalidate: 60 }).catch(
           (): MultiBuyView[] => [],
         ),
+    // Spend more, save more (p10-31): stores taking money off bigger orders.
+    kind
+      ? []
+      : api<SpendOfferView[]>('/catalog/spend-offers', { auth: false, revalidate: 60 }).catch(
+          (): SpendOfferView[] => [],
+        ),
+    getT('spendSave'),
   ]);
   const live = page?.live ?? [];
   const upcoming = page?.upcoming ?? [];
@@ -94,6 +106,30 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
                       {o.seller ? mb('from', { store: o.seller.displayName }) : mb('fromNixzora')} ·{' '}
                       {mb('productCount', { count: o.products.length })}
                       {o.endsAt ? ` · ${mb('endsOn', { date: f.date(o.endsAt) })}` : ''}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {spends.length ? (
+        <section className="section" aria-labelledby="deals-spend">
+          <h2 id="deals-spend">{sp('title')}</h2>
+          <p className="muted" style={{ margin: '4px 0 14px' }}>
+            {sp('dealsLead')}
+          </p>
+          <ul className="deal-upcoming">
+            {spends.map((o) => (
+              <li key={o.id}>
+                <Link href={o.seller ? `/s/${o.seller.handle}` : '/search'}>
+                  <span>
+                    <strong>{spendTiers(sp, o.tiers, (c) => f.money(c))}</strong>
+                    <span className="muted">
+                      {o.seller ? sp('onStore', { store: o.seller.displayName }) : sp('onNixzora')}
+                      {o.endsAt ? ` · ${sp('endsOn', { date: f.date(o.endsAt) })}` : ''}
                     </span>
                   </span>
                 </Link>

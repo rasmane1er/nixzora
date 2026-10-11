@@ -52,6 +52,7 @@ import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { OfferRow } from '@/components/MultiBuy';
+import { SpendRow } from '@/components/SpendSave';
 import { ProductVideos } from '@/components/ProductVideos';
 import { SizeGuide } from '@/components/SizeGuide';
 import { Stars } from '@/components/Stars';
@@ -637,7 +638,11 @@ export default function ProductScreen() {
                         <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
                           {attributeLabel(key)}:
                         </Text>{' '}
-                        {typeof value === 'boolean' ? (value ? '✓' : '—') : String(value)}
+                        {typeof value === 'boolean'
+                          ? value
+                            ? tc('yes')
+                            : tc('no')
+                          : String(value)}
                       </Text>
                     </Row>
                   ))}
@@ -858,6 +863,10 @@ export default function ProductScreen() {
               ) : null}
               {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
               {item.multiBuy ? <OfferRow offer={item.multiBuy} /> : null}
+              {item.spendOffer ? (
+                // Spend more, save more (p10-31): the store's tiers.
+                <SpendRow offer={item.spendOffer} store={item.seller} />
+              ) : null}
               {/* Delivery in its own card (ADR-0053). */}
               <View style={[styles.deliveryCard, { borderColor: p.line }]}>
                 <DeliveryPromise
