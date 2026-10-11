@@ -143,7 +143,7 @@ export function ProductCard({
             {product.title}
           </Text>
           {rating?.average != null && rating.count ? (
-            <Stars average={rating.average} count={rating.count} />
+            <Stars average={rating.average} count={rating.count} compact />
           ) : null}
           {product.colors && !adToken ? (
             <Swatches slug={product.slug} colors={product.colors} />
@@ -153,6 +153,7 @@ export function ProductCard({
             cents={product.priceFromCents}
             compareAtCents={product.compareAtCents}
             currency={product.currency}
+            size="sm"
             prefix={product.defaultVariantId ? undefined : tp('from')}
           />
           {onSale && !product.deal ? (
@@ -179,7 +180,7 @@ export function ProductCard({
           {product.storeAway ? (
             <AwayLine until={product.storeAway.until} />
           ) : (
-            <DeliveryLine product={product} />
+            <DeliveryLine product={product} compact />
           )}
           {!product.inStock ? (
             <Text variant="small" tone="error">
@@ -337,13 +338,17 @@ function RowCard({
           </Text>
         </PressableLink>
         {product.rating?.average != null && product.rating.count ? (
-          <Stars average={product.rating.average} count={product.rating.count} />
+          <Stars average={product.rating.average} count={product.rating.count} compact />
         ) : null}
         {product.chips?.length ? (
           <View style={styles.chips}>
             {product.chips.map((chip) => (
               <View key={chip.key} style={[styles.chip, { backgroundColor: p.bg }]}>
-                <Text variant="small" numberOfLines={1} style={{ fontSize: 12, color: p.muted }}>
+                <Text
+                  variant="small"
+                  numberOfLines={1}
+                  style={{ fontSize: 11, lineHeight: 15, color: p.muted }}
+                >
                   {chipText(tch, chip, INTL_LOCALE[locale])}
                 </Text>
               </View>
@@ -358,14 +363,14 @@ function RowCard({
             cents={product.priceFromCents}
             compareAtCents={product.compareAtCents}
             currency={product.currency}
-            size="lg"
+            size="row"
             prefix={product.defaultVariantId ? undefined : tp('from')}
           />
           {onSale ? (
             <View style={[styles.save, { backgroundColor: p.okBg }]}>
               <Text
                 variant="small"
-                style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 12 }}
+                style={{ color: p.okFg, fontFamily: fonts.bodyBold, fontSize: 11 }}
               >
                 {tu('savePercent', {
                   percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
@@ -386,7 +391,7 @@ function RowCard({
               {product.storeAway ? (
                 <AwayLine until={product.storeAway.until} />
               ) : (
-                <DeliveryLine product={product} />
+                <DeliveryLine product={product} compact />
               )}
             </View>
           ) : (
@@ -464,7 +469,10 @@ function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
           { borderColor: p.line, backgroundColor: pressed ? p.line : p.card },
         ]}
       >
-        <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
+        <Text
+          variant="small"
+          style={[{ fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
+        >
           {tp('chooseOptions')}
         </Text>
       </PressableLink>
@@ -490,10 +498,11 @@ function CardAdd({ product, compact }: { product: Card; compact?: boolean }) {
         <ActivityIndicator size="small" color="#fff" />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {compact && !added ? <Ionicons name="cart-outline" size={17} color="#fff" /> : null}
+          {compact && !added ? <Ionicons name="cart-outline" size={15} color="#fff" /> : null}
           <Text
             variant="small"
-            style={{ color: '#fff', fontFamily: fonts.bodyBold }}
+            numberOfLines={1}
+            style={[{ color: '#fff', fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
             accessibilityLiveRegion="polite"
           >
             {added ? `✓ ${tp('added')}` : tp('addToCart')}
@@ -517,7 +526,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gridTitle: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19, minHeight: 38 },
+  gridTitle: { fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, minHeight: 34 },
   image: { width: '100%', height: '100%' },
   save: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   body: { paddingHorizontal: space.md, paddingTop: 10, paddingBottom: space.sm, gap: 4 },
@@ -536,7 +545,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
   },
-  badgeText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 12 },
+  badgeText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 11 },
   heart: {
     position: 'absolute',
     top: 12,
@@ -547,7 +556,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  compact: { minHeight: 40, paddingHorizontal: 14 },
+  compact: { minHeight: 36, paddingHorizontal: 10 },
   row: {
     flexDirection: 'row',
     gap: space.md,
@@ -555,22 +564,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius + 6,
   },
-  rowMedia: { width: 128 },
+  // The photo is ~40% of the row; the details fit beside it (ADR-0053).
+  rowMedia: { width: '40%', maxWidth: 170 },
+  // Square, like the product photos, so nothing is cropped; centered beside the details.
   rowImage: {
-    width: 128,
-    aspectRatio: 0.92,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 14,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowBadge: { top: 8, left: 8, maxWidth: 112 },
+  rowBadge: { top: 8, left: 8, maxWidth: '62%' },
   // On the photo's lower corner, clear of any badge.
-  rowHeart: { top: 128 / 0.92 - 42, right: 6 },
-  rowBody: { flex: 1, minWidth: 0, gap: 6, paddingTop: 2 },
-  rowTitle: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, paddingRight: 2 },
+  rowHeart: { top: 6, right: 6 },
+  rowBody: { flex: 1, minWidth: 0, gap: 4, paddingTop: 2 },
+  rowTitle: { fontFamily: fonts.bodyBold, fontSize: 13.5, lineHeight: 18, paddingRight: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3, maxWidth: '100%' },
+  chip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, maxWidth: '100%' },
   priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   rowFoot: { gap: space.sm, marginTop: 2 },
   rowFootWide: { flexDirection: 'row', alignItems: 'center' },

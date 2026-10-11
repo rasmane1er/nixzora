@@ -27,7 +27,7 @@ export function BoughtLine({ product }: { product: ProductCard }) {
  * "FREE delivery Tomorrow, Oct 11" (p10-17), the same rule as the website: Plus members get
  * NIXZORA's own items in 2 days, free; everyone else the standard date, free over the line.
  */
-export function DeliveryLine({ product }: { product: ProductCard }) {
+export function DeliveryLine({ product, compact }: { product: ProductCard; compact?: boolean }) {
   const t = useT('product');
   const locale = useLocale();
   const member = usePlusMember();
@@ -54,14 +54,17 @@ export function DeliveryLine({ product }: { product: ProductCard }) {
       {/* The redesign (ADR-0053): a delivery truck leads the line. */}
       <MaterialCommunityIcons
         name="truck-outline"
-        size={16}
+        size={compact ? 15 : 16}
         color={p.muted}
-        style={{ marginTop: 1 }}
+        style={{ marginTop: compact ? 0 : 1 }}
       />
       {twoDay ? <PlusChip /> : null}
-      <Text variant="small" style={{ flex: 1 }}>
+      <Text variant="small" style={[{ flex: 1 }, compact && { fontSize: 12, lineHeight: 16 }]}>
         {before}
-        <Text variant="small" style={{ fontFamily: fonts.bodyBold }}>
+        <Text
+          variant="small"
+          style={[{ fontFamily: fonts.bodyBold }, compact && { fontSize: 12, lineHeight: 16 }]}
+        >
           {when}
         </Text>
         {after}

@@ -6233,3 +6233,55 @@ td.neg {
 .vacation-card .banner {
   margin: 0;
 }
+
+/* Phone result rows: smaller type so the details sit beside a square photo (ADR-0053). */
+@media (max-width: 560px) {
+  .listing .product-card .product-card__img {
+    width: 40%;
+    max-width: 170px;
+    height: auto;
+    aspect-ratio: 1;
+    align-self: flex-start;
+  }
+  /* Top-right of the photo, as in the app. */
+  .listing .product-card .card-heart {
+    top: 16px;
+    right: auto;
+    left: calc(min(40%, 170px) - 34px);
+  }
+  .listing .product-card__title {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .listing .product-card__body {
+    gap: 3px;
+    font-size: 13px;
+  }
+  .listing .card-chips > span {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .listing .product-card .price {
+    font-size: 12px;
+  }
+  .listing .product-card .price__now {
+    font-size: 19px;
+  }
+  .listing .product-card .price__was {
+    font-size: 12px;
+  }
+  .listing .card-delivery,
+  .listing .card-bought,
+  .listing .card-rating {
+    font-size: 12px;
+  }
+  .listing .card-add {
+    min-height: 34px;
+    font-size: 12.5px;
+    padding-inline: 14px;
+  }
+  .listing .product-card__actions,
+  .listing .card-swatches {
+    padding-left: calc(min(40%, 170px) + 22px);
+  }
+}

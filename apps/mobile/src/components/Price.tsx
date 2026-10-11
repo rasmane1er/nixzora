@@ -4,6 +4,8 @@ import { useT } from '@/lib/i18n';
 import { fonts } from '@/lib/theme';
 import { Text } from './ui';
 
+const PRICE_SIZE = { sm: 15, md: 16, row: 19, lg: 24 } as const;
+
 export function Price({
   cents,
   compareAtCents,
@@ -14,7 +16,8 @@ export function Price({
   cents: number;
   compareAtCents?: number | null;
   currency?: string;
-  size?: 'md' | 'lg';
+  /** sm 15 (grid cards), md 16, row 19 (result rows), lg 24. */
+  size?: 'sm' | 'md' | 'row' | 'lg';
   /** "From" when the product has options at different prices. */
   prefix?: string;
 }) {
@@ -30,7 +33,7 @@ export function Price({
       ) : null}
       <Text
         tone={onSale ? 'signal' : undefined}
-        style={{ fontFamily: fonts.displayMedium, fontSize: size === 'lg' ? 24 : 16 }}
+        style={{ fontFamily: fonts.displayMedium, fontSize: PRICE_SIZE[size] }}
         accessibilityLabel={
           onSale
             ? t('priceWas', {
@@ -43,7 +46,11 @@ export function Price({
         {money(cents, currency)}
       </Text>
       {onSale ? (
-        <Text variant="small" muted style={{ textDecorationLine: 'line-through' }}>
+        <Text
+          variant="small"
+          muted
+          style={{ textDecorationLine: 'line-through', fontSize: size === 'lg' ? 13 : 12 }}
+        >
           {money(compareAtCents, currency)}
         </Text>
       ) : null}

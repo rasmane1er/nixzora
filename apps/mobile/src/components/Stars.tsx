@@ -5,7 +5,16 @@ import { useT } from '@/lib/i18n';
 import { brand } from '@/lib/theme';
 import { Text } from './ui';
 
-export function Stars({ average, count }: { average: number | null; count: number }) {
+export function Stars({
+  average,
+  count,
+  compact,
+}: {
+  average: number | null;
+  count: number;
+  /** Smaller, for product cards. */
+  compact?: boolean;
+}) {
   const t = useT('appShop');
   const { rating } = useFormatters();
   if (!count || average == null) return null;
@@ -20,11 +29,11 @@ export function Stars({ average, count }: { average: number | null; count: numbe
         <Ionicons
           key={n}
           name={rounded >= n ? 'star' : rounded >= n - 0.5 ? 'star-half' : 'star-outline'}
-          size={14}
+          size={compact ? 12 : 14}
           color={brand.signal}
         />
       ))}
-      <Text variant="small" muted style={{ marginLeft: 4 }}>
+      <Text variant="small" muted style={[{ marginLeft: 4 }, compact && { fontSize: 12 }]}>
         {rating(average)} ({count})
       </Text>
     </View>
