@@ -2,7 +2,7 @@ import {
   CARD_SWATCHES,
   type CardColor,
   type ProductCard as Card,
-  twoDayWindow,
+  shownDelivery,
 } from '@nixzora/validation';
 import { deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
@@ -96,13 +96,14 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, cl, mb, locale, f, wishlist, member] = await Promise.all([
+  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
     getT('plus'),
     getT('clips'),
     getT('multiBuy'),
+    getT('preorders'),
     getLocale(),
     getFormat(),
     wishedIds(),
@@ -110,7 +111,8 @@ export async function ProductCard({
   ]);
   // "Arrives …" (p10-17): Plus members get NIXZORA's own items in 2 days, free.
   const twoDay = member && product.shipsFromNixzora === true;
-  const window = product.inStock ? (twoDay ? twoDayWindow(new Date()) : product.delivery) : null;
+  // From the release day for a pre-order (p10-30).
+  const window = product.inStock ? shownDelivery(product, twoDay) : null;
   const deliveryText = (() => {
     if (!window) return null;
     const day = deliveryDay(window.latest, locale);
@@ -140,29 +142,32 @@ export async function ProductCard({
   const deal = product.deal;
   // A member-only deal (p10-15) leaves the price as listed and shows the member price.
   const plusOnly = deal?.plusOnly === true;
-  const badge = deal
-    ? {
-        kind: plusOnly ? 'plus' : 'deal',
-        text: `${plusOnly ? pl('plusPrice') : d(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${d(
-          'percentOff',
-          {
-            percent: f.percent(deal.percentOff / 100),
-          },
-        )}`,
-      }
-    : onSale
+  const badge = product.preorder
+    ? { kind: 'preorder', text: po('badge') }
+    : deal
       ? {
-          kind: 'sale',
-          text: t('sale', {
-            percent: f.percent(
-              Math.round((1 - product.priceFromCents / (product.compareAtCents as number)) * 100) /
-                100,
-            ),
-          }),
+          kind: plusOnly ? 'plus' : 'deal',
+          text: `${plusOnly ? pl('plusPrice') : d(deal.kind === 'LIGHTNING' ? 'badgeLightning' : 'badgeDay')} · ${d(
+            'percentOff',
+            {
+              percent: f.percent(deal.percentOff / 100),
+            },
+          )}`,
         }
-      : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
-        ? { kind: 'top', text: t('topRated') }
-        : null;
+      : onSale
+        ? {
+            kind: 'sale',
+            text: t('sale', {
+              percent: f.percent(
+                Math.round(
+                  (1 - product.priceFromCents / (product.compareAtCents as number)) * 100,
+                ) / 100,
+              ),
+            }),
+          }
+        : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
+          ? { kind: 'top', text: t('topRated') }
+          : null;
 
   const body = (
     <>

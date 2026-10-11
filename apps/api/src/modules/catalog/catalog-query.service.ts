@@ -4,7 +4,7 @@ import {
   type AdminProductListQuery,
   boughtStep,
   type CategoryNode,
-  deliveryWindow,
+  deliveryFrom,
   type Facet,
   groupFilters,
   OPTION_NAMES,
@@ -30,6 +30,7 @@ import { ancestorsOf, descendantIds } from './category-tree';
 import { SIZED_DEPARTMENTS, sizeGuideFor } from './size-guide';
 import {
   productInclude,
+  releaseDay,
   toVideo,
   type ProductWithRelations,
   toCard,
@@ -281,7 +282,7 @@ export class CatalogQueryService {
       // Subscribe & Save (p10-11): NIXZORA's own products, and listings whose store allows it.
       subscribable: product.sellerId === null || product.subscribable,
       delivery: inStock
-        ? deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS)
+        ? deliveryFrom(product.seller?.handlingDays ?? OWN_HANDLING_DAYS, releaseDay(product))
         : null,
     };
   }
@@ -782,6 +783,7 @@ export class CatalogQueryService {
       breadcrumb,
       sizeGuide: sized ? await sizeGuideFor(this.prisma, product, categoryIds) : null,
       sizeChartId: activeVariantsOnly ? undefined : product.sizeChartId,
+      releaseDate: activeVariantsOnly ? undefined : releaseDay(product),
       seller: product.seller
         ? {
             handle: product.seller.handle,

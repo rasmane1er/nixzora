@@ -1,4 +1,5 @@
 import { errorMessage } from '@nixzora/api-client';
+import { calendarDay } from '@nixzora/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -24,12 +25,14 @@ import {
 import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
 import { useCart, useCartMutation } from '@/lib/hooks';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 import { space } from '@/lib/theme';
 
 export default function CartScreen() {
   const online = useIsOnline();
   const t = useT('appShop');
+  const tpo = useT('preorders');
+  const locale = useLocale();
   const tc = useT('common');
   const tcart = useT('cart');
   const cart = useCart();
@@ -80,8 +83,16 @@ export default function CartScreen() {
   const blocked = data.lines.some((line) => line.problem);
   const error = update.error ?? applyCoupon.error ?? removeCoupon.error ?? saved.save.error;
 
+  // Pre-orders (p10-30): one order ships once, so a pre-order holds up the rest.
+  const releases = data.lines.map((l) => l.releaseDate).filter((d): d is string => !!d);
+  const mixedRelease =
+    releases.length && releases.length < data.lines.length ? releases.sort().at(-1)! : null;
+
   return (
     <Screen refreshControl={refresh}>
+      {mixedRelease ? (
+        <Banner>{tpo('cartMixed', { date: calendarDay(mixedRelease, locale) })}</Banner>
+      ) : null}
       <View>
         {data.lines.map((line, index) => (
           <View key={line.variantId}>

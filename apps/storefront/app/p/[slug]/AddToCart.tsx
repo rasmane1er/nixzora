@@ -1,6 +1,6 @@
 'use client';
 
-import { optionLabel } from '@nixzora/i18n';
+import { calendarDay, optionLabel } from '@nixzora/i18n';
 import {
   COLOR_OPTION,
   optionAxes,
@@ -21,11 +21,14 @@ import { useProductColor } from './ProductColor';
 
 /** Variant picker + quantity + add to cart. Prices shown here are display only; the server re-prices. */
 export function AddToCart({
+  preorder = null,
   variants,
   slug,
   oneClick,
   subscribe,
 }: {
+  /** Pre-orders (p10-30): the release day; the button and stock line say so. */
+  preorder?: string | null;
   variants: Variant[];
   slug: string;
   /** 1-click is set up (p10-09): what it will use, for the note under the button. */
@@ -53,6 +56,7 @@ export function AddToCart({
   const l = useT('lists');
   const w = useT('wallet');
   const sub = useT('subscribe');
+  const po = useT('preorders');
   const [interval, setInterval_] = useState(30);
   const [subscribing, startSubscribing] = useTransition();
   const selected = useMemo(() => buyable.find((v) => v.id === selectedId), [buyable, selectedId]);
@@ -188,9 +192,13 @@ export function AddToCart({
             ? p('soldOut')
             : pending
               ? t('adding')
-              : t('addToCartPrice', {
-                  price: f.money(selected.priceCents * quantity, selected.currency),
-                })}
+              : preorder
+                ? po('button', {
+                    price: f.money(selected.priceCents * quantity, selected.currency),
+                  })
+                : t('addToCartPrice', {
+                    price: f.money(selected.priceCents * quantity, selected.currency),
+                  })}
         </button>
       </div>
       {max > 0 ? (
@@ -272,7 +280,9 @@ export function AddToCart({
           ? p('soldOut')
           : selected.available <= 5
             ? t('onlyLeft', { count: selected.available })
-            : t('inStockShips')}
+            : preorder
+              ? po('shipsFrom', { date: calendarDay(preorder, locale) })
+              : t('inStockShips')}
       </span>
       {status ? (
         <p

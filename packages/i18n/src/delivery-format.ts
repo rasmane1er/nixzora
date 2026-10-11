@@ -50,3 +50,8 @@ export function deliveryDay(
   }).format(at);
   return { tomorrow, text };
 }
+
+/** One calendar day from the API ("2026-11-20") as "Fri, Nov 20", in any time zone. */
+export function calendarDay(day: string, locale: Locale): string {
+  return deliveryRange({ earliest: day, latest: day }, locale);
+}

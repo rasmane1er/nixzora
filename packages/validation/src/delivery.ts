@@ -25,7 +25,7 @@ export type DeliveryWindow = {
 const HOLIDAYS = new Set(['01-01', '07-04', '12-25']);
 
 /** The calendar date and hour in US Eastern time. */
-function eastern(at: Date): { day: string; hour: number } {
+export function eastern(at: Date): { day: string; hour: number } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -38,7 +38,7 @@ function eastern(at: Date): { day: string; hour: number } {
   return { day: `${get('year')}-${get('month')}-${get('day')}`, hour: Number(get('hour')) };
 }
 
-function addDays(day: string, n: number): string {
+export function addDays(day: string, n: number): string {
   const date = new Date(`${day}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + n);
   return date.toISOString().slice(0, 10);

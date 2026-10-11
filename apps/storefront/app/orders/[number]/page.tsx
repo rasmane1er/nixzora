@@ -1,4 +1,4 @@
-import { deliveryRange, INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
+import { calendarDay, deliveryRange, INTL_LOCALE, type MessageKey, rich } from '@nixzora/i18n';
 import { type OrderView, type ReturnView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -59,6 +59,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const pl = await getT('plus');
   const ha = await getT('helpAgent');
   const gf = await getT('gift');
+  const po = await getT('preorders');
   const f = await getFormat();
   const placed = param(search, 'placed') === '1';
   const notice = param(search, 'notice');
@@ -105,14 +106,17 @@ export default async function OrderPage({ params, searchParams }: Props) {
       {order.cancellableUntil ? (
         <details className="card cancel-order">
           <summary>
-            {w('cancelUntil', {
-              time: new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZone: 'America/New_York',
-                timeZoneName: 'short',
-              }).format(new Date(order.cancellableUntil)),
-            })}{' '}
+            {/* Pre-orders (p10-30) stay cancellable until release day. */}
+            {order.preorderShipsOn
+              ? po('orderNote', { date: calendarDay(order.preorderShipsOn, locale) })
+              : w('cancelUntil', {
+                  time: new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZone: 'America/New_York',
+                    timeZoneName: 'short',
+                  }).format(new Date(order.cancellableUntil)),
+                })}{' '}
             <span className="btn btn--secondary btn--sm">{w('cancelOrder')}</span>
           </summary>
           <form action={cancelOrder} className="cancel-order__confirm">
@@ -124,6 +128,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </button>
           </form>
         </details>
+      ) : null}
+
+      {order.preorderShipsOn && !order.cancellableUntil ? (
+        <p className="banner banner--info">
+          {po('shipsFrom', { date: calendarDay(order.preorderShipsOn, locale) })}
+        </p>
       ) : null}
 
       {unpaid ? (

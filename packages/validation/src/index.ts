@@ -31,6 +31,7 @@ export * from './bundles';
 export * from './multi-buys';
 export * from './videos';
 export * from './colors';
+export * from './preorders';
 export * from './clip-coupons';
 export * from './history';
 export * from './help-agent';

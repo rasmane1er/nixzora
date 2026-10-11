@@ -1,9 +1,10 @@
+import { calendarDay } from '@nixzora/i18n';
 import type { CartLine } from '@nixzora/validation';
 import { PressableLink } from './PressableLink';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { optionsText, useFormatters } from '@/lib/format';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 import { QuantityStepper } from './QuantityStepper';
 import { PlusChip } from './PlusNote';
@@ -27,6 +28,8 @@ export function CartLineRow({
   const t = useT('appShop');
   const tc = useT('cart');
   const tpl = useT('plus');
+  const tpo = useT('preorders');
+  const locale = useLocale();
   const options = optionsText(line.options);
   return (
     <View style={styles.row}>
@@ -50,6 +53,12 @@ export function CartLineRow({
         <Text variant="small" muted>
           {line.variantTitle || options}
         </Text>
+        {line.releaseDate ? (
+          // Pre-orders (p10-30).
+          <Text variant="small" tone="signal" style={{ fontFamily: fonts.bodyBold }}>
+            {tpo('cartLine', { date: calendarDay(line.releaseDate, locale) })}
+          </Text>
+        ) : null}
         {line.regularPriceCents ? (
           <PlusChip
             label={`${tpl('plusPrice')} · −${money(

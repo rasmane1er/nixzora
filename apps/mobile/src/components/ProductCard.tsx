@@ -38,23 +38,27 @@ export function ProductCard({
   const p = usePalette();
   const t = useT('appShop');
   const tp = useT('product');
+  const tpo = useT('preorders');
   const ta = useT('ads');
   const { percent } = useFormatters();
   const dealLabel = useDealLabel();
   const rating = product.rating;
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
-  const badge = product.deal
-    ? { top: false, deal: true, text: dealLabel(product.deal) }
-    : onSale
-      ? {
-          top: false,
-          text: tp('sale', {
-            percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
-          }),
-        }
-      : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
-        ? { top: true, text: tp('topRated') }
-        : null;
+  // Pre-orders (p10-30) first: shoppers need to know it ships later.
+  const badge = product.preorder
+    ? { top: false, preorder: true, text: tpo('badge') }
+    : product.deal
+      ? { top: false, deal: true, text: dealLabel(product.deal) }
+      : onSale
+        ? {
+            top: false,
+            text: tp('sale', {
+              percent: percent(1 - product.priceFromCents / (product.compareAtCents as number)),
+            }),
+          }
+        : rating?.average != null && rating.average >= 4.5 && rating.count >= 3
+          ? { top: true, text: tp('topRated') }
+          : null;
 
   return (
     <View style={[styles.card, { backgroundColor: p.card, borderColor: p.line }]}>
@@ -148,13 +152,15 @@ export function ProductCard({
             styles.badge,
             {
               backgroundColor:
-                'deal' in badge
-                  ? product.deal?.plusOnly
-                    ? PLUS_ACCENT
-                    : DEAL_RED
-                  : badge.top
-                    ? '#2457C5'
-                    : brand.signal,
+                'preorder' in badge
+                  ? '#0E1726'
+                  : 'deal' in badge
+                    ? product.deal?.plusOnly
+                      ? PLUS_ACCENT
+                      : DEAL_RED
+                    : badge.top
+                      ? '#2457C5'
+                      : brand.signal,
             },
           ]}
           pointerEvents="none"

@@ -10,9 +10,10 @@ import {
   type RelatedProducts,
   type ReviewInsights as Insights,
   type ReviewPage,
-  twoDayWindow,
+  shownDelivery,
 } from '@nixzora/validation';
 import {
+  calendarDay,
   cardBrand,
   INTL_LOCALE,
   multiBuyTerms,
@@ -165,6 +166,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const pl = await getT('plus');
   const cl = await getT('clips');
   const mb = await getT('multiBuy');
+  const po = await getT('preorders');
   const w = await getT('wallet');
   const ib = await getT('inbox');
   const cmp = await getT('compare');
@@ -309,6 +311,20 @@ export default async function ProductPage({ params, searchParams }: Props) {
                 initial={(await clippedCouponIds()).has(product.coupon.id)}
               />
             ) : null}
+            {product.preorder ? (
+              // Pre-orders (p10-30): when it ships, and that it can be cancelled until then.
+              <p className="pdp-preorder">
+                <strong>
+                  <span className="card-badge card-badge--preorder pdp-deal__badge">
+                    {po('badge')}
+                  </span>{' '}
+                  {po('shipsFrom', { date: calendarDay(product.preorder.releaseDate, locale) })}
+                </strong>
+                <span className="muted">
+                  {po('pdpNote', { date: calendarDay(product.preorder.releaseDate, locale) })}
+                </span>
+              </p>
+            ) : null}
             {product.multiBuy ? (
               // Buy X, get Y (p10-27): mix and match on the offer's page.
               <p className="pdp-offer">
@@ -322,7 +338,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
               </p>
             ) : null}
             <DeliveryPromise
-              window={member && !product.seller ? twoDayWindow(new Date()) : product.delivery}
+              window={shownDelivery(product, member && !product.seller)}
               twoDay={member && !product.seller}
             />
             {product.seller ? null : (
@@ -339,9 +355,14 @@ export default async function ProductPage({ params, searchParams }: Props) {
             )}
             {product.sizeGuide ? <SizeGuide guide={product.sizeGuide} /> : null}
             <AddToCart
+              preorder={product.preorder?.releaseDate ?? null}
               variants={product.variants}
               slug={product.slug}
-              subscribe={product.subscribable ? { signedIn, ready: Boolean(oneClick) } : null}
+              subscribe={
+                product.subscribable && !product.preorder
+                  ? { signedIn, ready: Boolean(oneClick) }
+                  : null
+              }
               oneClick={
                 oneClick
                   ? {

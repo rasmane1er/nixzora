@@ -1,6 +1,9 @@
 import { rich } from '@nixzora/i18n';
 import {
+  addDays,
+  easternToday,
   InventoryAdjustReasonSchema,
+  PREORDER_MAX_DAYS,
   MAX_PRODUCT_VIDEOS,
   productColors,
   type ProductDetail,
@@ -46,13 +49,14 @@ export default async function ProductPage({
 }) {
   const { id } = await params;
   const search = await searchParams;
-  const [me, product, { categories, brands }, t, tc, tv, f] = await Promise.all([
+  const [me, product, { categories, brands }, t, tc, tv, po, f] = await Promise.all([
     currentStaff(),
     loadProduct(id),
     catalogOptions(),
     getT('opsCatalog'),
     getT('common'),
     getT('videos'),
+    getT('preorders'),
     getFormat(),
   ]);
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
@@ -139,6 +143,17 @@ export default async function ProductPage({
               <label>
                 {t('specifications')} <span className="hint">{t('specsHint')}</span>
                 <textarea name="attributes" defaultValue={pairsText(product.attributes)} rows={6} />
+              </label>
+              {/* Pre-orders (p10-30). */}
+              <label>
+                {po('releaseLabel')}
+                <input
+                  type="date"
+                  name="releaseDate"
+                  defaultValue={product.releaseDate ?? ''}
+                  max={addDays(easternToday(), PREORDER_MAX_DAYS)}
+                />
+                <span className="hint">{po('releaseHint', { max: PREORDER_MAX_DAYS })}</span>
               </label>
               <div>
                 <SubmitButton>{t('saveDetails')}</SubmitButton>

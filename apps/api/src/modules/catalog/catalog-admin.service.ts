@@ -14,6 +14,8 @@ import {
   MAX_PRODUCT_IMAGES,
   MAX_PRODUCT_VIDEOS,
   parseVideoUrl,
+  RELEASE_DATE_PROBLEM_TEXT,
+  releaseDateProblem,
   type ProductImageAttach,
   type ProductImageColor,
   productColors,
@@ -233,6 +235,21 @@ export class CatalogAdminService {
     if (input.status === 'ACTIVE' && !existing.variants.some((variant) => variant.isActive)) {
       throw new BadRequestException('Add or activate a variant before publishing this product.');
     }
+    // Pre-orders (p10-30): a new release date is after today and within 180 days. Saving the form
+    // again with the date it already has (even one now past) is fine.
+    const releaseDate =
+      input.releaseDate === undefined
+        ? undefined
+        : input.releaseDate === null
+          ? null
+          : new Date(`${input.releaseDate}T00:00:00Z`);
+    if (
+      input.releaseDate &&
+      existing.releaseDate?.toISOString().slice(0, 10) !== input.releaseDate
+    ) {
+      const problem = releaseDateProblem(input.releaseDate);
+      if (problem) throw new BadRequestException(RELEASE_DATE_PROBLEM_TEXT[problem]);
+    }
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -240,6 +257,7 @@ export class CatalogAdminService {
           where: { id },
           data: {
             ...input,
+            releaseDate,
             attributes: input.attributes as Prisma.InputJsonObject | undefined,
           },
         });

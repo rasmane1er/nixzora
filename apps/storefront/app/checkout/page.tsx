@@ -7,13 +7,14 @@ import {
   type PaymentCardView,
   type SavedAddress,
 } from '@nixzora/validation';
+import { calendarDay } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { api, currentCart } from '@/lib/api';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { PlusLineTag, PlusShippingNote, ShippingAmount } from '@/components/PlusNotes';
-import { getFormat, getT } from '@/lib/i18n';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { accessToken } from '@/lib/session';
 import { CheckoutForm } from './CheckoutForm';
@@ -54,6 +55,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const to = await getT('order');
   const bd = await getT('bundles');
   const mb = await getT('multiBuy');
+  const po = await getT('preorders');
+  const locale = await getLocale();
   const cl = await getT('clips');
   const f = await getFormat();
   return (
@@ -79,6 +82,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
                 <span>
                   {line.quantity} × {line.productTitle}
                   <span className="muted"> · {line.variantTitle}</span>
+                  {line.releaseDate ? (
+                    <span className="line-preorder">
+                      {' '}
+                      · {po('cartLine', { date: calendarDay(line.releaseDate, locale) })}
+                    </span>
+                  ) : null}
                   <PlusLineTag line={line} />
                 </span>
                 <span>{f.money(line.lineTotalCents)}</span>

@@ -9,12 +9,14 @@ import {
 import {
   type Cart,
   type CartLine,
-  deliveryWindow,
+  deliveryFrom,
+  type DeliveryWindow,
   GIFT_WRAP_CENTS,
+  isPreorder,
   OWN_HANDLING_DAYS,
   type MultiBuySaving,
   multiBuySavings,
-  twoDayWindow,
+  twoDayFrom,
 } from '@nixzora/validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
@@ -29,7 +31,7 @@ export type ClippedSaving = {
   discountCents: number;
   sellerId: string | null;
 };
-import { availableOf } from '../catalog/catalog-mappers';
+import { availableOf, releaseDay } from '../catalog/catalog-mappers';
 import { countCartAdd } from '../catalog/traffic';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -53,6 +55,14 @@ const BUY_NOW_TTL_SECONDS = 6 * 3600;
  * Carts live in Redis as a hash of variantId → quantity. Prices are never stored in the cart:
  * every read re-prices from the catalog, so a cart can't carry a stale or tampered price.
  */
+/** The window that ends last: everything has arrived by then. */
+function latestWindow(windows: DeliveryWindow[]): DeliveryWindow {
+  return windows.reduce((a, b) => ({
+    earliest: a.earliest > b.earliest ? a.earliest : b.earliest,
+    latest: a.latest > b.latest ? a.latest : b.latest,
+  }));
+}
+
 @Injectable()
 export class CartService {
   constructor(
@@ -385,6 +395,10 @@ export class CartService {
         quantity,
         lineTotalCents: unitPrice * quantity,
         ...(memberPrice ? { regularPriceCents: variant.priceCents } : {}),
+        // Pre-orders (p10-30): ships from its release day.
+        ...(isPreorder(releaseDay(variant.product))
+          ? { releaseDate: releaseDay(variant.product)! }
+          : {}),
         available,
         problem:
           !sellable || available === 0
@@ -423,11 +437,16 @@ export class CartService {
     );
     const own = buyable.some((v) => !v.product.sellerId);
     return {
+      // A pre-order in the cart (p10-30) moves the whole delivery to after its release day.
       delivery: !buyable.length
         ? null
-        : member && buyable.every((v) => !v.product.sellerId)
-          ? twoDayWindow(new Date())
-          : deliveryWindow(new Date(), handling),
+        : latestWindow(
+            buyable.map((v) =>
+              member && buyable.every((b) => !b.product.sellerId)
+                ? twoDayFrom(releaseDay(v.product))
+                : deliveryFrom(handling, releaseDay(v.product)),
+            ),
+          ),
       cartId: 'guestId' in owner ? owner.guestId : 'buyNowId' in owner ? owner.buyNowId : null,
       // Gift wrap (p10-22) is done in NIXZORA's warehouse, so only for its own items.
       giftWrap: own ? { priceCents: GIFT_WRAP_CENTS } : null,

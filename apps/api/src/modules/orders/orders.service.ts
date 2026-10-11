@@ -599,6 +599,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
                   totalCents: line.lineTotalCents,
                   sellerId: owners.get(line.productId) ?? null,
                   subscriptionId: subscriptionByVariant?.get(line.variantId) ?? null,
+                  // Pre-orders (p10-30): the release day this line ships from.
+                  shipsOn: line.releaseDate ? new Date(`${line.releaseDate}T00:00:00Z`) : null,
                 })),
               },
             },

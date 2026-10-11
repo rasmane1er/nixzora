@@ -1,6 +1,7 @@
 import {
   deliveryWindow,
   deliveryWindowFromShipment,
+  releaseStart,
   twoDayWindow,
   type DeliveryWindow,
   type OrderView,
@@ -8,7 +9,7 @@ import {
   type TrackingStep,
 } from '@nixzora/validation';
 import { type PrismaClient } from '../../generated/prisma/client';
-import { type OrderRow } from '../orders/order-links';
+import { type OrderRow, preorderShipsOn } from '../orders/order-links';
 import { type TrackingEvent } from './shipping-gateway';
 
 type Db = Pick<PrismaClient, 'shipmentTracker' | 'shipmentEvent'>;
@@ -101,6 +102,8 @@ export async function withTracking(
     cancelled: boolean;
     handlingDays: number;
     twoDay?: boolean;
+    /** Pre-orders (p10-30): the part's last release day; it ships from then. */
+    releaseDate?: string | null;
   }): DeliveryWindow | null => {
     if (part.deliveredAt || part.cancelled || !order.placedAt) return null;
     const carrier = trackers.find((t) => t.trackingNumber === part.trackingNumber);
@@ -108,12 +111,18 @@ export async function withTracking(
       const day = easternDay(carrier.estimatedDeliveryAt);
       return { earliest: day, latest: day };
     }
-    if (part.twoDay) {
-      // NIXZORA Plus 2-day (p10-15): two business days from the order, or from shipping.
-      return part.shippedAt ? twoDayWindow(part.shippedAt) : twoDayWindow(order.placedAt);
+    if (part.shippedAt) {
+      // NIXZORA Plus 2-day (p10-15): two business days from shipping.
+      return part.twoDay
+        ? twoDayWindow(part.shippedAt)
+        : deliveryWindowFromShipment(part.shippedAt);
     }
-    if (part.shippedAt) return deliveryWindowFromShipment(part.shippedAt);
-    return deliveryWindow(order.placedAt, part.handlingDays);
+    // Not shipped yet: from the order, or from the release day of a pre-order.
+    const from =
+      part.releaseDate && releaseStart(part.releaseDate) > order.placedAt
+        ? releaseStart(part.releaseDate)
+        : order.placedAt;
+    return part.twoDay ? twoDayWindow(from) : deliveryWindow(from, part.handlingDays);
   };
 
   const ownItems = order.items.some((item) => !item.sellerId);
@@ -125,6 +134,7 @@ export async function withTracking(
         cancelled: !!order.cancelledAt,
         handlingDays: OWN_HANDLING_DAYS,
         twoDay: order.shippingSpeed === 'TWO_DAY',
+        releaseDate: preorderShipsOn({ items: order.items.filter((item) => !item.sellerId) }),
       })
     : null;
   let overall = own;
@@ -140,6 +150,9 @@ export async function withTracking(
       deliveredAt: part.deliveredAt,
       cancelled: part.status === 'CANCELLED',
       handlingDays: part.seller.handlingDays,
+      releaseDate: preorderShipsOn({
+        items: order.items.filter((item) => item.sellerId === part.sellerId),
+      }),
     });
     overall = later(overall, window);
     return { ...shipment, estimatedDelivery: window, events: steps(part.trackingNumber) };

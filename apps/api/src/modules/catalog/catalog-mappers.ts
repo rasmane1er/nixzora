@@ -1,7 +1,8 @@
 import {
   type CardColor,
   colorSwatch,
-  deliveryWindow,
+  deliveryFrom,
+  isPreorder,
   productColors,
   twoToneSwatches,
   type Image,
@@ -84,11 +85,18 @@ export function toCard(
     inStock: active.some((variant) => availableOf(variant.inventory) > 0),
     image: firstImage ? toImage(firstImage, publicUrl) : null,
     defaultVariantId: active.length === 1 ? active[0]!.id : null,
-    // When it arrives if ordered now (p10-17): the store's handling time, or NIXZORA's.
-    delivery: deliveryWindow(new Date(), product.seller?.handlingDays ?? OWN_HANDLING_DAYS),
+    // When it arrives if ordered now (p10-17): the store's handling time, or NIXZORA's; from the
+    // release day for a pre-order (p10-30).
+    delivery: deliveryFrom(product.seller?.handlingDays ?? OWN_HANDLING_DAYS, releaseDay(product)),
+    ...(isPreorder(releaseDay(product)) ? { preorder: { releaseDate: releaseDay(product)! } } : {}),
     shipsFromNixzora: !product.sellerId,
     ...cardColors(active, product.images, publicUrl),
   };
+}
+
+/** Pre-orders (p10-30): the release day as "2026-11-20", or null. */
+export function releaseDay(product: { releaseDate: Date | null }): string | null {
+  return product.releaseDate ? product.releaseDate.toISOString().slice(0, 10) : null;
 }
 
 /** Photos per color (p10-29): a card's swatches, each with that color's first photo. */

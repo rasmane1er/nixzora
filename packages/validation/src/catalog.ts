@@ -122,6 +122,8 @@ export const ProductUpdateSchema = z
     attributes: AttributesSchema,
     /** Size & fit guide (p10-26): the listing's own chart; null uses the category's. */
     sizeChartId: z.uuid().nullable(),
+    /** Pre-orders (p10-30): the day it ships from; null sells it as usual. */
+    releaseDate: z.iso.date().nullable(),
   })
   .partial();
 
@@ -289,6 +291,8 @@ export const ProductCardSchema = z.object({
   freeDelivery: z.boolean().optional(),
   /** NIXZORA ships it: Plus members get it in 2 days (p10-15). */
   shipsFromNixzora: z.boolean().optional(),
+  /** Pre-orders (p10-30): sells now, ships from this day (US Eastern). */
+  preorder: z.object({ releaseDate: z.iso.date() }).optional(),
   /** Photos per color (p10-29): its colors as swatches, when it comes in two or more. */
   colors: z.array(CardColorSchema).optional(),
   /** Buy X, get Y (p10-27): the live offer this product is in. */
@@ -384,6 +388,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
     .optional(),
   /** The chart chosen for this listing (seller and staff views). */
   sizeChartId: z.uuid().nullable().optional(),
+  /** Pre-orders (p10-30): the release date as stored, on the editor views (also past ones). */
+  releaseDate: z.iso.date().nullable().optional(),
 });
 
 export type CategoryNode = {

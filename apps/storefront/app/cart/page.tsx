@@ -1,4 +1,4 @@
-import { INTL_LOCALE, multiBuyAddMore, multiBuyTerms, rich } from '@nixzora/i18n';
+import { calendarDay, INTL_LOCALE, multiBuyAddMore, multiBuyTerms, rich } from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -37,6 +37,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const to = await getT('order');
   const bd = await getT('bundles');
   const mb = await getT('multiBuy');
+  const po = await getT('preorders');
   const cl = await getT('clips');
   const tCommon = await getT('common');
   const tp = await getT('product');
@@ -67,6 +68,9 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   }
 
   const blocked = cart.lines.some((line) => line.problem);
+  const releases = cart.lines.map((line) => line.releaseDate).filter((d): d is string => !!d);
+  const mixedRelease =
+    releases.length && releases.length < cart.lines.length ? releases.sort().at(-1)! : null;
   const t = cart.totals;
   const threshold = t.subtotalCents + t.freeShippingRemainingCents;
 
@@ -100,6 +104,12 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
 
       <div className="cart">
         <section aria-label={tc('items')}>
+          {/* Pre-orders (p10-30): one order ships once, so a pre-order holds up the rest. */}
+          {mixedRelease ? (
+            <p className="banner banner--info">
+              {po('cartMixed', { date: calendarDay(mixedRelease, locale) })}
+            </p>
+          ) : null}
           {/* Buy X, get Y (p10-27): a few more items would get the reward. */}
           {cart.multiBuys
             ?.filter((m) => m.addMore)
@@ -122,6 +132,11 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                   {line.productTitle}
                 </Link>
                 <div className="muted">{line.variantTitle}</div>
+                {line.releaseDate ? (
+                  <div className="line-preorder">
+                    {po('cartLine', { date: calendarDay(line.releaseDate, locale) })}
+                  </div>
+                ) : null}
                 <PlusLineTag line={line} />
                 {line.problem === 'UNAVAILABLE' ? (
                   <p className="field-error">{tc('unavailable')}</p>

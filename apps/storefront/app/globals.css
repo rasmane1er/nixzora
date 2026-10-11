@@ -5759,3 +5759,33 @@ td.neg {
   font-size: 13px;
   padding: 4px 6px;
 }
+
+/* Pre-orders (p10-30) */
+.card-badge--preorder {
+  background: #0e1726;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+.pdp-preorder {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.pdp-preorder strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+.pdp-preorder .card-badge {
+  position: static;
+}
+.line-preorder {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-signal-text);
+}

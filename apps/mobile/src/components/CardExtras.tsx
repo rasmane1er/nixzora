@@ -1,5 +1,5 @@
 import { deliveryDay, INTL_LOCALE } from '@nixzora/i18n';
-import { type ProductCard, twoDayWindow } from '@nixzora/validation';
+import { type ProductCard, shownDelivery } from '@nixzora/validation';
 import { View } from 'react-native';
 import { usePlusMember } from '@/lib/hooks';
 import { useLocale, useT } from '@/lib/i18n';
@@ -32,7 +32,8 @@ export function DeliveryLine({ product }: { product: ProductCard }) {
   const member = usePlusMember();
   if (!product.inStock) return null;
   const twoDay = member && product.shipsFromNixzora === true;
-  const window = twoDay ? twoDayWindow(new Date()) : product.delivery;
+  // From the release day for a pre-order (p10-30).
+  const window = shownDelivery(product, twoDay);
   if (!window) return null;
   const day = deliveryDay(window.latest, locale);
   const when = day.tomorrow

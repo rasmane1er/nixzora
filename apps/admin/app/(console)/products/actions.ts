@@ -82,6 +82,8 @@ export async function updateProduct(form: FormData): Promise<void> {
           categoryId: text(form, 'categoryId'),
           brandId: text(form, 'brandId') ?? null,
           attributes: typedAttributes(pairs(form, 'attributes')),
+          // Pre-orders (p10-30): empty makes it an ordinary product.
+          ...(form.has('releaseDate') ? { releaseDate: text(form, 'releaseDate') ?? null } : {}),
         },
       }),
     t('noticeProductSaved'),

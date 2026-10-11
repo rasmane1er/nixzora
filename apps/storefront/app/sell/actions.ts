@@ -163,6 +163,8 @@ export async function updateListing(form: FormData): Promise<void> {
           attributes: specs(form, 'specs'),
           // Size & fit guide (p10-26): only on clothing and shoes; empty uses the category's.
           ...(form.has('sizeChartId') ? { sizeChartId: text(form, 'sizeChartId') ?? null } : {}),
+          // Pre-orders (p10-30): empty makes it an ordinary listing.
+          ...(form.has('releaseDate') ? { releaseDate: text(form, 'releaseDate') ?? null } : {}),
         },
       }),
     'noticeListingSaved',

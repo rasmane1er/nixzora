@@ -11,7 +11,7 @@ import {
   SUBSCRIBE_PERCENT,
   SUBSCRIPTION_INTERVALS,
   type Variant,
-  twoDayWindow,
+  shownDelivery,
 } from '@nixzora/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -57,22 +57,26 @@ import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
 import { useFormatters } from '@/lib/format';
-import { t as translate, useT } from '@/lib/i18n';
+import { t as translate, useLocale, useT } from '@/lib/i18n';
 import { READABLE_WIDTH, useLayout } from '@/lib/layout';
 import { useCartMutation, usePlusMember, useToggleWish, useWishlistIds } from '@/lib/hooks';
 import { keys } from '@/lib/query';
-import { cardBrand } from '@nixzora/i18n';
+import { calendarDay, cardBrand } from '@nixzora/i18n';
 import { useSession } from '@/lib/session';
 import { visitorId } from '@/lib/visitor';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
-function stockText(variant: Variant): { text: string; tone?: 'error' | 'signal' | 'ok' } {
+function stockText(
+  variant: Variant,
+  /** Pre-orders (p10-30): "Ships from Mon, Nov 9" instead of "In stock". */
+  shipsFrom?: string,
+): { text: string; tone?: 'error' | 'signal' | 'ok' } {
   const t = translate('productPage');
   if (!variant.isActive || variant.available <= 0)
     return { text: translate('product')('soldOut'), tone: 'error' };
   if (variant.available <= 5)
     return { text: t('onlyLeft', { count: variant.available }), tone: 'signal' };
-  return { text: t('inStockShips'), tone: 'ok' };
+  return { text: shipsFrom ?? t('inStockShips'), tone: 'ok' };
 }
 
 /**
@@ -267,6 +271,8 @@ export default function ProductScreen() {
   const p = usePalette();
   const t = useT('appShop');
   const tp = useT('productPage');
+  const tpo = useT('preorders');
+  const locale = useLocale();
   const tc = useT('common');
   const ta = useT('ads');
   const { attributeLabel, optionName, rating, percent, money } = useFormatters();
@@ -435,7 +441,14 @@ export default function ProductScreen() {
     sellable[0];
   const color = variant?.options[COLOR_OPTION] ?? null;
   const wished = !!wishIds.data?.includes(item.id);
-  const stock = variant ? stockText(variant) : { text: t('notAvailable'), tone: 'error' as const };
+  const stock = variant
+    ? stockText(
+        variant,
+        item.preorder
+          ? tpo('shipsFrom', { date: calendarDay(item.preorder.releaseDate, locale) })
+          : undefined,
+      )
+    : { text: t('notAvailable'), tone: 'error' as const };
   const canBuy = !!variant && variant.available > 0;
   const specs = Object.entries(item.attributes);
 
@@ -667,10 +680,44 @@ export default function ProductScreen() {
             <Text variant="small" tone={stock.tone}>
               {stock.text}
             </Text>
+            {item.preorder ? (
+              // Pre-orders (p10-30): when it ships, and that it can be cancelled until then.
+              <View
+                style={{
+                  gap: space.xs,
+                  padding: space.md,
+                  borderRadius: radius,
+                  borderWidth: 1,
+                  borderColor: p.line,
+                  backgroundColor: p.card,
+                }}
+              >
+                <Row style={{ gap: space.sm, flexWrap: 'wrap' }}>
+                  <View
+                    style={{
+                      backgroundColor: '#0E1726',
+                      borderRadius: 999,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text variant="small" style={{ color: '#fff', fontFamily: fonts.bodyBold }}>
+                      {tpo('badge')}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: fonts.bodyBold }}>
+                    {tpo('shipsFrom', { date: calendarDay(item.preorder.releaseDate, locale) })}
+                  </Text>
+                </Row>
+                <Text variant="small" muted>
+                  {tpo('pdpNote', { date: calendarDay(item.preorder.releaseDate, locale) })}
+                </Text>
+              </View>
+            ) : null}
             {item.coupon ? <ClipCouponButton coupon={item.coupon} /> : null}
             {item.multiBuy ? <OfferRow offer={item.multiBuy} /> : null}
             <DeliveryPromise
-              window={member && !item.seller ? twoDayWindow(new Date()) : item.delivery}
+              window={shownDelivery(item, member && !item.seller)}
               twoDay={member && !item.seller}
             />
             {item.seller ? null : (
@@ -695,7 +742,7 @@ export default function ProductScreen() {
                   onChange={(next) => setQuantity(Math.max(1, next))}
                 />
                 <Button
-                  title={t('addToCart')}
+                  title={item.preorder ? tpo('buttonPlain') : t('addToCart')}
                   style={{ flex: 1 }}
                   loading={add.isPending}
                   onPress={onAdd}
@@ -736,7 +783,7 @@ export default function ProductScreen() {
                 onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
               />
             ) : null}
-            {item.subscribable && canBuy ? (
+            {item.subscribable && canBuy && !item.preorder ? (
               <Card style={{ gap: space.sm }}>
                 <Text style={{ fontFamily: fonts.bodyBold }}>
                   {ts('subscribeSave', { percent: percent(SUBSCRIBE_PERCENT / 100) })}

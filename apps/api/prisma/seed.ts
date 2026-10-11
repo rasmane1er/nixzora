@@ -11,7 +11,7 @@ import { withConnectionUrls } from '../src/config/connection-urls';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { messagesFor } from '@nixzora/i18n';
-import { CATEGORY_DEPARTMENTS } from '@nixzora/validation';
+import { addDays, CATEGORY_DEPARTMENTS, easternToday } from '@nixzora/validation';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -1339,6 +1339,13 @@ async function main(): Promise<void> {
       },
     });
   }
+
+  // Pre-orders (p10-30): the Pulse S watch releases in 30 days. Set once: when the day passes it
+  // is an ordinary product, and a later seed leaves it alone.
+  await prisma.product.updateMany({
+    where: { slug: 'pulse-s-watch', sellerId: null, releaseDate: null },
+    data: { releaseDate: new Date(`${addDays(easternToday(), 30)}T00:00:00Z`) },
+  });
 
   // Buy X, get Y (p10-27): one of NIXZORA's, mix and match across Linden tops, made once.
   const offerSlugs = ['linden-organic-tee', 'linden-fleece-hoodie'];

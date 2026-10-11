@@ -204,6 +204,8 @@ export type SellerOrderView = {
     quantity: number;
     unitPriceCents: number;
     totalCents: number;
+    /** Pre-orders (p10-30): the release day it ships from. */
+    shipsOn?: string | null;
   }[];
   itemsCents: number;
   shippingCents: number;

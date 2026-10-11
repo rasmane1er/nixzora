@@ -1,4 +1,11 @@
-import { productColors, type SizeChartView, type ProductDetail } from '@nixzora/validation';
+import {
+  addDays,
+  easternToday,
+  PREORDER_MAX_DAYS,
+  productColors,
+  type SizeChartView,
+  type ProductDetail,
+} from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -59,6 +66,7 @@ export default async function ListingPage({
     ? await api<SizeChartView[]>('/seller/size-charts').catch((): SizeChartView[] => [])
     : [];
   const sg = await getT('sizeGuide');
+  const po = await getT('preorders');
   const categoryId = categories.find((c) => c.slug === product.category.slug)?.id;
   const canSubmit =
     seller.status === 'ACTIVE' && (product.status === 'DRAFT' || product.status === 'ARCHIVED');
@@ -167,6 +175,18 @@ export default async function ListingPage({
           <label>
             {t('fieldSpecs')} <span className="hint">{t('specsHintEdit')}</span>
             <textarea name="specs" rows={5} defaultValue={specsText(product.attributes)} />
+          </label>
+          {/* Pre-orders (p10-30). */}
+          <label>
+            {po('releaseLabel')}
+            <input
+              type="date"
+              name="releaseDate"
+              defaultValue={product.releaseDate ?? ''}
+              max={addDays(easternToday(), PREORDER_MAX_DAYS)}
+              style={{ maxWidth: 220 }}
+            />
+            <span className="hint">{po('releaseHint', { max: PREORDER_MAX_DAYS })}</span>
           </label>
           <div>
             <button className="btn btn--primary" type="submit">

@@ -352,6 +352,8 @@ export class SellerOrdersService implements OnModuleInit {
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
           totalCents: item.totalCents,
+          // Pre-orders (p10-30): ships from its release day.
+          shipsOn: item.shipsOn?.toISOString().slice(0, 10) ?? null,
         })),
       itemsCents: row.itemsCents,
       shippingCents: row.shippingCents,

@@ -8,7 +8,7 @@ export { format, rich, type Vars } from './translate';
 export { defineMessages, type Catalog } from './define';
 export { filterValueLabel, optionLabel, specLabel } from './catalog-labels';
 export { smartRowTitle } from './smart-rows';
-export { deliveryDay, deliveryRange } from './delivery-format';
+export { calendarDay, deliveryDay, deliveryRange } from './delivery-format';
 export { cardBrand } from './messages/wallet';
 
 export type Namespace = keyof typeof catalogs;

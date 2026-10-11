@@ -141,6 +141,8 @@ export type CartLine = {
   problem: 'UNAVAILABLE' | 'INSUFFICIENT_STOCK' | null;
   /** NIXZORA Plus (p10-15): the everyone price, when a member price applies to this line. */
   regularPriceCents?: number;
+  /** Pre-orders (p10-30): the release day it ships from. */
+  releaseDate?: string;
 };
 
 export type Totals = {
@@ -361,6 +363,8 @@ export type OrderView = {
   returnableUntil: string | null;
   /** Until when the customer can still cancel it themselves (paid, not being packed yet). */
   cancellableUntil?: string | null;
+  /** Pre-orders (p10-30): the release day it ships from, until it ships. */
+  preorderShipsOn?: string | null;
   /** Goods to ship, e-gift cards sent by email (p10-10), or a NIXZORA Plus fee (p10-15). */
   kind?: 'GOODS' | 'GIFT_CARD' | 'PLUS';
   /** NIXZORA Plus: NIXZORA's own parcel ships 2-day, and what Plus saved on this order. */

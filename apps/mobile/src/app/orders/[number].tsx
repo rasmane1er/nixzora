@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
+import { calendarDay } from '@nixzora/i18n';
 import type { OrderView } from '@nixzora/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -14,7 +15,7 @@ import { PressableLink } from '@/components/PressableLink';
 import { Banner, Button, Card, Divider, EmptyState, Row, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useFormatters } from '@/lib/format';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 import { enablePush, type PushStatus } from '@/lib/push';
 import { keys } from '@/lib/query';
 import { useSession } from '@/lib/session';
@@ -93,6 +94,8 @@ export default function OrderScreen() {
   const { money, shortDate } = useFormatters();
   const [push, setPush] = useState<PushStatus | null>(null);
   const w = useT('wallet');
+  const tpo = useT('preorders');
+  const locale = useLocale();
   const g = useT('gifts');
   const tpl = useT('plus');
   const ti = useT('inbox');
@@ -169,15 +172,21 @@ export default function OrderScreen() {
         ) : null}
         {cancel.isSuccess ? <Banner tone="ok">{w('cancelled')}</Banner> : null}
         {cancel.error ? <Banner tone="error">{errorMessage(cancel.error)}</Banner> : null}
+        {o.preorderShipsOn && !o.cancellableUntil ? (
+          <Banner>{tpo('shipsFrom', { date: calendarDay(o.preorderShipsOn, locale) })}</Banner>
+        ) : null}
         {o.cancellableUntil ? (
           <Card>
             <Text>
-              {w('cancelUntil', {
-                time: new Date(o.cancellableUntil).toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                }),
-              })}
+              {/* Pre-orders (p10-30) stay cancellable until release day. */}
+              {o.preorderShipsOn
+                ? tpo('orderNote', { date: calendarDay(o.preorderShipsOn, locale) })
+                : w('cancelUntil', {
+                    time: new Date(o.cancellableUntil).toLocaleTimeString([], {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    }),
+                  })}
             </Text>
             <Button
               title={w('cancelOrder')}

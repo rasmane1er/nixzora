@@ -67,11 +67,26 @@ export function cancellableUntil(order: {
   placedAt: Date | null;
   trackingNumber: string | null;
   sellerOrders?: { status: string }[];
+  items?: { shipsOn?: Date | null }[];
 }): string | null {
   if (order.status !== 'PAID' || !order.placedAt || order.trackingNumber) return null;
   if ((order.sellerOrders ?? []).some((part) => part.status !== 'PAID')) return null;
-  const until = new Date(order.placedAt.getTime() + CUSTOMER_CANCEL_MINUTES * 60_000);
+  let until = new Date(order.placedAt.getTime() + CUSTOMER_CANCEL_MINUTES * 60_000);
+  // Pre-orders (p10-30): cancellable until the release day begins (midnight Eastern).
+  const shipsOn = preorderShipsOn(order);
+  if (shipsOn) {
+    const releaseDay = new Date(`${shipsOn}T05:00:00Z`);
+    if (releaseDay > until) until = releaseDay;
+  }
   return until > new Date() ? until.toISOString() : null;
+}
+
+/** Pre-orders (p10-30): the last release day among the order's lines ("2026-11-20"), or null. */
+export function preorderShipsOn(order: { items?: { shipsOn?: Date | null }[] }): string | null {
+  const days = (order.items ?? [])
+    .map((item) => item.shipsOn?.toISOString().slice(0, 10))
+    .filter((d): d is string => !!d);
+  return days.length ? days.sort().at(-1)! : null;
 }
 
 export const orderInclude = {
@@ -173,6 +188,8 @@ export function toOrderView(order: OrderRow): OrderView {
     shipments: shipments(order),
     returnableUntil: returnableUntil(order),
     cancellableUntil: cancellableUntil(order),
+    // Pre-orders (p10-30): when it ships from, until it has shipped.
+    preorderShipsOn: order.shippedAt || order.deliveredAt ? null : preorderShipsOn(order),
     kind: order.kind ?? 'GOODS',
     shippingSpeed: order.shippingSpeed ?? 'STANDARD',
     plusSavingsCents: order.plusSavingsCents ?? 0,

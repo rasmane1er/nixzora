@@ -1,10 +1,11 @@
+import { calendarDay } from '@nixzora/i18n';
 import { CARRIERS, type SellerOrderView } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { api, ApiError } from '@/lib/api';
-import { getFormat, getT } from '@/lib/i18n';
+import { getFormat, getLocale, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 import { requireSeller } from '@/lib/sell';
 import { shipSellerOrder } from '../../actions';
@@ -34,7 +35,13 @@ export default async function SellerOrderPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const [t, f, gf] = await Promise.all([getT('sellerTools'), getFormat(), getT('gift')]);
+  const [t, f, gf, po, locale] = await Promise.all([
+    getT('sellerTools'),
+    getFormat(),
+    getT('gift'),
+    getT('preorders'),
+    getLocale(),
+  ]);
   const money = (cents: number) => f.money(cents, order.currency);
   const date = (iso: string | null) => (iso ? f.dateTime(iso) : '—');
   const a = order.shipTo;
@@ -93,6 +100,12 @@ export default async function SellerOrderPage({
                       </strong>
                       <div className="muted mono" style={{ fontSize: 13 }}>
                         {item.variantTitle} · {item.sku}
+                        {item.shipsOn ? (
+                          <span className="line-preorder">
+                            {' '}
+                            · {po('sellerShipsOn', { date: calendarDay(item.shipsOn, locale) })}
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="num">{money(item.totalCents)}</td>
