@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { AwayNotice } from '@/components/Vacation';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
@@ -68,6 +69,7 @@ export default function StoreScreen() {
       </View>
       <FollowButton handle={s.handle} store={s.displayName} />
       {s.description ? <Text>{s.description}</Text> : null}
+      {s.away ? <AwayNotice away={s.away} /> : null}
     </View>
   );
   return (

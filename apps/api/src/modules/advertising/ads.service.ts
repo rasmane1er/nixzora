@@ -119,7 +119,8 @@ export class AdsService implements OnModuleInit, OnModuleDestroy {
     for (const candidate of candidates) {
       const card = cards.get(candidate.productId);
       const relevance = context.relevance(candidate.productId);
-      if (!card?.inStock || !relevance || context.exclude.has(card.id)) continue;
+      // Vacation mode (p10-32): no paid clicks on what can't be bought while the store is away.
+      if (!card?.inStock || card.storeAway || !relevance || context.exclude.has(card.id)) continue;
       const quality = relevance * ratingFactor(card);
       const ranked = { ...candidate, card, quality, adRank: candidate.bidCents * quality };
       const current = best.get(card.id);

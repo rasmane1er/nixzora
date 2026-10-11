@@ -1,3 +1,4 @@
+import { StoreAwaySchema } from './vacation';
 import { CardChipSchema } from './card-chips';
 import { SpendOfferBriefSchema } from './spend-offers';
 import { z } from 'zod';
@@ -310,6 +311,8 @@ export const ProductCardSchema = z.object({
     .optional(),
   /** Spec chips (ADR-0053): up to three short facts for the card. */
   chips: z.array(CardChipSchema).optional(),
+  /** Vacation mode (p10-32): the store is away, so it can't be bought until it's back. */
+  storeAway: z.object({ until: z.string().nullable() }).optional(),
 });
 
 /**
@@ -356,6 +359,8 @@ export const ProductDetailSchema = ProductCardSchema.extend({
       rating: z
         .object({ average: z.number().nullable(), count: z.number().int() })
         .default({ average: null, count: 0 }),
+      /** Vacation mode (p10-32): the store is away today, so this can't be bought. */
+      away: StoreAwaySchema.nullable().optional(),
     })
     .nullable()
     .default(null),

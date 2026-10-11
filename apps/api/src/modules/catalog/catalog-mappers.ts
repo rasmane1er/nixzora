@@ -1,5 +1,8 @@
 import {
   cardChips,
+  type StoreAway,
+  storeAway,
+  type Vacation,
   type CardColor,
   colorSwatch,
   deliveryFrom,
@@ -26,6 +29,9 @@ export const productInclude = {
       ratingCount: true,
       ratingTotal: true,
       handlingDays: true,
+      vacationFrom: true,
+      vacationUntil: true,
+      vacationMessage: true,
     },
   },
   images: { orderBy: { position: 'asc' } },
@@ -33,6 +39,27 @@ export const productInclude = {
 } satisfies Prisma.ProductInclude;
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
+
+/** Vacation mode (p10-32): a store's vacation as days, from its row. */
+export function vacationOf(seller: {
+  vacationFrom: Date | null;
+  vacationUntil: Date | null;
+  vacationMessage: string | null;
+}): (Vacation & { from: string }) | null {
+  if (!seller.vacationFrom) return null;
+  return {
+    from: seller.vacationFrom.toISOString().slice(0, 10),
+    until: seller.vacationUntil?.toISOString().slice(0, 10) ?? null,
+    message: seller.vacationMessage,
+  };
+}
+
+/** Away today, or null (NIXZORA's own products never are). */
+export function awayOf(
+  seller: Parameters<typeof vacationOf>[0] | null | undefined,
+): StoreAway | null {
+  return seller ? storeAway(vacationOf(seller)) : null;
+}
 
 export function availableOf(inventory: { onHand: number; reserved: number } | null): number {
   return inventory ? Math.max(0, inventory.onHand - inventory.reserved) : 0;
@@ -91,6 +118,11 @@ export function toCard(
     delivery: deliveryFrom(product.seller?.handlingDays ?? OWN_HANDLING_DAYS, releaseDay(product)),
     ...(isPreorder(releaseDay(product)) ? { preorder: { releaseDate: releaseDay(product)! } } : {}),
     shipsFromNixzora: !product.sellerId,
+    // Vacation mode (p10-32): visible, not buyable until the store is back.
+    ...(() => {
+      const away = awayOf(product.seller);
+      return away ? { storeAway: { until: away.until } } : {};
+    })(),
     ...cardColors(active, product.images, publicUrl),
     // Spec chips (ADR-0053): up to three short facts for the card.
     ...(() => {

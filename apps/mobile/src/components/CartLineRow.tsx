@@ -31,6 +31,7 @@ export function CartLineRow({
   const tpl = useT('plus');
   const tpo = useT('preorders');
   const tu = useT('shopUi');
+  const tv = useT('vacation');
   const locale = useLocale();
   const options = optionsText(line.options);
   return (
@@ -68,7 +69,17 @@ export function CartLineRow({
             )}`}
           />
         ) : null}
-        {line.problem === 'UNAVAILABLE' ? (
+        {line.storeAway ? (
+          // Vacation mode (p10-32): it waits in the cart until the store is back.
+          <Text variant="small" tone="error">
+            {line.storeAway.until
+              ? tv('cartLine', {
+                  store: line.storeAway.store,
+                  date: calendarDay(line.storeAway.until, locale),
+                })
+              : tv('cartLineOpen', { store: line.storeAway.store })}
+          </Text>
+        ) : line.problem === 'UNAVAILABLE' ? (
           <Text variant="small" tone="error">
             {t('lineUnavailable')}
           </Text>

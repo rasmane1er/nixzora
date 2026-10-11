@@ -4,7 +4,14 @@ import {
   type ProductCard as Card,
   shownDelivery,
 } from '@nixzora/validation';
-import { chipText, deliveryDay, INTL_LOCALE, multiBuyTerms, rich } from '@nixzora/i18n';
+import {
+  calendarDay,
+  chipText,
+  deliveryDay,
+  INTL_LOCALE,
+  multiBuyTerms,
+  rich,
+} from '@nixzora/i18n';
 import { Price } from '@nixzora/ui';
 import Link from 'next/link';
 import { adHref } from '@/lib/ads';
@@ -96,7 +103,7 @@ export async function ProductCard({
   adToken?: string;
 }) {
   // Together, not one after another: under load every await waits in line again.
-  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member, tu, tch] = await Promise.all([
+  const [t, a, d, pl, cl, mb, po, locale, f, wishlist, member, tu, tch, vac] = await Promise.all([
     getT('product'),
     getT('ads'),
     getT('deals'),
@@ -110,6 +117,7 @@ export async function ProductCard({
     isPlusMember(),
     getT('shopUi'),
     getT('cardChips'),
+    getT('vacation'),
   ]);
   // "Arrives …" (p10-17): Plus members get NIXZORA's own items in 2 days, free.
   const twoDay = member && product.shipsFromNixzora === true;
@@ -253,7 +261,14 @@ export async function ProductCard({
             initialNow={renderedAt()}
           />
         ) : null}
-        {deliveryText ? (
+        {product.storeAway ? (
+          // Vacation mode (p10-32): no delivery date while the store is away.
+          <span className="card-away">
+            {product.storeAway.until
+              ? vac('awayShort', { date: calendarDay(product.storeAway.until, locale) })
+              : vac('awayShortOpen')}
+          </span>
+        ) : deliveryText ? (
           <span className="card-delivery">
             <svg
               className="card-delivery__icon"
@@ -300,12 +315,15 @@ export async function ProductCard({
       {badge ? <span className={`card-badge card-badge--${badge.kind}`}>{badge.text}</span> : null}
       <CardHeart productId={product.id} title={product.title} initial={wished} />
       <div className="product-card__actions">
-        <CardAdd
-          variantId={product.defaultVariantId}
-          slug={product.slug}
-          title={product.title}
-          inStock={product.inStock}
-        />
+        {/* Vacation mode (p10-32): the line above says when it can be ordered. */}
+        {product.storeAway ? null : (
+          <CardAdd
+            variantId={product.defaultVariantId}
+            slug={product.slug}
+            title={product.title}
+            inStock={product.inStock}
+          />
+        )}
       </div>
     </article>
   );

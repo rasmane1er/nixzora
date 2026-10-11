@@ -39,6 +39,7 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const mb = await getT('multiBuy');
   const sp = await getT('spendSave');
   const po = await getT('preorders');
+  const vac = await getT('vacation');
   const cl = await getT('clips');
   const tCommon = await getT('common');
   const tp = await getT('product');
@@ -171,7 +172,17 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
                   </div>
                 ) : null}
                 <PlusLineTag line={line} />
-                {line.problem === 'UNAVAILABLE' ? (
+                {line.storeAway ? (
+                  // Vacation mode (p10-32): it waits in the cart until the store is back.
+                  <p className="field-error">
+                    {line.storeAway.until
+                      ? vac('cartLine', {
+                          store: line.storeAway.store,
+                          date: calendarDay(line.storeAway.until, locale),
+                        })
+                      : vac('cartLineOpen', { store: line.storeAway.store })}
+                  </p>
+                ) : line.problem === 'UNAVAILABLE' ? (
                   <p className="field-error">{tc('unavailable')}</p>
                 ) : line.problem === 'INSUFFICIENT_STOCK' ? (
                   <p className="field-error">{tc('lowStock', { count: line.available })}</p>

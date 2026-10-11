@@ -46,6 +46,7 @@ import { AddToListButton } from '@/components/AddToListButton';
 import { Chips } from '@/components/Chips';
 import { DealTimer, DEAL_RED, useDealLabel } from '@/components/DealTimer';
 import { StockAlertButton } from '@/components/StockAlertButton';
+import { AwayNotice } from '@/components/Vacation';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
 import { ProductReviews } from '@/components/ProductReviews';
@@ -275,6 +276,7 @@ export default function ProductScreen() {
   const t = useT('appShop');
   const tp = useT('productPage');
   const tpo = useT('preorders');
+  const tv = useT('vacation');
   const tu = useT('shopUi');
   const insets = useSafeAreaInsets();
   const locale = useLocale();
@@ -454,7 +456,9 @@ export default function ProductScreen() {
           : undefined,
       )
     : { text: t('notAvailable'), tone: 'error' as const };
-  const canBuy = !!variant && variant.available > 0;
+  // Vacation mode (p10-32): an away store's items can't be ordered until it's back.
+  const away = item.seller?.away ?? null;
+  const canBuy = !!variant && variant.available > 0 && !away;
   const specs = Object.entries(item.attributes);
 
   const onWish = () => {
@@ -824,8 +828,12 @@ export default function ProductScreen() {
               ) : null}
 
               {item.sizeGuide ? <SizeGuide guide={item.sizeGuide} /> : null}
-              <Text variant="small" tone={stock.tone}>
-                {stock.text}
+              <Text variant="small" tone={away ? 'error' : stock.tone}>
+                {away
+                  ? away.until
+                    ? tv('awayShort', { date: calendarDay(away.until, locale) })
+                    : tv('awayShortOpen')
+                  : stock.text}
               </Text>
               {item.preorder ? (
                 // Pre-orders (p10-30): when it ships, and that it can be cancelled until then.
@@ -867,28 +875,31 @@ export default function ProductScreen() {
                 // Spend more, save more (p10-31): the store's tiers.
                 <SpendRow offer={item.spendOffer} store={item.seller} />
               ) : null}
-              {/* Delivery in its own card (ADR-0053). */}
-              <View style={[styles.deliveryCard, { borderColor: p.line }]}>
-                <DeliveryPromise
-                  window={shownDelivery(item, member && !item.seller)}
-                  twoDay={member && !item.seller}
-                />
-                {item.seller ? null : (
-                  // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() => router.push('/plus')}
-                    style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}
-                  >
-                    <PlusChip />
-                    <Text variant="small" style={{ flexShrink: 1 }}>
-                      {tpl('twoDayWithPlus')}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
+              {/* Delivery in its own card (ADR-0053); none while the store is away (p10-32). */}
+              {away ? null : (
+                <View style={[styles.deliveryCard, { borderColor: p.line }]}>
+                  <DeliveryPromise
+                    window={shownDelivery(item, member && !item.seller)}
+                    twoDay={member && !item.seller}
+                  />
+                  {item.seller ? null : (
+                    // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={() => router.push('/plus')}
+                      style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}
+                    >
+                      <PlusChip />
+                      <Text variant="small" style={{ flexShrink: 1 }}>
+                        {tpl('twoDayWithPlus')}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
 
-              {canBuy ? null : <StockAlertButton productId={item.id} />}
+              {away ? <AwayNotice away={away} store={item.seller!.displayName} /> : null}
+              {canBuy || away ? null : <StockAlertButton productId={item.id} />}
               {canBuy && oneClickCard && oneClickAddress && user ? (
                 <View style={{ gap: space.xs }}>
                   <Button

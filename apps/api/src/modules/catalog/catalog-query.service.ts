@@ -31,6 +31,7 @@ import { ancestorsOf, descendantIds } from './category-tree';
 import { SIZED_DEPARTMENTS, sizeGuideFor } from './size-guide';
 import {
   productInclude,
+  awayOf,
   releaseDay,
   toVideo,
   type ProductWithRelations,
@@ -791,6 +792,7 @@ export class CatalogQueryService {
             handle: product.seller.handle,
             displayName: product.seller.displayName,
             rating: ratingSummary(product.seller),
+            away: awayOf(product.seller),
           }
         : null,
       // Review feedback is between staff and the seller; the storefront never shows it.

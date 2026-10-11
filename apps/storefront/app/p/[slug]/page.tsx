@@ -169,6 +169,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const mb = await getT('multiBuy');
   const sp = await getT('spendSave');
   const po = await getT('preorders');
+  const vac = await getT('vacation');
   const w = await getT('wallet');
   const ib = await getT('inbox');
   const cmp = await getT('compare');
@@ -359,10 +360,13 @@ export default async function ProductPage({ params, searchParams }: Props) {
                 ) : null}
               </div>
             ) : null}
-            <DeliveryPromise
-              window={shownDelivery(product, member && !product.seller)}
-              twoDay={member && !product.seller}
-            />
+            {/* Vacation mode (p10-32): no arrival date while the store is away. */}
+            {product.seller?.away ? null : (
+              <DeliveryPromise
+                window={shownDelivery(product, member && !product.seller)}
+                twoDay={member && !product.seller}
+              />
+            )}
             {product.seller ? null : (
               // NIXZORA ships it: Plus members get it in 2 days, free (p10-15).
               <p className="plus-note">
@@ -376,27 +380,44 @@ export default async function ProductPage({ params, searchParams }: Props) {
               </p>
             )}
             {product.sizeGuide ? <SizeGuide guide={product.sizeGuide} /> : null}
-            <AddToCart
-              preorder={product.preorder?.releaseDate ?? null}
-              variants={product.variants}
-              slug={product.slug}
-              subscribe={
-                product.subscribable && !product.preorder
-                  ? { signedIn, ready: Boolean(oneClick) }
-                  : null
-              }
-              oneClick={
-                oneClick
-                  ? {
-                      shipTo: `${oneClick.address.fullName}, ${oneClick.address.city}`,
-                      card: w('cardLabel', {
-                        brand: cardBrand(oneClick.card.brand),
-                        last4: oneClick.card.last4,
-                      }),
-                    }
-                  : null
-              }
-            />
+            {product.seller?.away ? (
+              // Vacation mode (p10-32): visible, but orders wait until the store is back.
+              <div className="banner banner--info pdp-away" role="status">
+                <p>
+                  {product.seller.away.until
+                    ? vac('awayBanner', {
+                        store: product.seller.displayName,
+                        date: calendarDay(product.seller.away.until, locale),
+                      })
+                    : vac('awayBannerOpen', { store: product.seller.displayName })}
+                </p>
+                {product.seller.away.message ? (
+                  <p className="muted">{vac('note', { message: product.seller.away.message })}</p>
+                ) : null}
+              </div>
+            ) : (
+              <AddToCart
+                preorder={product.preorder?.releaseDate ?? null}
+                variants={product.variants}
+                slug={product.slug}
+                subscribe={
+                  product.subscribable && !product.preorder
+                    ? { signedIn, ready: Boolean(oneClick) }
+                    : null
+                }
+                oneClick={
+                  oneClick
+                    ? {
+                        shipTo: `${oneClick.address.fullName}, ${oneClick.address.city}`,
+                        card: w('cardLabel', {
+                          brand: cardBrand(oneClick.card.brand),
+                          last4: oneClick.card.last4,
+                        }),
+                      }
+                    : null
+                }
+              />
+            )}
             {!inStock ? (
               <StockAlert
                 productId={product.id}

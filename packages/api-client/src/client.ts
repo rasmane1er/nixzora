@@ -17,6 +17,8 @@ import type {
   PriceHistory,
   BundleView,
   MultiBuyView,
+  VacationInput,
+  SellerView,
   SpendOfferView,
   CouponsPage,
   CompareView,
@@ -562,6 +564,10 @@ export function createApiClient(options: ClientOptions) {
     /** The store you work for (the seller portal is on the web; the app shows its analytics). */
     seller: {
       me: () => request<SellerMeResponse>('GET', '/seller/me'),
+      /** Vacation mode (p10-32). */
+      setVacation: (body: VacationInput) =>
+        request<SellerView>('PUT', '/seller/vacation', { body }),
+      endVacation: () => request<SellerView>('DELETE', '/seller/vacation'),
       /** Size & fit guide (p10-26): the store's charts and NIXZORA's. */
       sizeCharts: () => request<SizeChartView[]>('GET', '/seller/size-charts'),
       analytics: (days: 7 | 30 | 90) =>

@@ -31,6 +31,7 @@ export * from './bundles';
 export * from './multi-buys';
 export * from './spend-offers';
 export * from './card-chips';
+export * from './vacation';
 export * from './videos';
 export * from './colors';
 export * from './preorders';

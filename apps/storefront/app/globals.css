@@ -6218,3 +6218,18 @@ td.neg {
     justify-content: flex-end;
   }
 }
+
+/* Store vacation mode (p10-32) */
+.card-away {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn-fg);
+}
+.pdp-away {
+  display: grid;
+  gap: 4px;
+}
+.pdp-away p,
+.vacation-card .banner {
+  margin: 0;
+}

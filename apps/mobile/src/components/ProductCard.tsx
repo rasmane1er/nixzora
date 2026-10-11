@@ -21,6 +21,7 @@ import { useSession } from '@/lib/session';
 import { brand, cardShadow, fonts, radius, space, usePalette } from '@/lib/theme';
 import { visitorId } from '@/lib/visitor';
 import { BoughtLine, DeliveryLine } from './CardExtras';
+import { AwayLine } from './Vacation';
 import { OfferTag } from '@/components/MultiBuy';
 import { CouponTag } from './ClipCoupon';
 import { DEAL_RED, DealTimer, useDealLabel } from './DealTimer';
@@ -175,7 +176,11 @@ export function ProductCard({
           {product.coupon ? <CouponTag coupon={product.coupon} /> : null}
           {product.multiBuy ? <OfferTag offer={product.multiBuy} /> : null}
           {product.deal ? <DealTimer deal={product.deal} /> : null}
-          <DeliveryLine product={product} />
+          {product.storeAway ? (
+            <AwayLine until={product.storeAway.until} />
+          ) : (
+            <DeliveryLine product={product} />
+          )}
           {!product.inStock ? (
             <Text variant="small" tone="error">
               {tp('soldOut')}
@@ -208,9 +213,12 @@ export function ProductCard({
         </View>
       ) : null}
       <CardHeart productId={product.id} title={product.title} />
-      <View style={styles.actions}>
-        <CardAdd product={product} compact />
-      </View>
+      {/* Vacation mode (p10-32): the line above says when it can be ordered. */}
+      {product.storeAway ? null : (
+        <View style={styles.actions}>
+          <CardAdd product={product} compact />
+        </View>
+      )}
     </View>
   );
 }
@@ -375,7 +383,11 @@ function RowCard({
         <View style={[styles.rowFoot, wide && styles.rowFootWide]}>
           {product.inStock ? (
             <View style={styles.delivery}>
-              <DeliveryLine product={product} />
+              {product.storeAway ? (
+                <AwayLine until={product.storeAway.until} />
+              ) : (
+                <DeliveryLine product={product} />
+              )}
             </View>
           ) : (
             <Text variant="small" tone="error" style={{ flex: 1 }}>
@@ -383,7 +395,7 @@ function RowCard({
             </Text>
           )}
           <View style={wide ? null : { alignSelf: 'flex-end' }}>
-            <CardAdd product={product} compact />
+            {product.storeAway ? null : <CardAdd product={product} compact />}
           </View>
         </View>
       </View>

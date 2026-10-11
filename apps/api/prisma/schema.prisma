@@ -1453,6 +1453,11 @@ model Seller {
   payoutsHeld          Boolean       @default(false) @map("payouts_held")
   /// Advertising credit granted by NIXZORA (p10-01): spent on clicks before earnings, never paid out.
   adCreditCents        Int           @default(0) @map("ad_credit_cents")
+  /// Vacation mode (p10-32): away from this day (US Eastern) until the day it's back (null =
+  /// until turned off). Listings stay visible but can't be bought while away.
+  vacationFrom         DateTime?     @map("vacation_from") @db.Date
+  vacationUntil        DateTime?     @map("vacation_until") @db.Date
+  vacationMessage      String?       @map("vacation_message")
 
   members         SellerMember[]
   riskAssessments RiskAssessment[]

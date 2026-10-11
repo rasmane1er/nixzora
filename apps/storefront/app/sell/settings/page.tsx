@@ -9,6 +9,7 @@ import {
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import { BrandingUpload } from '@/components/BrandingUpload';
+import { VacationCard } from '@/components/VacationCard';
 import { Notices, SellerNav } from '@/components/SellerNav';
 import { getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
@@ -197,6 +198,7 @@ export default async function StoreSettingsPage({ searchParams }: { searchParams
           </p>
         </section>
       </div>
+      <VacationCard seller={seller} />
     </div>
   );
 }

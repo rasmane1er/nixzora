@@ -15,6 +15,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
+  type VacationInput,
+  VacationSchema,
   type InventoryAdjust,
   type ListingImportRequest,
   ListingImportRequestSchema,
@@ -231,6 +233,23 @@ export class SellerController {
     @Actor() actor: ActorContext,
   ) {
     return this.sellers.updateProfile(body, actor);
+  }
+
+  /** Vacation mode (p10-32): away from a day, until the day the store is back. */
+  @Put('vacation')
+  @ApiZodBody(VacationSchema)
+  @ApiZodResponse(SellerViewSchema)
+  setVacation(
+    @Body(new ZodValidationPipe(VacationSchema)) body: VacationInput,
+    @Actor() actor: ActorContext,
+  ) {
+    return this.sellers.setVacation(body, actor);
+  }
+
+  @Delete('vacation')
+  @ApiZodResponse(SellerViewSchema)
+  endVacation(@Actor() actor: ActorContext) {
+    return this.sellers.endVacation(actor);
   }
 
   // Payouts

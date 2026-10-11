@@ -144,6 +144,8 @@ export type CartLine = {
   regularPriceCents?: number;
   /** Pre-orders (p10-30): the release day it ships from. */
   releaseDate?: string;
+  /** Vacation mode (p10-32): its store is away (the line is UNAVAILABLE until it's back). */
+  storeAway?: { store: string; until: string | null };
 };
 
 export type Totals = {

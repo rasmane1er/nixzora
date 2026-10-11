@@ -34,7 +34,7 @@ export type ClippedSaving = {
   discountCents: number;
   sellerId: string | null;
 };
-import { availableOf, releaseDay } from '../catalog/catalog-mappers';
+import { availableOf, awayOf, releaseDay } from '../catalog/catalog-mappers';
 import { countCartAdd } from '../catalog/traffic';
 import { StorageService } from '../media/storage.service';
 import { CouponsService } from '../promotions/coupons.service';
@@ -375,7 +375,15 @@ export class CartService {
             product: {
               include: {
                 images: { orderBy: { position: 'asc' }, take: 1 },
-                seller: { select: { handlingDays: true } },
+                seller: {
+                  select: {
+                    handlingDays: true,
+                    displayName: true,
+                    vacationFrom: true,
+                    vacationUntil: true,
+                    vacationMessage: true,
+                  },
+                },
               },
             },
           },
@@ -398,7 +406,9 @@ export class CartService {
         continue;
       }
       const available = availableOf(variant.inventory);
-      const sellable = variant.isActive && variant.product.status === 'ACTIVE';
+      // Vacation mode (p10-32): an away store's items wait in the cart until it's back.
+      const away = awayOf(variant.product.seller);
+      const sellable = variant.isActive && variant.product.status === 'ACTIVE' && !away;
       const image = variant.product.images[0];
       const memberPrice = memberPrices.get(variantId);
       const unitPrice = memberPrice ?? variant.priceCents;
@@ -421,6 +431,9 @@ export class CartService {
         // Pre-orders (p10-30): ships from its release day.
         ...(isPreorder(releaseDay(variant.product))
           ? { releaseDate: releaseDay(variant.product)! }
+          : {}),
+        ...(away
+          ? { storeAway: { store: variant.product.seller!.displayName, until: away.until } }
           : {}),
         available,
         problem:
@@ -458,7 +471,8 @@ export class CartService {
     const check = code ? await this.coupons.check(code, subtotal) : null;
     // The slowest store in the cart decides when everything has arrived (p10-04).
     const buyable = variants.filter(
-      (v) => byId.has(v.id) && v.isActive && availableOf(v.inventory) > 0,
+      (v) =>
+        byId.has(v.id) && v.isActive && availableOf(v.inventory) > 0 && !awayOf(v.product.seller),
     );
     const handling = Math.max(
       0,
@@ -537,10 +551,35 @@ export class CartService {
   private async assertSellable(variantId: string): Promise<string> {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
-      include: { product: { select: { status: true } }, inventory: true },
+      include: {
+        product: {
+          select: {
+            status: true,
+            seller: {
+              select: {
+                displayName: true,
+                vacationFrom: true,
+                vacationUntil: true,
+                vacationMessage: true,
+              },
+            },
+          },
+        },
+        inventory: true,
+      },
     });
     if (!variant || !variant.isActive || variant.product.status !== 'ACTIVE') {
       throw new NotFoundException('That product is not available.');
+    }
+    // Vacation mode (p10-32): no new orders while the store is away.
+    const away = awayOf(variant.product.seller);
+    if (away) {
+      const store = variant.product.seller!.displayName;
+      throw new BadRequestException(
+        away.until
+          ? `${store} is away until ${away.until}, so this can’t be ordered yet.`
+          : `${store} is away for now, so this can’t be ordered yet.`,
+      );
     }
     if (availableOf(variant.inventory) === 0) {
       throw new BadRequestException('That item is sold out.');

@@ -1,6 +1,7 @@
 import { errorMessage } from '@nixzora/api-client';
 import type { SellerAnalytics } from '@nixzora/validation';
-import { useQuery } from '@tanstack/react-query';
+import { calendarDay } from '@nixzora/i18n';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, RefreshControl, useColorScheme, View } from 'react-native';
@@ -9,7 +10,7 @@ import { Banner, Button, Card, Divider, Row, Screen, Text } from '@/components/u
 import { api } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
 import { useFormatters } from '@/lib/format';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 import { fonts, space, usePalette } from '@/lib/theme';
 
 type Days = '7' | '30' | '90';
@@ -129,6 +130,16 @@ export default function StoreDashboardScreen() {
     queryFn: () => api.seller.analytics(Number(days) as 7 | 30 | 90),
   });
   const s = stats.data;
+  // Vacation mode (p10-32): whether the store is away, and a quick way back.
+  const client = useQueryClient();
+  const tv = useT('vacation');
+  const locale = useLocale();
+  const me = useQuery({ queryKey: ['seller-me'], queryFn: () => api.seller.me() });
+  const back = useMutation({
+    mutationFn: () => api.seller.endVacation(),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['seller-me'] }),
+  });
+  const store = me.data?.seller;
   const tiles: [string, string][] = s
     ? [
         [st('tileSales'), money(s.totals.salesCents)],
@@ -143,6 +154,30 @@ export default function StoreDashboardScreen() {
         <RefreshControl refreshing={stats.isRefetching} onRefresh={() => void stats.refetch()} />
       }
     >
+      {store ? (
+        <Card style={{ gap: space.sm }}>
+          <Text variant="heading">{tv('title')}</Text>
+          <Text variant="small" muted={!store.away}>
+            {store.away
+              ? store.away.until
+                ? tv('statusAway', { date: calendarDay(store.away.until, locale) })
+                : tv('statusAwayOpen')
+              : store.vacation
+                ? tv('statusScheduled', { from: calendarDay(store.vacation.from, locale) })
+                : tv('lead')}
+          </Text>
+          {back.error ? <Banner tone="error">{errorMessage(back.error)}</Banner> : null}
+          {store.vacation ? (
+            <Button title={tv('end')} loading={back.isPending} onPress={() => back.mutate()} />
+          ) : (
+            <Button
+              tone="secondary"
+              title={tv('start')}
+              onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/sell/settings#vacation`)}
+            />
+          )}
+        </Card>
+      ) : null}
       <Chips<Days>
         value={days}
         onChange={setDays}

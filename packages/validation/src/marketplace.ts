@@ -1,3 +1,4 @@
+import { StoreAwaySchema } from './vacation';
 import { z } from 'zod';
 import { type TrafficSource } from './traffic';
 import { CARRIERS } from './commerce';
@@ -99,6 +100,12 @@ export const SellerViewSchema = z.object({
     carriers: z.array(z.string()),
     shipRegions: z.array(z.string()),
   }),
+  /** Vacation mode (p10-32): as set (it may start later), and whether it's away today. */
+  vacation: z
+    .object({ from: z.string(), until: z.string().nullable(), message: z.string().nullable() })
+    .nullable()
+    .optional(),
+  away: StoreAwaySchema.nullable().optional(),
 });
 
 /** GET /seller/me: the caller's store, or null if they have not applied. */
@@ -411,6 +418,8 @@ export const PublicSellerSchema = z.object({
   handlingDays: z.number().int(),
   /** People following the store (p10-24). */
   followers: z.number().int().optional(),
+  /** Vacation mode (p10-32): away today, and until when. */
+  away: StoreAwaySchema.nullable().optional(),
 });
 
 // ───────────── Ratings and returns in the seller portal (p7-07) ─────────────

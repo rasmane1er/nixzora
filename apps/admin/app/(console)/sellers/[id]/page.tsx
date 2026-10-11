@@ -11,7 +11,7 @@ import {
   type SellerBalance,
   type SellerFeedback,
 } from '@nixzora/validation';
-import { INTL_LOCALE, rich } from '@nixzora/i18n';
+import { calendarDay, INTL_LOCALE, rich } from '@nixzora/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -69,6 +69,7 @@ export default async function SellerPage({
   const { payouts } = seller;
   const { money, dateTime } = f;
   const tRisk = await getT('opsRisk');
+  const vac = await getT('vacation');
 
   return (
     <>
@@ -92,6 +93,15 @@ export default async function SellerPage({
           </h2>
           {seller.statusReason ? (
             <p className="banner banner--error">{seller.statusReason}</p>
+          ) : null}
+          {seller.away ? (
+            // Vacation mode (p10-32): new orders paused by the store.
+            <p className="banner">
+              {seller.away.until
+                ? vac('opsAway', { date: calendarDay(seller.away.until, locale) })
+                : vac('opsAwayOpen')}
+              {seller.away.message ? ` · “${seller.away.message}”` : ''}
+            </p>
           ) : null}
           <div className="table-wrap">
             <table>

@@ -1,3 +1,4 @@
+import { awayOf, vacationOf } from '../catalog/catalog-mappers';
 import { ratingSummary } from '../../common/rating';
 import { type SellerProductRow, type SellerView } from '@nixzora/validation';
 import { type Seller } from '../../generated/prisma/client';
@@ -59,6 +60,9 @@ export function toSellerView(
       carriers: seller.carriers,
       shipRegions: seller.shipRegions,
     },
+    // Vacation mode (p10-32).
+    vacation: vacationOf(seller),
+    away: awayOf(seller),
   };
 }
 

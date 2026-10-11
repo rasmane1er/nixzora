@@ -9,7 +9,8 @@ import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
 import { SellerRating } from '@/components/SellerRating';
 import { api, ApiError } from '@/lib/api';
-import { departmentName, getFormat, getT } from '@/lib/i18n';
+import { calendarDay } from '@nixzora/i18n';
+import { departmentName, getFormat, getLocale, getT } from '@/lib/i18n';
 import { isSignedIn } from '@/lib/session';
 import { FollowButton } from './FollowButton';
 
@@ -47,6 +48,8 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
   );
   const t = await getT('store');
   const p = await getT('product');
+  const vac = await getT('vacation');
+  const locale = await getLocale();
   // Follow stores (p10-24): whether the viewer follows it, and how many people do.
   const signedIn = await isSignedIn();
   const follow = await api<FollowStatus>(`/catalog/sellers/${handle}/follow`).catch(
@@ -122,6 +125,19 @@ export default async function StorePage({ params }: { params: Promise<{ handle: 
           ) : null}
         </p>
       </header>
+      {store.away ? (
+        // Vacation mode (p10-32).
+        <div className="banner banner--info" role="status" style={{ marginBottom: 20 }}>
+          <p>
+            {store.away.until
+              ? vac('storeBanner', { date: calendarDay(store.away.until, locale) })
+              : vac('storeBannerOpen')}
+          </p>
+          {store.away.message ? (
+            <p className="muted">{vac('note', { message: store.away.message })}</p>
+          ) : null}
+        </div>
+      ) : null}
       {products.items.length ? (
         <div className="grid">
           {products.items.map((product) => (

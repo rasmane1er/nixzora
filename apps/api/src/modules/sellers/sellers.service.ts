@@ -9,6 +9,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { type Locale } from '@nixzora/i18n';
 import {
+  VACATION_MAX_DAYS,
+  type VacationInput,
+  vacationProblem,
   type PayoutOnboardingLink,
   type PublicSeller,
   SellerHandleSchema,
@@ -28,6 +31,7 @@ import { MediaIntakeService } from '../media/media-intake.service';
 import { StorageService } from '../media/storage.service';
 import { payoutStatusChange } from './payout-status';
 import { listingCounts, NO_LISTINGS, toSellerView } from './seller-mappers';
+import { awayOf } from '../catalog/catalog-mappers';
 
 export type SellerContext = { seller: Seller; role: SellerMemberRole };
 
@@ -114,6 +118,59 @@ export class SellersService {
       'seller',
       seller.id,
       { changes: Object.keys(input) },
+    );
+    return this.view(updated);
+  }
+
+  /**
+   * Vacation mode (p10-32): away from `from` until the day it's back. Orders already placed
+   * still need shipping; new ones wait until the store is back.
+   */
+  async setVacation(input: VacationInput, actor: ActorContext): Promise<SellerView> {
+    const { seller } = await this.require(actor.user.id, { write: true });
+    const problem = vacationProblem(input);
+    // Editing a vacation already under way keeps its first day, even though that's past.
+    const ongoing = seller.vacationFrom?.toISOString().slice(0, 10) === input.from;
+    if (problem && !(problem === 'PAST' && ongoing)) {
+      throw new BadRequestException(
+        {
+          INVALID: 'Choose real dates.',
+          PAST: 'Vacation can’t start before today.',
+          START_TOO_FAR: `Vacation can start at most ${VACATION_MAX_DAYS} days from today.`,
+          ENDS_BEFORE: 'The day you’re back must be after the first day away.',
+          TOO_LONG: `Vacation can last at most ${VACATION_MAX_DAYS} days.`,
+        }[problem],
+      );
+    }
+    const updated = await this.prisma.seller.update({
+      where: { id: seller.id },
+      data: {
+        vacationFrom: new Date(`${input.from}T00:00:00Z`),
+        vacationUntil: input.until ? new Date(`${input.until}T00:00:00Z`) : null,
+        vacationMessage: input.message?.trim() || null,
+      },
+    });
+    await this.audit.recordFor(
+      { ...actor, actorType: 'USER' },
+      'seller.vacation.set',
+      'seller',
+      seller.id,
+      { from: input.from, until: input.until ?? null },
+    );
+    return this.view(updated);
+  }
+
+  async endVacation(actor: ActorContext): Promise<SellerView> {
+    const { seller } = await this.require(actor.user.id, { write: true });
+    const updated = await this.prisma.seller.update({
+      where: { id: seller.id },
+      data: { vacationFrom: null, vacationUntil: null, vacationMessage: null },
+    });
+    await this.audit.recordFor(
+      { ...actor, actorType: 'USER' },
+      'seller.vacation.ended',
+      'seller',
+      seller.id,
     );
     return this.view(updated);
   }
@@ -239,6 +296,7 @@ export class SellersService {
       salesCount: seller._count.orders,
       handlingDays: seller.handlingDays,
       followers: seller._count.followers,
+      away: awayOf(seller),
     };
   }
 
