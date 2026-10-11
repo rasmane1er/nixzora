@@ -187,6 +187,9 @@ function Gallery({
             gap: space.sm,
             paddingHorizontal: space.lg,
             paddingTop: space.sm,
+            // Room for the details panel, which rises 20pt on phones (ADR-0053), so the
+            // thumbnails stay fully visible above it.
+            paddingBottom: space.sm + 20,
           }}
         >
           {photos.map((image, i) => (
@@ -284,6 +287,8 @@ export default function ProductScreen() {
   const ta = useT('ads');
   const { attributeLabel, optionName, rating, percent, money } = useFormatters();
   const layout = useLayout();
+  // Phones under 360pt wide (zoomed display, small Androids): tighter buy bar.
+  const narrow = layout.width < 360;
   // Side by side, the photos take a bit over half of the page (up to 760pt).
   const galleryWidth = layout.wide
     ? Math.min(760, Math.round((Math.min(layout.width, 1400) - space.xl * 3) * 0.55))
@@ -1153,7 +1158,7 @@ export default function ProductScreen() {
                 maxWidth: READABLE_WIDTH,
                 alignSelf: 'center',
                 flexDirection: 'row',
-                gap: space.sm,
+                gap: narrow ? 6 : space.sm,
                 alignItems: 'center',
               }}
             >
@@ -1161,10 +1166,13 @@ export default function ProductScreen() {
                 value={quantity}
                 max={variant.available}
                 onChange={(next) => setQuantity(Math.max(1, next))}
+                compact={narrow}
               />
               <Button
                 title={item.preorder ? tpo('buttonPlain') : t('addToCart')}
-                style={{ flex: 1, borderRadius: 999 }}
+                singleLine
+                small={narrow}
+                style={[{ flex: 1, borderRadius: 999 }, narrow && { paddingHorizontal: space.sm }]}
                 loading={add.isPending}
                 onPress={onAdd}
               />
@@ -1175,10 +1183,19 @@ export default function ProductScreen() {
                 onPress={() => buyNow.mutate({ variantId: variant.id, qty: quantity })}
                 style={({ pressed }) => [
                   styles.buyNow,
+                  narrow && { flex: 1, paddingHorizontal: space.sm },
                   { backgroundColor: brand.ink, opacity: pressed ? 0.85 : 1 },
                 ]}
               >
-                <Text style={{ color: '#FFFFFF', fontFamily: fonts.bodyBold }}>{l('buyNow')}</Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    { color: '#FFFFFF', fontFamily: fonts.bodyBold },
+                    narrow && { fontSize: 14 },
+                  ]}
+                >
+                  {l('buyNow')}
+                </Text>
               </Pressable>
             </View>
           </View>

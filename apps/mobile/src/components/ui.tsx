@@ -65,6 +65,10 @@ type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   loading?: boolean;
   icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Keep the label on one line, shrinking it a little on narrow screens. */
+  singleLine?: boolean;
+  /** Smaller label (14pt), for tight bars. */
+  small?: boolean;
 };
 
 export function Button({
@@ -74,6 +78,8 @@ export function Button({
   disabled,
   icon,
   style,
+  singleLine,
+  small,
   ...props
 }: ButtonProps) {
   const p = usePalette();
@@ -105,7 +111,14 @@ export function Button({
       ]}
     >
       {loading ? <ActivityIndicator color={color} /> : icon}
-      <RNText style={[styles.buttonText, { color }]}>{title}</RNText>
+      <RNText
+        style={[styles.buttonText, small && { fontSize: 14 }, { color }]}
+        {...(singleLine
+          ? { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.8 }
+          : {})}
+      >
+        {title}
+      </RNText>
     </Pressable>
   );
 }

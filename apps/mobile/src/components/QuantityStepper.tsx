@@ -12,12 +12,15 @@ export function QuantityStepper({
   onChange,
   disabled,
   label: labelProp,
+  compact,
 }: {
   value: number;
   max?: number;
   onChange: (next: number) => void;
   disabled?: boolean;
   label?: string;
+  /** Slimmer, for tight bars on narrow phones. */
+  compact?: boolean;
 }) {
   const p = usePalette();
   const t = useT('appShop');
@@ -32,6 +35,7 @@ export function QuantityStepper({
       hitSlop={6}
       style={({ pressed }) => [
         styles.button,
+        compact && styles.compactButton,
         { borderColor: p.line, opacity: disabled || !enabled ? 0.4 : pressed ? 0.6 : 1 },
       ]}
     >
@@ -40,13 +44,15 @@ export function QuantityStepper({
   );
   return (
     <View
-      style={styles.row}
+      style={[styles.row, compact && { gap: 2 }]}
       accessible={false}
       accessibilityLabel={`${label}: ${value}`}
       accessibilityValue={{ min: 0, max: limit, now: value }}
     >
       {button('remove', value - 1, value > 0, t('decrease', { label: label.toLowerCase() }))}
-      <Text style={{ fontFamily: fonts.mono, minWidth: 28, textAlign: 'center' }}>{value}</Text>
+      <Text style={{ fontFamily: fonts.mono, minWidth: compact ? 20 : 28, textAlign: 'center' }}>
+        {value}
+      </Text>
       {button('add', value + 1, value < limit, t('increase', { label: label.toLowerCase() }))}
     </View>
   );
@@ -54,6 +60,7 @@ export function QuantityStepper({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  compactButton: { width: 30, height: 30, borderRadius: 15 },
   button: {
     width: 34,
     height: 34,
