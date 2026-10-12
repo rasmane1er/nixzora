@@ -1,3 +1,4 @@
+import { useTopInWindow } from '@/lib/keyboard';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { errorMessage } from '@nixzora/api-client';
 import { deliveryRange } from '@nixzora/i18n';
@@ -13,7 +14,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   TextInput,
@@ -173,6 +173,7 @@ function Buttons({
 export default function HelpChatScreen() {
   const t = useT('helpAgent');
   const p = usePalette();
+  const top = useTopInWindow();
   const { status } = useSession();
   const { width } = useLayout();
   const signedIn = status === 'signedIn';
@@ -254,181 +255,185 @@ export default function HelpChatScreen() {
   const suggestions = [t('s_track'), t('s_cancel'), t('s_return'), t('s_refund'), t('s_human')];
   return (
     <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: p.bg }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-      >
-        <ScrollView
-          ref={scroll}
-          onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
-            padding: space.lg,
-            gap: space.md,
-            width: '100%',
-            maxWidth: READABLE_WIDTH,
-            alignSelf: 'center',
-          }}
+      {/* Padding on both platforms, offset by where the screen starts under the header: Android
+          no longer resizes for the keyboard (edge-to-edge), so the field stayed hidden there. */}
+      <View ref={top.ref} onLayout={top.onLayout} style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior="padding"
+          keyboardVerticalOffset={top.top}
         >
-          <Row style={{ justifyContent: 'space-between', gap: space.sm }}>
-            <Text muted style={{ flex: 1 }}>
-              {t('lead')}
-            </Text>
-            {data?.id ? (
-              <Pressable
-                accessibilityRole="button"
-                disabled={busy}
-                onPress={() => restart.mutate()}
-              >
-                <Text tone="signal" style={{ fontFamily: fonts.bodyBold }}>
-                  {t('startOver')}
-                </Text>
-              </Pressable>
+          <ScrollView
+            ref={scroll}
+            onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              padding: space.lg,
+              gap: space.md,
+              width: '100%',
+              maxWidth: READABLE_WIDTH,
+              alignSelf: 'center',
+            }}
+          >
+            <Row style={{ justifyContent: 'space-between', gap: space.sm }}>
+              <Text muted style={{ flex: 1 }}>
+                {t('lead')}
+              </Text>
+              {data?.id ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={busy}
+                  onPress={() => restart.mutate()}
+                >
+                  <Text tone="signal" style={{ fontFamily: fonts.bodyBold }}>
+                    {t('startOver')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </Row>
+            {data?.status === 'HANDED_OFF' && data.supportReference ? (
+              <Banner tone="ok">{t('handedOff', { reference: data.supportReference })}</Banner>
             ) : null}
-          </Row>
-          {data?.status === 'HANDED_OFF' && data.supportReference ? (
-            <Banner tone="ok">{t('handedOff', { reference: data.supportReference })}</Banner>
-          ) : null}
 
-          {data?.turns.map((turn) =>
-            turn.role === 'USER' ? (
+            {data?.turns.map((turn) =>
+              turn.role === 'USER' ? (
+                <View
+                  key={turn.id}
+                  accessibilityLabel={`${t('you')}: ${turn.text}`}
+                  style={{
+                    alignSelf: 'flex-end',
+                    maxWidth: '85%',
+                    backgroundColor: p.tile,
+                    borderRadius: 18,
+                    borderBottomRightRadius: 4,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                  }}
+                >
+                  <Text style={{ color: p.tileFg }}>{turn.text}</Text>
+                </View>
+              ) : (
+                <View key={turn.id} style={{ gap: space.sm, alignSelf: 'stretch' }}>
+                  <View
+                    style={{
+                      alignSelf: 'flex-start',
+                      maxWidth: '92%',
+                      backgroundColor: p.card,
+                      borderColor: p.line,
+                      borderWidth: 1,
+                      borderRadius: 18,
+                      borderBottomLeftRadius: 4,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      gap: 2,
+                    }}
+                  >
+                    <Text variant="small" muted style={{ fontFamily: fonts.bodyBold }}>
+                      {t('agent')}
+                    </Text>
+                    <Text style={{ color: p.fg }}>{turn.text}</Text>
+                  </View>
+                  {turn.orders.map((o) => (
+                    <OrderCard key={o.number} order={o} />
+                  ))}
+                  <Buttons
+                    buttons={turn.buttons}
+                    busy={busy}
+                    onAction={(action) => act.mutate(action)}
+                  />
+                </View>
+              ),
+            )}
+
+            {data && data.turns.length === 1 && !sent ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                {suggestions.map((s) => (
+                  <Pressable
+                    key={s}
+                    accessibilityRole="button"
+                    onPress={() => ask(s)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: p.line,
+                      borderRadius: 999,
+                      paddingHorizontal: space.md,
+                      paddingVertical: 8,
+                      backgroundColor: p.card,
+                    }}
+                  >
+                    <Text>{s}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+            {sent ? (
               <View
-                key={turn.id}
-                accessibilityLabel={`${t('you')}: ${turn.text}`}
                 style={{
                   alignSelf: 'flex-end',
                   maxWidth: '85%',
                   backgroundColor: p.tile,
                   borderRadius: 18,
-                  borderBottomRightRadius: 4,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
+                  opacity: 0.8,
                 }}
               >
-                <Text style={{ color: p.tileFg }}>{turn.text}</Text>
+                <Text style={{ color: p.tileFg }}>{sent}</Text>
               </View>
-            ) : (
-              <View key={turn.id} style={{ gap: space.sm, alignSelf: 'stretch' }}>
-                <View
-                  style={{
-                    alignSelf: 'flex-start',
-                    maxWidth: '92%',
-                    backgroundColor: p.card,
-                    borderColor: p.line,
-                    borderWidth: 1,
-                    borderRadius: 18,
-                    borderBottomLeftRadius: 4,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    gap: 2,
-                  }}
-                >
-                  <Text variant="small" muted style={{ fontFamily: fonts.bodyBold }}>
-                    {t('agent')}
-                  </Text>
-                  <Text style={{ color: p.fg }}>{turn.text}</Text>
-                </View>
-                {turn.orders.map((o) => (
-                  <OrderCard key={o.number} order={o} />
-                ))}
-                <Buttons
-                  buttons={turn.buttons}
-                  busy={busy}
-                  onAction={(action) => act.mutate(action)}
-                />
-              </View>
-            ),
-          )}
+            ) : null}
+            {busy ? (
+              <Text muted accessibilityLiveRegion="polite">
+                {t('sending')}
+              </Text>
+            ) : null}
+            {problem ? <Banner tone="error">{errorMessage(problem)}</Banner> : null}
+          </ScrollView>
 
-          {data && data.turns.length === 1 && !sent ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-              {suggestions.map((s) => (
-                <Pressable
-                  key={s}
-                  accessibilityRole="button"
-                  onPress={() => ask(s)}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: p.line,
-                    borderRadius: 999,
-                    paddingHorizontal: space.md,
-                    paddingVertical: 8,
-                    backgroundColor: p.card,
-                  }}
-                >
-                  <Text>{s}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-          {sent ? (
-            <View
-              style={{
-                alignSelf: 'flex-end',
-                maxWidth: '85%',
-                backgroundColor: p.tile,
-                borderRadius: 18,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                opacity: 0.8,
-              }}
-            >
-              <Text style={{ color: p.tileFg }}>{sent}</Text>
-            </View>
-          ) : null}
-          {busy ? (
-            <Text muted accessibilityLiveRegion="polite">
-              {t('sending')}
-            </Text>
-          ) : null}
-          {problem ? <Banner tone="error">{errorMessage(problem)}</Banner> : null}
-        </ScrollView>
-
-        <Row
-          style={{
-            borderWidth: 1.5,
-            borderColor: p.fg,
-            borderRadius: radius,
-            backgroundColor: p.input,
-            paddingLeft: space.md,
-            paddingRight: 4,
-            paddingVertical: 4,
-            margin: space.md,
-            width: Math.min(width - space.md * 2, READABLE_WIDTH - space.md * 2),
-            alignSelf: 'center',
-          }}
-        >
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            onSubmitEditing={() => ask(draft)}
-            placeholder={t('placeholder')}
-            placeholderTextColor={p.muted}
-            accessibilityLabel={t('placeholder')}
-            returnKeyType="send"
-            maxLength={1000}
-            style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('send')}
-            disabled={!draft.trim() || busy}
-            onPress={() => ask(draft)}
+          <Row
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              backgroundColor: p.signalText,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: !draft.trim() || busy ? 0.5 : 1,
+              borderWidth: 1.5,
+              borderColor: p.fg,
+              borderRadius: radius,
+              backgroundColor: p.input,
+              paddingLeft: space.md,
+              paddingRight: 4,
+              paddingVertical: 4,
+              margin: space.md,
+              width: Math.min(width - space.md * 2, READABLE_WIDTH - space.md * 2),
+              alignSelf: 'center',
             }}
           >
-            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-          </Pressable>
-        </Row>
-      </KeyboardAvoidingView>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={() => ask(draft)}
+              placeholder={t('placeholder')}
+              placeholderTextColor={p.muted}
+              accessibilityLabel={t('placeholder')}
+              returnKeyType="send"
+              maxLength={1000}
+              style={{ flex: 1, color: p.fg, fontFamily: fonts.body, fontSize: 16, minHeight: 44 }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('send')}
+              disabled={!draft.trim() || busy}
+              onPress={() => ask(draft)}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: p.signalText,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: !draft.trim() || busy ? 0.5 : 1,
+              }}
+            >
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            </Pressable>
+          </Row>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

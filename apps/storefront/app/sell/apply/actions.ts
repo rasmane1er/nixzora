@@ -6,7 +6,6 @@ import {
   type SellerView,
   type UploadTicket,
 } from '@nixzora/validation';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { getT } from '@/lib/i18n';
@@ -128,7 +127,8 @@ export async function submitApplication(_: SubmitState, form: FormData): Promise
     }
     redirect(`/sell/apply?step=review&message=${encodeURIComponent(message)}`);
   }
-  revalidatePath('/sell');
+  // No revalidatePath here: it re-renders this page, which sends a store owner to /sell before
+  // the form can open /sell?applied=1. The full page load fetches everything fresh anyway.
   return { done: true };
 }
 

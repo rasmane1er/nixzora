@@ -1,6 +1,7 @@
 import { type ComponentProps, type ReactNode, type Ref, forwardRef } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   type PressableProps,
   ScrollView,
@@ -15,6 +16,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { useKeyboardHeight } from '@/lib/keyboard';
 import { READABLE_WIDTH } from '@/lib/layout';
 import { brand, fonts, radius, space, usePalette } from '@/lib/theme';
 
@@ -203,13 +205,22 @@ export function Screen({
   ...props
 }: ScrollViewProps & { wide?: boolean; ref?: Ref<ScrollView> }) {
   const p = usePalette();
+  // Forms stay reachable with the keyboard up: iOS scrolls the focused field into view; Android
+  // (edge-to-edge, so the window no longer shrinks) gets the keyboard's height as room to scroll.
+  const keyboard = useKeyboardHeight();
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustKeyboardInsets
       {...props}
       style={[{ flex: 1, backgroundColor: p.bg }, props.style]}
-      contentContainerStyle={[styles.screen, !wide && styles.readable, contentContainerStyle]}
+      contentContainerStyle={[
+        styles.screen,
+        !wide && styles.readable,
+        contentContainerStyle,
+        Platform.OS === 'android' && keyboard ? { paddingBottom: keyboard } : null,
+      ]}
     >
       {children}
     </ScrollView>

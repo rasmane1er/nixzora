@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { markDelivered } from './db';
 import { signUp } from './sign-up';
 
 /** A registered customer saves a product, uses the demo coupon, buys, and reviews it. */
@@ -40,13 +41,18 @@ test('a customer uses a coupon, buys, and writes a review', async ({ page }) => 
     },
   );
 
+  const orderNumber = (await page.locator('.eyebrow').first().textContent())?.match(/NX-\w+/)?.[0];
+  expect(orderNumber).toBeTruthy();
+
   // The order is in the account, and the product is in the wishlist.
   await page.goto('/account');
   await expect(page.locator('.order-card')).toHaveCount(1);
   await page.goto('/account/wishlist');
   await expect(page.locator('.product-card')).toHaveCount(1);
 
-  // Review: pending moderation, so not public yet.
+  // Reviews are from verified buyers: once the parcel arrives, the product page asks for one.
+  // Pending moderation, so not public yet.
+  await markDelivered(orderNumber!);
   await page.goto(productPath);
   await page.getByLabel('Headline').fill('Sharp and bright');
   await page

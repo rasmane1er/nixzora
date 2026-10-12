@@ -31,7 +31,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxService.name);
   private readonly handlers = new Map<string, OutboxHandler[]>();
   private timer?: NodeJS.Timeout;
-  private draining = false;
+  private running?: Promise<number>;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -58,10 +58,21 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** Processes everything currently pending. Tests call this directly. */
+  /**
+   * Processes everything currently pending. Tests call this directly. A call made while the
+   * timer's drain is running waits for it and then drains again, so it never returns before
+   * what was pending at the call is done (returning early made tests that read the outbox right
+   * after draining flaky).
+   */
   async drain(): Promise<number> {
-    if (this.draining) return 0;
-    this.draining = true;
+    while (this.running) await this.running.catch(() => 0);
+    this.running = this.drainOnce().finally(() => {
+      this.running = undefined;
+    });
+    return this.running;
+  }
+
+  private async drainOnce(): Promise<number> {
     let processed = 0;
     try {
       for (;;) {
@@ -74,8 +85,6 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
         .catch(() => undefined);
     } catch (error) {
       this.logger.error(`Outbox drain failed: ${(error as Error).message}`);
-    } finally {
-      this.draining = false;
     }
     return processed;
   }
