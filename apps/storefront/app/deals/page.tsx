@@ -1,16 +1,19 @@
 import { Deadline } from '@/components/Countdown';
 import { multiBuyTerms, spendTiers } from '@nixzora/i18n';
 import {
+  type CouponsPage,
   type DealKind,
   type DealsPage,
   type MultiBuyView,
+  type ProductCard as Card,
   type SpendOfferView,
+  spotlightDeal,
 } from '@nixzora/validation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ProductCard } from '@/components/ProductCard';
+import { CouponCard, DealTiles, QuadCard, SpotlightDeal } from '@/components/ShapeCards';
 import { api } from '@/lib/api';
-import { getFormat, getT } from '@/lib/i18n';
+import { departmentName, getFormat, getT } from '@/lib/i18n';
 import { param, type SearchParams } from '@/lib/params';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,10 +31,13 @@ const KINDS: {
 ];
 
 /** Today's deals (p10-07): live deals ending soonest first, then what starts next. */
+/** The server's clock for this render (which deal ends soonest). */
+const renderedAt = () => Date.now();
+
 export default async function DealsPageView({ searchParams }: { searchParams: SearchParams }) {
   const raw = param(await searchParams, 'kind');
   const kind = raw === 'LIGHTNING' || raw === 'DAY' ? raw : undefined;
-  const [t, pl, mb, f, page, offers, spends, sp] = await Promise.all([
+  const [t, pl, mb, f, page, offers, spends, sp, tc, coupons] = await Promise.all([
     getT('deals'),
     getT('plus'),
     getT('multiBuy'),
@@ -52,8 +58,25 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
           (): SpendOfferView[] => [],
         ),
     getT('spendSave'),
+    getT('cards'),
+    // Clip coupons (p10-18), as dashed coupon cards.
+    kind ? null : api<CouponsPage>('/catalog/coupons').catch((): CouponsPage | null => null),
   ]);
   const live = page?.live ?? [];
+  // Card shapes (ADR-0061): the deal ending soonest gets the spotlight, the rest are tiles.
+  const spotlight = spotlightDeal(live, renderedAt());
+  const tiles = live.filter((product) => product.id !== spotlight?.id);
+  // One cell per department: its first deal and how many it has.
+  const byDepartment = [
+    ...live
+      .reduce((map, product) => {
+        const entry = map.get(product.category.slug) ?? { first: product, count: 0 };
+        entry.count += 1;
+        return map.set(product.category.slug, entry);
+      }, new Map<string, { first: Card; count: number }>())
+      .values(),
+  ].slice(0, 4);
+  const clipped = new Set(coupons?.clipped ?? []);
   const upcoming = page?.upcoming ?? [];
 
   return (
@@ -75,14 +98,47 @@ export default async function DealsPageView({ searchParams }: { searchParams: Se
       </nav>
 
       {live.length ? (
-        <div className="grid">
-          {live.map((product, i) => (
-            <ProductCard key={product.id} product={product} priority={i < 4} />
-          ))}
+        <div className="stack" style={{ gap: 20 }}>
+          {spotlight ? <SpotlightDeal product={spotlight} /> : null}
+          <DealTiles id="deal-tiles" products={tiles} grid />
         </div>
       ) : (
         <p className="banner banner--info">{t('none')}</p>
       )}
+
+      {byDepartment.length >= 2 ? (
+        <div className="card-wall">
+          <QuadCard
+            id="deals-by-department"
+            title={tc('dealsByDepartment')}
+            items={await Promise.all(
+              byDepartment.map(async ({ first, count }) => ({
+                href: `/c/${first.category.slug}`,
+                product: first,
+                label: `${await departmentName(first.category)} · ${tc('dealCount', { count })}`,
+              })),
+            )}
+          />
+        </div>
+      ) : null}
+
+      {coupons?.coupons.length ? (
+        <section className="section" aria-labelledby="deals-coupons">
+          <div className="section-head">
+            <h2 id="deals-coupons">{tc('coupons')}</h2>
+            <Link className="section-link" href="/coupons">
+              {tc('allCoupons')} →
+            </Link>
+          </div>
+          <ul className="coupon-shapes">
+            {coupons.coupons.slice(0, 6).map((coupon) => (
+              <li key={coupon.id}>
+                <CouponCard coupon={coupon} clipped={clipped.has(coupon.id)} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {offers.length ? (
         <section className="section" aria-labelledby="deals-offers">

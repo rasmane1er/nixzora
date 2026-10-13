@@ -30,7 +30,14 @@ export function useDealLabel() {
  * otherwise its end date (p10-38); for limited lightning deals, how much is claimed. Ticks on
  * the app's shared clock.
  */
-export function DealTimer({ deal }: { deal: NonNullable<ProductCard['deal']> }) {
+export function DealTimer({
+  deal,
+  dark = false,
+}: {
+  deal: NonNullable<ProductCard['deal']>;
+  /** On the dark spotlight band (ADR-0061). */
+  dark?: boolean;
+}) {
   const t = useT('deals');
   const p = usePalette();
   const tc = useT('countdown');
@@ -39,12 +46,10 @@ export function DealTimer({ deal }: { deal: NonNullable<ProductCard['deal']> }) 
   const now = Date.now();
   const left = Date.parse(deal.endsAt) - now;
   const claimed = deal.kind === 'LIGHTNING' ? deal.claimedPercent : null;
+  const red = dark ? '#F08A5D' : p === palettes.dark ? '#FF8A80' : DEAL_RED;
   return (
     <View style={{ gap: 4 }}>
-      <Text
-        variant="small"
-        style={{ color: p === palettes.dark ? '#FF8A80' : DEAL_RED, fontVariant: ['tabular-nums'] }}
-      >
+      <Text variant="small" style={{ color: red, fontVariant: ['tabular-nums'] }}>
         {phase === 'ended'
           ? t('ended')
           : phase === 'later'
@@ -55,7 +60,7 @@ export function DealTimer({ deal }: { deal: NonNullable<ProductCard['deal']> }) 
             variant="small"
             style={{
               fontFamily: fonts.bodyBold,
-              color: p === palettes.dark ? '#FF8A80' : DEAL_RED,
+              color: red,
             }}
           >
             {` · ${tc('endingSoon')}`}
@@ -65,18 +70,24 @@ export function DealTimer({ deal }: { deal: NonNullable<ProductCard['deal']> }) 
       {claimed != null ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View
-            style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: p.line, maxWidth: 90 }}
+            style={{
+              flex: 1,
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: dark ? '#263244' : p.line,
+              maxWidth: 90,
+            }}
           >
             <View
               style={{
                 width: `${Math.min(100, claimed)}%`,
                 height: 5,
                 borderRadius: 3,
-                backgroundColor: DEAL_RED,
+                backgroundColor: dark ? '#F08A5D' : DEAL_RED,
               }}
             />
           </View>
-          <Text variant="small" muted style={{ fontSize: 11 }}>
+          <Text variant="small" muted style={[{ fontSize: 11 }, dark && { color: '#B8C1CE' }]}>
             {t('claimed', { percent: percent(claimed / 100) })}
           </Text>
         </View>

@@ -36,6 +36,7 @@ export default async function BuyRemindersPage({ searchParams }: { searchParams:
             <li key={item.productId} className="card warranty-item">
               <div className="warranty-item__img">
                 {item.product?.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- product photo from our media host
                   <img src={item.product.image.url} alt="" loading="lazy" />
                 ) : null}
               </div>

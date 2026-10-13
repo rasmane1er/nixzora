@@ -19,6 +19,7 @@ export function ProductGrid({
   refreshing = false,
   onRefresh,
   layout = 'grid',
+  renderCard,
 }: {
   products: Card[];
   header?: ReactElement;
@@ -31,6 +32,8 @@ export function ProductGrid({
   onRefresh?: () => void;
   /** `list`: one product per row on phones (search results); tablets keep the grid. */
   layout?: 'grid' | 'list';
+  /** Another card shape for each product (ADR-0061), e.g. deal tiles. */
+  renderCard?: (product: Card) => ReactElement;
 }) {
   const p = usePalette();
   const { width, columns: gridColumns } = useLayout();
@@ -62,7 +65,11 @@ export function ProductGrid({
       renderItem={({ item }) => (
         // A fixed width keeps cards in a short last row the same size as the rest.
         <View style={{ width: cardWidth }}>
-          <ProductCard product={item} layout={rows ? 'row' : 'grid'} />
+          {renderCard ? (
+            renderCard(item)
+          ) : (
+            <ProductCard product={item} layout={rows ? 'row' : 'grid'} />
+          )}
         </View>
       )}
     />

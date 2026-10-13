@@ -271,7 +271,10 @@ describe('Recommendations (e2e)', () => {
     });
     await view('band', visitor(22));
     const picks = await picksFor({ visitorId: visitor(22) });
-    expect(picks.rows.find((row) => row.kind === 'still_thinking')?.products[0]?.id).toBe(ids.band);
+    const row = picks.rows.find((r) => r.kind === 'still_thinking');
+    expect(row?.products[0]?.id).toBe(ids.band);
+    // The card shows how many times (ADR-0061).
+    expect(row?.details?.[ids.band!]?.views).toBe(2);
   });
 
   it('suggests what goes with the cart, from the categories that complement it', async () => {
@@ -306,7 +309,10 @@ describe('Recommendations (e2e)', () => {
       data: { priceCents: 7_900 },
     });
     const picks = await picksFor({}, auth);
-    expect(picks.rows.find((row) => row.kind === 'saved_deals')?.products[0]?.id).toBe(ids.kettle);
+    const saved = picks.rows.find((row) => row.kind === 'saved_deals');
+    expect(saved?.products[0]?.id).toBe(ids.kettle);
+    // The price when it was saved, for "You save $…" (ADR-0061).
+    expect(saved?.details?.[ids.kettle!]?.wasCents).toBeGreaterThan(7_900);
 
     // Turning personalized picks off forgets history and stops recording it.
     await search('electric kettle', visitor(23), token);

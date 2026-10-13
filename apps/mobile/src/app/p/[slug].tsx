@@ -50,6 +50,7 @@ import { StockAlertButton } from '@/components/StockAlertButton';
 import { AwayNotice } from '@/components/Vacation';
 import { Price } from '@/components/Price';
 import { ProductRail } from '@/components/ProductRail';
+import { PriceTiles, RowCards } from '@/components/ShapeCards';
 import { ProductReviews } from '@/components/ProductReviews';
 import { ReviewInsightsCard } from '@/components/ReviewInsightsCard';
 import { QuantityStepper } from '@/components/QuantityStepper';
@@ -1164,8 +1165,12 @@ export default function ProductScreen() {
                 />
               )}
               <ProductRail title={ta('sponsoredRelated')} sponsored={sponsored.data?.ads ?? []} />
-              <ProductRail title={tp('similarProducts')} products={related.data?.similar ?? []} />
-              <ProductRail title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
+              {/* Card shapes (ADR-0061): similar items as rows, also-viewed as price tiles. */}
+              <RowCards
+                title={tp('similarProducts')}
+                products={(related.data?.similar ?? []).slice(0, 6)}
+              />
+              <PriceTiles title={tp('alsoViewed')} products={related.data?.alsoViewed ?? []} />
             </View>
           </View>
         </Screen>

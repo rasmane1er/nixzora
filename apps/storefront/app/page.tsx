@@ -1,8 +1,28 @@
 import Link from 'next/link';
 import { smartRowTitle } from '@nixzora/i18n';
-import { type DealsPage, type Recommendations } from '@nixzora/validation';
+import {
+  type DealsPage,
+  departmentLookup,
+  type ProductCard as Card,
+  quadsByCategory,
+  type Recommendations,
+  rowShapes,
+  spotlightDeal,
+} from '@nixzora/validation';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductRail } from '@/components/ProductRail';
+import {
+  AskCard,
+  BuyAgain,
+  DealTiles,
+  dealQuadItems,
+  KeepShopping,
+  PriceDropCard,
+  PriceTiles,
+  QuadCard,
+  RowCards,
+  SpotlightDeal,
+} from '@/components/ShapeCards';
 import { sponsored } from '@/lib/ads';
 import { api, catalog } from '@/lib/api';
 import { countProducts } from '@/lib/categories';
@@ -10,11 +30,14 @@ import { departmentImage } from '@/lib/departments';
 import { departmentName, getT } from '@/lib/i18n';
 import { visitorId } from '@/lib/visitor';
 
+/** The server's clock for this render (which deal ends soonest). */
+const renderedAt = () => Date.now();
+
 export default async function HomePage() {
   const visitor = await visitorId();
   const [categories, newest, picks, ads, deals] = await Promise.all([
     catalog.categories().catch(() => []),
-    catalog.products('?sort=newest&pageSize=8&inStock=true').catch(() => null),
+    catalog.products('?sort=newest&pageSize=12&inStock=true').catch(() => null),
     // With the guest cart id, so "Goes with your cart" works before sign-in.
     api<Recommendations>(
       `/recommendations${visitor ? `?visitorId=${encodeURIComponent(visitor)}` : ''}`,
@@ -23,11 +46,12 @@ export default async function HomePage() {
     sponsored({ placement: 'home' }),
     api<DealsPage>('/catalog/deals', { revalidate: 30 }).catch(() => null),
   ]);
-  const [t, p, a, d, names] = await Promise.all([
+  const [t, p, a, d, tc, names] = await Promise.all([
     getT('home'),
     getT('product'),
     getT('ads'),
     getT('deals'),
+    getT('cards'),
     Promise.all(categories.map((category) => departmentName(category))),
   ]);
   const prompts = [t('prompt1'), t('prompt2'), t('prompt3'), t('prompt4')];
@@ -36,6 +60,30 @@ export default async function HomePage() {
   const featuredTitle = picks?.basis === 'history' ? t('recommended') : t('featured');
   const featuredIds = new Set(featured.map((product) => product.id));
   const newArrivals = (newest?.items ?? []).filter((product) => !featuredIds.has(product.id));
+
+  // Card shapes (ADR-0061): each section gets its own shape, so the page never repeats itself.
+  const live = deals?.live ?? [];
+  const spotlight = spotlightDeal(live, renderedAt());
+  const otherDeals = live.filter((product) => product.id !== spotlight?.id);
+  const groupOf = departmentLookup(categories);
+  const dealQuads = quadsByCategory(live, 2, groupOf);
+  const newQuads = quadsByCategory(newest?.items ?? [], 2, groupOf);
+  const shaped = rowShapes(picks?.rows ?? []);
+  const shape = (kind: string) => shaped.find((s) => s.shape === kind)?.row;
+  const keep = shape('quad');
+  const ask = shape('ask');
+  const drop = shape('priceDrop');
+  const again = shape('buyAgain');
+  const dropProduct = drop?.products.find((product) => drop.details?.[product.id]?.wasCents);
+  // Fastest to arrive first, for the row cards.
+  const soonest = [
+    ...new Map([...featured, ...newArrivals].map((item) => [item.id, item])).values(),
+  ]
+    .filter((product): product is Card & { delivery: { latest: string } } =>
+      Boolean(product.inStock && product.delivery && product.defaultVariantId),
+    )
+    .sort((x, y) => x.delivery.latest.localeCompare(y.delivery.latest))
+    .slice(0, 3);
 
   return (
     <div className="wrap">
@@ -97,48 +145,113 @@ export default async function HomePage() {
               {t('viewAll')} →
             </Link>
           </div>
-          <div className="dept-tiles">
+          <ul className="dept-circles">
             {categories.map((category, i) => {
               const image = departmentImage(category.slug);
               return (
-                <Link key={category.id} href={`/c/${category.slug}`} className="dept-tile">
-                  {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- small decorative art
-                    <img src={image} alt="" width={72} height={54} loading="lazy" />
-                  ) : (
-                    <span className="dept-tile__blank" aria-hidden="true" />
-                  )}
-                  <span className="dept-tile__text">
-                    <strong>{names[i]}</strong>
-                    <span className="muted">
+                <li key={category.id}>
+                  <Link href={`/c/${category.slug}`} className="dept-circle">
+                    <span className="dept-circle__photo">
+                      {image ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- small decorative art
+                        <img src={image} alt="" width={84} height={84} loading="lazy" />
+                      ) : null}
+                    </span>
+                    <span className="dept-circle__name">{names[i]}</span>
+                    <span className="sr-only">
                       {p('products', { count: countProducts(category) })}
                     </span>
-                  </span>
-                  <span className="dept-tile__chevron" aria-hidden="true">
-                    ›
-                  </span>
-                </Link>
+                  </Link>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
       ) : null}
 
-      <ProductRail
+      <div className="card-wall">
+        {keep ? <KeepShopping row={keep} /> : null}
+        {await Promise.all(
+          (dealQuads.length
+            ? dealQuads
+            : live.length >= 2
+              ? [{ category: null, products: live.slice(0, 4) }]
+              : []
+          ).map(async (quad, i) => (
+            <QuadCard
+              key={quad.category?.slug ?? 'deals'}
+              id={`deal-quad-${i}`}
+              title={
+                quad.category
+                  ? tc('dealsIn', { category: await departmentName(quad.category) })
+                  : d('railTitle')
+              }
+              items={await dealQuadItems(quad.products)}
+              link={{ href: '/deals', label: tc('seeAllDeals') }}
+            />
+          )),
+        )}
+        {ask ? (
+          <AskCard subject={ask.subject ?? ''} source={ask.source} products={ask.products} />
+        ) : (
+          <AskCard subject={prompts[0]!} source={null} />
+        )}
+        {dropProduct || again ? (
+          <div className="card-wall__stack">
+            {dropProduct ? (
+              <PriceDropCard
+                product={dropProduct}
+                wasCents={drop!.details![dropProduct.id]!.wasCents!}
+              />
+            ) : null}
+            {again ? <BuyAgain row={again} /> : null}
+          </div>
+        ) : null}
+        {await Promise.all(
+          newQuads.map(async (quad) => {
+            const name = await departmentName(quad.category);
+            return (
+              <QuadCard
+                key={quad.category.slug}
+                id={`new-quad-${quad.category.slug}`}
+                title={tc('newIn', { category: name })}
+                items={quad.products.map((product) => ({
+                  href: `/p/${product.slug}`,
+                  product,
+                  label: product.title,
+                }))}
+                link={{
+                  href: `/c/${quad.category.slug}`,
+                  label: tc('shopCategory', { category: name }),
+                }}
+              />
+            );
+          }),
+        )}
+      </div>
+
+      {spotlight ? (
+        <div className="section spotlight-row">
+          <SpotlightDeal product={spotlight} />
+        </div>
+      ) : null}
+      <DealTiles
         id="deals"
         title={d('railTitle')}
-        products={(deals?.live ?? []).slice(0, 12)}
+        products={otherDeals.slice(0, 12)}
         link={{ href: '/deals', label: d('seeAll') }}
       />
 
-      {(picks?.rows ?? []).map((row, i) => (
-        <ProductRail
-          key={`${row.kind}-${i}`}
-          id={`picks-${i}`}
-          title={smartRowTitle(row, a)}
-          products={row.products}
-        />
-      ))}
+      {shaped
+        .filter((s) => s.shape === 'rail')
+        .map(({ row }, i) => (
+          <ProductRail
+            key={`${row.kind}-${i}`}
+            id={`picks-${i}`}
+            title={smartRowTitle(row, a)}
+            products={row.products}
+          />
+        ))}
 
       {featured.length ? (
         <section className="section" aria-labelledby="featured">
@@ -156,10 +269,16 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <ProductRail id="sponsored" title={a('sponsoredHome')} sponsored={ads} />
+      {soonest.length ? (
+        <div className="section">
+          <RowCards id="soonest" title={tc('arrivesSoonest')} products={soonest} />
+        </div>
+      ) : null}
+
+      <PriceTiles id="sponsored" title={a('sponsoredHome')} sponsored={ads} />
 
       {picks ? (
-        <ProductRail id="recent" title={t('recentlyViewed')} products={picks.recentlyViewed} />
+        <PriceTiles id="recent" title={t('recentlyViewed')} products={picks.recentlyViewed} />
       ) : null}
 
       {newArrivals.length ? (

@@ -1,13 +1,14 @@
 import { InlineDeadline } from '@/components/Countdown';
 import { errorMessage } from '@nixzora/api-client';
 import { spendTiers } from '@nixzora/i18n';
-import type { DealKind } from '@nixzora/validation';
+import { type DealKind, type ProductCard as Card, spotlightDeal } from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { OfferTag } from '@/components/MultiBuy';
 import { ProductGrid } from '@/components/ProductGrid';
+import { CouponShape, DealTile, QuadCard, SpotlightDeal } from '@/components/ShapeCards';
 import { Chips } from '@/components/Chips';
 import { Banner, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -21,7 +22,8 @@ export default function DealsScreen() {
   const tpl = useT('plus');
   const mb = useT('multiBuy');
   const sp = useT('spendSave');
-  const { percent, dateTime, money, shortDate } = useFormatters();
+  const tk = useT('cards');
+  const { percent, dateTime, money, shortDate, departmentName } = useFormatters();
   const [kind, setKind] = useState<DealKind | 'ALL'>('ALL');
   const deals = useQuery({
     queryKey: ['deals', kind],
@@ -29,6 +31,25 @@ export default function DealsScreen() {
     staleTime: 30_000,
   });
   const upcoming = deals.data?.upcoming ?? [];
+  // Card shapes (ADR-0061): the deal ending soonest gets the spotlight, the rest are tiles.
+  const live = deals.data?.live ?? [];
+  const spotlight = spotlightDeal(live, deals.dataUpdatedAt);
+  const tiles = live.filter((product) => product.id !== spotlight?.id);
+  const byDepartment = [
+    ...live
+      .reduce((map, product) => {
+        const entry = map.get(product.category.slug) ?? { first: product, count: 0 };
+        entry.count += 1;
+        return map.set(product.category.slug, entry);
+      }, new Map<string, { first: Card; count: number }>())
+      .values(),
+  ].slice(0, 4);
+  // Clip coupons (p10-18), as dashed coupon cards.
+  const coupons = useQuery({
+    queryKey: ['coupons'],
+    queryFn: () => api.catalog.coupons(),
+    staleTime: 60_000,
+  });
   // Spend more, save more (p10-31): stores taking money off bigger orders.
   const spends = useQuery({
     queryKey: ['spend-offers'],
@@ -44,7 +65,8 @@ export default function DealsScreen() {
 
   return (
     <ProductGrid
-      products={deals.data?.live ?? []}
+      products={tiles}
+      renderCard={(product) => <DealTile product={product} />}
       refreshing={deals.isRefetching}
       onRefresh={() => void deals.refetch()}
       header={
@@ -60,6 +82,32 @@ export default function DealsScreen() {
             ]}
           />
           {deals.error ? <Banner tone="error">{errorMessage(deals.error)}</Banner> : null}
+          {spotlight ? <SpotlightDeal product={spotlight} /> : null}
+          {kind === 'ALL' && coupons.data?.coupons.length ? (
+            <View style={{ gap: space.sm }}>
+              <Text variant="heading">{tk('coupons')}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginHorizontal: -space.lg }}
+                contentContainerStyle={{ paddingHorizontal: space.lg, gap: space.md }}
+              >
+                {coupons.data.coupons.slice(0, 8).map((coupon) => (
+                  <CouponShape key={coupon.id} coupon={coupon} width={290} />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+          {byDepartment.length >= 2 ? (
+            <QuadCard
+              title={tk('dealsByDepartment')}
+              items={byDepartment.map(({ first, count }) => ({
+                href: `/c/${first.category.slug}`,
+                product: first,
+                label: `${departmentName(first.category.slug, first.category.name)} · ${tk('dealCount', { count })}`,
+              }))}
+            />
+          ) : null}
           {kind === 'ALL' && offers.data?.length ? (
             <View style={{ gap: space.sm }}>
               <Text variant="heading">{mb('navTitle')}</Text>
@@ -130,7 +178,7 @@ export default function DealsScreen() {
           </View>
         ) : undefined
       }
-      empty={deals.isLoading ? undefined : <EmptyState title={t('none')} />}
+      empty={deals.isLoading || live.length ? undefined : <EmptyState title={t('none')} />}
     />
   );
 }

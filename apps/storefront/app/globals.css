@@ -6560,3 +6560,682 @@ td.neg {
   background: var(--err-bg);
   color: var(--err-fg);
 }
+
+/* ───────────── Card shapes (ADR-0061) ───────────── */
+.shape-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.shape-card__title {
+  font:
+    700 20px/1.2 var(--font-display),
+    sans-serif;
+  margin: 0;
+}
+.shape-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.shape-card__link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-signal-text);
+  text-decoration: none;
+  margin-top: auto;
+}
+.shape-card__link:hover {
+  text-decoration: underline;
+}
+.shape-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.shape-badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--color-signal-strong);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.shape-badge--plus {
+  background: #3d2db8;
+}
+
+/* The card wall: quads and friends, four across on wide screens, one on phones. */
+.card-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  margin-top: 28px;
+  align-items: stretch;
+}
+/* Phones: the wall becomes a swipeable row of cards, so it doesn't run screens long. */
+@media (max-width: 640px) {
+  .card-wall {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 4px var(--gutter) 12px;
+    gap: 12px;
+    scrollbar-width: none;
+  }
+  .card-wall > * {
+    flex: 0 0 84%;
+    scroll-snap-align: start;
+  }
+}
+.card-wall__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.card-wall__stack .buy-again {
+  flex: 1;
+}
+
+/* Quad: four photos under one title. */
+.quad__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.quad__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+.quad__photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  background: var(--photo);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 8px;
+}
+.quad__photo .shape-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+}
+.quad__label {
+  font-size: 13px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.quad__sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.quad__item:hover .quad__label {
+  text-decoration: underline;
+}
+
+/* Spotlight: one big deal on the dark band. */
+.spotlight-row {
+  margin-top: 28px;
+}
+.spotlight {
+  background: var(--band);
+  border-color: var(--band);
+  color: #f6f5f1;
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  padding: 24px;
+}
+.spotlight__photo {
+  display: block;
+  aspect-ratio: 1;
+  background: #1a2433;
+  border-radius: 12px;
+  padding: 16px;
+}
+.spotlight__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.spotlight__eyebrow {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #f08a5d;
+  font-size: 14px;
+  font-weight: 600;
+}
+.spotlight__title {
+  font:
+    600 clamp(22px, 2.4vw, 30px) / 1.15 var(--font-display),
+    sans-serif;
+  margin: 0;
+}
+.spotlight__title a {
+  color: inherit;
+  text-decoration: none;
+}
+.spotlight__price {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.spotlight__price strong {
+  font:
+    700 36px var(--font-display),
+    sans-serif;
+}
+.spotlight__price s {
+  color: #9ba6b6;
+}
+.spotlight__price span {
+  color: #f08a5d;
+  font-weight: 600;
+}
+.spotlight .deal-timer__time {
+  color: #f08a5d;
+}
+.spotlight .deal-claimed {
+  color: #b8c1ce;
+}
+.spotlight .deal-claimed__bar {
+  background: #263244;
+  max-width: 240px;
+}
+.spotlight .deal-claimed__bar > span {
+  background: #f08a5d;
+}
+.spotlight__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.spotlight__actions .card-add {
+  width: auto;
+  padding-inline: 20px;
+}
+.btn--ghost-light {
+  border-color: #3a4a63;
+  color: #f6f5f1;
+  border-radius: 999px;
+  min-height: 40px;
+  padding-inline: 18px;
+}
+.btn--ghost-light:hover {
+  border-color: #f6f5f1;
+}
+@media (max-width: 640px) {
+  .spotlight {
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  .spotlight__price strong {
+    font-size: 28px;
+  }
+}
+
+/* Deal tile: badge, price, title, timer. */
+.deal-tile {
+  padding: 12px;
+  gap: 8px;
+  height: 100%;
+}
+.deal-tile__link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.deal-tile__photo {
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--photo);
+  border-radius: 10px;
+  padding: 8px;
+}
+.deal-tile__title {
+  font-size: 13px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.deal-tile .price {
+  font-size: 18px;
+  font-weight: 700;
+}
+.rail__track--tiles {
+  grid-auto-columns: minmax(160px, 190px);
+}
+.deal-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+  gap: 14px;
+}
+@media (max-width: 480px) {
+  .deal-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* Ask card: the assistant's teal. */
+.ask-card {
+  background: var(--color-ai);
+  border-color: var(--color-ai);
+  color: #fff;
+}
+.ask-card__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #cdedea;
+}
+.ask-card__title {
+  margin: 0;
+  font:
+    600 24px/1.2 var(--font-display),
+    sans-serif;
+}
+.ask-card__photos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ask-card__photos li {
+  aspect-ratio: 1;
+  background: #e9f4f2;
+  border-radius: 10px;
+  padding: 6px;
+}
+.ask-card__cta {
+  margin-top: auto;
+  align-self: flex-start;
+  background: #fff;
+  color: #0f5a56;
+  border-radius: 999px;
+}
+.ask-card__cta:hover {
+  background: #e9f4f2;
+}
+:root[data-theme='dark'] .ask-card {
+  background: #0f4f4b;
+  border-color: #0f4f4b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ask-card {
+    background: #0f4f4b;
+    border-color: #0f4f4b;
+  }
+}
+
+/* Price drop: the savings green. */
+.price-drop {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  background: var(--ok-bg);
+  border-color: color-mix(in srgb, var(--ok-fg) 30%, transparent);
+  color: inherit;
+  text-decoration: none;
+  padding: 14px;
+}
+.price-drop__photo {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 6px;
+}
+.price-drop__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.price-drop__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ok-fg);
+}
+.price-drop__title {
+  font-size: 14px;
+  font-weight: 500;
+}
+.price-drop__price {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.price-drop__price strong {
+  font-size: 19px;
+}
+.price-drop__price s {
+  color: var(--muted);
+  font-size: 13px;
+}
+.price-drop__save {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ok-fg);
+}
+
+/* Buy again: small cards with a reorder button. */
+.buy-again__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.buy-again__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.buy-again__link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+}
+.buy-again__photo {
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--photo);
+  border-radius: 10px;
+  padding: 6px;
+  margin-bottom: 4px;
+}
+.buy-again__title {
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.buy-again__when {
+  font-size: 12px;
+  color: var(--muted);
+}
+.buy-again .card-add {
+  min-height: 40px;
+}
+.buy-again .card-add svg {
+  display: none;
+}
+
+/* Row card: photo left, facts right. */
+.row-cards ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+}
+.row-card {
+  flex-direction: row;
+  align-items: center;
+  padding: 12px;
+  gap: 12px;
+  height: 100%;
+}
+.row-card__link {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.row-card__photo {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  background: var(--photo);
+  border-radius: 10px;
+  padding: 6px;
+}
+.row-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.row-card__title {
+  font-size: 14px;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.row-card__rating {
+  font-size: 12px;
+  color: #c77a12;
+  letter-spacing: 1px;
+}
+.row-card__rating .muted {
+  letter-spacing: 0;
+}
+.row-card__price {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.row-card__delivery {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ok-fg);
+}
+.row-card__add .card-add {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+.row-card__add .card-add__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Price tiles: photo and price only. */
+.rail__track--prices {
+  grid-auto-columns: 132px;
+  gap: 14px;
+}
+.price-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.price-tile__photo {
+  display: block;
+  aspect-ratio: 1;
+  background: var(--photo);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+}
+.price-tile__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.price-tile:hover .price-tile__photo {
+  border-color: var(--color-signal);
+}
+.price-tile__ad {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Department circles. */
+.dept-circles {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 8px;
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.dept-circle {
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+}
+.dept-circle__photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  display: block;
+}
+.dept-circle__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dept-circle:hover .dept-circle__photo {
+  border-color: var(--color-signal);
+}
+.dept-circle__name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+@media (max-width: 640px) {
+  .dept-circles {
+    gap: 12px;
+    margin: 0 calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+  }
+  .dept-circle {
+    width: 72px;
+  }
+  .dept-circle__photo {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* Coupon: a dashed edge reads as "coupon". */
+.coupon-shapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+.coupon-shape {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--card);
+  border: 2px dashed var(--ok-fg);
+  border-radius: 14px;
+  padding: 12px;
+  height: 100%;
+}
+.coupon-shape__photo {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  background: var(--photo);
+  border-radius: 10px;
+  padding: 6px;
+}
+.coupon-shape__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.coupon-shape__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.coupon-shape__title {
+  font-size: 13px;
+  color: inherit;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.coupon-shape .clip__button {
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+}

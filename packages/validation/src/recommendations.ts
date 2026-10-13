@@ -46,6 +46,19 @@ export const SMART_ROW_KINDS = [
 ] as const;
 export type SmartRowKind = (typeof SMART_ROW_KINDS)[number];
 
+/**
+ * Per-product facts a row's card shape needs (ADR-0061), keyed by product id:
+ * - wasCents: the price when the shopper saved it (saved_deals), for "You save $100";
+ * - lastBoughtAt: their last paid order with it (restock), for "Last bought Aug 28";
+ * - views: how many times they opened it in the last two weeks (still_thinking).
+ */
+export const SmartRowDetailSchema = z.object({
+  wasCents: z.number().int().optional(),
+  lastBoughtAt: z.string().optional(),
+  views: z.number().int().optional(),
+});
+export type SmartRowDetail = z.infer<typeof SmartRowDetailSchema>;
+
 export const SmartRowSchema = z.object({
   kind: z.enum(SMART_ROW_KINDS),
   /** The search or need (interest), or the product bought (accessories); null otherwise. */
@@ -53,6 +66,7 @@ export const SmartRowSchema = z.object({
   /** Where an interest came from. */
   source: z.enum(['search', 'assistant']).nullable(),
   products: z.array(ProductCardSchema),
+  details: z.record(z.string(), SmartRowDetailSchema).optional(),
 });
 export type SmartRow = z.infer<typeof SmartRowSchema>;
 

@@ -37,7 +37,10 @@ export default async function WarrantiesPage() {
           {items.map((item) => (
             <li key={item.orderItemId} className="card warranty-item">
               <div className="warranty-item__img">
-                {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : null}
+                {item.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- product photo from our media host
+                  <img src={item.imageUrl} alt="" loading="lazy" />
+                ) : null}
               </div>
               <div className="stack" style={{ gap: 4, minWidth: 0 }}>
                 <span className={`pill pill--warranty-${item.status.toLowerCase()}`}>

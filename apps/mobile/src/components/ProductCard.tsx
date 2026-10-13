@@ -452,15 +452,18 @@ function CardHeart({
   );
 }
 
-function CardAdd({
+export function CardAdd({
   product,
   compact,
   icon,
+  label,
 }: {
   product: Card;
   compact?: boolean;
   /** A round icon button, for rows where space is tight. */
   icon?: boolean;
+  /** Another word for the button, e.g. "Buy again" (ADR-0061). */
+  label?: string;
 }) {
   const p = usePalette();
   const tp = useT('product');
@@ -534,7 +537,7 @@ function CardAdd({
               style={[{ color: '#fff', fontFamily: fonts.bodyBold }, compact && { fontSize: 12.5 }]}
               accessibilityLiveRegion="polite"
             >
-              {added ? `✓ ${tp('added')}` : tp('addToCart')}
+              {added ? `✓ ${tp('added')}` : (label ?? tp('addToCart'))}
             </Text>
           )}
         </View>

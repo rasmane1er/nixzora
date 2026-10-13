@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DeliveryPromise } from '@/components/DeliveryPromise';
 import { ProductRail } from '@/components/ProductRail';
+import { PriceTiles, RowCards } from '@/components/ShapeCards';
 import { sponsored } from '@/lib/ads';
 import { SellerRating } from '@/components/SellerRating';
 import { ReviewInsights } from '@/components/ReviewInsights';
@@ -631,7 +632,16 @@ export default async function ProductPage({ params, searchParams }: Props) {
         />
       )}
       <ProductRail id="sponsored" title={a('sponsoredRelated')} sponsored={ads} />
-      <ProductRail id="similar" title={t('similarProducts')} products={related.similar} />
+      {/* Card shapes (ADR-0061): similar items as rows to compare, also-viewed as price tiles. */}
+      {related.similar.length ? (
+        <div className="section">
+          <RowCards
+            id="similar"
+            title={t('similarProducts')}
+            products={related.similar.slice(0, 6)}
+          />
+        </div>
+      ) : null}
       {related.similar.length ? (
         <p className="compare-similar">
           <Link
@@ -642,7 +652,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
           </Link>
         </p>
       ) : null}
-      <ProductRail id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />
+      <PriceTiles id="also-viewed" title={t('alsoViewed')} products={related.alsoViewed} />
       <ViewTracker productId={product.id} />
     </div>
   );

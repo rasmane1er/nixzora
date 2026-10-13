@@ -13,6 +13,7 @@ import {
   type Recommendations,
   type RelatedProducts,
   type SmartRow,
+  type SmartRowDetail,
   type TrafficSource,
 } from '@nixzora/validation';
 import { type Env } from '../../config/env';
@@ -393,6 +394,7 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
         source?: SmartRow['source'];
         min?: number;
         keepOwned?: boolean;
+        details?: Map<string, SmartRowDetail>;
       } = {},
     ) => {
       const products = cards
@@ -400,7 +402,21 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
         .slice(0, ROW_SIZE);
       if (products.length < (extra.min ?? 2)) return;
       products.forEach((card) => taken.add(card.id));
-      rows.push({ kind, subject: extra.subject ?? null, source: extra.source ?? null, products });
+      const row: SmartRow = {
+        kind,
+        subject: extra.subject ?? null,
+        source: extra.source ?? null,
+        products,
+      };
+      if (extra.details) {
+        row.details = Object.fromEntries(
+          products.flatMap((card) => {
+            const detail = extra.details!.get(card.id);
+            return detail ? [[card.id, detail] as const] : [];
+          }),
+        );
+      }
+      rows.push(row);
     };
 
     if (cartIds.length) {
@@ -413,15 +429,20 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
       add('cart_addons', inStockOnly(await this.catalog.cardsByIds([...together, ...complements])));
     }
 
+    const repeat = await this.repeatViewed(shopper, now);
     add(
       'still_thinking',
-      inStockFirst(await this.catalog.cardsByIds(await this.repeatViewedIds(shopper, now))),
-      {
-        min: 1,
-      },
+      inStockFirst(await this.catalog.cardsByIds(repeat.map((row) => row.id))),
+      { min: 1, details: new Map(repeat.map((row) => [row.id, { views: row.views }])) },
     );
 
-    if (shopper.userId) add('saved_deals', await this.cheaperSaved(shopper.userId), { min: 1 });
+    if (shopper.userId) {
+      const cheaper = await this.cheaperSaved(shopper.userId);
+      add('saved_deals', cheaper.cards, {
+        min: 1,
+        details: new Map([...cheaper.was].map(([id, wasCents]) => [id, { wasCents }])),
+      });
+    }
 
     const restock = purchases.filter((p) => {
       const days = p.categorySlug ? REPLENISH_DAYS[p.categorySlug as DepartmentSlug] : undefined;
@@ -431,6 +452,9 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
       add('restock', inStockOnly(await this.catalog.cardsByIds(restock.map((p) => p.productId))), {
         min: 1,
         keepOwned: true,
+        details: new Map(
+          restock.map((p) => [p.productId, { lastBoughtAt: p.lastAt.toISOString() }]),
+        ),
       });
     }
 
@@ -458,7 +482,10 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Products the shopper opened on REPEAT_VIEWS separate visits in the last two weeks. */
-  private async repeatViewedIds(shopper: Shopper, now: Date): Promise<string[]> {
+  private async repeatViewed(
+    shopper: Shopper,
+    now: Date,
+  ): Promise<{ id: string; views: number }[]> {
     if (!shopper.userId && !shopper.visitorId) return [];
     const rows = await this.prisma.productEvent.groupBy({
       by: ['productId'],
@@ -472,7 +499,9 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
       orderBy: { _max: { createdAt: 'desc' } },
       take: 40,
     });
-    return rows.filter((row) => row._count._all >= REPEAT_VIEWS).map((row) => row.productId);
+    return rows
+      .filter((row) => row._count._all >= REPEAT_VIEWS)
+      .map((row) => ({ id: row.productId, views: row._count._all }));
   }
 
   private async recentInterests(shopper: Shopper, limit: number, now = new Date()) {
@@ -584,17 +613,20 @@ export class RecommendationsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Saved products whose price is now lower than when they were saved, biggest drop first. */
-  private async cheaperSaved(userId: string): Promise<ProductCard[]> {
+  private async cheaperSaved(
+    userId: string,
+  ): Promise<{ cards: ProductCard[]; was: Map<string, number> }> {
     const saved = await this.prisma.wishlistItem.findMany({
       where: { userId, priceCentsAtSave: { not: null } },
       select: { productId: true, priceCentsAtSave: true },
       take: 200,
     });
-    if (!saved.length) return [];
+    if (!saved.length) return { cards: [], was: new Map() };
     const was = new Map(saved.map((row) => [row.productId, row.priceCentsAtSave!]));
-    return (await this.catalog.cardsByIds([...was.keys()]))
+    const cards = (await this.catalog.cardsByIds([...was.keys()]))
       .filter((card) => card.inStock && card.priceFromCents < was.get(card.id)!)
       .sort((a, b) => a.priceFromCents / was.get(a.id)! - b.priceFromCents / was.get(b.id)!);
+    return { cards, was };
   }
 
   private async recentlyViewedIds(shopper: Shopper, limit: number): Promise<string[]> {

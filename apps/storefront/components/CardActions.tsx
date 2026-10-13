@@ -60,11 +60,14 @@ export function CardAdd({
   slug,
   title,
   inStock,
+  label,
 }: {
   variantId: string | null | undefined;
   slug: string;
   title: string;
   inStock: boolean;
+  /** Another word for the button, e.g. "Buy again" (ADR-0061). */
+  label?: string;
 }) {
   const t = useT('product');
   const router = useRouter();
@@ -137,7 +140,7 @@ export function CardAdd({
         </svg>
       ) : null}
       <span aria-live="polite" className="card-add__label">
-        {pending ? t('adding') : state === 'added' ? `✓ ${t('added')}` : t('addToCart')}
+        {pending ? t('adding') : state === 'added' ? `✓ ${t('added')}` : (label ?? t('addToCart'))}
       </span>
     </button>
   );

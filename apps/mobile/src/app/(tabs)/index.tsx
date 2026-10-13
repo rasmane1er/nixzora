@@ -1,4 +1,11 @@
 import { smartRowTitle } from '@nixzora/i18n';
+import {
+  departmentLookup,
+  type ProductCard as Card,
+  quadsByCategory,
+  rowShapes,
+  spotlightDeal,
+} from '@nixzora/validation';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
@@ -15,9 +22,22 @@ import { ProductGrid } from '@/components/ProductGrid';
 import { ProductRail } from '@/components/ProductRail';
 import { ShopFooter } from '@/components/ShopFooter';
 import { ShopHeader } from '@/components/ShopHeader';
+import {
+  AskPicksCard,
+  BuyAgainShape,
+  CardWall,
+  KeepShopping,
+  PriceDropCard,
+  PriceTiles,
+  QuadCard,
+  RowCards,
+  SpotlightDeal,
+  useDealQuadItems,
+} from '@/components/ShapeCards';
 import { Banner, Button, EmptyState, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { errorMessage } from '@nixzora/api-client';
+import { useFormatters } from '@/lib/format';
 import { useCategories, usePlusMember } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { useLayout } from '@/lib/layout';
@@ -36,6 +56,10 @@ export default function HomeScreen() {
   const th = useT('home');
   const ta = useT('ads');
   const tu = useT('shopUi');
+  const tk = useT('cards');
+  const td = useT('deals');
+  const { departmentName } = useFormatters();
+  const dealQuadItems = useDealQuadItems();
   const member = usePlusMember();
   const { width, columns } = useLayout();
   const cardWidth = (width - space.lg * 2 - space.md * (columns - 1)) / columns;
@@ -70,12 +94,83 @@ export default function HomeScreen() {
   );
   const featuredIds = new Set(featured.map((product) => product.id));
 
+  // Card shapes (ADR-0061): the same mix as the website's home page.
+  const live = deals.data?.live ?? [];
+  const spotlight = spotlightDeal(live, deals.dataUpdatedAt);
+  const groupOf = departmentLookup(departments);
+  const dealQuads = quadsByCategory(live, 2, groupOf);
+  const newQuads = quadsByCategory(newIn, 2, groupOf);
+  const shaped = rowShapes(picks.data?.rows ?? []);
+  const shape = (kind: string) => shaped.find((s) => s.shape === kind)?.row;
+  const keep = shape('quad');
+  const ask = shape('ask');
+  const drop = shape('priceDrop');
+  const again = shape('buyAgain');
+  const dropProduct = drop?.products.find((product) => drop.details?.[product.id]?.wasCents);
+  const soonest = [...new Map([...featured, ...newIn].map((item) => [item.id, item])).values()]
+    .filter((product): product is Card & { delivery: { latest: string } } =>
+      Boolean(product.inStock && product.delivery && product.defaultVariantId),
+    )
+    .sort((x, y) => x.delivery.latest.localeCompare(y.delivery.latest))
+    .slice(0, 3);
+
   const header = (
     <View style={{ gap: space.xl, marginBottom: space.sm, paddingTop: space.lg }}>
       <PromoCarousel width={width} />
       {departments.length ? <CategoryCircles departments={departments} /> : null}
       <AskCard prompts={PROMPTS.map((key) => th(key))} />
-      <DealsRail deals={(deals.data?.live ?? []).slice(0, 12)} />
+      <CardWall>
+        {keep ? <KeepShopping row={keep} /> : null}
+        {(dealQuads.length
+          ? dealQuads
+          : live.length >= 2
+            ? [{ category: null, products: live.slice(0, 4) }]
+            : []
+        ).map((quad) => (
+          <QuadCard
+            key={quad.category?.slug ?? 'deals'}
+            title={
+              quad.category
+                ? tk('dealsIn', {
+                    category: departmentName(quad.category.slug, quad.category.name),
+                  })
+                : td('railTitle')
+            }
+            items={dealQuadItems(quad.products)}
+            link={{ href: '/deals', label: tk('seeAllDeals') }}
+          />
+        ))}
+        {ask ? (
+          <AskPicksCard subject={ask.subject ?? ''} source={ask.source} products={ask.products} />
+        ) : null}
+        {dropProduct ? (
+          <PriceDropCard
+            product={dropProduct}
+            wasCents={drop!.details![dropProduct.id]!.wasCents!}
+          />
+        ) : null}
+        {again ? <BuyAgainShape row={again} /> : null}
+        {newQuads.map((quad) => {
+          const name = departmentName(quad.category.slug, quad.category.name);
+          return (
+            <QuadCard
+              key={quad.category.slug}
+              title={tk('newIn', { category: name })}
+              items={quad.products.map((product) => ({
+                href: `/p/${product.slug}`,
+                product,
+                label: product.title,
+              }))}
+              link={{
+                href: `/c/${quad.category.slug}`,
+                label: tk('shopCategory', { category: name }),
+              }}
+            />
+          );
+        })}
+      </CardWall>
+      {spotlight ? <SpotlightDeal product={spotlight} /> : null}
+      <DealsRail deals={live.filter((product) => product.id !== spotlight?.id).slice(0, 12)} />
       {member ? null : <PlusStrip />}
 
       {featured.length ? (
@@ -94,15 +189,18 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      {(picks.data?.rows ?? []).map((row, i) => (
-        <ProductRail
-          key={`${row.kind}-${i}`}
-          title={smartRowTitle(row, ta)}
-          products={row.products}
-        />
-      ))}
-      <ProductRail title={ta('sponsoredHome')} sponsored={ads.data?.ads ?? []} />
-      <ProductRail title={t('recentlyViewed')} products={picks.data?.recentlyViewed ?? []} />
+      {shaped
+        .filter((s) => s.shape === 'rail')
+        .map(({ row }, i) => (
+          <ProductRail
+            key={`${row.kind}-${i}`}
+            title={smartRowTitle(row, ta)}
+            products={row.products}
+          />
+        ))}
+      <RowCards title={tk('arrivesSoonest')} products={soonest} />
+      <PriceTiles title={ta('sponsoredHome')} sponsored={ads.data?.ads ?? []} />
+      <PriceTiles title={t('recentlyViewed')} products={picks.data?.recentlyViewed ?? []} />
 
       {products.error && !products.data ? (
         <Banner tone="error">{errorMessage(products.error)}</Banner>
