@@ -906,6 +906,36 @@ const moreProducts: ProductSeed[] = [
 
 // Demo reviews so the product pages and "what customers say" have something to show. The
 // authors are demo accounts that cannot sign in, and their names say "(demo)".
+/**
+ * Photos per color (ADR-0051): the color each demo illustration is drawn in. Its other colors
+ * have their own illustrations (tools/demo-images, COLOR_PRODUCTS) named <slug>-c-<color key>.
+ */
+const DEMO_DRAWN_COLOR: Record<string, string> = {
+  'aero-ionic-hair-dryer': 'Ivory',
+  'alder-rain-jacket': 'Olive',
+  'core-yoga-mat': 'Sage',
+  'halo-anc-headphones': 'Black',
+  'haven-throw-blanket': 'Oat',
+  'hearth-electric-kettle': 'Matte black',
+  'kestrel-14-pro': 'Graphite',
+  'linden-fleece-hoodie': 'Heather grey',
+  'linden-organic-tee': 'Natural',
+  'orbit-phone-256': 'Black',
+  'stride-runner': 'Navy / Orange',
+  'summit-insulated-bottle': 'Clay',
+  'trailhead-28-backpack': 'Lake blue',
+};
+
+/** "Navy / Orange" -> "navy-orange", as tools/demo-images/generate.py names the files. */
+function colorKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(' ')
+    .join('-');
+}
+
 const DEMO_REVIEWS: Record<string, [number, string, string][]> = {
   'kestrel-14-pro': [
     [
@@ -1146,12 +1176,46 @@ async function main(): Promise<void> {
         ['-3', `${product.title}, angled view`],
         ['-4', `${product.title}, on a table`],
       ] as const;
+      const drawn = DEMO_DRAWN_COLOR[product.slug];
       for (const [position, [suffix, alt]] of views.entries()) {
         const storageKey = `demo/${product.slug}${suffix}.webp`;
         if (!photos.some((photo) => photo.storageKey === storageKey)) {
           await prisma.productImage.create({
-            data: { productId: row.id, storageKey, alt, position },
+            data: { productId: row.id, storageKey, alt, position, color: drawn ?? null },
           });
+        }
+      }
+      // Photos per color (ADR-0051): the drawn photos belong to their color; every other color
+      // gets its own set, so choosing a color shows that color.
+      if (drawn) {
+        await prisma.productImage.updateMany({
+          where: { productId: row.id, color: null, storageKey: { startsWith: 'demo/' } },
+          data: { color: drawn },
+        });
+        const others = [
+          ...new Set(
+            product.variants
+              .map((v) => (v.options as Record<string, string>).color)
+              .filter((c): c is string => !!c && c !== drawn),
+          ),
+        ];
+        let position = views.length;
+        for (const color of others) {
+          for (const [suffix, alt] of views) {
+            const storageKey = `demo/${product.slug}-c-${colorKey(color)}${suffix}.webp`;
+            if (!photos.some((photo) => photo.storageKey === storageKey)) {
+              await prisma.productImage.create({
+                data: {
+                  productId: row.id,
+                  storageKey,
+                  alt: `${alt}, ${color.toLowerCase()}`,
+                  position,
+                  color,
+                },
+              });
+            }
+            position += 1;
+          }
         }
       }
     }

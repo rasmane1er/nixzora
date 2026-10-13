@@ -3,7 +3,7 @@
 // encodes the WebP (canvas.toDataURL), so no image library is needed.
 //
 //   node tools/demo-images/render.mjs                 every product
-//   node tools/demo-images/render.mjs core-yoga-mat   only these slugs (and their extra views)
+//   node tools/demo-images/render.mjs core-yoga-mat   only these slugs (their extra views and colors)
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -24,7 +24,11 @@ const files = (await readdir(src))
   .filter(
     (f) =>
       !only.length ||
-      only.some((slug) => f === `${slug}.svg` || (f.startsWith(`${slug}-`) && /-\d\.svg$/.test(f))),
+      only.some(
+        (slug) =>
+          f === `${slug}.svg` ||
+          (f.startsWith(`${slug}-`) && /^(c-[a-z0-9-]+?)?(-?\d)?\.svg$/.test(f.slice(slug.length + 1))),
+      ),
   );
 for (const file of files) {
   const svg = await readFile(join(src, file), 'utf8');

@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ProductCard as Card } from '@nixzora/validation';
+import type { CardColor, ProductCard as Card } from '@nixzora/validation';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -58,6 +58,8 @@ export function ProductCard({
   const dark = useColorScheme() === 'dark';
   const { percent } = useFormatters();
   const dealLabel = useDealLabel();
+  // Photos per color (ADR-0051): the swatch tapped on this card, if any.
+  const [chosen, setChosen] = useState<CardColor | null>(null);
   const rating = product.rating;
   const row = layout === 'row';
   const onSale = product.compareAtCents != null && product.compareAtCents > product.priceFromCents;
@@ -99,7 +101,11 @@ export function ProductCard({
       ]}
     >
       <PressableLink
-        href={`/p/${product.slug}`}
+        href={
+          chosen
+            ? `/p/${product.slug}?color=${encodeURIComponent(chosen.name)}`
+            : `/p/${product.slug}`
+        }
         accessibilityRole="link"
         accessibilityLabel={
           adToken
@@ -119,7 +125,7 @@ export function ProductCard({
         <View style={[styles.imageWrap, { backgroundColor: p.photo }]}>
           {product.image ? (
             <Image
-              source={{ uri: product.image.url }}
+              source={{ uri: chosen?.imageUrl ?? product.image.url }}
               alt={product.image.alt ?? product.title}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
@@ -147,7 +153,7 @@ export function ProductCard({
             <Stars average={rating.average} count={rating.count} compact />
           ) : null}
           {product.colors && !adToken ? (
-            <Swatches slug={product.slug} colors={product.colors} />
+            <Swatches colors={product.colors} chosen={chosen?.name ?? null} onChoose={setChosen} />
           ) : null}
           <BoughtLine product={product} />
           <Price

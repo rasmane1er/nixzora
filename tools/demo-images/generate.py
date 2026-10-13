@@ -207,13 +207,13 @@ def speakers(wood="#c9a27a", face="#2b2a28", scale=1.0, bg=("#f4f1ea", "#e6e1d6"
     )
 
 
-def phone():
+def phone(frame="#3d4352"):
     x, y, w, h = 470, 90, 260, 560
     return page(
         f"""
 {shadow(W / 2 + 40, 760, 220, 24)}
 <g transform="rotate(-8 600 420)">
-  <rect x="{x - 8}" y="{y - 8}" width="{w + 16}" height="{h + 16}" rx="44" fill="#3d4352"/>
+  <rect x="{x - 8}" y="{y - 8}" width="{w + 16}" height="{h + 16}" rx="44" fill="{frame}"/>
   <rect x="{x}" y="{y}" width="{w}" height="{h}" rx="36" fill="#0b0d12"/>
   {screen_art(x + 10, y + 10, w - 20, h - 20, "wp", 28)}
   <rect x="{x + w / 2 - 40}" y="{y + 22}" width="80" height="22" rx="11" fill="#0b0d12"/>
@@ -674,6 +674,37 @@ PRODUCTS = {
     "summit-insulated-bottle": bottle("#c2653f", "#2b2f37"),
 }
 
+# Photos per color (ADR-0051): the drawings above show each product's first color; these draw its
+# other colors, written as <slug>-c-<color key>.svg plus the same extra views. The seed tags them
+# with their color, so picking a color on a card or product page shows that color.
+COLOR_PRODUCTS = {
+    "aero-ionic-hair-dryer": {"Black": hair_dryer("#2b2f37", "#c9a46a")},
+    "alder-rain-jacket": {"Black": rain_jacket("#2b2f37", "#1d2026")},
+    "core-yoga-mat": {"Plum": yoga_mat("#6e3b5c", "#55304a")},
+    "halo-anc-headphones": {"Sand": headphones("#d8c7ab", "#e9dfcd", "#c9b9a3", "#6fd1c7")},
+    "haven-throw-blanket": {"Terracotta": blanket("#c2653f", "#d9c7a8")},
+    "hearth-electric-kettle": {"Cream": kettle("#efe6d6", "#c9b9a3")},
+    "kestrel-14-pro": {"Silver": laptop("#c9ccd2", "#a9adb5", "#e9ebee", ("#1f2a44", "#3b5ba5", "#9fc4ff"))},
+    "linden-fleece-hoodie": {"Navy": hoodie("#2f3b52", "#232c3e")},
+    "linden-organic-tee": {
+        "Black": tee("#24262b", "#18191d", "#e8622c"),
+        "Sage": tee("#9fb59f", "#839a83", "#e8622c"),
+    },
+    "orbit-phone-256": {"Sage": phone("#8fa58f")},
+    "stride-runner": {"Black": sneaker("#24262b", "#8d939c")},
+    "summit-insulated-bottle": {
+        "Black": bottle("#2b2f37", "#5e6370"),
+        "Sage": bottle("#8fa58f", "#2b2f37"),
+    },
+    "trailhead-28-backpack": {"Charcoal": backpack("#3a3d44", "#2b2d33")},
+}
+
+
+def color_key(name: str) -> str:
+    """"Navy / Orange" -> "navy-orange" (the seed derives the same file names)."""
+    return "-".join("".join(c if c.isalnum() else " " for c in name.lower()).split())
+
+
 # Extra views of every product, so the storefront gallery has several photos to swipe through:
 # a close-up, an angled view and the product on a dark wooden table.
 VIEWS = {
@@ -709,4 +740,12 @@ if __name__ == "__main__":
         (OUT / f"{slug}.svg").write_text(svg)
         for kind in VIEWS:
             (OUT / f"{slug}-{kind}.svg").write_text(view(svg, kind))
-    print(f"wrote {len(PRODUCTS) * (1 + len(VIEWS))} SVGs to {OUT}")
+    colored = 0
+    for slug, colors in COLOR_PRODUCTS.items():
+        for name, svg in colors.items():
+            base = f"{slug}-c-{color_key(name)}"
+            (OUT / f"{base}.svg").write_text(svg)
+            for kind in VIEWS:
+                (OUT / f"{base}-{kind}.svg").write_text(view(svg, kind))
+            colored += 1 + len(VIEWS)
+    print(f"wrote {len(PRODUCTS) * (1 + len(VIEWS)) + colored} SVGs to {OUT}")

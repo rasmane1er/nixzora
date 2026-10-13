@@ -5817,6 +5817,17 @@ td.neg {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
+button.card-swatch {
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+.card-swatch--on {
+  outline: 2px solid var(--color-signal-strong);
+  outline-offset: 2px;
+}
 .card-swatch--more {
   width: auto;
   padding: 0 6px;

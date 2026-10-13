@@ -1,13 +1,23 @@
 import { CARD_SWATCHES, type CardColor } from '@nixzora/validation';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { fonts, usePalette } from '@/lib/theme';
 
-/** Photos per color (p10-29): a card's colors; each opens the product with that color chosen. */
-export function Swatches({ slug, colors }: { slug: string; colors: CardColor[] }) {
+/**
+ * Photos per color (p10-29, ADR-0051): a card's colors. Tapping one shows that color's photo on
+ * the card, and the card then opens the product in that color.
+ */
+export function Swatches({
+  colors,
+  chosen,
+  onChoose,
+}: {
+  colors: CardColor[];
+  chosen: string | null;
+  onChoose: (color: CardColor) => void;
+}) {
   const t = useT('photoColors');
   const p = usePalette();
   const shown = colors.slice(0, CARD_SWATCHES);
@@ -20,17 +30,18 @@ export function Swatches({ slug, colors }: { slug: string; colors: CardColor[] }
       {shown.map((color) => (
         <Pressable
           key={color.name}
-          accessibilityRole="link"
+          accessibilityRole="button"
           accessibilityLabel={t('seeColor', { color: color.name })}
-          hitSlop={4}
-          onPress={() => router.push(`/p/${slug}?color=${encodeURIComponent(color.name)}`)}
+          accessibilityState={{ selected: chosen === color.name }}
+          hitSlop={6}
+          onPress={() => onChoose(color)}
           style={{
             width: 22,
             height: 22,
             borderRadius: 11,
             overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: p.line,
+            borderWidth: chosen === color.name ? 2 : 1,
+            borderColor: chosen === color.name ? p.fg : p.line,
             backgroundColor: color.swatch ?? p.card,
             alignItems: 'center',
             justifyContent: 'center',
